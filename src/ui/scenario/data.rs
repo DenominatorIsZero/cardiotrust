@@ -17,7 +17,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                 TableBuilder::new(ui)
                     .column(Column::auto().resizable(true))
                     .column(Column::auto().resizable(true))
-                    .column(Column::remainder())
+                    .column(Column::initial(300.0).resizable(true))
                     .header(20.0, |mut header| {
                         header.col(|ui| {
                             ui.heading("Parameter");
@@ -151,7 +151,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                         // measurement covariance mean
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
-                                ui.label("Measurement covariance mean");
+                                ui.label("Measurement\ncovariance mean");
                             });
                             row.col(|ui| {
                                 ui.add(
@@ -173,7 +173,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                         // measurement covariance std
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
-                                ui.label("Measurement covariance std");
+                                ui.label("Measurement\ncovariance std");
                             });
                             row.col(|ui| {
                                 ui.add(egui::Slider::new(

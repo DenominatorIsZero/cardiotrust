@@ -13,7 +13,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                 TableBuilder::new(ui)
                     .column(Column::auto().resizable(true))
                     .column(Column::auto().resizable(true))
-                    .column(Column::remainder())
+                    .column(Column::initial(300.0).resizable(true))
                     .header(20.0, |mut header| {
                         header.col(|ui| {
                             ui.heading("Parameter");
@@ -80,7 +80,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                         // Measurement covariance mean
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
-                                ui.label("Measurement covariance mean");
+                                ui.label("Measurement\ncovariance mean");
                             });
                             row.col(|ui| {
                                 ui.add(
@@ -100,9 +100,9 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                             });
                         });
                         // Measurement covariance std
-                        body.row(30.0, |mut row| {
+                        body.row(80.0, |mut row| {
                             row.col(|ui| {
-                                ui.label("Measurement covariance std");
+                                ui.label("Measurement\ncovariance std");
                             });
                             row.col(|ui| {
                                 ui.add(egui::Slider::new(
@@ -125,7 +125,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                         // Process covariance mean
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
-                                ui.label("Process covariance mean");
+                                ui.label("Process\ncovariance mean");
                             });
                             row.col(|ui| {
                                 ui.add(
@@ -145,9 +145,9 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                             });
                         });
                         // Process covariance std
-                        body.row(30.0, |mut row| {
+                        body.row(80.0, |mut row| {
                             row.col(|ui| {
-                                ui.label("Process covariance std");
+                                ui.label("Process\ncovariance std");
                             });
                             row.col(|ui| {
                                 ui.add(egui::Slider::new(
@@ -170,7 +170,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                         // Apply system update
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
-                                ui.label("Apply system update");
+                                ui.label("Apply\nsystem update");
                             });
                             row.col(|ui| {
                                 ui.checkbox(&mut algorithm.apply_system_update, "");
