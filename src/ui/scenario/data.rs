@@ -7,7 +7,7 @@ use crate::core::{
 };
 
 pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
-    let config = scenario.get_config_mut();
+    let simulation = scenario.get_config_mut().simulation.as_mut().unwrap();
     egui::ScrollArea::vertical()
         .id_source("simulation")
         .show(parent, |ui| {
@@ -38,7 +38,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             row.col(|ui| {
                                 ui.add(
                                     egui::Slider::new(
-                                        &mut config.simulation.as_mut().unwrap().sample_rate_hz,
+                                        &mut simulation.sample_rate_hz,
                                         1.0..=48000.0,
                                     )
                                     .suffix(" Hz"),
@@ -57,11 +57,8 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                             row.col(|ui| {
                                 ui.add(
-                                    egui::Slider::new(
-                                        &mut config.simulation.as_mut().unwrap().duration_s,
-                                        0.1..=60.0,
-                                    )
-                                    .suffix(" s"),
+                                    egui::Slider::new(&mut simulation.duration_s, 0.1..=60.0)
+                                        .suffix(" s"),
                                 );
                             });
                             row.col(|ui| {
@@ -71,8 +68,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                         });
                         // Control function
-                        let control_function =
-                            &mut config.simulation.as_mut().unwrap().control_function;
+                        let control_function = &mut simulation.control_function;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Contorl function");
@@ -101,7 +97,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                         });
                         // Model preset
-                        let model_preset = &mut config.simulation.as_mut().unwrap().model;
+                        let model_preset = &mut simulation.model;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Model preset");
@@ -127,8 +123,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                         });
                         // Sensors per axis
-                        let sensors_per_axis =
-                            &mut config.simulation.as_mut().unwrap().sensors_per_axis;
+                        let sensors_per_axis = &mut simulation.sensors_per_axis;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Sensors per axis");
@@ -161,11 +156,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             row.col(|ui| {
                                 ui.add(
                                     egui::Slider::new(
-                                        &mut config
-                                            .simulation
-                                            .as_mut()
-                                            .unwrap()
-                                            .measurement_covariance_mean,
+                                        &mut simulation.measurement_covariance_mean,
                                         1e-30..=1e-10,
                                     )
                                     .logarithmic(true)
@@ -186,11 +177,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                             row.col(|ui| {
                                 ui.add(egui::Slider::new(
-                                    &mut config
-                                        .simulation
-                                        .as_mut()
-                                        .unwrap()
-                                        .measurement_covariance_std,
+                                    &mut simulation.measurement_covariance_std,
                                     0.0..=1.0,
                                 ));
                             });
