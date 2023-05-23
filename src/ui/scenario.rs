@@ -119,27 +119,41 @@ fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                     })
                     .body(|mut body| {
                         // Sample Rate
-                        draw_ui_scenario_row(
-                            &mut body,
-                            "Sample rate",
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Sample rate");
+                            });
+                            row.col(|ui| {
+                                ui.add(
                             egui::Slider::new(
-                                &mut config.simulation.as_mut().unwrap().sample_rate_hz,
+                                &mut config.simulation.as_mut().unwrap().duration_s,
                                 1.0..=48000.0,
                             )
-                            .suffix(" Hz"),
-                            "The sample rate of the simulation in Hz. Default: 2000.0 Hz.",
-                        );
+                            .suffix(" Hz")
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label("The sample rate of the simulation in Hz. Default: 2000.0 Hz.");
+                            });
+                        });
                         // Duration
-                        draw_ui_scenario_row(
-                            &mut body,
-                            "Duration",
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Duration");
+                            });
+                            row.col(|ui| {
+                                ui.add(
                             egui::Slider::new(
                                 &mut config.simulation.as_mut().unwrap().duration_s,
                                 0.1..=60.0,
                             )
-                            .suffix(" s"),
-                            "The duration of the simulation in seconds. Default: 1.0 s.",
-                        );
+                            .suffix(" s")
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label("The duration of the simulation in seconds. Default: 1.0 s.");
+                            });
+                        });
                         // Control function
                         let control_function = &mut config.simulation.as_mut().unwrap().control_function;
                         body.row(30.0, |mut row| {
@@ -198,23 +212,4 @@ fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                 });
             });
         });
-}
-
-fn draw_ui_scenario_row<T: egui::Widget>(
-    body: &mut egui_extras::TableBody,
-    name: &str,
-    widget: T,
-    description: &str,
-) {
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label(name);
-        });
-        row.col(|ui| {
-            ui.add(widget);
-        });
-        row.col(|ui| {
-            ui.label(description);
-        });
-    });
 }
