@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::path::Path;
 use std::{fs, fs::File, io::Write};
 
@@ -30,7 +31,7 @@ impl Scenario {
             results: None,
         };
         scenario
-            .save(None)
+            .save()
             .expect("Could not save newly created scenario.");
         scenario
     }
@@ -49,11 +50,8 @@ impl Scenario {
         scenario
     }
 
-    pub fn save(&self, folder: Option<&Path>) -> Result<(), std::io::Error> {
-        let path = match folder {
-            None => Path::new("./results").join(&self.id),
-            Some(path) => path.join(&self.id),
-        };
+    pub fn save(&self) -> Result<(), std::io::Error> {
+        let path = Path::new("./results").join(&self.id);
         let toml = toml::to_string(&self).unwrap();
         fs::create_dir_all(&path)?;
         let mut f = File::create(&path.join("scenario.toml"))?;
@@ -76,15 +74,54 @@ impl Scenario {
     }
 
     pub fn get_config_mut(&mut self) -> &mut Config {
+        &mut self.config
+    }
+
+    pub fn schedule(&mut self) -> Result<(), String> {
         match self.status {
-            Status::Planning => &mut self.config,
-            _ => todo!("Ups. Tried to get mutable access to the config after the planning stage. Really should handle this case more user friendly. Oh well..."),
+            Status::Planning => {
+                self.status = Status::Scheduled;
+                return Ok(());
+            }
+            _ => {
+                return Err(format!(
+                    "Can only schedule scenarios that are in the planning\
+             phase but scenario was in phase {:?}",
+                    self.get_status_str()
+                ))
+            }
         }
+    }
+
+    pub fn unschedule(&mut self) -> Result<(), String> {
+        match self.status {
+            Status::Scheduled => {
+                self.status = Status::Planning;
+                return Ok(());
+            }
+            _ => {
+                return Err(format!(
+                    "Can only unschedule scenarios that are in the\
+            scheduled phase but scenario was in phase {:?}",
+                    self.get_status_str()
+                ))
+            }
+        }
+    }
+
+    pub fn delete(&self) -> Result<(), std::io::Error> {
+        let path = Path::new("./results").join(&self.id);
+        fs::remove_dir_all(path)?;
+        Ok(())
+    }
+
+    pub(crate) fn get_status(&self) -> &Status {
+        &self.status
     }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-enum Status {
+pub enum Status {
     Planning,
     Done,
     Running(f32),

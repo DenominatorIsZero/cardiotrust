@@ -7,37 +7,59 @@ use bevy_egui::{egui, EguiContexts};
 use egui::Align;
 
 use self::{algorithm::draw_ui_scenario_algoriothm, data::draw_ui_scenario_data};
-use crate::{core::scenario::Scenario, Scenarios, SelectedSenario};
+use crate::{
+    core::scenario::{Scenario, Status},
+    Scenarios, SelectedSenario,
+};
 
 pub fn draw_ui_scenario(
     _commands: Commands,
     mut contexts: EguiContexts,
     mut scenarios: ResMut<Scenarios>,
-    selected_scenario: ResMut<SelectedSenario>,
+    mut selected_scenario: ResMut<SelectedSenario>,
 ) {
-    let index = selected_scenario.index.unwrap();
-    let scenario = &mut scenarios.scenarios[index];
     let context = contexts.ctx_mut();
 
-    draw_ui_scenario_topbar(context, scenario);
+    draw_ui_scenario_topbar(context, &mut scenarios, &mut selected_scenario);
+
+    let index = selected_scenario.index.unwrap();
+    let scenario = &mut scenarios.scenarios[index];
     draw_ui_scenario_central_panel(context, scenario);
 }
 
-fn draw_ui_scenario_topbar(context: &mut egui::Context, scenario: &mut Scenario) {
+fn draw_ui_scenario_topbar(
+    context: &mut egui::Context,
+    scenarios: &mut ResMut<Scenarios>,
+    selected_scenario: &mut ResMut<SelectedSenario>,
+) {
     egui::TopBottomPanel::top("scenario_status").show(context, |ui| {
         ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+            let index = selected_scenario.index.unwrap();
+            let scenario = &mut scenarios.scenarios[index];
             ui.label(format!("Scenario with ID: {}", scenario.get_id()));
             ui.separator();
             ui.label(format!("Status: {}", scenario.get_status_str()));
             ui.separator();
-            if ui.button("Back").clicked() {
-                todo!();
+            match scenario.get_status() {
+                Status::Planning => {
+                    if ui.button("Schedule").clicked() {
+                        scenario.schedule().unwrap();
+                    }
+                }
+                Status::Scheduled => {
+                    if ui.button("Unschedule").clicked() {
+                        scenario.unschedule().unwrap();
+                    }
+                }
+                _ => (),
             }
-            if ui.button("Forward").clicked() {
-                todo!();
+            if ui.button("Save").clicked() {
+                scenario.save().unwrap();
             }
             if ui.button("Delete").clicked() {
-                todo!();
+                scenario.delete().unwrap();
+                scenarios.scenarios.remove(index);
+                selected_scenario.index = Some(0);
             }
         });
     });
