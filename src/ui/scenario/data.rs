@@ -3,10 +3,11 @@ use egui_extras::{Column, TableBuilder};
 
 use crate::core::{
     config::{simulation::ControlFunction, ModelPreset},
-    scenario::Scenario,
+    scenario::{Scenario, Status},
 };
 
 pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
+    parent.set_enabled(*scenario.get_status() == Status::Planning);
     let simulation = scenario.get_config_mut().simulation.as_mut().unwrap();
     egui::ScrollArea::vertical()
         .id_source("simulation")

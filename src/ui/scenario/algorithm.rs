@@ -1,8 +1,9 @@
 use egui_extras::{Column, TableBuilder};
 
-use crate::core::scenario::Scenario;
+use crate::core::scenario::{Scenario, Status};
 
 pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenario) {
+    parent.set_enabled(*scenario.get_status() == Status::Planning);
     let algorithm = &mut scenario.get_config_mut().algorithm;
     egui::ScrollArea::vertical()
         .id_source("algorithm")
@@ -39,7 +40,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                             });
                         });
                         // Snapshot interval
-                        body.row(30.0, |mut row| {
+                        body.row(60.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Snapshot interval");
                             });
