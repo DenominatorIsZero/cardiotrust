@@ -1,52 +1,11 @@
 use bevy::prelude::warn;
-use ndarray::{Array4, Array5};
-use num_traits::identities::Zero;
 
-#[derive(Debug)]
-struct ArrayGains {
-    values: Array5<f32>,
-}
-
-impl ArrayGains {
-    fn new(number_of_states: usize) -> ArrayGains {
-        ArrayGains {
-            values: Array5::zeros((number_of_states, 3, 3, 3, 3)),
-        }
-    }
-}
-
-#[derive(Debug)]
-struct ArrayDelays<T> {
-    values: Array4<T>,
-}
-
-impl<T> ArrayDelays<T>
-where
-    T: Clone + Zero,
-{
-    fn new(number_of_states: usize) -> ArrayDelays<T> {
-        assert_eq!(number_of_states as f32 % 3.0, 0.0);
-        ArrayDelays {
-            values: Array4::zeros((number_of_states / 3, 3, 3, 3)),
-        }
-    }
-}
-
-struct APParameters {
-    gains: ArrayGains,
-    coefs: ArrayDelays<f32>,
-    delays: ArrayDelays<u32>,
-}
+use super::model::{
+    shapes::{ArrayDelays, ArrayGains},
+    APParameters,
+};
 
 impl APParameters {
-    fn new(number_of_states: usize) -> APParameters {
-        APParameters {
-            gains: ArrayGains::new(number_of_states),
-            coefs: ArrayDelays::new(number_of_states),
-            delays: ArrayDelays::new(number_of_states),
-        }
-    }
-
     fn update(&mut self, derivatives: &Derivatives, learning_rate: f32) {
         update_gains(&mut self.gains, &derivatives.gains, learning_rate);
         update_delays(
