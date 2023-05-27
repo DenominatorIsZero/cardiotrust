@@ -60,7 +60,7 @@ impl Derivatives {
             &mut self.gains,
             &estimations.ap_outputs,
             &self.mapped_residuals,
-            &functional_description.ap_params.output_state_indicies,
+            &functional_description.ap_params.output_state_indices,
         );
         calculate_derivatives_coefs(
             &mut self.coefs,
@@ -71,7 +71,7 @@ impl Derivatives {
             &estimations.system_states,
             &functional_description.ap_params.gains,
             &functional_description.ap_params.delays,
-            &functional_description.ap_params.output_state_indicies,
+            &functional_description.ap_params.output_state_indices,
             time_index,
         );
     }
@@ -84,7 +84,7 @@ fn calculate_derivatives_gains(
     ap_outputs: &ArrayGains<f32>,
     mapped_residuals: &ArrayMappedResiduals,
     // This needed for indexing
-    output_state_indicies: &ArrayGains<u32>,
+    output_state_indices: &ArrayGains<u32>,
 ) {
     todo!();
 }
@@ -101,8 +101,39 @@ fn calculate_derivatives_coefs(
     ap_gains: &ArrayGains<f32>,
     // These are needed for indexing
     delays: &ArrayDelays<u32>,
-    output_state_indicies: &ArrayGains<u32>,
+    output_state_indices: &ArrayGains<u32>,
     time_index: u32,
 ) {
     todo!();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn gains_success() {
+        let number_of_states = 12;
+        let mut derivatives_gains = ArrayGains::new(number_of_states);
+        let ap_outputs = ArrayGains::new(number_of_states);
+        let mapped_residuals = ArrayMappedResiduals::new(number_of_states);
+        let output_state_indices = ArrayGains::new(number_of_states);
+
+        let derivatives_gains_exp: ArrayGains<f32> = ArrayGains::new(number_of_states);
+
+        calculate_derivatives_gains(
+            &mut derivatives_gains,
+            &ap_outputs,
+            &mapped_residuals,
+            &output_state_indices,
+        );
+
+        assert!(
+            derivatives_gains_exp
+                .values
+                .relative_eq(&derivatives_gains.values, 1e-5, 0.001),
+            "expected:\n{}\nactual:\n{}",
+            derivatives_gains_exp.values,
+            derivatives_gains.values
+        )
+    }
 }
