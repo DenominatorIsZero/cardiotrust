@@ -2,12 +2,15 @@ use ndarray::{Array4, Array5};
 use num_traits::identities::Zero;
 
 #[derive(Debug)]
-pub struct ArrayGains {
-    pub values: Array5<f32>,
+pub struct ArrayGains<T> {
+    pub values: Array5<T>,
 }
 
-impl ArrayGains {
-    pub fn new(number_of_states: usize) -> ArrayGains {
+impl<T> ArrayGains<T>
+where
+    T: Clone + Zero,
+{
+    pub fn new(number_of_states: usize) -> ArrayGains<T> {
         ArrayGains {
             values: Array5::zeros((number_of_states, 3, 3, 3, 3)),
         }

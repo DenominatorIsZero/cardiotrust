@@ -13,13 +13,13 @@ impl APParameters {
         update_delays(
             &mut self.coefs,
             &mut self.delays,
-            &derivatives.delays,
+            &derivatives.coefs,
             learning_rate,
         );
     }
 }
 
-fn update_gains(gains: &mut ArrayGains, derivatives: &ArrayGains, learning_rate: f32) {
+fn update_gains(gains: &mut ArrayGains<f32>, derivatives: &ArrayGains<f32>, learning_rate: f32) {
     gains.values -= &(learning_rate * &derivatives.values);
 }
 
@@ -128,8 +128,8 @@ mod tests {
 
         let mut derivatives = Derivatives::new(3);
         derivatives.gains.values.fill(0.5);
-        derivatives.delays.values.fill(0.5);
-        derivatives.delays.values[[0, 0, 0, 2]] = -0.9;
+        derivatives.coefs.values.fill(0.5);
+        derivatives.coefs.values[[0, 0, 0, 2]] = -0.9;
 
         let learning_rate = 1.0;
 
