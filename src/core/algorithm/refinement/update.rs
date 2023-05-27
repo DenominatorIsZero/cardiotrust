@@ -59,8 +59,9 @@ mod tests {
 
     #[test]
     fn update_gains_success() {
-        let mut gains = ArrayGains::new(10);
-        let mut derivatives = ArrayGains::new(10);
+        let number_of_states = 10;
+        let mut gains = ArrayGains::new(number_of_states);
+        let mut derivatives = ArrayGains::new(number_of_states);
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
@@ -71,9 +72,10 @@ mod tests {
 
     #[test]
     fn update_delays_success() {
-        let mut ap_coefs = ArrayDelays::<f32>::new(12);
-        let mut delays = ArrayDelays::<u32>::new(12);
-        let mut derivatives = ArrayDelays::<f32>::new(12);
+        let number_of_states = 12;
+        let mut ap_coefs = ArrayDelays::<f32>::new(number_of_states);
+        let mut delays = ArrayDelays::<u32>::new(number_of_states);
+        let mut derivatives = ArrayDelays::<f32>::new(number_of_states);
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
