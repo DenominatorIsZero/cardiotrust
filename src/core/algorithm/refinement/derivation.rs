@@ -3,7 +3,7 @@ use ndarray::Array1;
 use crate::core::{
     algorithm::estimation::{ArraySystemStates, Estimations},
     model::{
-        shapes::{ArrayDelays, ArrayGains},
+        shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains},
         FunctionalDescription,
     },
 };
@@ -84,9 +84,17 @@ fn calculate_derivatives_gains(
     ap_outputs: &ArrayGains<f32>,
     mapped_residuals: &ArrayMappedResiduals,
     // This needed for indexing
-    output_state_indices: &ArrayGains<u32>,
+    output_state_indices: &ArrayIndicesGains,
 ) {
-    todo!();
+    derivatives_gains
+        .values
+        .iter_mut()
+        .zip(ap_outputs.values.iter())
+        .zip(output_state_indices.values.iter())
+        .filter(|(_, index_output_state)| index_output_state.is_some())
+        .for_each(|((derivative, ap_output), index_output_state)| {
+            *derivative += ap_output * mapped_residuals.values[index_output_state.unwrap()];
+        });
 }
 
 fn calculate_derivatives_coefs(
@@ -101,7 +109,7 @@ fn calculate_derivatives_coefs(
     ap_gains: &ArrayGains<f32>,
     // These are needed for indexing
     delays: &ArrayDelays<u32>,
-    output_state_indices: &ArrayGains<u32>,
+    output_state_indices: &ArrayIndicesGains,
     time_index: u32,
 ) {
     todo!();
@@ -109,16 +117,46 @@ fn calculate_derivatives_coefs(
 
 #[cfg(test)]
 mod tests {
+    use bevy::prelude::unwrap;
+    use ndarray::Zip;
+
+    use crate::core::model::shapes::ArrayIndicesGains;
+
     use super::*;
     #[test]
     fn gains_success() {
-        let number_of_states = 12;
+        let number_of_states = 3;
         let mut derivatives_gains = ArrayGains::new(number_of_states);
-        let ap_outputs = ArrayGains::new(number_of_states);
-        let mapped_residuals = ArrayMappedResiduals::new(number_of_states);
-        let output_state_indices = ArrayGains::new(number_of_states);
+        let mut ap_outputs = ArrayGains::new(number_of_states);
+        ap_outputs.values.fill(1.0);
+        ap_outputs.values[(0, 0, 0, 0, 0)] = 2.0;
+        ap_outputs.values[(0, 1, 0, 0, 0)] = 999.0;
+        let mut mapped_residuals = ArrayMappedResiduals::new(number_of_states);
+        mapped_residuals.values[0] = -1.0;
+        mapped_residuals.values[1] = 1.0;
+        mapped_residuals.values[2] = 2.0;
+        let mut output_state_indices = ArrayIndicesGains::new(number_of_states);
+        output_state_indices
+            .values
+            .indexed_iter_mut()
+            .filter(|((_, x_offset, y_offset, z_offset, _), _)| {
+                *x_offset == 0 && *y_offset == 0 && *z_offset == 0
+            })
+            .for_each(|((_, _, _, _, output_direction), value)| {
+                *value = Some(output_direction);
+            });
+        let mut derivatives_gains_exp: ArrayGains<f32> = ArrayGains::new(number_of_states);
+        derivatives_gains_exp.values[(0, 0, 0, 0, 0)] = -2.0;
+        derivatives_gains_exp.values[(0, 0, 0, 0, 1)] = 1.0;
+        derivatives_gains_exp.values[(0, 0, 0, 0, 2)] = 2.0;
 
-        let derivatives_gains_exp: ArrayGains<f32> = ArrayGains::new(number_of_states);
+        derivatives_gains_exp.values[(1, 0, 0, 0, 0)] = -1.0;
+        derivatives_gains_exp.values[(1, 0, 0, 0, 1)] = 1.0;
+        derivatives_gains_exp.values[(1, 0, 0, 0, 2)] = 2.0;
+
+        derivatives_gains_exp.values[(2, 0, 0, 0, 0)] = -1.0;
+        derivatives_gains_exp.values[(2, 0, 0, 0, 1)] = 1.0;
+        derivatives_gains_exp.values[(2, 0, 0, 0, 2)] = 2.0;
 
         calculate_derivatives_gains(
             &mut derivatives_gains,

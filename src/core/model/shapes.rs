@@ -17,6 +17,18 @@ where
     }
 }
 
+pub struct ArrayIndicesGains {
+    pub values: Array5<Option<usize>>,
+}
+
+impl ArrayIndicesGains {
+    pub fn new(number_of_states: usize) -> ArrayIndicesGains {
+        ArrayIndicesGains {
+            values: Array5::from_elem((number_of_states, 3, 3, 3, 3), None),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ArrayDelays<T> {
     pub values: Array4<T>,
