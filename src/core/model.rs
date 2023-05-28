@@ -6,7 +6,7 @@ pub struct APParameters {
     pub gains: ArrayGains<f32>,
     pub output_state_indices: ArrayIndicesGains,
     pub coefs: ArrayDelays<f32>,
-    pub delays: ArrayDelays<u32>,
+    pub delays: ArrayDelays<usize>,
 }
 
 impl APParameters {

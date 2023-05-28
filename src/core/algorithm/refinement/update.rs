@@ -25,7 +25,7 @@ fn update_gains(gains: &mut ArrayGains<f32>, derivatives: &ArrayGains<f32>, lear
 
 fn update_delays(
     ap_coefs: &mut ArrayDelays<f32>,
-    delays: &mut ArrayDelays<u32>,
+    delays: &mut ArrayDelays<usize>,
     derivatives: &ArrayDelays<f32>,
     learning_rate: f32,
 ) {
@@ -73,9 +73,9 @@ mod tests {
     #[test]
     fn update_delays_success() {
         let number_of_states = 12;
-        let mut ap_coefs = ArrayDelays::<f32>::new(number_of_states);
-        let mut delays = ArrayDelays::<u32>::new(number_of_states);
-        let mut derivatives = ArrayDelays::<f32>::new(number_of_states);
+        let mut ap_coefs = ArrayDelays::new(number_of_states);
+        let mut delays = ArrayDelays::new(number_of_states);
+        let mut derivatives = ArrayDelays::new(number_of_states);
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
@@ -86,22 +86,22 @@ mod tests {
 
     #[test]
     fn update_delays_wrap_success() {
-        let mut ap_coefs = ArrayDelays::<f32>::new(3);
+        let mut ap_coefs = ArrayDelays::new(3);
         ap_coefs.values.fill(0.2);
         ap_coefs.values[[0, 0, 0, 0]] = 0.8;
-        let mut delays = ArrayDelays::<u32>::new(3);
+        let mut delays = ArrayDelays::new(3);
         delays.values.fill(3);
         delays.values[[0, 0, 0, 1]] = 2;
-        let mut derivatives = ArrayDelays::<f32>::new(3);
+        let mut derivatives = ArrayDelays::new(3);
         derivatives.values.fill(0.5);
         derivatives.values[[0, 0, 0, 2]] = -0.9;
         let learning_rate = 1.0;
 
-        let mut ap_coefs_exp = ArrayDelays::<f32>::new(3);
+        let mut ap_coefs_exp = ArrayDelays::new(3);
         ap_coefs_exp.values.fill(0.7);
         ap_coefs_exp.values[[0, 0, 0, 0]] = 0.3;
         ap_coefs_exp.values[[0, 0, 0, 2]] = 0.1;
-        let mut delays_exp = ArrayDelays::<u32>::new(3);
+        let mut delays_exp = ArrayDelays::new(3);
         delays_exp.values.fill(4);
         delays_exp.values[[0, 0, 0, 0]] = 3;
         delays_exp.values[[0, 0, 0, 1]] = 3;
@@ -135,11 +135,11 @@ mod tests {
 
         let learning_rate = 1.0;
 
-        let mut ap_coefs_exp = ArrayDelays::<f32>::new(3);
+        let mut ap_coefs_exp = ArrayDelays::new(3);
         ap_coefs_exp.values.fill(0.7);
         ap_coefs_exp.values[[0, 0, 0, 0]] = 0.3;
         ap_coefs_exp.values[[0, 0, 0, 2]] = 0.1;
-        let mut delays_exp = ArrayDelays::<u32>::new(3);
+        let mut delays_exp = ArrayDelays::new(3);
         delays_exp.values.fill(4);
         delays_exp.values[[0, 0, 0, 0]] = 3;
         delays_exp.values[[0, 0, 0, 1]] = 3;

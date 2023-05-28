@@ -32,8 +32,8 @@ impl ArrayMappedResiduals {
 pub struct Derivatives {
     pub gains: ArrayGains<f32>,
     pub coefs: ArrayDelays<f32>,
-    coefs_iir: ArrayDelays<f32>,
-    coefs_fir: ArrayDelays<f32>,
+    coefs_iir: ArrayGains<f32>,
+    coefs_fir: ArrayGains<f32>,
     mapped_residuals: ArrayMappedResiduals,
 }
 
@@ -42,8 +42,8 @@ impl Derivatives {
         Derivatives {
             gains: ArrayGains::new(number_of_states),
             coefs: ArrayDelays::new(number_of_states),
-            coefs_iir: ArrayDelays::new(number_of_states),
-            coefs_fir: ArrayDelays::new(number_of_states),
+            coefs_iir: ArrayGains::new(number_of_states),
+            coefs_fir: ArrayGains::new(number_of_states),
             mapped_residuals: ArrayMappedResiduals::new(number_of_states),
         }
     }
@@ -52,7 +52,7 @@ impl Derivatives {
         &mut self,
         functional_description: &FunctionalDescription,
         estimations: &Estimations,
-        time_index: u32,
+        time_index: usize,
     ) {
         // residuals = ...
         // mapped residuals = ...
@@ -70,6 +70,7 @@ impl Derivatives {
             &self.mapped_residuals,
             &estimations.system_states,
             &functional_description.ap_params.gains,
+            &functional_description.ap_params.coefs,
             &functional_description.ap_params.delays,
             &functional_description.ap_params.output_state_indices,
             time_index,
@@ -100,26 +101,47 @@ fn calculate_derivatives_gains(
 fn calculate_derivatives_coefs(
     // These get updated
     derivatives_coefs: &mut ArrayDelays<f32>,
-    derivatives_coefs_fir: &mut ArrayDelays<f32>,
-    derivatives_coefs_iir: &mut ArrayDelays<f32>,
+    derivatives_coefs_fir: &mut ArrayGains<f32>,
+    derivatives_coefs_iir: &mut ArrayGains<f32>,
     // Based on these values
     ap_outputs: &ArrayGains<f32>,
     mapped_residuals: &ArrayMappedResiduals,
     estimated_system_states: &ArraySystemStates,
     ap_gains: &ArrayGains<f32>,
+    ap_coefs: &ArrayDelays<f32>,
     // These are needed for indexing
-    delays: &ArrayDelays<u32>,
+    delays: &ArrayDelays<usize>,
     output_state_indices: &ArrayIndicesGains,
-    time_index: u32,
+    time_index: usize,
 ) {
-    todo!();
+    derivatives_coefs_fir
+        .values
+        .indexed_iter_mut()
+        .zip(output_state_indices.values.iter())
+        .filter(|(_, output_state_index)| output_state_index.is_some())
+        .for_each(
+            |(((state_index, x_offset, y_offset, z_offset, _), derivative), output_state_index)| {
+                let coef_index = (usize::from(state_index / 3), x_offset, y_offset, z_offset);
+                *derivative = estimated_system_states.values[(
+                    usize::from(time_index - delays.values[coef_index]),
+                    output_state_index.unwrap(),
+                )] + ap_coefs.values[coef_index] * *derivative;
+            },
+        );
+    derivatives_coefs_iir
+        .values
+        .indexed_iter_mut()
+        .zip(ap_outputs.values.iter())
+        .for_each(
+            |(((state_index, x_offset, y_offset, z_offset, _), derivative), ap_output)| {
+                let coef_index = (usize::from(state_index / 3), x_offset, y_offset, z_offset);
+                *derivative = ap_output + ap_coefs.values[coef_index] * *derivative;
+            },
+        );
 }
 
 #[cfg(test)]
 mod tests {
-    use bevy::prelude::unwrap;
-    use ndarray::Zip;
-
     use crate::core::model::shapes::ArrayIndicesGains;
 
     use super::*;
