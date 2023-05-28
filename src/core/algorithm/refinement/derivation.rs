@@ -138,6 +138,23 @@ fn calculate_derivatives_coefs(
                 *derivative = ap_output + ap_coefs.values[coef_index] * *derivative;
             },
         );
+    derivatives_coefs_iir
+        .values
+        .indexed_iter()
+        .zip(derivatives_coefs_fir.values.iter())
+        .zip(ap_gains.values.iter())
+        .zip(output_state_indices.values.iter())
+        .filter(|(_, output_state_index)| output_state_index.is_some())
+        .for_each(
+            |(
+                ((((state_index, x_offset, y_offset, z_offset, _), iir), fir), ap_gain),
+                output_state_index,
+            )| {
+                let coef_index = (usize::from(state_index / 3), x_offset, y_offset, z_offset);
+                derivatives_coefs.values[coef_index] +=
+                    (fir + iir) * ap_gain * mapped_residuals.values[output_state_index.unwrap()];
+            },
+        );
 }
 
 #[cfg(test)]
