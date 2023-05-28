@@ -121,11 +121,13 @@ fn calculate_derivatives_coefs(
         .filter(|(_, output_state_index)| output_state_index.is_some())
         .for_each(
             |(((state_index, x_offset, y_offset, z_offset, _), derivative), output_state_index)| {
-                let coef_index = (usize::from(state_index / 3), x_offset, y_offset, z_offset);
-                *derivative = estimated_system_states.values[(
-                    usize::from(time_index - delays.values[coef_index]),
-                    output_state_index.unwrap(),
-                )] + ap_coefs.values[coef_index] * *derivative;
+                let coef_index = (state_index / 3, x_offset, y_offset, z_offset);
+                if time_index >= delays.values[coef_index] {
+                    *derivative = estimated_system_states.values[(
+                        time_index - delays.values[coef_index],
+                        output_state_index.unwrap(),
+                    )] + ap_coefs.values[coef_index] * *derivative;
+                }
             },
         );
     derivatives_coefs_iir
@@ -211,6 +213,39 @@ mod tests {
             "expected:\n{}\nactual:\n{}",
             derivatives_gains_exp.values,
             derivatives_gains.values
+        )
+    }
+
+    #[test]
+    fn coef_no_crash() {
+        let number_of_steps = 2000;
+        let number_of_states = 3000;
+        let mut derivatives_coefs = ArrayDelays::new(number_of_states);
+        let mut derivatives_coefs_fir = ArrayGains::new(number_of_states);
+        let mut derivatives_coefs_iir = ArrayGains::new(number_of_states);
+        let ap_outputs = ArrayGains::new(number_of_states);
+        let mapped_residuals = ArrayMappedResiduals::new(number_of_states);
+        let estimated_system_states = ArraySystemStates::new(number_of_steps, number_of_states);
+        let ap_gains = ArrayGains::new(number_of_states);
+        let ap_coefs = ArrayDelays::new(number_of_states);
+        let mut delays = ArrayDelays::new(number_of_states);
+        delays.values.fill(30);
+        let mut output_state_indices = ArrayIndicesGains::new(number_of_states);
+        output_state_indices.values.fill(Some(3));
+        let time_index = 10;
+
+        calculate_derivatives_coefs(
+            &mut derivatives_coefs,
+            &mut derivatives_coefs_fir,
+            &mut derivatives_coefs_iir,
+            &ap_outputs,
+            &mapped_residuals,
+            &estimated_system_states,
+            &ap_gains,
+            &ap_coefs,
+            &delays,
+            &output_state_indices,
+            time_index,
         )
     }
 }
