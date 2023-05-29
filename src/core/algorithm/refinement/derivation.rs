@@ -1,7 +1,7 @@
 use ndarray::Array1;
 
 use crate::core::{
-    algorithm::estimation::{ArraySystemStates, Estimations},
+    algorithm::estimation::{shapes::ArraySystemStates, Estimations},
     model::{
         shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains},
         FunctionalDescription,
