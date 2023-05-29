@@ -15,14 +15,14 @@ impl ArraySystemStates {
     }
 }
 
-pub struct ArrayMeasurement {
-    pub values: Array1<f32>,
+pub struct ArrayMeasurements {
+    pub values: Array2<f32>,
 }
 
-impl ArrayMeasurement {
-    pub fn new(number_of_sensors: usize) -> ArrayMeasurement {
-        ArrayMeasurement {
-            values: Array1::zeros(number_of_sensors),
+impl ArrayMeasurements {
+    pub fn new(number_of_steps: usize, number_of_sensors: usize) -> ArrayMeasurements {
+        ArrayMeasurements {
+            values: Array2::zeros((number_of_steps, number_of_sensors)),
         }
     }
 }

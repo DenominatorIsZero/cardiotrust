@@ -57,3 +57,15 @@ impl ArrayMeasMat {
         }
     }
 }
+
+pub struct ArrayKalmanGain {
+    pub values: Array2<f32>,
+}
+
+impl ArrayKalmanGain {
+    pub fn new(number_of_states: usize, number_of_sensors: usize) -> ArrayKalmanGain {
+        ArrayKalmanGain {
+            values: Array2::zeros((number_of_states, number_of_sensors)),
+        }
+    }
+}

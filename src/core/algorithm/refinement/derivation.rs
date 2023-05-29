@@ -1,4 +1,4 @@
-use ndarray::Array1;
+use ndarray::{s, Array1};
 
 use crate::core::{
     algorithm::estimation::{shapes::ArraySystemStates, Estimations},
@@ -58,7 +58,7 @@ impl Derivatives {
             .measurement_matrix
             .values
             .t()
-            .dot(&estimations.residuals.values);
+            .dot(&estimations.residuals.values.slice(s![0, ..]));
         calculate_derivatives_gains(
             &mut self.gains,
             &estimations.ap_outputs,
