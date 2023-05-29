@@ -1,3 +1,5 @@
+use ndarray::s;
+
 use crate::core::model::{
     shapes::{ArrayGains, ArrayKalmanGain},
     FunctionalDescription,
@@ -35,7 +37,12 @@ pub fn calculate_system_prediction(
     control_function_value: f32,
     index_time: usize,
 ) {
-    todo!()
+    measurements.values.slice_mut(s![index_time, ..]).assign(
+        &functional_description
+            .measurement_matrix
+            .values
+            .dot(&system_states.values.slice(s![index_time, ..])),
+    );
 }
 
 pub fn calculate_system_update(
