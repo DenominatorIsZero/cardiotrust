@@ -54,8 +54,11 @@ impl Derivatives {
         estimations: &Estimations,
         time_index: usize,
     ) {
-        // residuals = ...
-        // mapped residuals = ...
+        self.mapped_residuals.values = functional_description
+            .measurement_matrix
+            .values
+            .t()
+            .dot(&estimations.residuals.values);
         calculate_derivatives_gains(
             &mut self.gains,
             &estimations.ap_outputs,
@@ -247,5 +250,20 @@ mod tests {
             &output_state_indices,
             time_index,
         )
+    }
+
+    #[test]
+    fn calculate_no_crash() {
+        let number_of_states = 1500;
+        let number_of_sensors = 300;
+        let number_of_steps = 2000;
+        let time_index = 333;
+
+        let mut derivates = Derivatives::new(number_of_states);
+        let functional_description =
+            FunctionalDescription::new(number_of_states, number_of_sensors);
+        let estimations = Estimations::new(number_of_states, number_of_sensors, number_of_steps);
+
+        derivates.calculate(&functional_description, &estimations, time_index)
     }
 }

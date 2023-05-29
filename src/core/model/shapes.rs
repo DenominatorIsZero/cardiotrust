@@ -1,4 +1,4 @@
-use ndarray::{Array4, Array5};
+use ndarray::{Array2, Array4, Array5};
 use num_traits::identities::Zero;
 
 #[derive(Debug)]
@@ -42,6 +42,18 @@ where
         assert_eq!(number_of_states as f32 % 3.0, 0.0);
         ArrayDelays {
             values: Array4::zeros((number_of_states / 3, 3, 3, 3)),
+        }
+    }
+}
+
+pub struct ArrayMeasMat {
+    pub values: Array2<f32>,
+}
+
+impl ArrayMeasMat {
+    pub fn new(number_of_states: usize, number_of_sensors: usize) -> ArrayMeasMat {
+        ArrayMeasMat {
+            values: Array2::zeros((number_of_sensors, number_of_states)),
         }
     }
 }
