@@ -86,12 +86,12 @@ pub fn calculate_system_prediction(
 
 pub fn calculate_system_update(
     system_states: &mut ArraySystemStates,
-    predicted_measurements: &mut ArrayMeasurements,
-    actual_measurements: &ArrayMeasurements,
+    residuals: &ArrayMeasurements,
     kalman_gain: &ArrayKalmanGain,
     index_time: usize,
 ) {
-    todo!();
+    let mut states = system_states.values.slice_mut(s![index_time, ..]);
+    states.assign(&(&states + kalman_gain.values.dot(&residuals.values.slice(s![0, ..]))));
 }
 
 #[cfg(test)]
@@ -129,16 +129,9 @@ mod tests {
         let index_time = 333;
 
         let mut system_states = ArraySystemStates::new(number_of_steps, number_of_states);
-        let mut predicted_measurements = ArrayMeasurements::new(number_of_steps, number_of_sensors);
-        let actual_measurements = ArrayMeasurements::new(number_of_steps, number_of_sensors);
+        let residuals = ArrayMeasurements::new(1, number_of_sensors);
         let kalman_gain = ArrayKalmanGain::new(number_of_states, number_of_sensors);
 
-        calculate_system_update(
-            &mut system_states,
-            &mut predicted_measurements,
-            &actual_measurements,
-            &kalman_gain,
-            index_time,
-        );
+        calculate_system_update(&mut system_states, &residuals, &kalman_gain, index_time);
     }
 }
