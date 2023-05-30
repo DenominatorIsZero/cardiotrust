@@ -1,4 +1,4 @@
-use ndarray::{Array2, Array4, Array5};
+use ndarray::{Array1, Array2, Array4, Array5};
 use num_traits::identities::Zero;
 
 #[derive(Debug)]
@@ -54,6 +54,18 @@ impl ArrayMeasMat {
     pub fn new(number_of_states: usize, number_of_sensors: usize) -> ArrayMeasMat {
         ArrayMeasMat {
             values: Array2::zeros((number_of_sensors, number_of_states)),
+        }
+    }
+}
+
+pub struct ArrayCtlMat {
+    pub values: Array1<f32>,
+}
+
+impl ArrayCtlMat {
+    pub fn new(number_of_states: usize) -> ArrayCtlMat {
+        ArrayCtlMat {
+            values: Array1::zeros(number_of_states),
         }
     }
 }

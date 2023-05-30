@@ -1,3 +1,5 @@
+pub mod shapes;
+
 use ndarray::s;
 
 use crate::core::model::{
@@ -6,8 +8,6 @@ use crate::core::model::{
 };
 
 use self::shapes::{ArrayMeasurements, ArraySystemStates};
-
-pub mod shapes;
 
 pub struct Estimations {
     pub ap_outputs: ArrayGains<f32>,
@@ -35,13 +35,52 @@ pub fn calculate_system_prediction(
     measurements: &mut ArrayMeasurements,
     functional_description: &FunctionalDescription,
     control_function_value: f32,
-    index_time: usize,
+    time_index: usize,
 ) {
-    measurements.values.slice_mut(s![index_time, ..]).assign(
+    // Calculate ap outputs and system states
+    ap_outputs
+        .values
+        .indexed_iter_mut()
+        .zip(
+            functional_description
+                .ap_params
+                .output_state_indices
+                .values
+                .iter(),
+        )
+        .filter(|(_, output_state_index)| output_state_index.is_some())
+        .for_each(|((gain_index, ap_output), output_state_index)| {
+            let coef_index = (gain_index.0 / 3, gain_index.1, gain_index.2, gain_index.3);
+            let coef = functional_description.ap_params.coefs.values[coef_index];
+            let delay = functional_description.ap_params.delays.values[coef_index];
+            let input = if delay <= time_index {
+                system_states.values[(time_index - delay, output_state_index.unwrap())]
+            } else {
+                0.0
+            };
+            let input_delayed = if delay < time_index {
+                system_states.values[(time_index - delay - 1, output_state_index.unwrap())]
+            } else {
+                0.0
+            };
+            *ap_output = coef * (input - *ap_output) + input_delayed;
+            system_states.values[(time_index, gain_index.0)] += *ap_output;
+        });
+    // Add control function
+    system_states
+        .values
+        .slice_mut(s![time_index, ..])
+        .iter_mut()
+        .zip(functional_description.control_matrix.values.iter())
+        .for_each(|(system_state, coef)| {
+            *system_state += coef * control_function_value;
+        });
+    // Prediction of measurements H * x
+    measurements.values.slice_mut(s![time_index, ..]).assign(
         &functional_description
             .measurement_matrix
             .values
-            .dot(&system_states.values.slice(s![index_time, ..])),
+            .dot(&system_states.values.slice(s![time_index, ..])),
     );
 }
 

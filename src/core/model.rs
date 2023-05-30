@@ -1,6 +1,8 @@
 pub mod shapes;
 
-use self::shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains, ArrayKalmanGain, ArrayMeasMat};
+use self::shapes::{
+    ArrayCtlMat, ArrayDelays, ArrayGains, ArrayIndicesGains, ArrayKalmanGain, ArrayMeasMat,
+};
 
 pub struct APParameters {
     pub gains: ArrayGains<f32>,
@@ -23,6 +25,7 @@ impl APParameters {
 pub struct FunctionalDescription {
     pub ap_params: APParameters,
     pub measurement_matrix: ArrayMeasMat,
+    pub control_matrix: ArrayCtlMat,
     pub kalman_gain: ArrayKalmanGain,
 }
 
@@ -31,6 +34,7 @@ impl FunctionalDescription {
         FunctionalDescription {
             ap_params: APParameters::new(number_of_states),
             measurement_matrix: ArrayMeasMat::new(number_of_states, number_of_sensors),
+            control_matrix: ArrayCtlMat::new(number_of_states),
             kalman_gain: ArrayKalmanGain::new(number_of_states, number_of_sensors),
         }
     }
