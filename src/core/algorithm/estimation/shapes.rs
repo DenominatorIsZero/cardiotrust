@@ -1,4 +1,5 @@
 use ndarray::{Array1, Array2};
+use serde::Deserialize;
 
 /// Shape for the estimated system states
 ///
@@ -15,6 +16,7 @@ impl ArraySystemStates {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ArrayMeasurements {
     pub values: Array2<f32>,
 }

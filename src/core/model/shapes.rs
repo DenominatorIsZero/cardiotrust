@@ -81,3 +81,15 @@ impl ArrayKalmanGain {
         }
     }
 }
+
+pub struct ArrayControlFunction {
+    pub values: Array1<f32>,
+}
+
+impl ArrayControlFunction {
+    pub fn new(number_of_steps: usize) -> ArrayControlFunction {
+        ArrayControlFunction {
+            values: Array1::zeros(number_of_steps),
+        }
+    }
+}

@@ -1,8 +1,5 @@
-use serde::{Deserialize, Serialize};
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+use super::algorithm::metrics::Metrics;
+#[derive(Debug, PartialEq)]
 pub struct Results {
     metrics: Metrics,
 }
-
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-struct Metrics;

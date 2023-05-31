@@ -12,6 +12,7 @@ use self::shapes::{ArrayMeasurements, ArraySystemStates};
 pub struct Estimations {
     pub ap_outputs: ArrayGains<f32>,
     pub system_states: ArraySystemStates,
+    pub measurements: ArrayMeasurements,
     pub residuals: ArrayMeasurements,
 }
 
@@ -24,8 +25,16 @@ impl Estimations {
         Estimations {
             ap_outputs: ArrayGains::new(number_of_states),
             system_states: ArraySystemStates::new(number_of_steps, number_of_states),
+            measurements: ArrayMeasurements::new(number_of_steps, number_of_sensors),
             residuals: ArrayMeasurements::new(1, number_of_sensors),
         }
+    }
+
+    pub fn reset(&mut self) {
+        self.ap_outputs.values.fill(0.0);
+        self.system_states.values.fill(0.0);
+        self.measurements.values.fill(0.0);
+        self.residuals.values.fill(0.0);
     }
 }
 
@@ -34,7 +43,6 @@ pub fn calculate_system_prediction(
     system_states: &mut ArraySystemStates,
     measurements: &mut ArrayMeasurements,
     functional_description: &FunctionalDescription,
-    control_function_value: f32,
     time_index: usize,
 ) {
     // Calculate ap outputs and system states
@@ -67,6 +75,7 @@ pub fn calculate_system_prediction(
             system_states.values[(time_index, gain_index.0)] += *ap_output;
         });
     // Add control function
+    let control_function_value = functional_description.control_function_values.values[time_index];
     system_states
         .values
         .slice_mut(s![time_index, ..])
@@ -84,13 +93,25 @@ pub fn calculate_system_prediction(
     );
 }
 
+pub fn calculate_residuals(
+    residuals: &mut ArrayMeasurements,
+    predicted_measurements: &ArrayMeasurements,
+    actual_measurements: &ArrayMeasurements,
+    time_index: usize,
+) {
+    residuals.values.slice_mut(s![0, ..]).assign(
+        &(&actual_measurements.values.slice(s![time_index, ..])
+            - &predicted_measurements.values.slice(s![time_index, ..])),
+    )
+}
+
 pub fn calculate_system_update(
     system_states: &mut ArraySystemStates,
     residuals: &ArrayMeasurements,
     kalman_gain: &ArrayKalmanGain,
-    index_time: usize,
+    time_index: usize,
 ) {
-    let mut states = system_states.values.slice_mut(s![index_time, ..]);
+    let mut states = system_states.values.slice_mut(s![time_index, ..]);
     states.assign(&(&states + kalman_gain.values.dot(&residuals.values.slice(s![0, ..]))));
 }
 
@@ -102,22 +123,20 @@ mod tests {
         let number_of_states = 3000;
         let number_of_sensors = 300;
         let number_of_steps = 2000;
-        let control_function_value = 5.0;
-        let index_time = 333;
+        let time_index = 333;
 
         let mut ap_outputs = ArrayGains::new(number_of_states);
         let mut system_states = ArraySystemStates::new(number_of_steps, number_of_states);
         let mut measurements = ArrayMeasurements::new(number_of_steps, number_of_sensors);
         let functional_description =
-            FunctionalDescription::new(number_of_states, number_of_sensors);
+            FunctionalDescription::new(number_of_states, number_of_sensors, number_of_steps);
 
         calculate_system_prediction(
             &mut ap_outputs,
             &mut system_states,
             &mut measurements,
             &functional_description,
-            control_function_value,
-            index_time,
+            time_index,
         )
     }
 
@@ -133,5 +152,23 @@ mod tests {
         let kalman_gain = ArrayKalmanGain::new(number_of_states, number_of_sensors);
 
         calculate_system_update(&mut system_states, &residuals, &kalman_gain, index_time);
+    }
+
+    #[test]
+    fn residuals_no_crash() {
+        let number_of_sensors = 300;
+        let number_of_steps = 2000;
+        let time_index = 333;
+
+        let mut residuals = ArrayMeasurements::new(1, number_of_sensors);
+        let predicted_measurements = ArrayMeasurements::new(number_of_steps, number_of_sensors);
+        let actual_measurements = ArrayMeasurements::new(number_of_steps, number_of_sensors);
+
+        calculate_residuals(
+            &mut residuals,
+            &predicted_measurements,
+            &actual_measurements,
+            time_index,
+        )
     }
 }

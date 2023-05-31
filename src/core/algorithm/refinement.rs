@@ -1,2 +1,2 @@
-mod derivation;
-mod update;
+pub mod derivation;
+pub mod update;

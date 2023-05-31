@@ -8,7 +8,7 @@ use crate::core::model::{
 use super::derivation::Derivatives;
 
 impl APParameters {
-    fn update(&mut self, derivatives: &Derivatives, learning_rate: f32) {
+    pub fn update(&mut self, derivatives: &Derivatives, learning_rate: f32) {
         update_gains(&mut self.gains, &derivatives.gains, learning_rate);
         update_delays(
             &mut self.coefs,

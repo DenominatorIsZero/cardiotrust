@@ -12,7 +12,9 @@ pub struct Scenario {
     id: String,
     status: Status,
     config: Config,
+    #[serde(skip_serializing, skip_deserializing)]
     data: Option<Data>,
+    #[serde(skip_serializing, skip_deserializing)]
     results: Option<Results>,
 }
 

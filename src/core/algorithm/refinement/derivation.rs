@@ -7,27 +7,6 @@ use crate::core::{
         FunctionalDescription,
     },
 };
-/// Shape for the mapped residuals.
-///
-/// Has dimensions (number_of_states)
-///
-/// The residuals (measurements) of the state estimation
-/// get mapped onto the system states.
-/// These values are then used for the calcualtion of the derivatives
-///
-/// The mapped residuals are calculated as
-/// H_T * y
-struct ArrayMappedResiduals {
-    pub values: Array1<f32>,
-}
-
-impl ArrayMappedResiduals {
-    pub fn new(number_of_states: usize) -> ArrayMappedResiduals {
-        ArrayMappedResiduals {
-            values: Array1::zeros(number_of_states),
-        }
-    }
-}
 
 pub struct Derivatives {
     pub gains: ArrayGains<f32>,
@@ -48,7 +27,15 @@ impl Derivatives {
         }
     }
 
-    fn calculate(
+    pub fn reset(&mut self) {
+        self.gains.values.fill(0.0);
+        self.coefs.values.fill(0.0);
+        self.coefs_iir.values.fill(0.0);
+        self.coefs_fir.values.fill(0.0);
+        self.mapped_residuals.values.fill(0.0);
+    }
+
+    pub fn calculate(
         &mut self,
         functional_description: &FunctionalDescription,
         estimations: &Estimations,
@@ -78,6 +65,28 @@ impl Derivatives {
             &functional_description.ap_params.output_state_indices,
             time_index,
         );
+    }
+}
+
+/// Shape for the mapped residuals.
+///
+/// Has dimensions (number_of_states)
+///
+/// The residuals (measurements) of the state estimation
+/// get mapped onto the system states.
+/// These values are then used for the calcualtion of the derivatives
+///
+/// The mapped residuals are calculated as
+/// H_T * y
+struct ArrayMappedResiduals {
+    pub values: Array1<f32>,
+}
+
+impl ArrayMappedResiduals {
+    pub fn new(number_of_states: usize) -> ArrayMappedResiduals {
+        ArrayMappedResiduals {
+            values: Array1::zeros(number_of_states),
+        }
     }
 }
 
@@ -261,7 +270,7 @@ mod tests {
 
         let mut derivates = Derivatives::new(number_of_states);
         let functional_description =
-            FunctionalDescription::new(number_of_states, number_of_sensors);
+            FunctionalDescription::new(number_of_states, number_of_sensors, number_of_steps);
         let estimations = Estimations::new(number_of_states, number_of_sensors, number_of_steps);
 
         derivates.calculate(&functional_description, &estimations, time_index)
