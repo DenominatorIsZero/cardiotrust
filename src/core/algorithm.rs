@@ -6,11 +6,13 @@ use self::{
     refinement::derivation::Derivatives,
 };
 
-use super::{data::Data, model::FunctionalDescription};
+use super::{
+    config::algorithm::Algorithm, data::Data, model::FunctionalDescription, results::Results,
+};
 
 pub mod estimation;
 pub mod metrics;
-mod refinement;
+pub mod refinement;
 
 fn run_epoch(
     functional_description: &mut FunctionalDescription,
@@ -53,6 +55,26 @@ fn run_epoch(
         .ap_params
         .update(&derivatives, learning_rate);
     metrics.calculate_epoch(epoch_index);
+}
+
+fn run(
+    functional_description: &mut FunctionalDescription,
+    results: &mut Results,
+    data: &Data,
+    config: &Algorithm,
+) {
+    for epoch_index in 0..config.epochs {
+        run_epoch(
+            functional_description,
+            &mut results.estimations,
+            &mut results.derivatives,
+            &mut results.metrics,
+            data,
+            config.learning_rate,
+            config.apply_system_update,
+            epoch_index,
+        );
+    }
 }
 
 #[cfg(test)]

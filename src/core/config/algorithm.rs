@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Algorithm {
-    pub epochs: u32,
-    pub snapshots_interval: u32,
+    pub epochs: usize,
+    pub snapshots_interval: usize,
     pub learning_rate: f32,
     pub measurement_covariance_mean: f32,
     // the measurement noise covariance matrix will be a diagonal matrix

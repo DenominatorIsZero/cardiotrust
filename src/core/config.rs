@@ -1,4 +1,4 @@
-mod algorithm;
+pub mod algorithm;
 pub mod simulation;
 
 use serde::{Deserialize, Serialize};
