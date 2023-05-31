@@ -110,4 +110,25 @@ mod test {
             epoch_index,
         );
     }
+
+    #[test]
+    fn run_no_crash() {
+        let number_of_states = 3000;
+        let number_of_sensors = 300;
+        let number_of_steps = 3;
+
+        let mut config = Algorithm::default();
+        config.epochs = 3;
+        let mut functional_description =
+            FunctionalDescription::new(number_of_states, number_of_sensors, number_of_steps);
+        let mut results = Results::new(
+            config.epochs,
+            number_of_steps,
+            number_of_sensors,
+            number_of_states,
+        );
+        let data = Data::new(number_of_sensors, number_of_steps);
+
+        run(&mut functional_description, &mut results, &data, &config);
+    }
 }
