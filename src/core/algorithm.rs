@@ -47,12 +47,12 @@ fn run_epoch(
                 time_index,
             )
         }
-        // TODO: Calculate step metrics
+        metrics.calculate_step(&estimations.residuals, time_index, epoch_index);
     }
     functional_description
         .ap_params
         .update(&derivatives, learning_rate);
-    // TODO: Calculate epoch metrics
+    metrics.calculate_epoch(epoch_index);
 }
 
 #[cfg(test)]
