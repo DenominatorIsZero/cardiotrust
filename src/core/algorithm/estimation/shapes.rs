@@ -1,5 +1,4 @@
-use ndarray::{Array1, Array2};
-use serde::Deserialize;
+use ndarray::Array2;
 
 /// Shape for the estimated system states
 ///
