@@ -23,7 +23,7 @@ impl Data {
 
     pub fn new(number_of_sensors: usize, number_of_steps: usize) -> Data {
         Data {
-            simulation: Some(Simulation::new(number_of_sensors, number_of_steps)),
+            simulation: Some(Simulation::empty(number_of_sensors, number_of_steps)),
             measurement: None,
         }
     }
