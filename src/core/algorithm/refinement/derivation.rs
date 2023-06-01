@@ -22,10 +22,10 @@ pub struct Derivatives {
 impl Derivatives {
     pub fn new(number_of_states: usize) -> Derivatives {
         Derivatives {
-            gains: ArrayGains::new(number_of_states),
-            coefs: ArrayDelays::new(number_of_states),
-            coefs_iir: ArrayGains::new(number_of_states),
-            coefs_fir: ArrayGains::new(number_of_states),
+            gains: ArrayGains::empty(number_of_states),
+            coefs: ArrayDelays::empty(number_of_states),
+            coefs_iir: ArrayGains::empty(number_of_states),
+            coefs_fir: ArrayGains::empty(number_of_states),
             mapped_residuals: ArrayMappedResiduals::new(number_of_states),
         }
     }
@@ -183,8 +183,8 @@ mod tests {
     #[test]
     fn gains_success() {
         let number_of_states = 3;
-        let mut derivatives_gains = ArrayGains::new(number_of_states);
-        let mut ap_outputs = ArrayGains::new(number_of_states);
+        let mut derivatives_gains = ArrayGains::empty(number_of_states);
+        let mut ap_outputs = ArrayGains::empty(number_of_states);
         ap_outputs.values.fill(1.0);
         ap_outputs.values[(0, 0, 0, 0, 0)] = 2.0;
         ap_outputs.values[(0, 1, 0, 0, 0)] = 999.0;
@@ -192,7 +192,7 @@ mod tests {
         mapped_residuals.values[0] = -1.0;
         mapped_residuals.values[1] = 1.0;
         mapped_residuals.values[2] = 2.0;
-        let mut output_state_indices = ArrayIndicesGains::new(number_of_states);
+        let mut output_state_indices = ArrayIndicesGains::empty(number_of_states);
         output_state_indices
             .values
             .indexed_iter_mut()
@@ -202,7 +202,7 @@ mod tests {
             .for_each(|((_, _, _, _, output_direction), value)| {
                 *value = Some(output_direction);
             });
-        let mut derivatives_gains_exp: ArrayGains<f32> = ArrayGains::new(number_of_states);
+        let mut derivatives_gains_exp: ArrayGains<f32> = ArrayGains::empty(number_of_states);
         derivatives_gains_exp.values[(0, 0, 0, 0, 0)] = -2.0;
         derivatives_gains_exp.values[(0, 0, 0, 0, 1)] = 1.0;
         derivatives_gains_exp.values[(0, 0, 0, 0, 2)] = 2.0;
@@ -236,17 +236,17 @@ mod tests {
     fn coef_no_crash() {
         let number_of_steps = 2000;
         let number_of_states = 3000;
-        let mut derivatives_coefs = ArrayDelays::new(number_of_states);
-        let mut derivatives_coefs_fir = ArrayGains::new(number_of_states);
-        let mut derivatives_coefs_iir = ArrayGains::new(number_of_states);
-        let ap_outputs = ArrayGains::new(number_of_states);
+        let mut derivatives_coefs = ArrayDelays::empty(number_of_states);
+        let mut derivatives_coefs_fir = ArrayGains::empty(number_of_states);
+        let mut derivatives_coefs_iir = ArrayGains::empty(number_of_states);
+        let ap_outputs = ArrayGains::empty(number_of_states);
         let mapped_residuals = ArrayMappedResiduals::new(number_of_states);
-        let estimated_system_states = ArraySystemStates::new(number_of_steps, number_of_states);
-        let ap_gains = ArrayGains::new(number_of_states);
-        let ap_coefs = ArrayDelays::new(number_of_states);
-        let mut delays = ArrayDelays::new(number_of_states);
+        let estimated_system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
+        let ap_gains = ArrayGains::empty(number_of_states);
+        let ap_coefs = ArrayDelays::empty(number_of_states);
+        let mut delays = ArrayDelays::empty(number_of_states);
         delays.values.fill(30);
-        let mut output_state_indices = ArrayIndicesGains::new(number_of_states);
+        let mut output_state_indices = ArrayIndicesGains::empty(number_of_states);
         output_state_indices.values.fill(Some(3));
         let time_index = 10;
 
@@ -274,7 +274,7 @@ mod tests {
 
         let mut derivates = Derivatives::new(number_of_states);
         let functional_description =
-            FunctionalDescription::new(number_of_states, number_of_sensors, number_of_steps);
+            FunctionalDescription::empty(number_of_states, number_of_sensors, number_of_steps);
         let estimations = Estimations::new(number_of_states, number_of_sensors, number_of_steps);
 
         derivates.calculate(&functional_description, &estimations, time_index)

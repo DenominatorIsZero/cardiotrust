@@ -92,12 +92,12 @@ mod test {
         let epoch_index = 3;
 
         let mut functional_description =
-            FunctionalDescription::new(number_of_states, number_of_sensors, number_of_steps);
+            FunctionalDescription::empty(number_of_states, number_of_sensors, number_of_steps);
         let mut estimations =
             Estimations::new(number_of_states, number_of_sensors, number_of_steps);
         let mut derivatives = Derivatives::new(number_of_states);
         let mut metrics = Metrics::new(number_of_epochs, number_of_steps);
-        let data = Data::new(number_of_sensors, number_of_steps);
+        let data = Data::empty(number_of_sensors, number_of_states, number_of_steps);
 
         run_epoch(
             &mut functional_description,
@@ -120,14 +120,14 @@ mod test {
         let mut config = Algorithm::default();
         config.epochs = 3;
         let mut functional_description =
-            FunctionalDescription::new(number_of_states, number_of_sensors, number_of_steps);
+            FunctionalDescription::empty(number_of_states, number_of_sensors, number_of_steps);
         let mut results = Results::new(
             config.epochs,
             number_of_steps,
             number_of_sensors,
             number_of_states,
         );
-        let data = Data::new(number_of_sensors, number_of_steps);
+        let data = Data::empty(number_of_sensors, number_of_states, number_of_steps);
 
         run(&mut functional_description, &mut results, &data, &config);
     }

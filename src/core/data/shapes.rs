@@ -9,7 +9,7 @@ pub struct ArraySystemStates {
 }
 
 impl ArraySystemStates {
-    pub fn new(number_of_steps: usize, number_of_states: usize) -> ArraySystemStates {
+    pub fn empty(number_of_steps: usize, number_of_states: usize) -> ArraySystemStates {
         ArraySystemStates {
             values: Array2::zeros((number_of_steps, number_of_states)),
         }
@@ -22,7 +22,7 @@ pub struct ArrayMeasurements {
 }
 
 impl ArrayMeasurements {
-    pub fn new(number_of_steps: usize, number_of_sensors: usize) -> ArrayMeasurements {
+    pub fn empty(number_of_steps: usize, number_of_sensors: usize) -> ArrayMeasurements {
         ArrayMeasurements {
             values: Array2::zeros((number_of_steps, number_of_sensors)),
         }

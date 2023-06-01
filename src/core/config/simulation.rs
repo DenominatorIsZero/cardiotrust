@@ -8,7 +8,7 @@ pub struct Simulation {
     pub duration_s: f32,
     pub control_function: ControlFunction,
     pub model: ModelPreset,
-    pub sensors_per_axis: [u32; 3],
+    pub sensors_per_axis: [usize; 3],
     pub measurement_covariance_mean: f32,
     // the measurement noise covariance matrix will be a diagonal matrix
     // if std is set to zero, every value will be set to mean

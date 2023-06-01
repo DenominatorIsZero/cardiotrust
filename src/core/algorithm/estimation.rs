@@ -23,10 +23,10 @@ impl Estimations {
         number_of_steps: usize,
     ) -> Estimations {
         Estimations {
-            ap_outputs: ArrayGains::new(number_of_states),
-            system_states: ArraySystemStates::new(number_of_steps, number_of_states),
-            measurements: ArrayMeasurements::new(number_of_steps, number_of_sensors),
-            residuals: ArrayMeasurements::new(1, number_of_sensors),
+            ap_outputs: ArrayGains::empty(number_of_states),
+            system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
+            measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
+            residuals: ArrayMeasurements::empty(1, number_of_sensors),
         }
     }
 
@@ -125,11 +125,11 @@ mod tests {
         let number_of_steps = 2000;
         let time_index = 333;
 
-        let mut ap_outputs = ArrayGains::new(number_of_states);
-        let mut system_states = ArraySystemStates::new(number_of_steps, number_of_states);
-        let mut measurements = ArrayMeasurements::new(number_of_steps, number_of_sensors);
+        let mut ap_outputs = ArrayGains::empty(number_of_states);
+        let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
+        let mut measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
         let functional_description =
-            FunctionalDescription::new(number_of_states, number_of_sensors, number_of_steps);
+            FunctionalDescription::empty(number_of_states, number_of_sensors, number_of_steps);
 
         calculate_system_prediction(
             &mut ap_outputs,
@@ -147,9 +147,9 @@ mod tests {
         let number_of_steps = 2000;
         let index_time = 333;
 
-        let mut system_states = ArraySystemStates::new(number_of_steps, number_of_states);
-        let residuals = ArrayMeasurements::new(1, number_of_sensors);
-        let kalman_gain = ArrayKalmanGain::new(number_of_states, number_of_sensors);
+        let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
+        let residuals = ArrayMeasurements::empty(1, number_of_sensors);
+        let kalman_gain = ArrayKalmanGain::empty(number_of_states, number_of_sensors);
 
         calculate_system_update(&mut system_states, &residuals, &kalman_gain, index_time);
     }
@@ -160,9 +160,9 @@ mod tests {
         let number_of_steps = 2000;
         let time_index = 333;
 
-        let mut residuals = ArrayMeasurements::new(1, number_of_sensors);
-        let predicted_measurements = ArrayMeasurements::new(number_of_steps, number_of_sensors);
-        let actual_measurements = ArrayMeasurements::new(number_of_steps, number_of_sensors);
+        let mut residuals = ArrayMeasurements::empty(1, number_of_sensors);
+        let predicted_measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
+        let actual_measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
 
         calculate_residuals(
             &mut residuals,

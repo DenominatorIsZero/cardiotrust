@@ -13,19 +13,20 @@ impl<T> ArrayGains<T>
 where
     T: Clone + Zero + PartialEq,
 {
-    pub fn new(number_of_states: usize) -> ArrayGains<T> {
+    pub fn empty(number_of_states: usize) -> ArrayGains<T> {
         ArrayGains {
             values: Array5::zeros((number_of_states, 3, 3, 3, 3)),
         }
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ArrayIndicesGains {
     pub values: Array5<Option<usize>>,
 }
 
 impl ArrayIndicesGains {
-    pub fn new(number_of_states: usize) -> ArrayIndicesGains {
+    pub fn empty(number_of_states: usize) -> ArrayIndicesGains {
         ArrayIndicesGains {
             values: Array5::from_elem((number_of_states, 3, 3, 3, 3), None),
         }
@@ -44,7 +45,7 @@ impl<T> ArrayDelays<T>
 where
     T: Clone + Zero + PartialEq,
 {
-    pub fn new(number_of_states: usize) -> ArrayDelays<T> {
+    pub fn empty(number_of_states: usize) -> ArrayDelays<T> {
         assert_eq!(number_of_states as f32 % 3.0, 0.0);
         ArrayDelays {
             values: Array4::zeros((number_of_states / 3, 3, 3, 3)),
@@ -52,48 +53,52 @@ where
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ArrayMeasMat {
     pub values: Array2<f32>,
 }
 
 impl ArrayMeasMat {
-    pub fn new(number_of_states: usize, number_of_sensors: usize) -> ArrayMeasMat {
+    pub fn empty(number_of_states: usize, number_of_sensors: usize) -> ArrayMeasMat {
         ArrayMeasMat {
             values: Array2::zeros((number_of_sensors, number_of_states)),
         }
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ArrayCtlMat {
     pub values: Array1<f32>,
 }
 
 impl ArrayCtlMat {
-    pub fn new(number_of_states: usize) -> ArrayCtlMat {
+    pub fn empty(number_of_states: usize) -> ArrayCtlMat {
         ArrayCtlMat {
             values: Array1::zeros(number_of_states),
         }
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ArrayKalmanGain {
     pub values: Array2<f32>,
 }
 
 impl ArrayKalmanGain {
-    pub fn new(number_of_states: usize, number_of_sensors: usize) -> ArrayKalmanGain {
+    pub fn empty(number_of_states: usize, number_of_sensors: usize) -> ArrayKalmanGain {
         ArrayKalmanGain {
             values: Array2::zeros((number_of_states, number_of_sensors)),
         }
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct ArrayControlFunction {
     pub values: Array1<f32>,
 }
 
 impl ArrayControlFunction {
-    pub fn new(number_of_steps: usize) -> ArrayControlFunction {
+    pub fn empty(number_of_steps: usize) -> ArrayControlFunction {
         ArrayControlFunction {
             values: Array1::zeros(number_of_steps),
         }
