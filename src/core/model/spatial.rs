@@ -28,11 +28,15 @@ impl SpatialDescription {
     }
 
     pub fn get_number_of_states(&self) -> usize {
-        todo!();
+        self.voxel_types
+            .iter()
+            .filter(|voxel| **voxel != VoxelType::None)
+            .count()
+            * 3
     }
 
     pub fn get_number_of_sensors(&self) -> usize {
-        todo!();
+        self.sensor_positions.shape()[0]
     }
 }
 
@@ -60,12 +64,22 @@ mod tests {
     }
 
     #[test]
-    fn number_of_states() {
+    fn number_of_states_none() {
         let number_of_sensors = 300;
         let number_of_states = 3000;
         let spatial_description = SpatialDescription::empty(number_of_sensors, number_of_states);
 
-        assert_eq!(number_of_states, spatial_description.get_number_of_states());
+        assert_eq!(0, spatial_description.get_number_of_states());
+    }
+
+    fn number_of_states_some() {
+        let number_of_sensors = 300;
+        let number_of_states = 3000;
+        let mut spatial_description =
+            SpatialDescription::empty(number_of_sensors, number_of_states);
+        spatial_description.voxel_types[0] = VoxelType::Atrioventricular;
+
+        assert_eq!(3, spatial_description.get_number_of_states());
     }
 
     #[test]
