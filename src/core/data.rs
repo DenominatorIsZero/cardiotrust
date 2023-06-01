@@ -1,4 +1,12 @@
-use super::algorithm::estimation::shapes::ArrayMeasurements;
+pub mod measurement;
+pub mod shapes;
+pub mod simulation;
+
+use self::measurement::Measurement;
+use self::simulation::Simulation;
+
+use crate::core::data::shapes::ArrayMeasurements;
+
 #[derive(Debug, PartialEq)]
 pub struct Data {
     simulation: Option<Simulation>,
@@ -19,21 +27,4 @@ impl Data {
             measurement: None,
         }
     }
-}
-
-#[derive(Debug, PartialEq)]
-struct Simulation {
-    pub measurements: ArrayMeasurements,
-}
-impl Simulation {
-    fn new(number_of_sensors: usize, number_of_steps: usize) -> Simulation {
-        Simulation {
-            measurements: ArrayMeasurements::new(number_of_steps, number_of_sensors),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-struct Measurement {
-    pub measurements: ArrayMeasurements,
 }

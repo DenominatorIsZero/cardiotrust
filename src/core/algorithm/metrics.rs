@@ -1,6 +1,6 @@
 use ndarray::{s, Array1};
 
-use super::estimation::shapes::ArrayMeasurements;
+use crate::core::data::shapes::ArrayMeasurements;
 
 #[derive(Debug, PartialEq)]
 pub struct Metrics {

@@ -1,12 +1,14 @@
 use ndarray::{s, Array1};
 
 use crate::core::{
-    algorithm::estimation::{shapes::ArraySystemStates, Estimations},
+    algorithm::estimation::Estimations,
     model::{
         shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains},
         FunctionalDescription,
     },
 };
+
+use crate::core::data::shapes::ArraySystemStates;
 
 #[derive(Debug, PartialEq)]
 pub struct Derivatives {
