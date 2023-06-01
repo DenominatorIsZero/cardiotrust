@@ -3,8 +3,8 @@ use ndarray::{s, Array1};
 use crate::core::{
     algorithm::estimation::Estimations,
     model::{
+        functional::FunctionalDescription,
         shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains},
-        FunctionalDescription,
     },
 };
 

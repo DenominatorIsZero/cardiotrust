@@ -3,8 +3,8 @@ pub mod shapes;
 use ndarray::s;
 
 use crate::core::model::{
+    functional::FunctionalDescription,
     shapes::{ArrayGains, ArrayKalmanGain},
-    FunctionalDescription,
 };
 
 use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};

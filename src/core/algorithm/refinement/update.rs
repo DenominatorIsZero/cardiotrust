@@ -1,8 +1,8 @@
 use bevy::prelude::warn;
 
 use crate::core::model::{
+    functional::APParameters,
     shapes::{ArrayDelays, ArrayGains},
-    APParameters,
 };
 
 use super::derivation::Derivatives;

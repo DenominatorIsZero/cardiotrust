@@ -7,7 +7,8 @@ use self::{
 };
 
 use super::{
-    config::algorithm::Algorithm, data::Data, model::FunctionalDescription, results::Results,
+    config::algorithm::Algorithm, data::Data, model::functional::FunctionalDescription,
+    results::Results,
 };
 
 pub mod estimation;
