@@ -4,11 +4,7 @@ pub mod voxels;
 
 use crate::core::config::simulation::Simulation;
 
-use self::{
-    heart::Heart,
-    sensors::Sensors,
-    voxels::{Voxels},
-};
+use self::{heart::Heart, sensors::Sensors, voxels::Voxels};
 
 #[derive(Debug, PartialEq)]
 pub struct SpatialDescription {
@@ -41,8 +37,6 @@ impl SpatialDescription {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::model::spatial::voxels::VoxelType;
-
     use super::*;
 
     #[test]

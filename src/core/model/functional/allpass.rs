@@ -1,3 +1,5 @@
+use crate::core::{config::simulation::Simulation, model::spatial::SpatialDescription};
+
 use self::shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains};
 
 pub mod shapes;
@@ -18,5 +20,12 @@ impl APParameters {
             coefs: ArrayDelays::empty(number_of_states),
             delays: ArrayDelays::empty(number_of_states),
         }
+    }
+
+    pub fn from_simulation_config(
+        config: &Simulation,
+        spatial_description: &SpatialDescription,
+    ) -> APParameters {
+        todo!()
     }
 }

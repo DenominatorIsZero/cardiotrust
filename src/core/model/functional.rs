@@ -37,10 +37,23 @@ impl FunctionalDescription {
         }
     }
     pub fn from_simulation_config(
-        _config: &Simulation,
-        _spatial_description: &SpatialDescription,
+        config: &Simulation,
+        spatial_description: &SpatialDescription,
     ) -> FunctionalDescription {
-        todo!();
+        let ap_params = APParameters::from_simulation_config(config, spatial_description);
+        let measurement_matrix =
+            MeasurementMatrix::from_simulation_config(config, spatial_description);
+        let control_matrix = ControlMatrix::from_simulation_config(config, spatial_description);
+        let kalman_gain = KalmanGain::from_simulation_config(config, &measurement_matrix);
+        let control_function_values = ControlFunction::from_simulation_config(config);
+
+        FunctionalDescription {
+            ap_params,
+            measurement_matrix,
+            control_matrix,
+            kalman_gain,
+            control_function_values,
+        }
     }
 }
 
