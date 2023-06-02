@@ -2,9 +2,9 @@ pub mod shapes;
 
 use ndarray::s;
 
+use crate::core::model::functional::kalman::KalmanGain;
 use crate::core::model::{
-    functional::FunctionalDescription,
-    shapes::{ArrayGains, ArrayKalmanGain},
+    functional::allpass::shapes::ArrayGains, functional::FunctionalDescription,
 };
 
 use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
@@ -108,7 +108,7 @@ pub fn calculate_residuals(
 pub fn calculate_system_update(
     system_states: &mut ArraySystemStates,
     residuals: &ArrayMeasurements,
-    kalman_gain: &ArrayKalmanGain,
+    kalman_gain: &KalmanGain,
     time_index: usize,
 ) {
     let mut states = system_states.values.slice_mut(s![time_index, ..]);
@@ -149,7 +149,7 @@ mod tests {
 
         let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
         let residuals = ArrayMeasurements::empty(1, number_of_sensors);
-        let kalman_gain = ArrayKalmanGain::empty(number_of_states, number_of_sensors);
+        let kalman_gain = KalmanGain::empty(number_of_states, number_of_sensors);
 
         calculate_system_update(&mut system_states, &residuals, &kalman_gain, index_time);
     }

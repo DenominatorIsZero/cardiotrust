@@ -2,9 +2,9 @@ use ndarray::{s, Array1};
 
 use crate::core::{
     algorithm::estimation::Estimations,
-    model::{
-        functional::FunctionalDescription,
-        shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains},
+    model::functional::{
+        allpass::shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains},
+        FunctionalDescription,
     },
 };
 
@@ -177,7 +177,7 @@ fn calculate_derivatives_coefs(
 
 #[cfg(test)]
 mod tests {
-    use crate::core::model::shapes::ArrayIndicesGains;
+    use crate::core::model::functional::allpass::shapes::ArrayIndicesGains;
 
     use super::*;
     #[test]

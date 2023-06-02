@@ -1,5 +1,4 @@
 pub mod functional;
-pub mod shapes;
 pub mod spatial;
 
 use self::{functional::FunctionalDescription, spatial::SpatialDescription};
