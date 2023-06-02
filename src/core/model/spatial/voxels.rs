@@ -1,7 +1,7 @@
 use approx::relative_eq;
 use ndarray::Array3;
 
-use crate::core::config::{model::Model, simulation::Simulation, ModelPreset};
+use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq)]
 pub struct Voxels {

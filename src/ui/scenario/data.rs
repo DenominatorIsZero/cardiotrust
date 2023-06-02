@@ -2,7 +2,7 @@ use egui::Align;
 use egui_extras::{Column, TableBuilder};
 
 use crate::core::{
-    config::{model::ControlFunction, ModelPreset},
+    config::model::ControlFunction,
     scenario::{Scenario, Status},
 };
 
@@ -98,7 +98,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                         });
                         // Pathological
-                        let model_preset = &mut simulation.model;
+                        let _model_preset = &mut simulation.model;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Pathological");

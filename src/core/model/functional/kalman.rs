@@ -1,6 +1,6 @@
 use ndarray::Array2;
 
-use crate::core::config::{model::Model, simulation::Simulation};
+use crate::core::config::model::Model;
 
 use super::measurement::MeasurementMatrix;
 
@@ -16,7 +16,10 @@ impl KalmanGain {
         }
     }
 
-    pub fn from_model_config(config: &Model, measurement_matrix: &MeasurementMatrix) -> KalmanGain {
+    pub fn from_model_config(
+        _config: &Model,
+        _measurement_matrix: &MeasurementMatrix,
+    ) -> KalmanGain {
         todo!()
     }
 }

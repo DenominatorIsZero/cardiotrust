@@ -2,7 +2,7 @@ pub mod heart;
 pub mod sensors;
 pub mod voxels;
 
-use crate::core::config::{model::Model, simulation::Simulation};
+use crate::core::config::model::Model;
 
 use self::{heart::Heart, sensors::Sensors, voxels::Voxels};
 

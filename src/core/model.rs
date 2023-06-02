@@ -3,7 +3,7 @@ pub mod spatial;
 
 use self::{functional::FunctionalDescription, spatial::SpatialDescription};
 
-use super::config::{model::Model as ModelConfig, simulation::Simulation};
+use super::config::model::Model as ModelConfig;
 
 #[derive(Debug, PartialEq)]
 pub struct Model {

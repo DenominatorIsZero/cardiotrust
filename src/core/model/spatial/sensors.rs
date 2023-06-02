@@ -2,7 +2,7 @@ use core::panic;
 
 use ndarray::{arr1, s, Array2};
 
-use crate::core::config::{model::Model, simulation::Simulation};
+use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq)]
 pub struct Sensors {

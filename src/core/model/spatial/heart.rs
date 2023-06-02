@@ -1,6 +1,6 @@
 use ndarray::{arr1, Array1};
 
-use crate::core::config::{model::Model, simulation::Simulation};
+use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq)]
 pub struct Heart {

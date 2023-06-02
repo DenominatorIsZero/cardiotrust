@@ -11,7 +11,7 @@ use self::{
 };
 
 use super::spatial::SpatialDescription;
-use crate::core::config::{model::Model, simulation::Simulation};
+use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq)]
 pub struct FunctionalDescription {
