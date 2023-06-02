@@ -17,7 +17,7 @@ pub struct SpatialDescription {
 impl SpatialDescription {
     pub fn empty(
         number_of_sensors: usize,
-        number_of_states: usize,
+        _number_of_states: usize,
         voxels_in_dims: [usize; 3],
     ) -> SpatialDescription {
         SpatialDescription {
@@ -31,7 +31,7 @@ impl SpatialDescription {
     }
 
     pub fn from_simulation_config(config: &Simulation) -> SpatialDescription {
-        let voxel_types = VoxelTypes::from_simulation_config(config);
+        let _voxel_types = VoxelTypes::from_simulation_config(config);
         todo!();
     }
 

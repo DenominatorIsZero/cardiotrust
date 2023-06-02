@@ -50,8 +50,8 @@ impl FunctionalDescription {
         }
     }
     pub fn from_simulation_config(
-        config: &Simulation,
-        spatial_description: &SpatialDescription,
+        _config: &Simulation,
+        _spatial_description: &SpatialDescription,
     ) -> FunctionalDescription {
         todo!();
     }
