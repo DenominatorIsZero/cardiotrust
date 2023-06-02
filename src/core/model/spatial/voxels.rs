@@ -3,16 +3,26 @@ use ndarray::Array3;
 
 use crate::core::config::simulation::Simulation;
 
-#[derive(Default, Debug, PartialEq)]
-pub enum VoxelType {
-    #[default]
-    None,
-    Sinoatrial,
-    Atrium,
-    Atrioventricular,
-    HPS,
-    Ventricle,
-    Pathological,
+#[derive(Debug, PartialEq)]
+pub struct Voxels {
+    size_mm: f32,
+    types: VoxelTypes,
+}
+
+impl Voxels {
+    pub fn empty(voxels_in_dims: [usize; 3]) -> Voxels {
+        Voxels {
+            size_mm: 0.0,
+            types: VoxelTypes::empty(voxels_in_dims),
+        }
+    }
+
+    pub fn from_simulation_config(config: &Simulation) -> Voxels {
+        Voxels {
+            size_mm: config.voxel_size_mm,
+            types: VoxelTypes::from_simulation_config(config),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -130,4 +140,16 @@ fn get_voxel_position_mm(voxel_size_mm: f32, x: usize, y: usize, z: usize) -> [f
         voxel_size_mm * y as f32 + offset,
         voxel_size_mm * z as f32 + offset,
     ]
+}
+
+#[derive(Default, Debug, PartialEq)]
+pub enum VoxelType {
+    #[default]
+    None,
+    Sinoatrial,
+    Atrium,
+    Atrioventricular,
+    HPS,
+    Ventricle,
+    Pathological,
 }

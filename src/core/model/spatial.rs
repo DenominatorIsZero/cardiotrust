@@ -1,38 +1,37 @@
+pub mod heart;
+pub mod sensors;
 pub mod voxels;
+
 use crate::core::config::simulation::Simulation;
-use ndarray::Array2;
 
 use self::voxels::{VoxelType, VoxelTypes};
 
 #[derive(Debug, PartialEq)]
 pub struct SpatialDescription {
-    pub voxel_size_mm: f32,
-    pub heart_size_mm: [f32; 3],
-    pub heart_origin_mm: [f32; 3],
-    pub voxel_types: VoxelTypes,
-    pub sensor_positions: Array2<f32>,
-    pub sensors_orientations: Array2<f32>,
+    pub heart: Heart,
+    pub voxels: Voxels,
+    pub sensors: Sensors,
 }
 
 impl SpatialDescription {
-    pub fn empty(
-        number_of_sensors: usize,
-        _number_of_states: usize,
-        voxels_in_dims: [usize; 3],
-    ) -> SpatialDescription {
+    pub fn empty(number_of_sensors: usize, voxels_in_dims: [usize; 3]) -> SpatialDescription {
         SpatialDescription {
-            voxel_size_mm: 0.0,
-            heart_size_mm: [0.0, 0.0, 0.0],
-            heart_origin_mm: [0.0, 0.0, 0.0],
-            voxel_types: VoxelTypes::empty(voxels_in_dims),
-            sensor_positions: Array2::zeros((number_of_sensors, 3)),
-            sensors_orientations: Array2::zeros((number_of_sensors, 3)),
+            heart: Heart::new(),
+            voxels: Voxels::empty(voxels_in_dims),
+            sensors: Sensors::empty(number_of_sensors),
         }
     }
 
     pub fn from_simulation_config(config: &Simulation) -> SpatialDescription {
-        let _voxel_types = VoxelTypes::from_simulation_config(config);
-        todo!();
+        let heart = Heart::from_simulation_config(config);
+        let voxels = Voxels::from_simulation_config(config);
+        let sensors = Sensors::from_simulation_config(config);
+
+        SpatialDescription {
+            heart,
+            voxels,
+            sensors,
+        }
     }
 
     pub fn get_number_of_states(&self) -> usize {
