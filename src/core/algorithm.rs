@@ -72,7 +72,7 @@ fn run(
             &mut results.metrics,
             data,
             config.learning_rate,
-            config.apply_system_update,
+            config.model.apply_system_update,
             epoch_index,
         );
     }

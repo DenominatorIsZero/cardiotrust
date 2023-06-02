@@ -11,7 +11,7 @@ use self::{
 };
 
 use super::spatial::SpatialDescription;
-use crate::core::config::simulation::Simulation;
+use crate::core::config::{model::Model, simulation::Simulation};
 
 #[derive(Debug, PartialEq)]
 pub struct FunctionalDescription {
@@ -36,16 +36,15 @@ impl FunctionalDescription {
             control_function_values: ControlFunction::empty(number_of_steps),
         }
     }
-    pub fn from_simulation_config(
-        config: &Simulation,
+    pub fn from_model_config(
+        config: &Model,
         spatial_description: &SpatialDescription,
     ) -> FunctionalDescription {
-        let ap_params = APParameters::from_simulation_config(config, spatial_description);
-        let measurement_matrix =
-            MeasurementMatrix::from_simulation_config(config, spatial_description);
-        let control_matrix = ControlMatrix::from_simulation_config(config, spatial_description);
-        let kalman_gain = KalmanGain::from_simulation_config(config, &measurement_matrix);
-        let control_function_values = ControlFunction::from_simulation_config(config);
+        let ap_params = APParameters::from_model_config(config, spatial_description);
+        let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);
+        let control_matrix = ControlMatrix::from_model_config(config, spatial_description);
+        let kalman_gain = KalmanGain::from_model_config(config, &measurement_matrix);
+        let control_function_values = ControlFunction::from_model_config(config);
 
         FunctionalDescription {
             ap_params,
@@ -59,6 +58,8 @@ impl FunctionalDescription {
 
 #[cfg(test)]
 mod tests {
+    use crate::core::config::model::Model;
+
     use super::*;
 
     #[test]
@@ -79,10 +80,10 @@ mod tests {
     }
 
     #[test]
-    fn from_simulation_config_no_crash() {
-        let config = Simulation::default();
-        let spatial_description = SpatialDescription::from_simulation_config(&config);
+    fn from_model_config_no_crash() {
+        let config = Model::default();
+        let spatial_description = SpatialDescription::from_model_config(&config);
         let _functional_description =
-            FunctionalDescription::from_simulation_config(&config, &spatial_description);
+            FunctionalDescription::from_model_config(&config, &spatial_description);
     }
 }

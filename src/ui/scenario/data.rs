@@ -2,7 +2,7 @@ use egui::Align;
 use egui_extras::{Column, TableBuilder};
 
 use crate::core::{
-    config::{simulation::ControlFunction, ModelPreset},
+    config::{model::ControlFunction, ModelPreset},
     scenario::{Scenario, Status},
 };
 
@@ -69,7 +69,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                         });
                         // Control function
-                        let control_function = &mut simulation.control_function;
+                        let control_function = &mut simulation.model.control_function;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Contorl function");
@@ -97,34 +97,23 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                                 );
                             });
                         });
-                        // Model preset
+                        // Pathological
                         let model_preset = &mut simulation.model;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
-                                ui.label("Model preset");
+                                ui.label("Pathological");
                             });
                             row.col(|ui| {
-                                egui::ComboBox::new("cb_model_preset", "")
-                                    .selected_text(format!("{:?}", model_preset))
-                                    .show_ui(ui, |ui| {
-                                        ui.selectable_value(
-                                            model_preset,
-                                            ModelPreset::Healthy,
-                                            "Healthy",
-                                        );
-                                        ui.selectable_value(
-                                            model_preset,
-                                            ModelPreset::Pathological,
-                                            "Scarred",
-                                        );
-                                    });
+                                ui.checkbox(&mut simulation.model.pathological, "");
                             });
                             row.col(|ui| {
-                                ui.label("The model preset to be used for the simulation.");
+                                ui.label(
+                                    "Whether or not to place pathological tissue in the model.",
+                                );
                             });
                         });
                         // Sensors per axis
-                        let sensors_per_axis = &mut simulation.sensors_per_axis;
+                        let sensors_per_axis = &mut simulation.model.sensors_per_axis;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Sensors per axis");
@@ -157,7 +146,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             row.col(|ui| {
                                 ui.add(
                                     egui::Slider::new(
-                                        &mut simulation.measurement_covariance_mean,
+                                        &mut simulation.model.measurement_covariance_mean,
                                         1e-30..=1e-10,
                                     )
                                     .logarithmic(true)
@@ -178,7 +167,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                             row.col(|ui| {
                                 ui.add(egui::Slider::new(
-                                    &mut simulation.measurement_covariance_std,
+                                    &mut simulation.model.measurement_covariance_std,
                                     0.0..=1.0,
                                 ));
                             });

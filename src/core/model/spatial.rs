@@ -2,7 +2,7 @@ pub mod heart;
 pub mod sensors;
 pub mod voxels;
 
-use crate::core::config::simulation::Simulation;
+use crate::core::config::{model::Model, simulation::Simulation};
 
 use self::{heart::Heart, sensors::Sensors, voxels::Voxels};
 
@@ -22,10 +22,10 @@ impl SpatialDescription {
         }
     }
 
-    pub fn from_simulation_config(config: &Simulation) -> SpatialDescription {
-        let heart = Heart::from_simulation_config(config);
-        let voxels = Voxels::from_simulation_config(config);
-        let sensors = Sensors::from_simulation_config(config);
+    pub fn from_model_config(config: &Model) -> SpatialDescription {
+        let heart = Heart::from_model_config(config);
+        let voxels = Voxels::from_model_config(config);
+        let sensors = Sensors::from_model_config(config);
 
         SpatialDescription {
             heart,
@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn from_simulation_config_no_crash() {
-        let config = Simulation::default();
-        let _spatial_description = SpatialDescription::from_simulation_config(&config);
+        let config = Model::default();
+        let _spatial_description = SpatialDescription::from_model_config(&config);
     }
 }

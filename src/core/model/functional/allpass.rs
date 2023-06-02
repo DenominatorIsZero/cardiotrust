@@ -1,4 +1,7 @@
-use crate::core::{config::simulation::Simulation, model::spatial::SpatialDescription};
+use crate::core::{
+    config::{model::Model, simulation::Simulation},
+    model::spatial::SpatialDescription,
+};
 
 use self::shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains};
 
@@ -22,8 +25,8 @@ impl APParameters {
         }
     }
 
-    pub fn from_simulation_config(
-        config: &Simulation,
+    pub fn from_model_config(
+        config: &Model,
         spatial_description: &SpatialDescription,
     ) -> APParameters {
         todo!()

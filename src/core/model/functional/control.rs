@@ -1,6 +1,9 @@
 use ndarray::Array1;
 
-use crate::core::{config::simulation::Simulation, model::spatial::SpatialDescription};
+use crate::core::{
+    config::{model::Model, simulation::Simulation},
+    model::spatial::SpatialDescription,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct ControlMatrix {
@@ -14,8 +17,8 @@ impl ControlMatrix {
         }
     }
 
-    pub fn from_simulation_config(
-        config: &Simulation,
+    pub fn from_model_config(
+        config: &Model,
         spatial_description: &SpatialDescription,
     ) -> ControlMatrix {
         todo!()
@@ -34,7 +37,7 @@ impl ControlFunction {
         }
     }
 
-    pub fn from_simulation_config(config: &Simulation) -> ControlFunction {
+    pub fn from_model_config(config: &Model) -> ControlFunction {
         todo!()
     }
 }

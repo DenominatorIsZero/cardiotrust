@@ -1,6 +1,6 @@
 use ndarray::{arr1, Array1};
 
-use crate::core::config::simulation::Simulation;
+use crate::core::config::{model::Model, simulation::Simulation};
 
 #[derive(Debug, PartialEq)]
 pub struct Heart {
@@ -16,7 +16,7 @@ impl Heart {
         }
     }
 
-    pub fn from_simulation_config(config: &Simulation) -> Heart {
+    pub fn from_model_config(config: &Model) -> Heart {
         Heart {
             origin_mm: arr1(&config.heart_origin_mm),
             size_mm: arr1(&config.heart_size_mm),

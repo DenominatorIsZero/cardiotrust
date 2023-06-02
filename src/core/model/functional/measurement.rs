@@ -1,6 +1,9 @@
 use ndarray::Array2;
 
-use crate::core::{config::simulation::Simulation, model::spatial::SpatialDescription};
+use crate::core::{
+    config::{model::Model, simulation::Simulation},
+    model::spatial::SpatialDescription,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct MeasurementMatrix {
@@ -14,8 +17,8 @@ impl MeasurementMatrix {
         }
     }
 
-    pub(crate) fn from_simulation_config(
-        config: &Simulation,
+    pub(crate) fn from_model_config(
+        config: &Model,
         spatial_description: &SpatialDescription,
     ) -> MeasurementMatrix {
         todo!()

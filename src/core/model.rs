@@ -3,7 +3,7 @@ pub mod spatial;
 
 use self::{functional::FunctionalDescription, spatial::SpatialDescription};
 
-use super::config::simulation::Simulation;
+use super::config::{model::Model as ModelConfig, simulation::Simulation};
 
 #[derive(Debug, PartialEq)]
 pub struct Model {
@@ -29,10 +29,10 @@ impl Model {
             ),
         }
     }
-    pub fn from_simulation_config(config: &Simulation) -> Model {
-        let spatial_description = SpatialDescription::from_simulation_config(config);
+    pub fn from_model_config(config: &ModelConfig) -> Model {
+        let spatial_description = SpatialDescription::from_model_config(config);
         let functional_description =
-            FunctionalDescription::from_simulation_config(config, &spatial_description);
+            FunctionalDescription::from_model_config(config, &spatial_description);
         Model {
             functional_description,
             spatial_description,

@@ -1,6 +1,6 @@
 use crate::core::{
     algorithm::estimation::calculate_system_prediction,
-    config::simulation::Simulation as config,
+    config::simulation::Simulation as SimulationConfig,
     data::ArrayMeasurements,
     model::{functional::allpass::shapes::ArrayGains, Model},
 };
@@ -26,8 +26,8 @@ impl Simulation {
         }
     }
 
-    pub fn from_config(config: &config) -> Simulation {
-        let model = Model::from_simulation_config(config);
+    pub fn from_config(config: &SimulationConfig) -> Simulation {
+        let model = Model::from_model_config(&config.model);
         let number_of_sensors = model.spatial_description.sensors.count();
         let number_of_states = model.spatial_description.voxels.count_states();
         let number_of_steps = (config.sample_rate_hz * config.duration_s) as usize;

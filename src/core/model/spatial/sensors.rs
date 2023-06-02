@@ -2,7 +2,7 @@ use core::panic;
 
 use ndarray::{arr1, s, Array2};
 
-use crate::core::config::simulation::Simulation;
+use crate::core::config::{model::Model, simulation::Simulation};
 
 #[derive(Debug, PartialEq)]
 pub struct Sensors {
@@ -18,7 +18,7 @@ impl Sensors {
         }
     }
 
-    pub fn from_simulation_config(config: &Simulation) -> Sensors {
+    pub fn from_model_config(config: &Model) -> Sensors {
         let distance = [
             config.sensor_array_size_mm[0] / config.sensors_per_axis[0] as f32,
             config.sensor_array_size_mm[1] / config.sensors_per_axis[1] as f32,
@@ -70,9 +70,9 @@ mod tests {
 
     #[test]
     fn count_from_simulation() {
-        let mut config = Simulation::default();
+        let mut config = Model::default();
         config.sensors_per_axis = [10, 20, 30];
-        let sensors = Sensors::from_simulation_config(&config);
+        let sensors = Sensors::from_model_config(&config);
 
         assert_eq!(6000, sensors.count());
     }

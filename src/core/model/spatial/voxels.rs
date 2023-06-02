@@ -1,7 +1,7 @@
 use approx::relative_eq;
 use ndarray::Array3;
 
-use crate::core::config::{simulation::Simulation, ModelPreset};
+use crate::core::config::{model::Model, simulation::Simulation, ModelPreset};
 
 #[derive(Debug, PartialEq)]
 pub struct Voxels {
@@ -17,7 +17,7 @@ impl Voxels {
         }
     }
 
-    pub fn from_simulation_config(config: &Simulation) -> Voxels {
+    pub fn from_model_config(config: &Model) -> Voxels {
         Voxels {
             size_mm: config.voxel_size_mm,
             types: VoxelTypes::from_simulation_config(config),
@@ -54,7 +54,7 @@ impl VoxelTypes {
         }
     }
 
-    pub fn from_simulation_config(config: &Simulation) -> VoxelTypes {
+    pub fn from_simulation_config(config: &Model) -> VoxelTypes {
         // Config Parameters
         let voxel_size_mm = config.voxel_size_mm;
         let heart_size_mm = config.heart_size_mm;
@@ -108,7 +108,7 @@ impl VoxelTypes {
             .values
             .indexed_iter_mut()
             .for_each(|((x, y, _z), voxel_type)| {
-                if (config.model == ModelPreset::Pathological)
+                if (config.pathological)
                     && (x >= pathology_x_start_index && x < pathology_x_stop_index)
                     && (pathology_y_start_index <= y && y < pathology_y_stop_index)
                 {
@@ -195,11 +195,11 @@ mod tests {
 
     #[test]
     fn no_pathology_full_states() {
-        let mut config = Simulation::default();
+        let mut config = Model::default();
         config.heart_size_mm = [10.0, 10.0, 10.0];
         config.voxel_size_mm = 1.0;
 
-        let voxels = Voxels::from_simulation_config(&config);
+        let voxels = Voxels::from_model_config(&config);
 
         assert_eq!(1000, voxels.count());
         assert_eq!(3000, voxels.count_states());
