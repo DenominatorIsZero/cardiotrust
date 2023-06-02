@@ -7,6 +7,7 @@ use crate::core::config::model::Model;
 pub struct Voxels {
     pub size_mm: f32,
     pub types: VoxelTypes,
+    pub numbers: VoxelNumbers,
 }
 
 impl Voxels {
@@ -14,13 +15,17 @@ impl Voxels {
         Voxels {
             size_mm: 0.0,
             types: VoxelTypes::empty(voxels_in_dims),
+            numbers: VoxelNumbers::empty(voxels_in_dims),
         }
     }
 
     pub fn from_model_config(config: &Model) -> Voxels {
+        let types = VoxelTypes::from_simulation_config(config);
+        let numbers = VoxelNumbers::from_voxel_types(&types);
         Voxels {
             size_mm: config.voxel_size_mm,
-            types: VoxelTypes::from_simulation_config(config),
+            types,
+            numbers,
         }
     }
 
@@ -148,6 +153,40 @@ impl VoxelTypes {
                 *voxel_type = VoxelType::Ventricle;
             });
         voxel_types
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct VoxelNumbers {
+    values: Array3<Option<usize>>,
+}
+
+impl VoxelNumbers {
+    pub fn empty(voxels_in_dims: [usize; 3]) -> VoxelNumbers {
+        VoxelNumbers {
+            values: Array3::default(voxels_in_dims),
+        }
+    }
+
+    pub fn from_voxel_types(types: &VoxelTypes) -> VoxelNumbers {
+        let mut numbers = VoxelNumbers {
+            values: Array3::default(types.values.raw_dim()),
+        };
+
+        let mut current_number = 0;
+        numbers
+            .values
+            .iter_mut()
+            .zip(types.values.iter())
+            .for_each(|(number, voxel_type)| {
+                if *voxel_type != VoxelType::None {
+                    *number = Some(current_number);
+                    current_number += 1;
+                } else {
+                    *number = None;
+                }
+            });
+        numbers
     }
 }
 
