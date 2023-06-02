@@ -14,10 +14,24 @@ impl MeasurementMatrix {
         }
     }
 
-    pub(crate) fn from_model_config(
+    pub fn from_model_config(
         _config: &Model,
         _spatial_description: &SpatialDescription,
     ) -> MeasurementMatrix {
         todo!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn from_model_config_no_crash() {
+        let config = Model::default();
+        let spatial_description = SpatialDescription::from_model_config(&config);
+
+        let _measurement_matrix =
+            MeasurementMatrix::from_model_config(&config, &spatial_description);
     }
 }

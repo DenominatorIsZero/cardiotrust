@@ -38,3 +38,23 @@ impl ControlFunction {
         todo!()
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn matrix_from_model_config_no_crash() {
+        let config = Model::default();
+        let spatial_description = SpatialDescription::from_model_config(&config);
+
+        let _control_matrix = ControlMatrix::from_model_config(&config, &spatial_description);
+    }
+
+    #[test]
+    fn function_from_model_config_no_crash() {
+        let config = Model::default();
+
+        let _control_function = ControlFunction::from_model_config(&config);
+    }
+}
