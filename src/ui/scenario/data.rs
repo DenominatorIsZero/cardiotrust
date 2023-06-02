@@ -114,7 +114,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                                         );
                                         ui.selectable_value(
                                             model_preset,
-                                            ModelPreset::Scarred,
+                                            ModelPreset::Pathological,
                                             "Scarred",
                                         );
                                     });

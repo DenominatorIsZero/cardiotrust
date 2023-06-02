@@ -25,5 +25,5 @@ impl Config {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum ModelPreset {
     Healthy,
-    Scarred,
+    Pathological,
 }

@@ -1,12 +1,12 @@
 use approx::relative_eq;
 use ndarray::Array3;
 
-use crate::core::config::simulation::Simulation;
+use crate::core::config::{simulation::Simulation, ModelPreset};
 
 #[derive(Debug, PartialEq)]
 pub struct Voxels {
-    size_mm: f32,
-    types: VoxelTypes,
+    pub size_mm: f32,
+    pub types: VoxelTypes,
 }
 
 impl Voxels {
@@ -22,6 +22,23 @@ impl Voxels {
             size_mm: config.voxel_size_mm,
             types: VoxelTypes::from_simulation_config(config),
         }
+    }
+
+    pub fn count(&self) -> usize {
+        self.count_xyz().iter().product()
+    }
+
+    pub fn count_xyz(&self) -> &[usize] {
+        self.types.values.shape()
+    }
+
+    pub fn count_states(&self) -> usize {
+        self.types
+            .values
+            .iter()
+            .filter(|voxel| **voxel != VoxelType::None)
+            .count()
+            * 3
     }
 }
 
@@ -91,7 +108,8 @@ impl VoxelTypes {
             .values
             .indexed_iter_mut()
             .for_each(|((x, y, _z), voxel_type)| {
-                if (x >= pathology_x_start_index && x < pathology_x_stop_index)
+                if (config.model == ModelPreset::Pathological)
+                    && (x >= pathology_x_start_index && x < pathology_x_stop_index)
                     && (pathology_y_start_index <= y && y < pathology_y_stop_index)
                 {
                     *voxel_type = VoxelType::Pathological;
@@ -152,4 +170,38 @@ pub enum VoxelType {
     HPS,
     Ventricle,
     Pathological,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn count_states_none() {
+        let voxels_in_dims = [1000, 1, 1];
+        let voxels = Voxels::empty(voxels_in_dims);
+
+        assert_eq!(0, voxels.count_states());
+    }
+
+    #[test]
+    fn number_of_states_some() {
+        let voxels_in_dims = [1000, 1, 1];
+        let mut voxels = Voxels::empty(voxels_in_dims);
+        voxels.types.values[(0, 0, 0)] = VoxelType::Atrioventricular;
+
+        assert_eq!(3, voxels.count_states());
+    }
+
+    #[test]
+    fn no_pathology_full_states() {
+        let mut config = Simulation::default();
+        config.heart_size_mm = [10.0, 10.0, 10.0];
+        config.voxel_size_mm = 1.0;
+
+        let voxels = Voxels::from_simulation_config(&config);
+
+        assert_eq!(1000, voxels.count());
+        assert_eq!(3000, voxels.count_states());
+    }
 }

@@ -1,18 +1,20 @@
+use core::panic;
+
 use ndarray::{arr1, s, Array2};
 
 use crate::core::config::simulation::Simulation;
 
 #[derive(Debug, PartialEq)]
 pub struct Sensors {
-    positions: Array2<f32>,
-    orientations: Array2<f32>,
+    pub positions_mm: Array2<f32>,
+    pub orientations_xyz: Array2<f32>,
 }
 
 impl Sensors {
     pub fn empty(number_of_sensors: usize) -> Sensors {
         Sensors {
-            positions: Array2::zeros((number_of_sensors, 3)),
-            orientations: Array2::zeros((number_of_sensors, 3)),
+            positions_mm: Array2::zeros((number_of_sensors, 3)),
+            orientations_xyz: Array2::zeros((number_of_sensors, 3)),
         }
     }
 
@@ -27,7 +29,7 @@ impl Sensors {
         for x in 0..config.sensors_per_axis[0] {
             for y in 0..config.sensors_per_axis[1] {
                 for z in 0..config.sensors_per_axis[2] {
-                    sensors.positions.slice_mut(s![i, ..]).assign(&arr1(&[
+                    sensors.positions_mm.slice_mut(s![i, ..]).assign(&arr1(&[
                         x as f32 * distance[0],
                         y as f32 * distance[1],
                         z as f32 * distance[2],
@@ -36,9 +38,10 @@ impl Sensors {
                         0 => arr1(&[1.0, 0.0, 0.0]),
                         1 => arr1(&[0.0, 1.0, 0.0]),
                         2 => arr1(&[0.0, 0.0, 1.0]),
+                        _ => panic!(),
                     };
                     sensors
-                        .orientations
+                        .orientations_xyz
                         .slice_mut(s![i, ..])
                         .assign(&orientation);
                     i += 1;
@@ -46,5 +49,31 @@ impl Sensors {
             }
         }
         sensors
+    }
+
+    pub fn count(&self) -> usize {
+        self.positions_mm.shape()[0]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn count_empty() {
+        let number_of_sensors = 300;
+        let sensors = Sensors::empty(number_of_sensors);
+
+        assert_eq!(number_of_sensors, sensors.count());
+    }
+
+    #[test]
+    fn count_from_simulation() {
+        let mut config = Simulation::default();
+        config.sensors_per_axis = [10, 20, 30];
+        let sensors = Sensors::from_simulation_config(&config);
+
+        assert_eq!(6000, sensors.count());
     }
 }

@@ -26,7 +26,6 @@ impl Model {
             ),
             spatial_description: SpatialDescription::empty(
                 number_of_sensors,
-                number_of_states,
                 [number_of_states / 3 as usize, 1, 1],
             ),
         }
