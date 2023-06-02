@@ -24,7 +24,11 @@ impl Model {
                 number_of_sensors,
                 number_of_steps,
             ),
-            spatial_description: SpatialDescription::empty(number_of_sensors, number_of_states),
+            spatial_description: SpatialDescription::empty(
+                number_of_sensors,
+                number_of_states,
+                [number_of_states / 3 as usize, 1, 1],
+            ),
         }
     }
     pub fn from_simulation_config(config: &Simulation) -> Model {
