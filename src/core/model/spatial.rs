@@ -7,7 +7,7 @@ use crate::core::config::simulation::Simulation;
 use self::{
     heart::Heart,
     sensors::Sensors,
-    voxels::{VoxelType, Voxels},
+    voxels::{Voxels},
 };
 
 #[derive(Debug, PartialEq)]
