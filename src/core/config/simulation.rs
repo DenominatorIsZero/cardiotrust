@@ -9,9 +9,11 @@ pub struct Simulation {
     pub control_function: ControlFunction,
     pub model: ModelPreset,
     pub sensors_per_axis: [usize; 3],
-    pub voxel_size_mm: f32,        // TODO: Add to UI
-    pub heart_size_mm: [f32; 3],   // TODO: Add to UI
-    pub heart_origin_mm: [f32; 3], // TODO: Add to UI
+    pub sensor_array_size_mm: [f32; 3],   // TODO: Add to UI
+    pub sensor_array_origin_mm: [f32; 3], // TODO: Add to UI
+    pub voxel_size_mm: f32,               // TODO: Add to UI
+    pub heart_size_mm: [f32; 3],          // TODO: Add to UI
+    pub heart_origin_mm: [f32; 3],        // TODO: Add to UI
     pub measurement_covariance_mean: f32,
     // the measurement noise covariance matrix will be a diagonal matrix
     // if std is set to zero, every value will be set to mean
@@ -27,6 +29,8 @@ impl Simulation {
             control_function: ControlFunction::Ohara,
             model: ModelPreset::Healthy,
             sensors_per_axis: [4, 4, 2],
+            sensor_array_size_mm: [250.0, 250.0, 100.0],
+            sensor_array_origin_mm: [-125.0, -125.0, 200.0],
             voxel_size_mm: 2.5,
             heart_size_mm: [65.0, 92.5, 2.5],
             heart_origin_mm: [0.0, 0.0, 0.0],
