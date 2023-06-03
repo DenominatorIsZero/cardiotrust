@@ -8,7 +8,7 @@ pub struct Voxels {
     pub size_mm: f32,
     pub types: VoxelTypes,
     pub numbers: VoxelNumbers,
-    pub positions: VoxelPositions,
+    pub positions_mm: VoxelPositions,
 }
 
 impl Voxels {
@@ -17,7 +17,7 @@ impl Voxels {
             size_mm: 0.0,
             types: VoxelTypes::empty(voxels_in_dims),
             numbers: VoxelNumbers::empty(voxels_in_dims),
-            positions: VoxelPositions::empty(voxels_in_dims),
+            positions_mm: VoxelPositions::empty(voxels_in_dims),
         }
     }
 
@@ -29,7 +29,7 @@ impl Voxels {
             size_mm: config.voxel_size_mm,
             types,
             numbers,
-            positions,
+            positions_mm: positions,
         }
     }
 
