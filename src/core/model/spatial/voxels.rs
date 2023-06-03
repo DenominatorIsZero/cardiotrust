@@ -162,7 +162,7 @@ impl VoxelTypes {
 
 #[derive(Debug, PartialEq)]
 pub struct VoxelNumbers {
-    values: Array3<Option<usize>>,
+    pub values: Array3<Option<usize>>,
 }
 
 impl VoxelNumbers {
@@ -196,7 +196,7 @@ impl VoxelNumbers {
 
 #[derive(Debug, PartialEq)]
 pub struct VoxelPositions {
-    values: Array4<f32>,
+    pub values: Array4<f32>,
 }
 
 impl VoxelPositions {
