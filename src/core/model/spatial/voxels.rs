@@ -1,5 +1,5 @@
 use approx::relative_eq;
-use ndarray::Array3;
+use ndarray::{arr1, arr3, s, Array3, Array4};
 
 use crate::core::config::model::Model;
 
@@ -8,6 +8,7 @@ pub struct Voxels {
     pub size_mm: f32,
     pub types: VoxelTypes,
     pub numbers: VoxelNumbers,
+    pub positions: VoxelPositions,
 }
 
 impl Voxels {
@@ -16,16 +17,19 @@ impl Voxels {
             size_mm: 0.0,
             types: VoxelTypes::empty(voxels_in_dims),
             numbers: VoxelNumbers::empty(voxels_in_dims),
+            positions: VoxelPositions::empty(voxels_in_dims),
         }
     }
 
     pub fn from_model_config(config: &Model) -> Voxels {
         let types = VoxelTypes::from_simulation_config(config);
         let numbers = VoxelNumbers::from_voxel_types(&types);
+        let positions = VoxelPositions::from_model_config(config, &types);
         Voxels {
             size_mm: config.voxel_size_mm,
             types,
             numbers,
+            positions,
         }
     }
 
@@ -190,13 +194,36 @@ impl VoxelNumbers {
     }
 }
 
-fn get_voxel_position_mm(voxel_size_mm: f32, x: usize, y: usize, z: usize) -> [f32; 3] {
-    let offset = voxel_size_mm / 2.0;
-    [
-        voxel_size_mm * x as f32 + offset,
-        voxel_size_mm * y as f32 + offset,
-        voxel_size_mm * z as f32 + offset,
-    ]
+#[derive(Debug, PartialEq)]
+pub struct VoxelPositions {
+    values: Array4<f32>,
+}
+
+impl VoxelPositions {
+    pub fn empty(voxels_in_dims: [usize; 3]) -> VoxelPositions {
+        VoxelPositions {
+            values: Array4::zeros((voxels_in_dims[0], voxels_in_dims[1], voxels_in_dims[2], 3)),
+        }
+    }
+
+    pub fn from_model_config(config: &Model, types: &VoxelTypes) -> VoxelPositions {
+        let shape = types.values.raw_dim();
+        let mut positions = VoxelPositions::empty([shape[0], shape[1], shape[2]]);
+        let offset = config.voxel_size_mm / 2.0;
+
+        types.values.indexed_iter().for_each(|((x, y, z), _)| {
+            let position = arr1(&[
+                config.voxel_size_mm * x as f32 + offset,
+                config.voxel_size_mm * y as f32 + offset,
+                config.voxel_size_mm * z as f32 + offset,
+            ]);
+            positions
+                .values
+                .slice_mut(s![x, y, z, ..])
+                .assign(&position);
+        });
+        positions
+    }
 }
 
 #[derive(Default, Debug, PartialEq)]
