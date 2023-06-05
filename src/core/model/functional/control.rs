@@ -1,6 +1,9 @@
 use ndarray::Array1;
 
-use crate::core::{config::model::Model, model::spatial::SpatialDescription};
+use crate::core::{
+    config::model::Model,
+    model::spatial::{voxels::VoxelType, SpatialDescription},
+};
 
 #[derive(Debug, PartialEq)]
 pub struct ControlMatrix {
@@ -16,9 +19,21 @@ impl ControlMatrix {
 
     pub fn from_model_config(
         _config: &Model,
-        _spatial_description: &SpatialDescription,
+        spatial_description: &SpatialDescription,
     ) -> ControlMatrix {
-        todo!()
+        let mut control_matrix = ControlMatrix::empty(spatial_description.voxels.count_states());
+        spatial_description
+            .voxels
+            .types
+            .values
+            .iter()
+            .zip(spatial_description.voxels.numbers.values.iter())
+            .for_each(|(v_type, v_number)| {
+                if *v_type == VoxelType::Sinoatrial {
+                    control_matrix.values[v_number.unwrap()] = 1.0;
+                }
+            });
+        control_matrix
     }
 }
 
@@ -35,7 +50,7 @@ impl ControlFunction {
     }
 
     pub fn from_model_config(_config: &Model) -> ControlFunction {
-        todo!()
+        todo!();
     }
 }
 
