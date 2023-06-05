@@ -29,13 +29,21 @@ impl Model {
             ),
         }
     }
-    pub fn from_model_config(config: &ModelConfig) -> Model {
+    pub fn from_model_config(
+        config: &ModelConfig,
+        sample_rate_hz: f32,
+        duration_s: f32,
+    ) -> Result<Model, String> {
         let spatial_description = SpatialDescription::from_model_config(config);
-        let functional_description =
-            FunctionalDescription::from_model_config(config, &spatial_description);
-        Model {
+        let functional_description = FunctionalDescription::from_model_config(
+            config,
+            &spatial_description,
+            sample_rate_hz,
+            duration_s,
+        )?;
+        Ok(Model {
             functional_description,
             spatial_description,
-        }
+        })
     }
 }

@@ -26,8 +26,9 @@ impl Simulation {
         }
     }
 
-    pub fn from_config(config: &SimulationConfig) -> Simulation {
-        let model = Model::from_model_config(&config.model);
+    pub fn from_config(config: &SimulationConfig) -> Result<Simulation, String> {
+        let model =
+            Model::from_model_config(&config.model, config.sample_rate_hz, config.duration_s)?;
         let number_of_sensors = model.spatial_description.sensors.count();
         let number_of_states = model.spatial_description.voxels.count_states();
         let number_of_steps = (config.sample_rate_hz * config.duration_s) as usize;
@@ -37,11 +38,11 @@ impl Simulation {
 
         Simulation::run(&mut measurements, &mut system_states, &model);
 
-        Simulation {
+        Ok(Simulation {
             measurements,
             system_states,
             model,
-        }
+        })
     }
 
     fn run(

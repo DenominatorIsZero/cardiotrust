@@ -1,5 +1,6 @@
 use approx::relative_eq;
 use ndarray::{arr1, arr3, s, Array3, Array4};
+use serde::{Deserialize, Serialize};
 
 use crate::core::config::model::Model;
 
@@ -37,8 +38,9 @@ impl Voxels {
         self.count_xyz().iter().product()
     }
 
-    pub fn count_xyz(&self) -> &[usize] {
-        self.types.values.shape()
+    pub fn count_xyz(&self) -> [usize; 3] {
+        let shape = self.types.values.raw_dim();
+        [shape[0], shape[1], shape[2]]
     }
 
     pub fn count_states(&self) -> usize {
@@ -48,6 +50,14 @@ impl Voxels {
             .filter(|voxel| **voxel != VoxelType::None)
             .count()
             * 3
+    }
+
+    pub fn is_valid_index(&self, index: [i32; 3]) -> bool {
+        let [x, y, z] = index;
+        let [x_max, y_max, z_max] = self.count_xyz();
+        (0 <= x && x < (x_max as i32))
+            && (0 <= y && y < (y_max as i32))
+            && (0 < z && z < (z_max as i32))
     }
 }
 
@@ -226,7 +236,7 @@ impl VoxelPositions {
     }
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum VoxelType {
     #[default]
     None,

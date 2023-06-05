@@ -1,4 +1,4 @@
-use ndarray::{Array4, Array5};
+use ndarray::{Array3, Array4, Array5};
 use num_traits::Zero;
 
 #[derive(Debug, PartialEq)]
@@ -49,6 +49,19 @@ where
         assert_eq!(number_of_states as f32 % 3.0, 0.0);
         ArrayDelays {
             values: Array4::zeros((number_of_states / 3, 3, 3, 3)),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ArrayActivationTime {
+    pub values: Array3<Option<f32>>,
+}
+
+impl ArrayActivationTime {
+    pub fn empty(voxels_in_dims: [usize; 3]) -> ArrayActivationTime {
+        ArrayActivationTime {
+            values: Array3::from_elem(voxels_in_dims, None),
         }
     }
 }

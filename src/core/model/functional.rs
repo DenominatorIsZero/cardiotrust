@@ -39,20 +39,23 @@ impl FunctionalDescription {
     pub fn from_model_config(
         config: &Model,
         spatial_description: &SpatialDescription,
-    ) -> FunctionalDescription {
-        let ap_params = APParameters::from_model_config(config, spatial_description);
+        sample_rate_hz: f32,
+        duration_s: f32,
+    ) -> Result<FunctionalDescription, String> {
+        let ap_params =
+            APParameters::from_model_config(config, spatial_description, sample_rate_hz)?;
         let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);
         let control_matrix = ControlMatrix::from_model_config(config, spatial_description);
         let kalman_gain = KalmanGain::from_model_config(config, &measurement_matrix);
         let control_function_values = ControlFunction::from_model_config(config);
 
-        FunctionalDescription {
+        Ok(FunctionalDescription {
             ap_params,
             measurement_matrix,
             control_matrix,
             kalman_gain,
             control_function_values,
-        }
+        })
     }
 }
 
@@ -83,7 +86,14 @@ mod tests {
     fn from_model_config_no_crash() {
         let config = Model::default();
         let spatial_description = SpatialDescription::from_model_config(&config);
-        let _functional_description =
-            FunctionalDescription::from_model_config(&config, &spatial_description);
+        let sample_rate_hz = 2000.0;
+        let duration_s = 2.0;
+        let _functional_description = FunctionalDescription::from_model_config(
+            &config,
+            &spatial_description,
+            sample_rate_hz,
+            duration_s,
+        )
+        .unwrap();
     }
 }
