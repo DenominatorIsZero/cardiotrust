@@ -1,3 +1,4 @@
+use approx::relative_eq;
 use itertools::izip;
 use ndarray::{arr1, arr3, s, Array1, Array2, Array3, Array4, ArrayBase, Dim, ViewRepr};
 
@@ -49,19 +50,6 @@ impl APParameters {
         let v_position_mm = &spatial_description.voxels.positions_mm.values;
         let v_numbers = &spatial_description.voxels.numbers.values;
 
-        let current_time_s: f32 = 0.0;
-
-        // Handle Sinoatrial node
-        v_types
-            .indexed_iter()
-            .filter(|(_, v_type)| **v_type == VoxelType::Sinoatrial)
-            .for_each(|(index, _)| {
-                activation_time_s[index] = Some(current_time_s);
-                current_directions
-                    .slice_mut(s![index.0, index.1, index.2, ..])
-                    .assign(&arr1(&[1.0, 0.0, 0.0]));
-            });
-
         // Fill the delays_samples tensor
         for (input_voxel_index, v_type) in v_types.indexed_iter() {
             if *v_type == VoxelType::None {
@@ -69,19 +57,22 @@ impl APParameters {
             }
             let (x_in, y_in, z_in) = input_voxel_index;
             let input_position_mm = &v_position_mm.slice(s![x_in, y_in, z_in, ..]);
-            for (x_offset, y_offset, z_offset) in izip!([-1, 1], [-1, 1], [-1, 1]) {
+            for (x_offset, y_offset, z_offset) in izip!([-1, 0, 1], [-1, 0, 1], [-1, 0, 1]) {
+                if x_offset == 0 && y_offset == 0 && z_offset == 0 {
+                    continue;
+                }
                 let ouput_voxel_index = [
-                    x_in as i32 + x_offset,
-                    y_in as i32 + y_offset,
-                    z_in as i32 + z_offset,
+                    x_in as i32 - x_offset,
+                    y_in as i32 - y_offset,
+                    z_in as i32 - z_offset,
                 ];
                 if !spatial_description.voxels.is_valid_index(ouput_voxel_index) {
                     continue;
                 }
                 let [x_out, y_out, z_out] = [
-                    (x_in as i32 + x_offset) as usize,
-                    (y_in as i32 + y_offset) as usize,
-                    (z_in as i32 + z_offset) as usize,
+                    (x_in as i32 - x_offset) as usize,
+                    (y_in as i32 - y_offset) as usize,
+                    (z_in as i32 - z_offset) as usize,
                 ];
                 let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
 
@@ -108,6 +99,73 @@ impl APParameters {
                     (1 + y_offset) as usize,
                     (1 + z_offset) as usize,
                 )] = delay_samples;
+            }
+        }
+
+        let current_time_s: f32 = 0.0;
+
+        // Handle Sinoatrial node
+        v_types
+            .indexed_iter()
+            .filter(|(_, v_type)| **v_type == VoxelType::Sinoatrial)
+            .for_each(|(index, _)| {
+                activation_time_s[index] = Some(current_time_s);
+                current_directions
+                    .slice_mut(s![index.0, index.1, index.2, ..])
+                    .assign(&arr1(&[1.0, 0.0, 0.0]));
+            });
+        let mut connected_something = true;
+
+        while connected_something {
+            // reset the connected something variable so we don't get stuck here forever
+            // have to check the activation times because there might be come connection possible
+            // with a voxel that is not yet activated.
+            if !activation_time_s
+                .iter()
+                .filter(|time_s| time_s.is_some())
+                .any(|time_s| time_s.unwrap() > current_time_s)
+            {
+                connected_something = false;
+            }
+            // find all voxels with an activation time equal to the current time
+            // i.e., currently activated voxels
+            let output_voxel_indices: Vec<(usize, usize, usize)> = activation_time_s
+                .indexed_iter()
+                .filter(|(_, time_s)| {
+                    time_s.is_some() && relative_eq!(time_s.unwrap(), current_time_s)
+                })
+                .map(|(index, _)| index)
+                .collect();
+
+            for output_voxel_index in output_voxel_indices {
+                let output_state_number = v_numbers[output_voxel_index].unwrap();
+                for (x_offset, y_offset, z_offset) in izip!([-1, 0, 1], [-1, 0, 1], [-1, 0, 1]) {
+                    // no self connection allowed
+                    if x_offset == 0 && y_offset == 0 && z_offset == 0 {
+                        continue;
+                    }
+                    let (x_out, y_out, z_out) = output_voxel_index;
+                    let input_voxel_index = [
+                        x_out as i32 + x_offset,
+                        y_out as i32 + y_offset,
+                        z_out as i32 + z_offset,
+                    ];
+                    // Skip if the input voxel doesn't exist
+                    if !spatial_description.voxels.is_valid_index(input_voxel_index) {
+                        continue;
+                    }
+                    let input_voxel_index = [
+                        (x_out as i32 + x_offset) as usize,
+                        (y_out as i32 + y_offset) as usize,
+                        (z_out as i32 + z_offset) as usize,
+                    ];
+                    // SKip if the input voxel is already connected
+                    if activation_time_s[input_voxel_index].is_some() {
+                        continue;
+                    }
+                    // Skip if connection is not allowed
+                    todo!();
+                }
             }
         }
 

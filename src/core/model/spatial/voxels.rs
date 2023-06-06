@@ -248,6 +248,30 @@ pub enum VoxelType {
     Pathological,
 }
 
+pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &VoxelType) -> bool {
+    match output_voxel_type {
+        VoxelType::None => false,
+        VoxelType::Sinoatrial => [VoxelType::Atrium].contains(input_voxel_type),
+        VoxelType::Atrium => [
+            VoxelType::Sinoatrial,
+            VoxelType::Atrium,
+            VoxelType::Atrioventricular,
+        ]
+        .contains(input_voxel_type),
+        VoxelType::Atrioventricular => {
+            [VoxelType::Atrium, VoxelType::HPS].contains(input_voxel_type)
+        }
+        VoxelType::HPS => [
+            VoxelType::HPS,
+            VoxelType::Atrioventricular,
+            VoxelType::Ventricle,
+        ]
+        .contains(input_voxel_type),
+        VoxelType::Ventricle => [VoxelType::Ventricle, VoxelType::HPS].contains(input_voxel_type),
+        VoxelType::Pathological => true,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -279,5 +303,25 @@ mod tests {
 
         assert_eq!(1000, voxels.count());
         assert_eq!(3000, voxels.count_states());
+    }
+
+    #[test]
+    fn is_connection_allowed_true() {
+        let output_voxel_type = VoxelType::HPS;
+        let input_voxel_type = VoxelType::Ventricle;
+
+        let allowed = is_connection_allowed(&output_voxel_type, &input_voxel_type);
+
+        assert_eq!(allowed, true);
+    }
+
+    #[test]
+    fn is_connection_allowed_false() {
+        let output_voxel_type = VoxelType::Atrium;
+        let input_voxel_type = VoxelType::Ventricle;
+
+        let allowed = is_connection_allowed(&output_voxel_type, &input_voxel_type);
+
+        assert_eq!(allowed, false);
     }
 }
