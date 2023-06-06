@@ -94,7 +94,6 @@ impl APParameters {
                     ));
                 }
 
-                // TODO: Check if these indices are correct. Crosscheck with algorithm implementation.
                 delays_samples.values[(
                     v_numbers[input_voxel_index].unwrap() / 3,
                     (1 + x_offset) as usize,
