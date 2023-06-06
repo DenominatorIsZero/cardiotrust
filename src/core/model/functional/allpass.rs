@@ -178,7 +178,6 @@ impl APParameters {
                     }
 
                     // Now we finally found something that we want to connect.
-                    let output_state_number = v_numbers[output_voxel_index].unwrap();
                     let input_state_number = v_numbers[input_voxel_index].unwrap();
 
                     let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
@@ -232,6 +231,14 @@ impl APParameters {
                 }
             }
         }
+
+        ap_params
+            .activation_time_ms
+            .values
+            .iter_mut()
+            .zip(activation_time_s)
+            .filter(|(_, s)| s.is_some())
+            .for_each(|(ms, s)| *ms = Some(s.unwrap() * 1000.0));
 
         ap_params
             .delays
