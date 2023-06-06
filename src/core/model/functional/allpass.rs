@@ -64,17 +64,17 @@ impl APParameters {
                     continue;
                 }
                 let ouput_voxel_index = [
-                    x_in as i32 - x_offset,
-                    y_in as i32 - y_offset,
-                    z_in as i32 - z_offset,
+                    x_in as i32 + x_offset,
+                    y_in as i32 + y_offset,
+                    z_in as i32 + z_offset,
                 ];
                 if !spatial_description.voxels.is_valid_index(ouput_voxel_index) {
                     continue;
                 }
                 let [x_out, y_out, z_out] = [
-                    (x_in as i32 - x_offset) as usize,
-                    (y_in as i32 - y_offset) as usize,
-                    (z_in as i32 - z_offset) as usize,
+                    (x_in as i32 + x_offset) as usize,
+                    (y_in as i32 + y_offset) as usize,
+                    (z_in as i32 + z_offset) as usize,
                 ];
                 let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
 
@@ -97,9 +97,9 @@ impl APParameters {
                 // TODO: Check if these indices are correct. Crosscheck with algorithm implementation.
                 delays_samples.values[(
                     v_numbers[input_voxel_index].unwrap() / 3,
-                    (1 - x_offset) as usize,
-                    (1 - y_offset) as usize,
-                    (1 - z_offset) as usize,
+                    (1 + x_offset) as usize,
+                    (1 + y_offset) as usize,
+                    (1 + z_offset) as usize,
                 )] = delay_samples;
             }
         }
@@ -147,18 +147,18 @@ impl APParameters {
                     }
                     let (x_out, y_out, z_out) = output_voxel_index;
                     let input_voxel_index = [
-                        x_out as i32 + x_offset,
-                        y_out as i32 + y_offset,
-                        z_out as i32 + z_offset,
+                        x_out as i32 - x_offset,
+                        y_out as i32 - y_offset,
+                        z_out as i32 - z_offset,
                     ];
                     // Skip if the input voxel doesn't exist
                     if !spatial_description.voxels.is_valid_index(input_voxel_index) {
                         continue;
                     }
                     let input_voxel_index = [
-                        (x_out as i32 + x_offset) as usize,
-                        (y_out as i32 + y_offset) as usize,
-                        (z_out as i32 + z_offset) as usize,
+                        (x_out as i32 - x_offset) as usize,
+                        (y_out as i32 - y_offset) as usize,
+                        (z_out as i32 - z_offset) as usize,
                     ];
                     // SKip if the input voxel is already connected
                     if activation_time_s[input_voxel_index].is_some() {
@@ -222,15 +222,54 @@ impl APParameters {
                     for (input_dimension, output_dimension) in izip!(0..3, 0..3) {
                         ap_params.gains.values[(
                             input_state_number + input_dimension,
-                            (1 - x_offset) as usize,
-                            (1 - y_offset) as usize,
-                            (1 - z_offset) as usize,
+                            (1 + x_offset) as usize,
+                            (1 + y_offset) as usize,
+                            (1 + z_offset) as usize,
                             output_dimension,
                         )] = gain[(input_dimension, output_dimension)];
                     }
                 }
             }
         }
+
+        // init output state indices
+
+        v_types
+            .indexed_iter()
+            .filter(|(_, v_type)| **v_type != VoxelType::None)
+            .for_each(|(input_voxel_index, _)| {
+                let (x_in, y_in, z_in) = input_voxel_index;
+                for (x_offset, y_offset, z_offset) in izip!([-1, 0, 1], [-1, 0, 1], [-1, 0, 1]) {
+                    let ouput_voxel_index = [
+                        x_in as i32 + x_offset,
+                        y_in as i32 + y_offset,
+                        z_in as i32 + z_offset,
+                    ];
+                    if !spatial_description.voxels.is_valid_index(ouput_voxel_index) {
+                        continue;
+                    }
+                    let output_voxel_index = [
+                        (x_in as i32 + x_offset) as usize,
+                        (y_in as i32 + y_offset) as usize,
+                        (z_in as i32 + z_offset) as usize,
+                    ];
+                    for input_direction in 0..3 {
+                        let input_state_number =
+                            v_numbers[input_voxel_index].unwrap() + input_direction;
+                        for output_direction in 0..3 {
+                            let output_state_index =
+                                v_numbers[output_voxel_index].unwrap() + output_direction;
+                            ap_params.output_state_indices.values[(
+                                input_state_number,
+                                (1 + x_offset) as usize,
+                                (1 + y_offset) as usize,
+                                (1 + z_offset) as usize,
+                                output_direction,
+                            )] = Some(output_state_index);
+                        }
+                    }
+                }
+            });
 
         ap_params
             .activation_time_ms
