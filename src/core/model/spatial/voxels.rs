@@ -58,6 +58,7 @@ impl Voxels {
         (0 <= x && x < (x_max as i32))
             && (0 <= y && y < (y_max as i32))
             && (0 < z && z < (z_max as i32))
+            && (self.types.values[(x as usize, y as usize, z as usize)] != VoxelType::None)
     }
 }
 
