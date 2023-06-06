@@ -1,10 +1,12 @@
 use approx::relative_eq;
+use bevy::core_pipeline::core_2d::graph::input;
+use egui::output;
 use itertools::izip;
-use ndarray::{arr1, arr3, s, Array1, Array2, Array3, Array4, ArrayBase, Dim, ViewRepr};
+use ndarray::{arr1, arr3, s, Array1, Array2, Array3, Array4, ArrayBase, Dim, OwnedRepr, ViewRepr};
 
 use crate::core::{
     config::model::Model,
-    model::spatial::{voxels::VoxelType, SpatialDescription},
+    model::spatial::{voxels, voxels::VoxelType, SpatialDescription},
 };
 
 use self::shapes::{ArrayActivationTime, ArrayDelays, ArrayGains, ArrayIndicesGains};
@@ -95,9 +97,9 @@ impl APParameters {
                 // TODO: Check if these indices are correct. Crosscheck with algorithm implementation.
                 delays_samples.values[(
                     v_numbers[input_voxel_index].unwrap() / 3,
-                    (1 + x_offset) as usize,
-                    (1 + y_offset) as usize,
-                    (1 + z_offset) as usize,
+                    (1 - x_offset) as usize,
+                    (1 - y_offset) as usize,
+                    (1 - z_offset) as usize,
                 )] = delay_samples;
             }
         }
@@ -138,7 +140,6 @@ impl APParameters {
                 .collect();
 
             for output_voxel_index in output_voxel_indices {
-                let output_state_number = v_numbers[output_voxel_index].unwrap();
                 for (x_offset, y_offset, z_offset) in izip!([-1, 0, 1], [-1, 0, 1], [-1, 0, 1]) {
                     // no self connection allowed
                     if x_offset == 0 && y_offset == 0 && z_offset == 0 {
@@ -164,7 +165,70 @@ impl APParameters {
                         continue;
                     }
                     // Skip if connection is not allowed
-                    todo!();
+                    let output_voxel_type = &v_types[output_voxel_index];
+                    let input_voxel_type = &v_types[input_voxel_index];
+                    if !voxels::is_connection_allowed(output_voxel_type, input_voxel_type) {
+                        continue;
+                    }
+                    // Skip pathologies as anways if the propagation factor is zero
+                    if input_voxel_type == &VoxelType::Pathological
+                        && relative_eq!(config.current_factor_in_pathology, 0.0)
+                    {
+                        continue;
+                    }
+
+                    // Now we finally found something that we want to connect.
+                    let output_state_number = v_numbers[output_voxel_index].unwrap();
+                    let input_state_number = v_numbers[input_voxel_index].unwrap();
+
+                    let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
+                    let [x_in, y_in, z_in] = input_voxel_index;
+                    let input_position_mm = &v_position_mm.slice(s![x_in, y_in, z_in, ..]);
+                    let propagation_velocity_m_per_s = config
+                        .propagation_velocities_m_per_s
+                        .get(input_voxel_type)
+                        .unwrap();
+
+                    let delay_s = calculate_delay_s(
+                        input_position_mm,
+                        output_position_mm,
+                        propagation_velocity_m_per_s,
+                    );
+                    let direction = calculate_direction(input_position_mm, output_position_mm);
+
+                    // update activation time of input voxel, marking them as connected
+                    activation_time_s[input_voxel_index] =
+                        Some(activation_time_s[output_voxel_index].unwrap() + delay_s);
+
+                    current_directions
+                        .slice_mut(s![x_in, y_in, z_in, ..])
+                        .assign(&direction);
+
+                    let mut gain = calculate_gain(
+                        &direction,
+                        current_directions.slice(s![x_out, y_out, z_out, ..]),
+                    );
+
+                    if *input_voxel_type == VoxelType::Pathological
+                        && *output_voxel_type != VoxelType::Pathological
+                    {
+                        gain = gain * config.current_factor_in_pathology;
+                    }
+                    if *output_voxel_type == VoxelType::Pathological
+                        && *input_voxel_type != VoxelType::Pathological
+                    {
+                        gain = gain * (1.0 / config.current_factor_in_pathology);
+                    }
+
+                    for (input_dimension, output_dimension) in izip!(0..3, 0..3) {
+                        ap_params.gains.values[(
+                            input_state_number + input_dimension,
+                            (1 - x_offset) as usize,
+                            (1 - y_offset) as usize,
+                            (1 - z_offset) as usize,
+                            output_dimension,
+                        )] = gain[(input_dimension, output_dimension)];
+                    }
                 }
             }
         }
@@ -190,12 +254,40 @@ impl APParameters {
     }
 }
 
+fn calculate_gain(
+    input_direction: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
+    output_direction: ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
+) -> Array2<f32> {
+    let mut gain = Array2::<f32>::zeros((3, 3));
+
+    for (input_dimension, output_dimension) in izip!(0..3, 0..3) {
+        let c = output_direction[output_dimension];
+        let mut mult = 0.0;
+        if !relative_eq!(c, 0.0) {
+            mult = c / c.abs();
+        }
+        gain[(input_dimension, output_dimension)] = input_direction[input_dimension] * mult;
+    }
+
+    gain
+}
+
+fn calculate_direction(
+    input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
+    output_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
+) -> Array1<f32> {
+    let distance_m = (input_position_mm - output_position_mm) / 1000.0;
+    let distance_norm_m = distance_m.mapv(|v| v.abs()).sum();
+
+    distance_m / distance_norm_m
+}
+
 fn calculate_delay_s(
     input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
     output_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
     propagation_velocity_m_per_s: &f32,
 ) -> f32 {
     let distance_m = (input_position_mm - output_position_mm) / 1000.0;
-    let distance_m = distance_m.mapv(|v| v.powi(2)).sum().sqrt();
-    distance_m / *propagation_velocity_m_per_s
+    let distance_norm_m = distance_m.mapv(|v| v.powi(2)).sum().sqrt();
+    distance_norm_m / *propagation_velocity_m_per_s
 }
