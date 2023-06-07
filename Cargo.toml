@@ -8,11 +8,13 @@ edition = "2021"
 [dependencies]
 bevy = "0.10.1"
 ndarray = {version = "0.15.6", features = ["approx"]}
+ndarray-linalg = {version="0.16.0", features = ["intel-mkl-static"]}
 egui = "0.21.0"
 egui_extras = "0.21.0"
 bevy_egui = "0.20.3"
 config = "0.13.3"
 rand = "0.8.5"
+rand_distr = "0.4.3"
 plotters = "0.3.4"
 bevy_panorbit_camera = "0.5.0"
 num-traits = "0.2.15"
