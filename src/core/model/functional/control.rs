@@ -1,4 +1,8 @@
 use ndarray::Array1;
+use ndarray_npy::{read_npy, ReadNpyError};
+use samplerate::{self, ConverterType};
+use std::fs::File;
+use std::path::Path;
 
 use crate::core::{
     config::model::Model,
@@ -49,8 +53,36 @@ impl ControlFunction {
         }
     }
 
-    pub fn from_model_config(_config: &Model) -> ControlFunction {
-        todo!();
+    pub fn from_model_config(
+        _config: &Model,
+        sample_rate_hz: f32,
+        duration_s: f32,
+    ) -> ControlFunction {
+        let sample_rate_hz_in = 2000.0;
+        let control_function_raw: Array1<f32> =
+            read_npy("assets/control_function_ohara.npy").unwrap();
+
+        let desired_length_samples = (duration_s * sample_rate_hz) as usize;
+
+        let control_function_converted = samplerate::convert(
+            sample_rate_hz_in as u32,
+            sample_rate_hz as u32,
+            1,
+            ConverterType::SincBestQuality,
+            &control_function_raw.to_vec(),
+        )
+        .unwrap();
+
+        let control_function_values: Vec<f32> = (0..desired_length_samples)
+            .map(|i| {
+                let index = i % control_function_converted.len();
+                control_function_converted[index]
+            })
+            .collect();
+
+        ControlFunction {
+            values: Array1::from(control_function_values),
+        }
     }
 }
 
@@ -68,8 +100,13 @@ mod test {
 
     #[test]
     fn function_from_model_config_no_crash() {
+        let sample_rate_hz = 3000.0;
+        let duration_s = 3.0;
+        let expected_length_samples = (sample_rate_hz * duration_s) as usize;
         let config = Model::default();
 
-        let _control_function = ControlFunction::from_model_config(&config);
+        let control_function =
+            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
+        assert_eq!(expected_length_samples, control_function.values.shape()[0]);
     }
 }

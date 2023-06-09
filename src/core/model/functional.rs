@@ -47,7 +47,8 @@ impl FunctionalDescription {
         let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);
         let control_matrix = ControlMatrix::from_model_config(config, spatial_description);
         let kalman_gain = KalmanGain::from_model_config(config, &measurement_matrix);
-        let control_function_values = ControlFunction::from_model_config(config);
+        let control_function_values =
+            ControlFunction::from_model_config(config, sample_rate_hz, duration_s);
 
         Ok(FunctionalDescription {
             ap_params,
