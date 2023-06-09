@@ -1,13 +1,13 @@
 use std::f32::consts::PI;
 
-use ndarray::{s, Array2, Axis};
+use ndarray::{s, Array2};
 use physical_constants::VACUUM_MAG_PERMEABILITY;
 
 use crate::core::{
     config::model::Model,
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
-use itertools::izip;
+
 
 #[derive(Debug, PartialEq)]
 pub struct MeasurementMatrix {

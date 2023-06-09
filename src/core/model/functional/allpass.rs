@@ -1,8 +1,8 @@
 use approx::relative_eq;
-use bevy::core_pipeline::core_2d::graph::input;
-use egui::output;
+
+
 use itertools::izip;
-use ndarray::{arr1, arr3, s, Array1, Array2, Array3, Array4, ArrayBase, Dim, OwnedRepr, ViewRepr};
+use ndarray::{arr1, s, Array1, Array2, Array3, Array4, ArrayBase, Dim, OwnedRepr, ViewRepr};
 
 use crate::core::{
     config::model::Model,
