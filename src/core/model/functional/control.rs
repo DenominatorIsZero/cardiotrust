@@ -1,8 +1,6 @@
 use ndarray::Array1;
-use ndarray_npy::{read_npy};
+use ndarray_npy::read_npy;
 use samplerate::{self, ConverterType};
-
-
 
 use crate::core::{
     config::model::Model,
