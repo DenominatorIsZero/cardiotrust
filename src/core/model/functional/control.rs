@@ -1,12 +1,14 @@
 use ndarray::Array1;
 use ndarray_npy::read_npy;
+use plotly::{common::Mode, layout::Axis, Layout, Plot, Scatter};
 use samplerate::{self, ConverterType};
-use std::fs;
+use std::{fs, path::Path};
 
 use crate::core::{
     config::model::Model,
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
+use crate::vis::plotting;
 
 #[derive(Debug, PartialEq)]
 pub struct ControlMatrix {
@@ -87,7 +89,11 @@ impl ControlFunction {
 
 #[cfg(test)]
 mod test {
-    use plotters::prelude::*;
+    use std::{fmt::format, path::Path};
+
+    use approx::assert_relative_eq;
+    use ndarray::Array;
+    use plotly::{common::Mode, layout::Axis, HeatMap, Layout, Plot, Scatter};
 
     use super::*;
 
@@ -96,13 +102,15 @@ mod test {
         let config = Model::default();
         let spatial_description = SpatialDescription::from_model_config(&config);
 
-        let _control_matrix = ControlMatrix::from_model_config(&config, &spatial_description);
+        let control_matrix = ControlMatrix::from_model_config(&config, &spatial_description);
+        let sum = control_matrix.values.sum();
+        assert_relative_eq!(sum, 1.0);
     }
 
     #[test]
-    fn function_from_model_config_no_crash() -> Result<(), Box<dyn std::error::Error>> {
+    fn function_from_model_config_no_crash() {
         let sample_rate_hz = 3000.0;
-        let duration_s = 1.0;
+        let duration_s = 1.5;
         let expected_length_samples = (sample_rate_hz * duration_s) as usize;
         let config = Model::default();
 
@@ -110,99 +118,12 @@ mod test {
             ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
         assert_eq!(expected_length_samples, control_function.values.shape()[0]);
 
-        let x: Vec<f32> = (0..control_function.values.shape()[0])
-            .map(|i| i as f32 / sample_rate_hz)
-            .collect();
-        let x_min = *x
-            .iter()
-            .reduce(|min, e| if e < min { e } else { min })
-            .unwrap_or(&f32::MAX);
-        let x_max = *x
-            .iter()
-            .reduce(|max, e| if e > max { e } else { max })
-            .unwrap_or(&f32::MIN);
-        let y = control_function.values.to_vec();
-        let y: Vec<f32> = x.iter().map(|x| *x * *x).collect();
-        let mut y_min = *y
-            .iter()
-            .reduce(|min, e| if e < min { e } else { min })
-            .unwrap_or(&f32::MAX);
-        let mut y_max = *y
-            .iter()
-            .reduce(|max, e| if e > max { e } else { max })
-            .unwrap_or(&f32::MIN);
-        let y_range = y_max - y_min;
-        let y_margin = 0.1;
-        y_min = y_min - y_margin * y_range;
-        y_max = y_max + y_margin * y_range;
-
-        let root =
-            BitMapBackend::new("tests/control_function.png", (1920, 1080)).into_drawing_area();
-        root.fill(&WHITE)?;
-        let mut chart = ChartBuilder::on(&root)
-            .margin(10)
-            .x_label_area_size(100)
-            .y_label_area_size(120)
-            .top_x_label_area_size(10)
-            .right_y_label_area_size(10)
-            .caption("Control Function", ("computer-modern", 75).into_font())
-            .build_cartesian_2d(x_min..x_max, y_min..y_max)?
-            .set_secondary_coord(x_min..x_max, y_min..y_max);
-
-        let style = ("computer-modern", 50).into_font();
-        chart
-            .configure_mesh()
-            .x_label_style(style.clone())
-            .y_label_style(style.clone())
-            .x_desc("Time [s]")
-            .y_desc("Current density [A/m^2]")
-            .draw()?;
-
-        chart
-            .configure_secondary_axes()
-            .x_labels(0)
-            .y_labels(0)
-            .draw()?;
-
-        chart.draw_series(LineSeries::new(
-            x.iter().zip(y.iter()).map(|(x, y)| (*x, *y)),
-            Into::<ShapeStyle>::into(&RED).stroke_width(5).filled(),
-        ))?;
-
-        root.present()?;
-
-        let root = SVGBackend::new("tests/control_function.svg", (1920, 1080)).into_drawing_area();
-        root.fill(&WHITE)?;
-        let mut chart = ChartBuilder::on(&root)
-            .margin(10)
-            .x_label_area_size(100)
-            .y_label_area_size(120)
-            .top_x_label_area_size(10)
-            .right_y_label_area_size(10)
-            .caption("Control Function", ("computer-modern", 75).into_font())
-            .build_cartesian_2d(x_min..x_max, y_min..y_max)?
-            .set_secondary_coord(x_min..x_max, y_min..y_max);
-
-        let style = ("computer-modern", 50).into_font();
-        chart
-            .configure_mesh()
-            .x_label_style(style.clone())
-            .y_label_style(style.clone())
-            .x_desc("Time [s]")
-            .y_desc("Current density [A/m^2]")
-            .draw()?;
-
-        chart
-            .configure_secondary_axes()
-            .x_labels(0)
-            .y_labels(0)
-            .draw()?;
-
-        chart.draw_series(LineSeries::new(
-            x.iter().zip(y.iter()).map(|(x, y)| (*x, *y)),
-            Into::<ShapeStyle>::into(&RED).stroke_width(5),
-        ))?;
-
-        Ok(())
+        plotting::standard_time_plot(
+            &control_function.values,
+            sample_rate_hz,
+            "tests/control_function",
+            "Control Function",
+            "j [A/mm^2]",
+        )
     }
 }
