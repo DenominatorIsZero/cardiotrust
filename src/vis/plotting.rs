@@ -87,9 +87,19 @@ pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str)
         }
         z.push(row);
     }
+    let mut row: Vec<i32> = Vec::new();
+    for x in 0..types.shape()[0] {
+        if x < 7 {
+            row.push(x as i32);
+        } else {
+            row.push(0)
+        }
+    }
+    z.push(row);
 
-    let trace =
-        HeatMap::new_z(z).color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    let trace = HeatMap::new_z(z).color_scale(ColorScale::Palette(
+        plotly::common::ColorScalePalette::Earth,
+    ));
     let mut plot = Plot::new();
 
     let width = (500.0 * types.shape()[0] as f32 / types.shape()[1] as f32) as usize + 175;
@@ -100,12 +110,12 @@ pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str)
         .x_axis(
             Axis::new()
                 .title("x".into())
-                .range(vec![0, types.shape()[0]]),
+                .range(vec![0, types.shape()[0] - 1]),
         )
         .y_axis(
             Axis::new()
                 .title("y".into())
-                .range(vec![types.shape()[1], 0])
+                .range(vec![types.shape()[1] - 1, 0])
                 .anchor("x"),
         )
         .height(height)
