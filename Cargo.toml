@@ -20,7 +20,7 @@ ndarray-linalg = {version="0.16.0", features = ["intel-mkl-static"]}
 ndarray-npy = "0.8.1"
 num-traits = "0.2.15"
 physical_constants = "0.5.0"
-plotters = "0.3.4"
+plotly = { version = "0.8.3", features = ["kaleido", "plotly_ndarray"] }
 rand = "0.8.5"
 rand_distr = "0.4.3"
 samplerate = "0.2.4"
