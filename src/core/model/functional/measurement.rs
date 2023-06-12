@@ -39,7 +39,7 @@ impl MeasurementMatrix {
 
         let voxel_volume_m3 = (spatial_description.voxels.size_mm / 1000.0).powi(3);
 
-        let common_factor = (VACUUM_MAG_PERMEABILITY as f32 * voxel_volume_m3) / (4.0 * PI);
+        let common_factor = (VACUUM_MAG_PERMEABILITY as f32 * voxel_volume_m3) / (4.0 * PI) * 1e12;
 
         for (index, v_type) in types.indexed_iter() {
             if *v_type == VoxelType::None {
@@ -74,14 +74,38 @@ impl MeasurementMatrix {
 
 #[cfg(test)]
 mod tests {
+    use crate::vis::plotting::plot_matrix;
+
     use super::*;
 
     #[test]
     fn from_model_config_no_crash() {
-        let config = Model::default();
+        let mut config = Model::default();
+        config.sensors_per_axis = [3, 3, 3];
+        config.voxel_size_mm = 20.0;
         let spatial_description = SpatialDescription::from_model_config(&config);
 
-        let _measurement_matrix =
+        let measurement_matrix =
             MeasurementMatrix::from_model_config(&config, &spatial_description);
+
+        let shape = measurement_matrix.values.shape();
+        print!("Shape: {:?}", shape);
+        let max = *measurement_matrix
+            .values
+            .iter()
+            .reduce(|max, e| if e > max { e } else { max })
+            .unwrap_or(&f32::MIN);
+        let min = *measurement_matrix
+            .values
+            .iter()
+            .reduce(|min, e| if e > min { min } else { e })
+            .unwrap_or(&f32::MAX);
+        println!("Max: {max}, min: {min}");
+
+        plot_matrix(
+            &measurement_matrix.values,
+            "tests/measurement_matrix_default",
+            "Measurement Matrix",
+        )
     }
 }

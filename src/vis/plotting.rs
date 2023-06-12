@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array3};
+use ndarray::{Array1, Array2, Array3};
 use plotly::{
     common::{ColorScale, Mode},
     layout::Axis,
@@ -116,6 +116,44 @@ pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str)
                 .title("y".into())
                 .range(vec![types.shape()[1] - 1, 0])
                 .anchor("x"),
+        )
+        .height(height)
+        .width(width);
+
+    plot.add_trace(trace);
+    plot.set_layout(layout);
+
+    save_plot(file_name, plot, width, height, 1.0);
+}
+
+pub fn plot_matrix(matrix: &Array2<f32>, file_name: &str, title: &str) {
+    let mut z: Vec<Vec<f32>> = Vec::new();
+    for y in 0..matrix.shape()[1] {
+        let mut row: Vec<f32> = Vec::new();
+        for x in 0..matrix.shape()[0] {
+            row.push(matrix[(x, y)]);
+        }
+        z.push(row);
+    }
+
+    let trace =
+        HeatMap::new_z(z).color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::RdBu));
+    let mut plot = Plot::new();
+
+    let width = (500.0 * matrix.shape()[0] as f32 / matrix.shape()[1] as f32) as usize + 175;
+    let height = (500.0 * matrix.shape()[1] as f32 / matrix.shape()[0] as f32) as usize;
+
+    let layout = Layout::new()
+        .title(title.into())
+        .x_axis(
+            Axis::new()
+                .title("Axis 1".into())
+                .range(vec![-0.5, matrix.shape()[0] as f32 - 0.5]),
+        )
+        .y_axis(
+            Axis::new()
+                .title("Axis 2".into())
+                .range(vec![-0.5, matrix.shape()[1] as f32 - 0.5]),
         )
         .height(height)
         .width(width);
