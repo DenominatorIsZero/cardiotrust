@@ -30,9 +30,9 @@ impl Sensors {
             for y in 0..config.sensors_per_axis[1] {
                 for z in 0..config.sensors_per_axis[2] {
                     sensors.positions_mm.slice_mut(s![i, ..]).assign(&arr1(&[
-                        x as f32 * distance[0],
-                        y as f32 * distance[1],
-                        z as f32 * distance[2],
+                        x as f32 * distance[0] + config.sensor_array_origin_mm[0],
+                        y as f32 * distance[1] + config.sensor_array_origin_mm[1],
+                        z as f32 * distance[2] + config.sensor_array_origin_mm[2],
                     ]));
                     let orientation = match i % 3 {
                         0 => arr1(&[1.0, 0.0, 0.0]),
