@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 pub mod core;
 pub mod ui;
-mod vis;
+pub mod vis;
 
 use std::{fs, path::Path};
 
