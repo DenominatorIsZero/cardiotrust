@@ -270,7 +270,6 @@ pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &V
 
 #[cfg(test)]
 mod tests {
-    use plotly::{layout::Axis, HeatMap, Layout, Plot};
 
     use crate::vis::plotting::plot_voxel_types;
 

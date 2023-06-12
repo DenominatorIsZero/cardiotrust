@@ -1,14 +1,12 @@
 use ndarray::Array1;
 use ndarray_npy::read_npy;
-use plotly::{common::Mode, layout::Axis, Layout, Plot, Scatter};
+
 use samplerate::{self, ConverterType};
-use std::{fs, path::Path};
 
 use crate::core::{
     config::model::Model,
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
-use crate::vis::plotting;
 
 #[derive(Debug, PartialEq)]
 pub struct ControlMatrix {
@@ -89,11 +87,10 @@ impl ControlFunction {
 
 #[cfg(test)]
 mod test {
-    use std::{fmt::format, path::Path};
 
     use approx::assert_relative_eq;
-    use ndarray::Array;
-    use plotly::{common::Mode, layout::Axis, HeatMap, Layout, Plot, Scatter};
+
+    use crate::vis::plotting;
 
     use super::*;
 

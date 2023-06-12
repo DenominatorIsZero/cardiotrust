@@ -8,7 +8,6 @@ use crate::core::{
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
 
-
 #[derive(Debug, PartialEq)]
 pub struct MeasurementMatrix {
     pub values: Array2<f32>,

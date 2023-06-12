@@ -1,6 +1,5 @@
 use approx::relative_eq;
 
-
 use itertools::izip;
 use ndarray::{arr1, s, Array1, Array2, Array3, Array4, ArrayBase, Dim, OwnedRepr, ViewRepr};
 

@@ -1,9 +1,8 @@
-use ndarray::{Array1, Array3, ArrayBase, Dim, ViewRepr};
+use ndarray::{Array1, Array3};
 use plotly::{
-    common::{ColorScale, ColorScaleElement, ColorScalePalette, Mode, Title},
-    contour::Contours,
+    common::{ColorScale, Mode},
     layout::Axis,
-    Contour, HeatMap, Layout, Plot, Scatter,
+    HeatMap, Layout, Plot, Scatter,
 };
 
 use crate::core::model::spatial::voxels::VoxelType;
