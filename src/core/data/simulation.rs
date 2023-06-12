@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use crate::core::{
     algorithm::estimation::calculate_system_prediction,
     config::simulation::Simulation as SimulationConfig,
@@ -26,17 +28,15 @@ impl Simulation {
         }
     }
 
-    pub fn from_config(config: &SimulationConfig) -> Result<Simulation, String> {
+    pub fn from_config(config: &SimulationConfig) -> Result<Simulation, Box<dyn Error>> {
         let model =
             Model::from_model_config(&config.model, config.sample_rate_hz, config.duration_s)?;
         let number_of_sensors = model.spatial_description.sensors.count();
         let number_of_states = model.spatial_description.voxels.count_states();
         let number_of_steps = (config.sample_rate_hz * config.duration_s) as usize;
 
-        let mut measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
-        let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
-
-        Simulation::run(&mut measurements, &mut system_states, &model);
+        let measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
+        let system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
 
         Ok(Simulation {
             measurements,
@@ -45,11 +45,10 @@ impl Simulation {
         })
     }
 
-    fn run(
-        measurements: &mut ArrayMeasurements,
-        system_states: &mut ArraySystemStates,
-        model: &Model,
-    ) {
+    pub fn run(&mut self) {
+        let measurements = &mut self.measurements;
+        let system_states = &mut self.system_states;
+        let model = &self.model;
         let mut ap_outputs = ArrayGains::empty(system_states.values.shape()[1]);
         for time_index in 0..system_states.values.shape()[0] {
             calculate_system_prediction(
@@ -61,5 +60,55 @@ impl Simulation {
             )
         }
         // TODO: Add noise to measurements here
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use approx::{assert_relative_eq, relative_eq, RelativeEq};
+
+    use super::*;
+
+    #[test]
+    fn create_simulation_no_crash() {
+        let config = &SimulationConfig::default();
+        let simulation = Simulation::from_config(config);
+        assert!(simulation.is_ok());
+        let simulation = simulation.unwrap();
+        let max = *simulation
+            .system_states
+            .values
+            .iter()
+            .reduce(|max, e| if e > max { e } else { max })
+            .unwrap_or(&f32::MIN);
+        assert_relative_eq!(max, 0.0);
+        let max = *simulation
+            .measurements
+            .values
+            .iter()
+            .reduce(|max, e| if e > max { e } else { max })
+            .unwrap_or(&f32::MIN);
+        assert_relative_eq!(max, 0.0);
+    }
+
+    #[test]
+    fn run_simulation_default() {
+        let config = &SimulationConfig::default();
+        let mut simulation = Simulation::from_config(config).unwrap();
+        simulation.run();
+        let max = *simulation
+            .system_states
+            .values
+            .iter()
+            .reduce(|max, e| if e > max { e } else { max })
+            .unwrap_or(&f32::MIN);
+        assert!(max.relative_eq(&1.0, 0.0001, 0.0001));
+        let max = *simulation
+            .measurements
+            .values
+            .iter()
+            .reduce(|max, e| if e > max { e } else { max })
+            .unwrap_or(&f32::MIN);
+        assert!(max > 0.0);
     }
 }
