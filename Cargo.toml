@@ -26,3 +26,6 @@ rand_distr = "0.4.3"
 samplerate = "0.2.4"
 serde = "1.0.163"
 toml = "0.7.3"
+
+[profile.test]
+opt-level = 3
