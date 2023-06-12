@@ -93,7 +93,7 @@ impl VoxelTypes {
         assert!(voxels_in_dims[2] > 0);
 
         // Fixed Parameters - will add to config at later time
-        let sa_x_center_percentage = 0.8;
+        let sa_x_center_percentage = 0.2;
         let sa_y_center_percentage = 0.15;
         let atrium_y_stop_percentage = 0.3;
         let av_x_center_percentage = 0.5;
@@ -106,22 +106,22 @@ impl VoxelTypes {
         let pathology_y_start_percentage = 0.7;
         let pathology_y_stop_percentage = 0.8;
         // Derived Parameters
-        let sa_x_center_index = (voxels_in_dims[0] as f32 / sa_x_center_percentage) as usize;
-        let sa_y_center_index = (voxels_in_dims[1] as f32 / sa_y_center_percentage) as usize;
-        let atrium_y_stop_index = (voxels_in_dims[1] as f32 / atrium_y_stop_percentage) as usize;
-        let av_x_center_index = (voxels_in_dims[0] as f32 / av_x_center_percentage) as usize;
-        let hps_y_stop_index = (voxels_in_dims[1] as f32 / hps_y_stop_percentage) as usize;
-        let hps_x_start_index = (voxels_in_dims[0] as f32 / hps_x_start_percentage) as usize;
-        let hps_x_stop_index = (voxels_in_dims[0] as f32 / hps_x_stop_percentage) as usize;
-        let hps_y_up_index = (voxels_in_dims[1] as f32 / hps_y_up_percentage) as usize;
+        let sa_x_center_index = (voxels_in_dims[0] as f32 * sa_x_center_percentage) as usize;
+        let sa_y_center_index = (voxels_in_dims[1] as f32 * sa_y_center_percentage) as usize;
+        let atrium_y_stop_index = (voxels_in_dims[1] as f32 * atrium_y_stop_percentage) as usize;
+        let av_x_center_index = (voxels_in_dims[0] as f32 * av_x_center_percentage) as usize;
+        let hps_y_stop_index = (voxels_in_dims[1] as f32 * hps_y_stop_percentage) as usize;
+        let hps_x_start_index = (voxels_in_dims[0] as f32 * hps_x_start_percentage) as usize;
+        let hps_x_stop_index = (voxels_in_dims[0] as f32 * hps_x_stop_percentage) as usize;
+        let hps_y_up_index = (voxels_in_dims[1] as f32 * hps_y_up_percentage) as usize;
         let pathology_x_start_index =
-            (voxels_in_dims[0] as f32 / pathology_x_start_percentage) as usize;
+            (voxels_in_dims[0] as f32 * pathology_x_start_percentage) as usize;
         let pathology_x_stop_index =
-            (voxels_in_dims[0] as f32 / pathology_x_stop_percentage) as usize;
+            (voxels_in_dims[0] as f32 * pathology_x_stop_percentage) as usize;
         let pathology_y_start_index =
-            (voxels_in_dims[1] as f32 / pathology_y_start_percentage) as usize;
+            (voxels_in_dims[1] as f32 * pathology_y_start_percentage) as usize;
         let pathology_y_stop_index =
-            (voxels_in_dims[1] as f32 / pathology_y_stop_percentage) as usize;
+            (voxels_in_dims[1] as f32 * pathology_y_stop_percentage) as usize;
 
         let mut voxel_types = VoxelTypes::empty(voxels_in_dims);
         voxel_types
@@ -133,39 +133,34 @@ impl VoxelTypes {
                     && (pathology_y_start_index <= y && y < pathology_y_stop_index)
                 {
                     *voxel_type = VoxelType::Pathological;
-                    return;
-                }
-                if x == sa_x_center_index && y == sa_y_center_index {
+                } else if (x == sa_x_center_index) && (y == sa_y_center_index) {
                     *voxel_type = VoxelType::Sinoatrial;
-                    return;
-                }
-                if x == av_x_center_index && y == atrium_y_stop_index {
+                } else if x == av_x_center_index && y == atrium_y_stop_index {
                     *voxel_type = VoxelType::Atrioventricular;
-                    return;
                 }
                 // HPS Downward section
-                if x == av_x_center_index && y > atrium_y_stop_index && y < hps_y_stop_index {
+                else if x == av_x_center_index && y > atrium_y_stop_index && y < hps_y_stop_index
+                {
                     *voxel_type = VoxelType::HPS;
-                    return;
                 }
                 // HPS Across
-                if x >= hps_x_start_index && x < hps_x_stop_index && y == hps_y_stop_index - 1 {
+                else if x >= hps_x_start_index
+                    && x < hps_x_stop_index
+                    && y == hps_y_stop_index - 1
+                {
                     *voxel_type = VoxelType::HPS;
-                    return;
                 }
                 // HPS Up
-                if (x == hps_x_start_index || x == hps_x_stop_index - 1)
+                else if (x == hps_x_start_index || x == hps_x_stop_index - 1)
                     && y >= hps_y_up_index
                     && y < hps_y_stop_index
                 {
                     *voxel_type = VoxelType::HPS;
-                    return;
-                }
-                if y < atrium_y_stop_index {
+                } else if y < atrium_y_stop_index {
                     *voxel_type = VoxelType::Atrium;
-                    return;
+                } else {
+                    *voxel_type = VoxelType::Ventricle;
                 }
-                *voxel_type = VoxelType::Ventricle;
             });
         voxel_types
     }
@@ -237,7 +232,7 @@ impl VoxelPositions {
     }
 }
 
-#[derive(Default, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Default, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, Copy, Clone)]
 pub enum VoxelType {
     #[default]
     None,
@@ -275,6 +270,10 @@ pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &V
 
 #[cfg(test)]
 mod tests {
+    use plotly::{layout::Axis, HeatMap, Layout, Plot};
+
+    use crate::vis::plotting::plot_voxel_types;
+
     use super::*;
 
     #[test]
@@ -324,5 +323,120 @@ mod tests {
         let allowed = is_connection_allowed(&output_voxel_type, &input_voxel_type);
 
         assert_eq!(allowed, false);
+    }
+
+    #[test]
+    fn some_voxel_types_default() {
+        let config = Model::default();
+        let types = VoxelTypes::from_simulation_config(&config);
+
+        let num_sa = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Sinoatrial)
+            .count();
+
+        assert_eq!(num_sa, 1);
+
+        let num_atrium = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Atrium)
+            .count();
+
+        assert!(num_atrium > 0);
+
+        let num_avn = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Atrioventricular)
+            .count();
+
+        assert_eq!(num_avn, 1);
+
+        let num_ventricle = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Ventricle)
+            .count();
+
+        assert!(num_ventricle > 0);
+
+        let num_hps = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::HPS)
+            .count();
+
+        assert!(num_hps > 0);
+
+        let num_pathological = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Pathological)
+            .count();
+
+        assert_eq!(num_pathological, 0);
+    }
+
+    #[test]
+    fn some_voxel_types_pathological() {
+        let mut config = Model::default();
+        config.pathological = true;
+        let types = VoxelTypes::from_simulation_config(&config);
+
+        let num_sa = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Sinoatrial)
+            .count();
+
+        assert_eq!(num_sa, 1);
+
+        let num_atrium = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Atrium)
+            .count();
+
+        assert!(num_atrium > 0);
+
+        let num_avn = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Atrioventricular)
+            .count();
+
+        assert_eq!(num_avn, 1);
+
+        let num_ventricle = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Ventricle)
+            .count();
+
+        assert!(num_ventricle > 0);
+
+        let num_hps = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::HPS)
+            .count();
+
+        assert!(num_hps > 0);
+
+        let num_pathological = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Pathological)
+            .count();
+
+        assert!(num_pathological > 0);
+
+        plot_voxel_types(
+            &types.values,
+            "tests/voxel_types_pathological",
+            "Voxel Types",
+        )
     }
 }
