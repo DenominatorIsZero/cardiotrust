@@ -3,6 +3,8 @@ pub mod control;
 pub mod kalman;
 pub mod measurement;
 
+use std::error::Error;
+
 use self::{
     allpass::APParameters,
     control::{ControlFunction, ControlMatrix},
@@ -41,7 +43,7 @@ impl FunctionalDescription {
         spatial_description: &SpatialDescription,
         sample_rate_hz: f32,
         duration_s: f32,
-    ) -> Result<FunctionalDescription, String> {
+    ) -> Result<FunctionalDescription, Box<dyn Error>> {
         let ap_params =
             APParameters::from_model_config(config, spatial_description, sample_rate_hz)?;
         let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);

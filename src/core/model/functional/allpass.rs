@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use approx::relative_eq;
 
 use itertools::izip;
@@ -36,7 +38,7 @@ impl APParameters {
         config: &Model,
         spatial_description: &SpatialDescription,
         sample_rate_hz: f32,
-    ) -> Result<APParameters, String> {
+    ) -> Result<APParameters, Box<dyn Error>> {
         let mut ap_params = APParameters::empty(spatial_description.voxels.count_states());
         let mut activation_time_s = Array3::<Option<f32>>::from_elem(
             spatial_description.voxels.types.values.raw_dim(),
@@ -90,7 +92,8 @@ impl APParameters {
                         Calculated delay: {:?}.\
                         For voxel type: {:?}",
                         delay_samples, v_type
-                    ));
+                    )
+                    .into());
                 }
 
                 delays_samples.values[(

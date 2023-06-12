@@ -1,6 +1,8 @@
 pub mod functional;
 pub mod spatial;
 
+use std::error::Error;
+
 use self::{functional::FunctionalDescription, spatial::SpatialDescription};
 
 use super::config::model::Model as ModelConfig;
@@ -33,7 +35,7 @@ impl Model {
         config: &ModelConfig,
         sample_rate_hz: f32,
         duration_s: f32,
-    ) -> Result<Model, String> {
+    ) -> Result<Model, Box<dyn Error>> {
         let spatial_description = SpatialDescription::from_model_config(config);
         let functional_description = FunctionalDescription::from_model_config(
             config,
