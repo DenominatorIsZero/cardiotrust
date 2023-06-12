@@ -129,8 +129,8 @@ impl VoxelTypes {
             .indexed_iter_mut()
             .for_each(|((x, y, _z), voxel_type)| {
                 if (config.pathological)
-                    && (x >= pathology_x_start_index && x < pathology_x_stop_index)
-                    && (pathology_y_start_index <= y && y < pathology_y_stop_index)
+                    && (x >= pathology_x_start_index && x <= pathology_x_stop_index)
+                    && (pathology_y_start_index <= y && y <= pathology_y_stop_index)
                 {
                     *voxel_type = VoxelType::Pathological;
                 } else if (x == sa_x_center_index) && (y == sa_y_center_index) {
@@ -145,13 +145,13 @@ impl VoxelTypes {
                 }
                 // HPS Across
                 else if x >= hps_x_start_index
-                    && x < hps_x_stop_index
+                    && x <= hps_x_stop_index
                     && y == hps_y_stop_index - 1
                 {
                     *voxel_type = VoxelType::HPS;
                 }
                 // HPS Up
-                else if (x == hps_x_start_index || x == hps_x_stop_index - 1)
+                else if (x == hps_x_start_index || x == hps_x_stop_index)
                     && y >= hps_y_up_index
                     && y < hps_y_stop_index
                 {
@@ -377,6 +377,8 @@ mod tests {
             .count();
 
         assert_eq!(num_pathological, 0);
+
+        plot_voxel_types(&types.values, "tests/voxel_types_default", "Voxel Types")
     }
 
     #[test]
