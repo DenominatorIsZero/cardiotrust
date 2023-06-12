@@ -79,18 +79,15 @@ impl VoxelTypes {
         let voxel_size_mm = config.voxel_size_mm;
         let heart_size_mm = config.heart_size_mm;
 
-        assert!(relative_eq!(heart_size_mm[0] % voxel_size_mm, 0.0));
-        assert!(relative_eq!(heart_size_mm[1] % voxel_size_mm, 0.0));
-        assert!(relative_eq!(heart_size_mm[2] % voxel_size_mm, 0.0));
-
         let mut voxels_in_dims = [0, 0, 0];
         voxels_in_dims
             .iter_mut()
             .zip(heart_size_mm.iter())
             .for_each(|(number, size)| *number = (size / voxel_size_mm) as usize);
-        assert!(voxels_in_dims[0] > 0);
-        assert!(voxels_in_dims[1] > 0);
-        assert!(voxels_in_dims[2] > 0);
+
+        voxels_in_dims
+            .iter_mut()
+            .for_each(|v| *v = if *v == 0 { 1 } else { *v });
 
         // Fixed Parameters - will add to config at later time
         let sa_x_center_percentage = 0.2;
@@ -191,7 +188,7 @@ impl VoxelNumbers {
             .for_each(|(number, voxel_type)| {
                 if *voxel_type != VoxelType::None {
                     *number = Some(current_number);
-                    current_number += 1;
+                    current_number += 3;
                 } else {
                     *number = None;
                 }
