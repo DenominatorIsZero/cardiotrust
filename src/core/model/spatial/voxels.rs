@@ -1,4 +1,3 @@
-use approx::relative_eq;
 use ndarray::{arr1, s, Array3, Array4};
 use serde::{Deserialize, Serialize};
 
