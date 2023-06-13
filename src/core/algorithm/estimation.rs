@@ -72,7 +72,8 @@ pub fn calculate_system_prediction(
                 0.0
             };
             *ap_output = coef * (input - *ap_output) + input_delayed;
-            system_states.values[(time_index, gain_index.0)] += *ap_output;
+            let gain = functional_description.ap_params.gains.values[gain_index];
+            system_states.values[(time_index, gain_index.0)] += gain * *ap_output;
         });
     // Add control function
     let control_function_value = functional_description.control_function_values.values[time_index];
