@@ -256,18 +256,48 @@ impl APParameters {
             .values
             .iter_mut()
             .zip(delays_samples.values.iter())
-            .for_each(|(delay, samples)| *delay = *samples as usize);
+            .for_each(|(delay, samples)| *delay = from_samples_to_usize(*samples));
 
         ap_params
             .coefs
             .values
             .iter_mut()
             .zip(delays_samples.values.iter())
-            .for_each(|(coef, samples)| {
-                let fractional = *samples % 1.0;
-                *coef = (1.0 - fractional) / (1.0 + fractional)
-            });
+            .for_each(|(coef, samples)| *coef = from_samples_to_coef(*samples));
 
         Ok(ap_params)
+    }
+}
+
+fn from_samples_to_coef(samples: f32) -> f32 {
+    let fractional = samples % 1.0;
+    (1.0 - fractional) / (1.0 + fractional)
+}
+
+fn from_samples_to_usize(samples: f32) -> usize {
+    samples as usize
+}
+
+#[cfg(test)]
+mod test {
+    use crate::core::model::functional::allpass::{from_samples_to_coef, from_samples_to_usize};
+
+    #[test]
+    fn from_samples_to_usize_1() {
+        assert_eq!(1, from_samples_to_usize(1.0));
+        assert_eq!(1, from_samples_to_usize(1.2));
+        assert_eq!(10, from_samples_to_usize(10.9));
+        assert_eq!(10, from_samples_to_usize(10.0));
+    }
+
+    #[test]
+    fn from_samples_to_coef_1() {
+        assert_eq!(1.0 / 3.0, from_samples_to_coef(0.5));
+        assert_eq!(1.0 / 3.0, from_samples_to_coef(1.5));
+        assert_eq!(1.0 / 3.0, from_samples_to_coef(99999.5));
+
+        assert_eq!(1.0, from_samples_to_coef(0.0));
+        assert_eq!(1.0, from_samples_to_coef(1.0));
+        assert_eq!(1.0, from_samples_to_coef(99999.0));
     }
 }
