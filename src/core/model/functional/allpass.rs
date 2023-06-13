@@ -203,7 +203,7 @@ impl APParameters {
                                 output_position_mm,
                                 propagation_velocity_m_per_s,
                             );
-                            let direction = direction::calculate_direction(
+                            let direction = direction::calculate_current_direction(
                                 input_position_mm,
                                 output_position_mm,
                             );
