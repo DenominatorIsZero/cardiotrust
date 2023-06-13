@@ -88,8 +88,14 @@ pub fn calculate_delay_samples_array(
 mod test {
     use approx::assert_relative_eq;
     use ndarray::{arr1, Array1};
+    use ndarray_stats::QuantileExt;
 
-    use super::calculate_delay_s;
+    use crate::core::{
+        config::model::Model,
+        model::spatial::{voxels::VoxelType, SpatialDescription},
+    };
+
+    use super::{calculate_delay_s, calculate_delay_samples_array};
 
     #[test]
     fn calculate_delay_s_1() {
@@ -119,5 +125,30 @@ mod test {
         );
 
         assert_relative_eq!(delay_s, 2.5)
+    }
+
+    #[test]
+    fn calculate_delay_samples_array_1() {
+        let config = &Model::default();
+        let spatial_description = &SpatialDescription::from_model_config(config);
+        let sample_rate_hz = 2000.0;
+
+        let delay_samples = calculate_delay_samples_array(
+            spatial_description,
+            &config.propagation_velocities_m_per_s,
+            sample_rate_hz,
+        )
+        .unwrap();
+
+        let max = delay_samples.values.max_skipnan();
+        let expected = (spatial_description.voxels.size_mm / 1000.0)
+            / config
+                .propagation_velocities_m_per_s
+                .get(&VoxelType::Atrioventricular)
+                .unwrap()
+            * sample_rate_hz
+            * 2.0_f32.sqrt();
+
+        assert_relative_eq!(*max, expected);
     }
 }
