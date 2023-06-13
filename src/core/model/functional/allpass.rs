@@ -2,7 +2,7 @@ use std::error::Error;
 
 use approx::relative_eq;
 
-use ndarray::{arr1, s, Array1, Array2, Array3, Array4, ArrayBase, Dim, OwnedRepr, ViewRepr};
+use ndarray::{arr1, s, Array1, Array3, Array4, ArrayBase, Dim, ViewRepr};
 
 use crate::core::{
     config::model::Model,
@@ -11,6 +11,8 @@ use crate::core::{
 
 use self::shapes::{ArrayActivationTime, ArrayDelays, ArrayGains, ArrayIndicesGains};
 
+mod delay;
+mod direction;
 mod gain;
 pub mod shapes;
 
@@ -81,7 +83,7 @@ impl APParameters {
                         ];
                         let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
 
-                        let delay_s = calculate_delay_s(
+                        let delay_s = delay::calculate_delay_s(
                             input_position_mm,
                             output_position_mm,
                             config.propagation_velocities_m_per_s.get(v_type).unwrap(),
@@ -196,13 +198,15 @@ impl APParameters {
                                 .get(input_voxel_type)
                                 .unwrap();
 
-                            let delay_s = calculate_delay_s(
+                            let delay_s = delay::calculate_delay_s(
                                 input_position_mm,
                                 output_position_mm,
                                 propagation_velocity_m_per_s,
                             );
-                            let direction =
-                                calculate_direction(input_position_mm, output_position_mm);
+                            let direction = direction::calculate_direction(
+                                input_position_mm,
+                                output_position_mm,
+                            );
 
                             // update activation time of input voxel, marking them as connected
                             activation_time_s[input_voxel_index] =
@@ -315,24 +319,4 @@ impl APParameters {
 
         Ok(ap_params)
     }
-}
-
-fn calculate_direction(
-    input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
-    output_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
-) -> Array1<f32> {
-    let distance_m = (input_position_mm - output_position_mm) / 1000.0;
-    let distance_norm_m = distance_m.mapv(|v| v.abs()).sum();
-
-    distance_m / distance_norm_m
-}
-
-fn calculate_delay_s(
-    input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
-    output_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
-    propagation_velocity_m_per_s: &f32,
-) -> f32 {
-    let distance_m = (input_position_mm - output_position_mm) / 1000.0;
-    let distance_norm_m = distance_m.mapv(|v| v.powi(2)).sum().sqrt();
-    distance_norm_m / *propagation_velocity_m_per_s
 }
