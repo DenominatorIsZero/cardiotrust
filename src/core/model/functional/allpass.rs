@@ -126,16 +126,7 @@ impl APParameters {
                             // Skip if connection is not allowed
                             let output_voxel_type = &v_types[output_voxel_index];
                             let input_voxel_type = &v_types[input_voxel_index];
-                            if *output_voxel_type == VoxelType::Atrioventricular
-                                && *input_voxel_type == VoxelType::HPS
-                            {
-                                println!("Case is present.");
-                            }
                             if !voxels::is_connection_allowed(output_voxel_type, input_voxel_type) {
-                                println!(
-                                    "Connection not allowed from {:?} to {:?}",
-                                    output_voxel_type, input_voxel_type
-                                );
                                 continue;
                             }
                             // Skip pathologies as anways if the propagation factor is zero
@@ -260,7 +251,6 @@ impl APParameters {
                 }
             });
 
-        // TODO: write test
         ap_params
             .activation_time_ms
             .values
@@ -304,12 +294,15 @@ fn from_samples_to_usize(samples: f32) -> usize {
 
 #[cfg(test)]
 mod test {
-    use crate::core::{
-        config::model::Model,
-        model::{
-            functional::allpass::{from_samples_to_coef, from_samples_to_usize},
-            spatial::SpatialDescription,
+    use crate::{
+        core::{
+            config::model::Model,
+            model::{
+                functional::allpass::{from_samples_to_coef, from_samples_to_usize},
+                spatial::{voxels::VoxelType, SpatialDescription},
+            },
         },
+        vis::plotting::plot_activation_time,
     };
 
     use super::APParameters;
@@ -349,5 +342,36 @@ mod test {
             );
             assert!(activation_time_ms.unwrap() >= 0.0);
         }
+        plot_activation_time(
+            &ap_params.activation_time_ms,
+            "tests/ap_params_activation_times_default",
+            "Activation times [ms]",
+        )
+    }
+
+    #[test]
+    fn activation_time_fast_av() {
+        let mut config = Model::default();
+        config
+            .propagation_velocities_m_per_s
+            .insert(VoxelType::Atrioventricular, 0.8);
+        let spatial_description = &SpatialDescription::from_model_config(&config);
+        let sample_rate_hz = 2000.0;
+        let ap_params =
+            APParameters::from_model_config(&config, spatial_description, sample_rate_hz).unwrap();
+
+        for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
+            assert!(
+                activation_time_ms.is_some(),
+                "Activation time at {:?} was none.",
+                index
+            );
+            assert!(activation_time_ms.unwrap() >= 0.0);
+        }
+        plot_activation_time(
+            &ap_params.activation_time_ms,
+            "tests/ap_params_activation_times_fast_av",
+            "Activation times [ms]",
+        )
     }
 }
