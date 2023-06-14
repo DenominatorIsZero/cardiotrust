@@ -207,50 +207,6 @@ impl APParameters {
             current_time_s = *candidate_times_s.min_skipnan();
         }
 
-        // TODO: Extract into function
-        // TODO: write tests
-        // init output state indices
-        v_types
-            .indexed_iter()
-            .filter(|(_, v_type)| **v_type != VoxelType::None)
-            .for_each(|(input_voxel_index, _)| {
-                let (x_in, y_in, z_in) = input_voxel_index;
-                for x_offset in -1..=1 {
-                    for y_offset in -1..=1 {
-                        for z_offset in -1..=1 {
-                            let ouput_voxel_index = [
-                                x_in as i32 + x_offset,
-                                y_in as i32 + y_offset,
-                                z_in as i32 + z_offset,
-                            ];
-                            if !spatial_description.voxels.is_valid_index(ouput_voxel_index) {
-                                continue;
-                            }
-                            let output_voxel_index = [
-                                (x_in as i32 + x_offset) as usize,
-                                (y_in as i32 + y_offset) as usize,
-                                (z_in as i32 + z_offset) as usize,
-                            ];
-                            for input_direction in 0..3 {
-                                let input_state_number =
-                                    v_numbers[input_voxel_index].unwrap() + input_direction;
-                                for output_direction in 0..3 {
-                                    let output_state_index =
-                                        v_numbers[output_voxel_index].unwrap() + output_direction;
-                                    ap_params.output_state_indices.values[(
-                                        input_state_number,
-                                        (1 + x_offset) as usize,
-                                        (1 + y_offset) as usize,
-                                        (1 + z_offset) as usize,
-                                        output_direction,
-                                    )] = Some(output_state_index);
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
         ap_params
             .activation_time_ms
             .values
@@ -264,6 +220,8 @@ impl APParameters {
             &config.propagation_velocities_m_per_s,
             sample_rate_hz,
         )?;
+
+        ap_params.output_state_indices = init_output_state_indicies(spatial_description);
 
         ap_params
             .delays
@@ -281,6 +239,55 @@ impl APParameters {
 
         Ok(ap_params)
     }
+}
+
+fn init_output_state_indicies(spatial_description: &SpatialDescription) -> ArrayIndicesGains {
+    let mut output_state_indices =
+        ArrayIndicesGains::empty(spatial_description.voxels.count_states());
+    let v_types = &spatial_description.voxels.types.values;
+    let v_numbers = &spatial_description.voxels.numbers.values;
+    // TODO: write tests
+    v_types
+        .indexed_iter()
+        .filter(|(_, v_type)| **v_type != VoxelType::None)
+        .for_each(|(input_voxel_index, _)| {
+            let (x_in, y_in, z_in) = input_voxel_index;
+            for x_offset in -1..=1 {
+                for y_offset in -1..=1 {
+                    for z_offset in -1..=1 {
+                        let ouput_voxel_index = [
+                            x_in as i32 + x_offset,
+                            y_in as i32 + y_offset,
+                            z_in as i32 + z_offset,
+                        ];
+                        if !spatial_description.voxels.is_valid_index(ouput_voxel_index) {
+                            continue;
+                        }
+                        let output_voxel_index = [
+                            (x_in as i32 + x_offset) as usize,
+                            (y_in as i32 + y_offset) as usize,
+                            (z_in as i32 + z_offset) as usize,
+                        ];
+                        for input_direction in 0..3 {
+                            let input_state_number =
+                                v_numbers[input_voxel_index].unwrap() + input_direction;
+                            for output_direction in 0..3 {
+                                let output_state_index =
+                                    v_numbers[output_voxel_index].unwrap() + output_direction;
+                                output_state_indices.values[(
+                                    input_state_number,
+                                    (1 + x_offset) as usize,
+                                    (1 + y_offset) as usize,
+                                    (1 + z_offset) as usize,
+                                    output_direction,
+                                )] = Some(output_state_index);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    output_state_indices
 }
 
 fn from_samples_to_coef(samples: f32) -> f32 {
