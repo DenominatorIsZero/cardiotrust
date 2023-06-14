@@ -177,6 +177,8 @@ fn calculate_derivatives_coefs(
 
 #[cfg(test)]
 mod tests {
+    use ndarray::Dim;
+
     use crate::core::model::functional::allpass::shapes::ArrayIndicesGains;
 
     use super::*;
@@ -271,10 +273,15 @@ mod tests {
         let number_of_sensors = 300;
         let number_of_steps = 2000;
         let time_index = 333;
+        let voxels_in_dims = Dim([1000, 1, 1]);
 
         let mut derivates = Derivatives::new(number_of_states);
-        let functional_description =
-            FunctionalDescription::empty(number_of_states, number_of_sensors, number_of_steps);
+        let functional_description = FunctionalDescription::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            voxels_in_dims,
+        );
         let estimations = Estimations::new(number_of_states, number_of_sensors, number_of_steps);
 
         derivates.calculate(&functional_description, &estimations, time_index)

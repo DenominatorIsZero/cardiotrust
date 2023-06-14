@@ -55,6 +55,8 @@ fn update_delays(
 
 #[cfg(test)]
 mod tests {
+    use ndarray::Dim;
+
     use super::*;
 
     #[test]
@@ -122,24 +124,26 @@ mod tests {
 
     #[test]
     fn update_ap_params_success() {
-        let mut ap_parameters = APParameters::empty(3);
+        let number_of_states = 3;
+        let voxels_in_dims = Dim([1, 1, 1]);
+        let mut ap_parameters = APParameters::empty(number_of_states, voxels_in_dims);
         ap_parameters.coefs.values.fill(0.2);
         ap_parameters.coefs.values[[0, 0, 0, 0]] = 0.8;
         ap_parameters.delays.values.fill(3);
         ap_parameters.delays.values[[0, 0, 0, 1]] = 2;
 
-        let mut derivatives = Derivatives::new(3);
+        let mut derivatives = Derivatives::new(number_of_states);
         derivatives.gains.values.fill(0.5);
         derivatives.coefs.values.fill(0.5);
         derivatives.coefs.values[[0, 0, 0, 2]] = -0.9;
 
         let learning_rate = 1.0;
 
-        let mut ap_coefs_exp = ArrayDelays::empty(3);
+        let mut ap_coefs_exp = ArrayDelays::empty(number_of_states);
         ap_coefs_exp.values.fill(0.7);
         ap_coefs_exp.values[[0, 0, 0, 0]] = 0.3;
         ap_coefs_exp.values[[0, 0, 0, 2]] = 0.1;
-        let mut delays_exp = ArrayDelays::empty(3);
+        let mut delays_exp = ArrayDelays::empty(number_of_states);
         delays_exp.values.fill(4);
         delays_exp.values[[0, 0, 0, 0]] = 3;
         delays_exp.values[[0, 0, 0, 1]] = 3;

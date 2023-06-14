@@ -4,6 +4,7 @@ use approx::relative_eq;
 
 use itertools::Itertools;
 use ndarray::{arr1, s, Array1, Array3, Array4, ArrayBase, Dim, ViewRepr};
+use ndarray_stats::QuantileExt;
 
 use crate::core::{
     config::model::Model,
@@ -30,13 +31,13 @@ pub struct APParameters {
 }
 
 impl APParameters {
-    pub fn empty(number_of_states: usize) -> APParameters {
+    pub fn empty(number_of_states: usize, voxels_in_dims: Dim<[usize; 3]>) -> APParameters {
         APParameters {
             gains: ArrayGains::empty(number_of_states),
             output_state_indices: ArrayIndicesGains::empty(number_of_states),
             coefs: ArrayDelays::empty(number_of_states),
             delays: ArrayDelays::empty(number_of_states),
-            activation_time_ms: ArrayActivationTime::empty([number_of_states, 1, 1]),
+            activation_time_ms: ArrayActivationTime::empty(voxels_in_dims),
         }
     }
 
@@ -45,7 +46,9 @@ impl APParameters {
         spatial_description: &SpatialDescription,
         sample_rate_hz: f32,
     ) -> Result<APParameters, Box<dyn Error>> {
-        let mut ap_params = APParameters::empty(spatial_description.voxels.count_states());
+        let voxels_in_dims = spatial_description.voxels.types.values.raw_dim();
+        let mut ap_params =
+            APParameters::empty(spatial_description.voxels.count_states(), voxels_in_dims);
         let mut activation_time_s = Array3::<Option<f32>>::from_elem(
             spatial_description.voxels.types.values.raw_dim(),
             None,
@@ -57,8 +60,9 @@ impl APParameters {
         let v_position_mm = &spatial_description.voxels.positions_mm.values;
         let v_numbers = &spatial_description.voxels.numbers.values;
 
-        let current_time_s: f32 = 0.0;
-
+        // TODO: Extract into function
+        // TODO: write tests
+        let mut current_time_s: f32 = 0.0;
         // Handle Sinoatrial node
         v_types
             .indexed_iter()
@@ -122,7 +126,16 @@ impl APParameters {
                             // Skip if connection is not allowed
                             let output_voxel_type = &v_types[output_voxel_index];
                             let input_voxel_type = &v_types[input_voxel_index];
+                            if *output_voxel_type == VoxelType::Atrioventricular
+                                && *input_voxel_type == VoxelType::HPS
+                            {
+                                println!("Case is present.");
+                            }
                             if !voxels::is_connection_allowed(output_voxel_type, input_voxel_type) {
+                                println!(
+                                    "Connection not allowed from {:?} to {:?}",
+                                    output_voxel_type, input_voxel_type
+                                );
                                 continue;
                             }
                             // Skip pathologies as anways if the propagation factor is zero
@@ -134,6 +147,7 @@ impl APParameters {
 
                             // Now we finally found something that we want to connect.
                             let input_state_number = v_numbers[input_voxel_index].unwrap();
+                            connected_something = true;
 
                             let output_position_mm =
                                 &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
@@ -193,8 +207,17 @@ impl APParameters {
                     }
                 }
             }
+            let candidate_times_s: Vec<f32> = activation_time_s
+                .iter()
+                .filter(|t| t.is_some() && t.unwrap() > current_time_s)
+                .map(|t| t.unwrap())
+                .collect();
+            let candidate_times_s = Array1::from_vec(candidate_times_s);
+            current_time_s = *candidate_times_s.min_skipnan();
         }
 
+        // TODO: Extract into function
+        // TODO: write tests
         // init output state indices
         v_types
             .indexed_iter()
@@ -237,6 +260,7 @@ impl APParameters {
                 }
             });
 
+        // TODO: write test
         ap_params
             .activation_time_ms
             .values
@@ -280,7 +304,15 @@ fn from_samples_to_usize(samples: f32) -> usize {
 
 #[cfg(test)]
 mod test {
-    use crate::core::model::functional::allpass::{from_samples_to_coef, from_samples_to_usize};
+    use crate::core::{
+        config::model::Model,
+        model::{
+            functional::allpass::{from_samples_to_coef, from_samples_to_usize},
+            spatial::SpatialDescription,
+        },
+    };
+
+    use super::APParameters;
 
     #[test]
     fn from_samples_to_usize_1() {
@@ -299,5 +331,23 @@ mod test {
         assert_eq!(1.0, from_samples_to_coef(0.0));
         assert_eq!(1.0, from_samples_to_coef(1.0));
         assert_eq!(1.0, from_samples_to_coef(99999.0));
+    }
+
+    #[test]
+    fn activation_time_is_some() {
+        let config = &Model::default();
+        let spatial_description = &SpatialDescription::from_model_config(config);
+        let sample_rate_hz = 2000.0;
+        let ap_params =
+            APParameters::from_model_config(config, spatial_description, sample_rate_hz).unwrap();
+
+        for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
+            assert!(
+                activation_time_ms.is_some(),
+                "Activation time at {:?} was none.",
+                index
+            );
+            assert!(activation_time_ms.unwrap() >= 0.0);
+        }
     }
 }

@@ -118,6 +118,8 @@ pub fn calculate_system_update(
 
 #[cfg(test)]
 mod tests {
+    use ndarray::Dim;
+
     use super::*;
     #[test]
     fn prediction_no_crash() {
@@ -125,12 +127,17 @@ mod tests {
         let number_of_sensors = 300;
         let number_of_steps = 2000;
         let time_index = 333;
+        let voxels_in_dims = Dim([1000, 1, 1]);
 
         let mut ap_outputs = ArrayGains::empty(number_of_states);
         let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
         let mut measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
-        let functional_description =
-            FunctionalDescription::empty(number_of_states, number_of_sensors, number_of_steps);
+        let functional_description = FunctionalDescription::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            voxels_in_dims,
+        );
 
         calculate_system_prediction(
             &mut ap_outputs,

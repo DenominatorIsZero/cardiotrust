@@ -1,4 +1,4 @@
-use ndarray::{Array3, Array4, Array5};
+use ndarray::{Array3, Array4, Array5, Dim};
 use num_traits::Zero;
 
 #[derive(Debug, PartialEq)]
@@ -59,7 +59,7 @@ pub struct ArrayActivationTime {
 }
 
 impl ArrayActivationTime {
-    pub fn empty(voxels_in_dims: [usize; 3]) -> ArrayActivationTime {
+    pub fn empty(voxels_in_dims: Dim<[usize; 3]>) -> ArrayActivationTime {
         ArrayActivationTime {
             values: Array3::from_elem(voxels_in_dims, None),
         }

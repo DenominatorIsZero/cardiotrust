@@ -80,6 +80,8 @@ fn run(
 
 #[cfg(test)]
 mod test {
+    use ndarray::Dim;
+
     use super::*;
 
     #[test]
@@ -91,14 +93,24 @@ mod test {
         let learning_rate = 1e3;
         let apply_system_update = true;
         let epoch_index = 3;
+        let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let mut functional_description =
-            FunctionalDescription::empty(number_of_states, number_of_sensors, number_of_steps);
+        let mut functional_description = FunctionalDescription::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            voxels_in_dims,
+        );
         let mut estimations =
             Estimations::new(number_of_states, number_of_sensors, number_of_steps);
         let mut derivatives = Derivatives::new(number_of_states);
         let mut metrics = Metrics::new(number_of_epochs, number_of_steps);
-        let data = Data::empty(number_of_sensors, number_of_states, number_of_steps);
+        let data = Data::empty(
+            number_of_sensors,
+            number_of_states,
+            number_of_steps,
+            voxels_in_dims,
+        );
 
         run_epoch(
             &mut functional_description,
@@ -117,18 +129,28 @@ mod test {
         let number_of_states = 3000;
         let number_of_sensors = 300;
         let number_of_steps = 3;
+        let voxels_in_dims = Dim([1000, 1, 1]);
 
         let mut config = Algorithm::default();
         config.epochs = 3;
-        let mut functional_description =
-            FunctionalDescription::empty(number_of_states, number_of_sensors, number_of_steps);
+        let mut functional_description = FunctionalDescription::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            voxels_in_dims,
+        );
         let mut results = Results::new(
             config.epochs,
             number_of_steps,
             number_of_sensors,
             number_of_states,
         );
-        let data = Data::empty(number_of_sensors, number_of_states, number_of_steps);
+        let data = Data::empty(
+            number_of_sensors,
+            number_of_states,
+            number_of_steps,
+            voxels_in_dims,
+        );
 
         run(&mut functional_description, &mut results, &data, &config);
     }

@@ -5,6 +5,8 @@ pub mod measurement;
 
 use std::error::Error;
 
+use ndarray::Dim;
+
 use self::{
     allpass::APParameters,
     control::{ControlFunction, ControlMatrix},
@@ -12,7 +14,7 @@ use self::{
     measurement::MeasurementMatrix,
 };
 
-use super::spatial::SpatialDescription;
+use super::spatial::{voxels, SpatialDescription};
 use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq)]
@@ -29,9 +31,10 @@ impl FunctionalDescription {
         number_of_states: usize,
         number_of_sensors: usize,
         number_of_steps: usize,
+        voxels_in_dims: Dim<[usize; 3]>,
     ) -> FunctionalDescription {
         FunctionalDescription {
-            ap_params: APParameters::empty(number_of_states),
+            ap_params: APParameters::empty(number_of_states, voxels_in_dims),
             measurement_matrix: MeasurementMatrix::empty(number_of_states, number_of_sensors),
             control_matrix: ControlMatrix::empty(number_of_states),
             kalman_gain: KalmanGain::empty(number_of_states, number_of_sensors),
@@ -71,8 +74,9 @@ mod tests {
     #[test]
     fn ap_empty() {
         let number_of_states = 3000;
+        let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let _ap_params = APParameters::empty(number_of_states);
+        let _ap_params = APParameters::empty(number_of_states, voxels_in_dims);
     }
 
     #[test]
@@ -80,9 +84,14 @@ mod tests {
         let number_of_states = 3000;
         let number_of_sensors = 300;
         let number_of_steps = 2000;
+        let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let _functional_description =
-            FunctionalDescription::empty(number_of_states, number_of_sensors, number_of_steps);
+        let _functional_description = FunctionalDescription::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            voxels_in_dims,
+        );
     }
 
     #[test]

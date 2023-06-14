@@ -3,6 +3,8 @@ pub mod spatial;
 
 use std::error::Error;
 
+use ndarray::Dim;
+
 use self::{functional::FunctionalDescription, spatial::SpatialDescription};
 
 use super::config::model::Model as ModelConfig;
@@ -18,12 +20,14 @@ impl Model {
         number_of_states: usize,
         number_of_sensors: usize,
         number_of_steps: usize,
+        voxels_in_dims: Dim<[usize; 3]>,
     ) -> Model {
         Model {
             functional_description: FunctionalDescription::empty(
                 number_of_states,
                 number_of_sensors,
                 number_of_steps,
+                voxels_in_dims,
             ),
             spatial_description: SpatialDescription::empty(
                 number_of_sensors,

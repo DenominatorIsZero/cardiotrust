@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use ndarray::Dim;
+
 use crate::core::{
     algorithm::estimation::calculate_system_prediction,
     config::simulation::Simulation as SimulationConfig,
@@ -20,11 +22,17 @@ impl Simulation {
         number_of_sensors: usize,
         number_of_states: usize,
         number_of_steps: usize,
+        voxels_in_dims: Dim<[usize; 3]>,
     ) -> Simulation {
         Simulation {
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
-            model: Model::empty(number_of_states, number_of_sensors, number_of_steps),
+            model: Model::empty(
+                number_of_states,
+                number_of_sensors,
+                number_of_steps,
+                voxels_in_dims,
+            ),
         }
     }
 
