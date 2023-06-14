@@ -310,7 +310,7 @@ mod test {
         vis::plotting::plot_activation_time,
     };
 
-    use super::APParameters;
+    use super::{init_output_state_indicies, APParameters};
 
     #[test]
     fn from_samples_to_usize_1() {
@@ -378,5 +378,17 @@ mod test {
             "tests/ap_params_activation_times_fast_av",
             "Activation times [ms]",
         )
+    }
+
+    #[test]
+    fn init_output_state_indicies_works() {
+        let config = &Model::default();
+        let spatial_description = &SpatialDescription::from_model_config(config);
+        let output_state_indicies = init_output_state_indicies(spatial_description);
+
+        assert!(output_state_indicies.values[(0, 1, 1, 1, 0)].unwrap() == 0);
+        assert!(output_state_indicies.values[(0, 1, 1, 1, 1)].unwrap() == 1);
+        assert!(output_state_indicies.values[(0, 1, 1, 1, 2)].unwrap() == 2);
+        assert!(output_state_indicies.values[(0, 1, 1, 0, 0)].is_none());
     }
 }
