@@ -16,7 +16,7 @@ egui = "0.21.0"
 egui_extras = "0.21.0"
 itertools = "0.10.5"
 ndarray = {version = "0.15.6", features = ["approx"]}
-ndarray-linalg = {version="0.16.0", features = ["intel-mkl-static"]}
+ndarray-linalg = {version="0.16.0", features = ["openblas-system"]}
 ndarray-npy = "0.8.1"
 ndarray-stats = "0.5.1"
 num-traits = "0.2.15"
