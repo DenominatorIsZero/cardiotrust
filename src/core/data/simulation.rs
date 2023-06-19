@@ -75,6 +75,7 @@ impl Simulation {
 mod test {
     use approx::{assert_relative_eq, relative_eq, RelativeEq};
     use ndarray::s;
+    use ndarray_stats::QuantileExt;
 
     use crate::{core::model::spatial::voxels::VoxelType, vis::plotting::standard_time_plot};
 
@@ -86,19 +87,9 @@ mod test {
         let simulation = Simulation::from_config(config);
         assert!(simulation.is_ok());
         let simulation = simulation.unwrap();
-        let max = *simulation
-            .system_states
-            .values
-            .iter()
-            .reduce(|max, e| if e > max { e } else { max })
-            .unwrap_or(&f32::MIN);
+        let max = *simulation.system_states.values.max_skipnan();
         assert_relative_eq!(max, 0.0);
-        let max = *simulation
-            .measurements
-            .values
-            .iter()
-            .reduce(|max, e| if e > max { e } else { max })
-            .unwrap_or(&f32::MIN);
+        let max = *simulation.measurements.values.max_skipnan();
         assert_relative_eq!(max, 0.0);
     }
 
@@ -107,40 +98,16 @@ mod test {
         let config = &SimulationConfig::default();
         let mut simulation = Simulation::from_config(config).unwrap();
         simulation.run();
-        let max = *simulation
-            .system_states
-            .values
-            .iter()
-            .reduce(|max, e| if e > max { e } else { max })
-            .unwrap_or(&f32::MIN);
-        //assert!(max.relative_eq(&1.0, 0.0001, 0.0001));
-        let max = *simulation
-            .measurements
-            .values
-            .iter()
-            .reduce(|max, e| if e > max { e } else { max })
-            .unwrap_or(&f32::MIN);
-        //assert!(max > 0.0);
+        let max = *simulation.system_states.values.max_skipnan();
+        assert!(max.relative_eq(&1.0, 0.001, 0.001));
+        let max = *simulation.measurements.values.max_skipnan();
+        assert!(max > 0.0);
 
-        let mut sa_index = 0;
-        simulation
+        let sa_index = simulation
             .model
             .spatial_description
             .voxels
-            .types
-            .values
-            .iter()
-            .zip(
-                simulation
-                    .model
-                    .spatial_description
-                    .voxels
-                    .numbers
-                    .values
-                    .iter(),
-            )
-            .filter(|(v_type, _)| **v_type == VoxelType::Sinoatrial)
-            .for_each(|(_, number)| sa_index = number.unwrap());
+            .get_first_state_of_type(VoxelType::Sinoatrial);
 
         let y = &simulation
             .system_states
@@ -179,25 +146,11 @@ mod test {
             "j [A/mm^2]",
         );
 
-        let mut av_index = 0;
-        simulation
+        let av_index = simulation
             .model
             .spatial_description
             .voxels
-            .types
-            .values
-            .iter()
-            .zip(
-                simulation
-                    .model
-                    .spatial_description
-                    .voxels
-                    .numbers
-                    .values
-                    .iter(),
-            )
-            .filter(|(v_type, _)| **v_type == VoxelType::Atrioventricular)
-            .for_each(|(_, number)| av_index = number.unwrap());
+            .get_first_state_of_type(VoxelType::Atrioventricular);
 
         let y = &simulation
             .system_states

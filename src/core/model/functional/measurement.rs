@@ -88,20 +88,6 @@ mod tests {
         let measurement_matrix =
             MeasurementMatrix::from_model_config(&config, &spatial_description);
 
-        let shape = measurement_matrix.values.shape();
-        print!("Shape: {:?}", shape);
-        let max = *measurement_matrix
-            .values
-            .iter()
-            .reduce(|max, e| if e > max { e } else { max })
-            .unwrap_or(&f32::MIN);
-        let min = *measurement_matrix
-            .values
-            .iter()
-            .reduce(|min, e| if e > min { min } else { e })
-            .unwrap_or(&f32::MAX);
-        println!("Max: {max}, min: {min}");
-
         plot_matrix(
             &measurement_matrix.values,
             "tests/measurement_matrix_default",

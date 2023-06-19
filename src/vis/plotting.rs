@@ -1,4 +1,5 @@
 use ndarray::{Array1, Array2, Array3};
+use ndarray_stats::QuantileExt;
 use plotly::{
     common::{ColorScale, Mode},
     layout::Axis,
@@ -21,22 +22,10 @@ pub fn standard_time_plot(
             .map(|i| i as f32 / sample_rate_hz)
             .collect(),
     );
-    let x_min = *x
-        .iter()
-        .reduce(|min, e| if e < min { e } else { min })
-        .unwrap_or(&f32::MAX);
-    let x_max = *x
-        .iter()
-        .reduce(|max, e| if e > max { e } else { max })
-        .unwrap_or(&f32::MIN);
-    let mut y_min = *y
-        .iter()
-        .reduce(|min, e| if e < min { e } else { min })
-        .unwrap_or(&f32::MAX);
-    let mut y_max = *y
-        .iter()
-        .reduce(|max, e| if e > max { e } else { max })
-        .unwrap_or(&f32::MIN);
+    let x_min = *x.min_skipnan();
+    let x_max = *x.max_skipnan();
+    let mut y_min = *y.min_skipnan();
+    let mut y_max = *y.max_skipnan();
     let y_range = y_max - y_min;
     let y_margin = 0.1;
     y_min = y_min - y_margin * y_range;

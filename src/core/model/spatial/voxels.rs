@@ -59,6 +59,17 @@ impl Voxels {
             && (0 <= z && z < (z_max as i32))
             && (self.types.values[(x as usize, y as usize, z as usize)] != VoxelType::None)
     }
+
+    pub fn get_first_state_of_type(&self, v_type: VoxelType) -> usize {
+        let query = self
+            .types
+            .values
+            .iter()
+            .zip(self.numbers.values.iter())
+            .filter(|(this_type, _)| **this_type == v_type)
+            .next();
+        query.unwrap().1.unwrap()
+    }
 }
 
 #[derive(Debug, PartialEq)]
