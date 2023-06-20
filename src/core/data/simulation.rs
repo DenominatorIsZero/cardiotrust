@@ -77,7 +77,10 @@ mod test {
 
     use ndarray_stats::QuantileExt;
 
-    use crate::{core::model::spatial::voxels::VoxelType, vis::plotting::time::plot_state_xyz};
+    use crate::{
+        core::model::spatial::voxels::VoxelType,
+        vis::plotting::{matrix::plot_states_at_time, time::plot_state_xyz},
+    };
 
     use super::*;
 
@@ -129,5 +132,15 @@ mod test {
             "tests/simulation_av",
             "Simulated Current Density Atrioventricular Node",
         );
+
+        let time_index = simulation.system_states.values.shape()[0] / 3;
+
+        plot_states_at_time(
+            &simulation.system_states,
+            &simulation.model.spatial_description.voxels,
+            time_index,
+            &format!("tests/simulation_states_{}", time_index),
+            &format!("Simulated Current Densities at Time Index {}", time_index),
+        )
     }
 }
