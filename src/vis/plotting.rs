@@ -1,16 +1,4 @@
-use ndarray::{arr1, s, Array1, Array2, Array3};
-use ndarray_stats::QuantileExt;
-use plotly::{
-    color::NamedColor,
-    common::{ColorScale, Mode},
-    layout::Axis,
-    HeatMap, Layout, Plot, Scatter,
-};
-
-use crate::core::{
-    data::shapes::ArraySystemStates,
-    model::{functional::allpass::shapes::ArrayActivationTime, spatial::voxels::VoxelType},
-};
+use plotly::Plot;
 
 pub mod matrix;
 pub mod time;

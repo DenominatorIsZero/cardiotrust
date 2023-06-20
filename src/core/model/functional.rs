@@ -14,7 +14,7 @@ use self::{
     measurement::MeasurementMatrix,
 };
 
-use super::spatial::{voxels, SpatialDescription};
+use super::spatial::SpatialDescription;
 use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq)]

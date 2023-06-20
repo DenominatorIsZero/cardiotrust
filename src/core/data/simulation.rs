@@ -73,14 +73,11 @@ impl Simulation {
 
 #[cfg(test)]
 mod test {
-    use approx::{assert_relative_eq, relative_eq, RelativeEq};
-    use ndarray::s;
+    use approx::{assert_relative_eq, RelativeEq};
+
     use ndarray_stats::QuantileExt;
 
-    use crate::{
-        core::model::spatial::voxels::VoxelType,
-        vis::plotting::time::{plot_state_xyz, standard_time_plot},
-    };
+    use crate::{core::model::spatial::voxels::VoxelType, vis::plotting::time::plot_state_xyz};
 
     use super::*;
 

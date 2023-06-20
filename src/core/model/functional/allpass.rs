@@ -1,9 +1,9 @@
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
 
 use approx::relative_eq;
 
 use itertools::Itertools;
-use ndarray::{arr1, s, Array1, Array3, Array4, ArrayBase, Dim, ViewRepr};
+use ndarray::{arr1, s, Array1, Array3, Array4, Dim};
 use ndarray_stats::QuantileExt;
 
 use crate::core::{
