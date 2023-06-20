@@ -307,7 +307,7 @@ mod test {
                 spatial::{voxels::VoxelType, SpatialDescription},
             },
         },
-        vis::plotting::plot_activation_time,
+        vis::plotting::matrix::plot_activation_time,
     };
 
     use super::{init_output_state_indicies, APParameters};

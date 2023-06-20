@@ -278,7 +278,7 @@ pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &V
 #[cfg(test)]
 mod tests {
 
-    use crate::vis::plotting::plot_voxel_types;
+    use crate::vis::plotting::matrix::plot_voxel_types;
 
     use super::*;
 

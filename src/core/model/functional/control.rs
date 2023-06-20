@@ -115,7 +115,7 @@ mod test {
             ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
         assert_eq!(expected_length_samples, control_function.values.shape()[0]);
 
-        plotting::standard_time_plot(
+        plotting::time::standard_time_plot(
             &control_function.values,
             sample_rate_hz,
             "tests/control_function",

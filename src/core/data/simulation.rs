@@ -79,7 +79,7 @@ mod test {
 
     use crate::{
         core::model::spatial::voxels::VoxelType,
-        vis::plotting::{plot_state_xyz, standard_time_plot},
+        vis::plotting::time::{plot_state_xyz, standard_time_plot},
     };
 
     use super::*;

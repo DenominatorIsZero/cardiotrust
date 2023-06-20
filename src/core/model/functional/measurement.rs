@@ -74,7 +74,7 @@ impl MeasurementMatrix {
 
 #[cfg(test)]
 mod tests {
-    use crate::vis::plotting::plot_matrix;
+    use crate::vis::plotting::matrix::plot_matrix;
 
     use super::*;
 
