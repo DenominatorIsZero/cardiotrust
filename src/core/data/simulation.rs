@@ -77,7 +77,10 @@ mod test {
     use ndarray::s;
     use ndarray_stats::QuantileExt;
 
-    use crate::{core::model::spatial::voxels::VoxelType, vis::plotting::standard_time_plot};
+    use crate::{
+        core::model::spatial::voxels::VoxelType,
+        vis::plotting::{plot_state_xyz, standard_time_plot},
+    };
 
     use super::*;
 
@@ -109,41 +112,12 @@ mod test {
             .voxels
             .get_first_state_of_type(VoxelType::Sinoatrial);
 
-        let y = &simulation
-            .system_states
-            .values
-            .slice(s![.., sa_index])
-            .to_owned();
-        standard_time_plot(
-            y,
+        plot_state_xyz(
+            &simulation.system_states,
+            sa_index,
             config.sample_rate_hz,
-            "tests/simulation_sa_x",
+            "tests/simulation_sa",
             "Simulated Current Density Sinoatrial Node",
-            "j [A/mm^2]",
-        );
-        let y = &simulation
-            .system_states
-            .values
-            .slice(s![.., sa_index + 1])
-            .to_owned();
-        standard_time_plot(
-            y,
-            config.sample_rate_hz,
-            "tests/simulation_sa_y",
-            "Simulated Current Density Sinoatrial Node",
-            "j [A/mm^2]",
-        );
-        let y = &simulation
-            .system_states
-            .values
-            .slice(s![.., sa_index + 2])
-            .to_owned();
-        standard_time_plot(
-            y,
-            config.sample_rate_hz,
-            "tests/simulation_sa_z",
-            "Simulated Current Density Sinoatrial Node",
-            "j [A/mm^2]",
         );
 
         let av_index = simulation
@@ -151,42 +125,12 @@ mod test {
             .spatial_description
             .voxels
             .get_first_state_of_type(VoxelType::Atrioventricular);
-
-        let y = &simulation
-            .system_states
-            .values
-            .slice(s![.., av_index])
-            .to_owned();
-        standard_time_plot(
-            y,
+        plot_state_xyz(
+            &simulation.system_states,
+            av_index,
             config.sample_rate_hz,
-            "tests/simulation_av_x",
+            "tests/simulation_av",
             "Simulated Current Density Atrioventricular Node",
-            "j [A/mm^2]",
-        );
-        let y = &simulation
-            .system_states
-            .values
-            .slice(s![.., av_index + 1])
-            .to_owned();
-        standard_time_plot(
-            y,
-            config.sample_rate_hz,
-            "tests/simulation_av_y",
-            "Simulated Current Density Atrioventricular Node",
-            "j [A/mm^2]",
-        );
-        let y = &simulation
-            .system_states
-            .values
-            .slice(s![.., av_index + 2])
-            .to_owned();
-        standard_time_plot(
-            y,
-            config.sample_rate_hz,
-            "tests/simulation_av_z",
-            "Simulated Current Density Atrioventricular Node",
-            "j [A/mm^2]",
         );
     }
 }
