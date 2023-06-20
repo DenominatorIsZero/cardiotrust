@@ -153,13 +153,13 @@ mod tests {
         let number_of_states = 3000;
         let number_of_sensors = 300;
         let number_of_steps = 2000;
-        let index_time = 333;
+        let time_index = 333;
 
         let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
         let residuals = ArrayMeasurements::empty(1, number_of_sensors);
         let kalman_gain = KalmanGain::empty(number_of_states, number_of_sensors);
 
-        calculate_system_update(&mut system_states, &residuals, &kalman_gain, index_time);
+        calculate_system_update(&mut system_states, &residuals, &kalman_gain, time_index);
     }
 
     #[test]
