@@ -210,6 +210,39 @@ pub fn plot_states_at_time(
                 .range(vec![voxels.count_xyz()[1] - 1, 0])
                 .anchor("x"),
         )
+        .x_axis2(
+            Axis::new()
+                .title("x".into())
+                .range(vec![0, voxels.count_xyz()[0] - 1]),
+        )
+        .y_axis2(
+            Axis::new()
+                .title("y".into())
+                .range(vec![voxels.count_xyz()[1] - 1, 0])
+                .anchor("x"),
+        )
+        .x_axis3(
+            Axis::new()
+                .title("x".into())
+                .range(vec![0, voxels.count_xyz()[0] - 1]),
+        )
+        .y_axis3(
+            Axis::new()
+                .title("y".into())
+                .range(vec![voxels.count_xyz()[1] - 1, 0])
+                .anchor("x"),
+        )
+        .x_axis4(
+            Axis::new()
+                .title("x".into())
+                .range(vec![0, voxels.count_xyz()[0] - 1]),
+        )
+        .y_axis4(
+            Axis::new()
+                .title("y".into())
+                .range(vec![voxels.count_xyz()[1] - 1, 0])
+                .anchor("x"),
+        )
         .height(height)
         .width(width);
 
