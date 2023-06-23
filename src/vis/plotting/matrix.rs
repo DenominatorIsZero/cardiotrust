@@ -1,3 +1,5 @@
+use std::cmp;
+
 use ndarray::{s, Array2, Array3};
 use plotly::{
     common::ColorScale,
@@ -125,6 +127,9 @@ pub fn plot_states_at_time(
     let mut in_z: Vec<Vec<f32>> = Vec::new();
     let mut abs: Vec<Vec<f32>> = Vec::new();
 
+    let mut min_j = f32::MAX;
+    let mut max_j = f32::MIN;
+
     for y_index in 0..voxels.count_xyz()[1] {
         let mut row_x: Vec<f32> = Vec::new();
         let mut row_y: Vec<f32> = Vec::new();
@@ -154,11 +159,37 @@ pub fn plot_states_at_time(
                 }
             }
         }
-        in_x.push(row_x);
-        in_y.push(row_y);
-        in_z.push(row_z);
-        abs.push(row_abs);
+        in_x.push(row_x.clone());
+        min_j = f32::min(min_j, row_x.into_iter().reduce(f32::min).unwrap());
+        in_y.push(row_y.clone());
+        min_j = f32::min(min_j, row_y.into_iter().reduce(f32::min).unwrap());
+        in_z.push(row_z.clone());
+        min_j = f32::min(min_j, row_z.into_iter().reduce(f32::min).unwrap());
+        abs.push(row_abs.clone());
+        min_j = f32::min(min_j, row_abs.clone().into_iter().reduce(f32::min).unwrap());
+        max_j = f32::max(max_j, row_abs.into_iter().reduce(f32::max).unwrap());
     }
+
+    // add invisible row to make all subplots have the same scale
+
+    let mut row_x: Vec<f32> = Vec::new();
+    let mut row_y: Vec<f32> = Vec::new();
+    let mut row_z: Vec<f32> = Vec::new();
+    let mut row_abs: Vec<f32> = Vec::new();
+    row_x.push(min_j);
+    row_y.push(min_j);
+    row_z.push(min_j);
+    row_abs.push(min_j);
+    for _ in 1..voxels.count_xyz()[0] {
+        row_x.push(max_j);
+        row_y.push(max_j);
+        row_z.push(max_j);
+        row_abs.push(max_j);
+    }
+    in_x.push(row_x);
+    in_y.push(row_y);
+    in_z.push(row_z);
+    abs.push(row_abs);
 
     let trace_x = HeatMap::new_z(in_x)
         .name("x")
