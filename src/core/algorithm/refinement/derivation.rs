@@ -10,12 +10,24 @@ use crate::core::{
 
 use crate::core::data::shapes::ArraySystemStates;
 
+/// Stuct to calculate and store the derivatives
+/// of the model parameters with regards to the
+/// Loss function.
 #[derive(Debug, PartialEq)]
 pub struct Derivatives {
+    /// Derivatives of the All-pass gains
     pub gains: ArrayGains<f32>,
+    /// Derivatives of the All-pass coeficients
     pub coefs: ArrayDelays<f32>,
+    /// IIR component of the coeficients derivatives
+    /// only used for internal computation
     coefs_iir: ArrayGains<f32>,
+    /// FIR component of the coeficients derivatives
+    /// only used for internal computation
     coefs_fir: ArrayGains<f32>,
+    /// Residuals mapped onto the system states via
+    /// the measurement matrix.
+    /// Stored internally to avoid redundant computation
     mapped_residuals: ArrayMappedResiduals,
 }
 
