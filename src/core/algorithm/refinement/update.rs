@@ -8,6 +8,9 @@ use crate::core::model::{
 use super::derivation::Derivatives;
 
 impl APParameters {
+    /// Performs one gradient descent step on the all-pass parameters.
+    ///
+    /// Derivatives must be reset before the next update.
     pub fn update(&mut self, derivatives: &Derivatives, learning_rate: f32) {
         update_gains(&mut self.gains, &derivatives.gains, learning_rate);
         update_delays(
@@ -19,10 +22,18 @@ impl APParameters {
     }
 }
 
+/// Performs one gradient descent step on the all-pass gains.
 fn update_gains(gains: &mut ArrayGains<f32>, derivatives: &ArrayGains<f32>, learning_rate: f32) {
     gains.values -= &(learning_rate * &derivatives.values);
 }
 
+/// Performs one gradient descent step on the all-pass coeffs.
+///
+/// Coefficients are kept between 0 and 1.
+///
+/// When a step would place a coefficient outside this range,
+/// the integer delay parameter is adjusted to "roll" the
+/// coefficient.
 fn update_delays(
     ap_coefs: &mut ArrayDelays<f32>,
     delays: &mut ArrayDelays<usize>,

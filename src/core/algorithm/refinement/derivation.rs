@@ -42,6 +42,9 @@ impl Derivatives {
         }
     }
 
+    /// Sets all arrays to zero.
+    ///
+    /// Usually used after updating the parameters.
     pub fn reset(&mut self) {
         self.gains.values.fill(0.0);
         self.coefs.values.fill(0.0);
@@ -50,6 +53,10 @@ impl Derivatives {
         self.mapped_residuals.values.fill(0.0);
     }
 
+    /// Calculates the derivatives for the given time index.
+    ///
+    /// CAUTION: adds to old values. use "reset" after using the
+    /// derivatives to update the parameters.
     pub fn calculate(
         &mut self,
         functional_description: &FunctionalDescription,
