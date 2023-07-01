@@ -79,7 +79,10 @@ mod test {
 
     use crate::{
         core::model::spatial::voxels::VoxelType,
-        vis::plotting::{matrix::plot_states_at_time, time::plot_state_xyz},
+        vis::plotting::{
+            matrix::{plot_states_at_time, plot_states_over_time},
+            time::plot_state_xyz,
+        },
     };
 
     use super::*;
@@ -138,9 +141,22 @@ mod test {
         plot_states_at_time(
             &simulation.system_states,
             &simulation.model.spatial_description.voxels,
+            f32::MAX,
+            f32::MIN,
             time_index,
             &format!("tests/simulation_states_{}", time_index),
             &format!("Simulated Current Densities at Time Index {}", time_index),
-        )
+        );
+
+        let fps = 20;
+        let playback_speed = 0.1;
+        // plot_states_over_time(
+        //     &simulation.system_states,
+        //     &simulation.model.spatial_description.voxels,
+        //     fps,
+        //     playback_speed,
+        //     "tests/simulation_states",
+        //     "Simulated Current Densities",
+        // );
     }
 }

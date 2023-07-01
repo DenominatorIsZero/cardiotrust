@@ -1,5 +1,6 @@
 use plotly::Plot;
 
+pub mod engiffen;
 pub mod matrix;
 pub mod time;
 

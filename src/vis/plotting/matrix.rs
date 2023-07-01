@@ -1,6 +1,8 @@
-use std::cmp;
+use std::{cmp, fs, path::Path};
 
+use bevy::time;
 use ndarray::{s, Array2, Array3};
+use ndarray_stats::QuantileExt;
 use plotly::{
     common::ColorScale,
     layout::{Axis, GridPattern, LayoutGrid},
@@ -115,6 +117,8 @@ pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &
 pub fn plot_states_at_time(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
+    min_j_init: f32,
+    max_j_init: f32,
     time_index: usize,
     file_name: &str,
     title: &str,
@@ -127,8 +131,8 @@ pub fn plot_states_at_time(
     let mut in_z: Vec<Vec<f32>> = Vec::new();
     let mut abs: Vec<Vec<f32>> = Vec::new();
 
-    let mut min_j = f32::MAX;
-    let mut max_j = f32::MIN;
+    let mut min_j = min_j_init;
+    let mut max_j = max_j_init;
 
     for y_index in 0..voxels.count_xyz()[1] {
         let mut row_x: Vec<f32> = Vec::new();
@@ -280,6 +284,46 @@ pub fn plot_states_at_time(
     plot.set_layout(layout);
 
     save_plot(file_name, plot, width, height, 1.0);
+}
+
+pub fn plot_states_over_time(
+    system_states: &ArraySystemStates,
+    voxels: &Voxels,
+    fps: u32,
+    playback_speed: f32,
+    file_name: &str,
+    title: &str,
+) {
+    let directory = format!("./tmp/{file_name}/");
+    let dir_path = Path::new(&directory);
+    if dir_path.is_dir() {
+        fs::remove_dir_all(dir_path).unwrap();
+    }
+    fs::create_dir_all(dir_path).unwrap();
+
+    let sample_number = system_states.values.shape()[0];
+    let image_number = (fps as f32 / playback_speed) as usize;
+    let time_step = sample_number / image_number;
+
+    let min_j_init = *system_states.values.min_skipnan();
+    let max_j_init = *system_states.values.max_skipnan(); // TODO: This should really be over the absolute values...
+
+    let time_indices: Vec<usize> = (0..sample_number).step_by(time_step).collect();
+    let mut image_names = Vec::new();
+
+    for (image_index, time_index) in time_indices.into_iter().enumerate() {
+        let image_name = format!("./tmp/{file_name}/{image_index}");
+        plot_states_at_time(
+            system_states,
+            voxels,
+            min_j_init,
+            max_j_init,
+            time_index,
+            &image_name,
+            title,
+        );
+        image_names.push(format!("{image_name}.png"));
+    }
 }
 
 pub fn plot_matrix(matrix: &Array2<f32>, file_name: &str, title: &str) {
