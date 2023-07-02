@@ -1,4 +1,8 @@
-use std::{cmp, fs, path::Path};
+use std::{
+    cmp,
+    fs::{self, File},
+    path::Path,
+};
 
 use bevy::time;
 use ndarray::{s, Array2, Array3};
@@ -17,7 +21,7 @@ use crate::core::{
     },
 };
 
-use super::save_plot;
+use super::{engiffen, save_plot};
 
 pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str) {
     let mut z: Vec<Vec<i32>> = Vec::new();
@@ -324,6 +328,12 @@ pub fn plot_states_over_time(
         );
         image_names.push(format!("{image_name}.png"));
     }
+    let images = engiffen::load_images(&image_names.as_slice());
+    let gif =
+        engiffen::engiffen(&images, fps.try_into().unwrap(), engiffen::Quantizer::Naive).unwrap();
+    let mut output_file = File::create(format!("{file_name}.gif")).unwrap();
+    gif.write(&mut output_file).unwrap();
+    fs::remove_dir_all(dir_path).unwrap();
 }
 
 pub fn plot_matrix(matrix: &Array2<f32>, file_name: &str, title: &str) {
