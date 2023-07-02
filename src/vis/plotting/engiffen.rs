@@ -163,7 +163,7 @@ impl Gif {
     /// Returns the `std::io::Result` of the underlying `write` function calls.
     pub fn write<W: io::Write>(&self, mut out: &mut W) -> Result<(), Error> {
         let mut encoder = Encoder::new(&mut out, self.width, self.height, &self.palette).unwrap();
-        // encoder.set(Repeat::Infinite)?;
+        encoder.set_repeat(Repeat::Infinite).unwrap();
         for img in &self.images {
             let mut frame = Frame::default();
             frame.delay = self.delay / 10;
