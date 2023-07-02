@@ -150,13 +150,13 @@ mod test {
 
         let fps = 20;
         let playback_speed = 0.1;
-        // plot_states_over_time(
-        //     &simulation.system_states,
-        //     &simulation.model.spatial_description.voxels,
-        //     fps,
-        //     playback_speed,
-        //     "tests/simulation_states",
-        //     "Simulated Current Densities",
-        // );
+        plot_states_over_time(
+            &simulation.system_states,
+            &simulation.model.spatial_description.voxels,
+            fps,
+            playback_speed,
+            "tests/simulation_states",
+            "Simulated Current Densities",
+        );
     }
 }
