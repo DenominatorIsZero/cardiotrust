@@ -160,9 +160,8 @@ pub fn plot_states_at_time(
                     row_abs.push(
                         system_states
                             .slice(s![time_index, state_index..state_index + 3])
-                            .mapv(|v| v.powi(2))
-                            .sum()
-                            .sqrt(),
+                            .mapv(|v| v.abs())
+                            .sum(),
                     );
                 }
             }
