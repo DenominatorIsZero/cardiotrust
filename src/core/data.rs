@@ -7,6 +7,7 @@ use ndarray::Dim;
 use self::measurement::Measurement;
 use self::simulation::Simulation;
 
+use crate::core::config::simulation::Simulation as SimulationConfig;
 use crate::core::data::shapes::ArrayMeasurements;
 
 #[derive(Debug, PartialEq)]
@@ -36,6 +37,15 @@ impl Data {
                 number_of_steps,
                 voxels_in_dims,
             )),
+            measurement: None,
+        }
+    }
+
+    pub fn from_simulation_config(config: &SimulationConfig) -> Data {
+        let mut simulation = Simulation::from_config(config).unwrap();
+        simulation.run();
+        Data {
+            simulation: Some(simulation),
             measurement: None,
         }
     }
