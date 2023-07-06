@@ -103,7 +103,7 @@ pub fn calculate_residuals(
     residuals.values.slice_mut(s![0, ..]).assign(
         &(&actual_measurements.values.slice(s![time_index, ..])
             - &predicted_measurements.values.slice(s![time_index, ..])),
-    )
+    );
 }
 
 pub fn calculate_system_update(
