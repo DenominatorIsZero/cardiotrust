@@ -75,13 +75,14 @@ impl Simulation {
 mod test {
     use approx::{assert_relative_eq, RelativeEq};
 
+    use ndarray::s;
     use ndarray_stats::QuantileExt;
 
     use crate::{
         core::model::spatial::voxels::VoxelType,
         vis::plotting::{
             matrix::{plot_states_at_time, plot_states_over_time},
-            time::plot_state_xyz,
+            time::{plot_state_xyz, standard_time_plot},
         },
     };
 
@@ -136,6 +137,28 @@ mod test {
             "Simulated Current Density Atrioventricular Node",
         );
 
+        standard_time_plot(
+            &simulation.measurements.values.slice(s![.., 0]).to_owned(),
+            config.sample_rate_hz,
+            "tests/simulation_sensor_0_x",
+            "Simulated Measurement Sensor 0 - x",
+            "H [pT]",
+        );
+        standard_time_plot(
+            &simulation.measurements.values.slice(s![.., 1]).to_owned(),
+            config.sample_rate_hz,
+            "tests/simulation_sensor_0_y",
+            "Simulated Measurement Sensor 0 - y",
+            "H [pT]",
+        );
+        standard_time_plot(
+            &simulation.measurements.values.slice(s![.., 2]).to_owned(),
+            config.sample_rate_hz,
+            "tests/simulation_sensor_0_z",
+            "Simulated Measurement Sensor 0 - z",
+            "H [pT]",
+        );
+
         let time_index = simulation.system_states.values.shape()[0] / 3;
 
         plot_states_at_time(
@@ -156,6 +179,104 @@ mod test {
             fps,
             playback_speed,
             "tests/simulation_states",
+            "Simulated Current Densities",
+        );
+    }
+
+    #[test]
+    fn run_simulation_pathological() {
+        let mut config = SimulationConfig::default();
+        config.model.pathological = true;
+        let mut simulation = Simulation::from_config(&config).unwrap();
+        simulation.run();
+        let max = *simulation.system_states.values.max_skipnan();
+        assert!(max.relative_eq(&1.0, 0.001, 0.001));
+        let max = *simulation.measurements.values.max_skipnan();
+        assert!(max > 0.0);
+
+        let sa_index = simulation
+            .model
+            .spatial_description
+            .voxels
+            .get_first_state_of_type(VoxelType::Sinoatrial);
+
+        plot_state_xyz(
+            &simulation.system_states,
+            sa_index,
+            config.sample_rate_hz,
+            "tests/simulation_sa_pathological",
+            "Simulated Current Density Sinoatrial Node",
+        );
+
+        let av_index = simulation
+            .model
+            .spatial_description
+            .voxels
+            .get_first_state_of_type(VoxelType::Atrioventricular);
+        plot_state_xyz(
+            &simulation.system_states,
+            av_index,
+            config.sample_rate_hz,
+            "tests/simulation_av_pathological",
+            "Simulated Current Density Atrioventricular Node",
+        );
+
+        let pathology_index = simulation
+            .model
+            .spatial_description
+            .voxels
+            .get_first_state_of_type(VoxelType::Pathological);
+        plot_state_xyz(
+            &simulation.system_states,
+            pathology_index,
+            config.sample_rate_hz,
+            "tests/simulation_pathological",
+            "Simulated Current Density Pathological Voxel",
+        );
+
+        standard_time_plot(
+            &simulation.measurements.values.slice(s![.., 0]).to_owned(),
+            config.sample_rate_hz,
+            "tests/simulation_sensor_0_x_pathological",
+            "Simulated Measurement Sensor 0 - x",
+            "H [pT]",
+        );
+        standard_time_plot(
+            &simulation.measurements.values.slice(s![.., 1]).to_owned(),
+            config.sample_rate_hz,
+            "tests/simulation_sensor_0_y_pathological",
+            "Simulated Measurement Sensor 0 - y",
+            "H [pT]",
+        );
+        standard_time_plot(
+            &simulation.measurements.values.slice(s![.., 2]).to_owned(),
+            config.sample_rate_hz,
+            "tests/simulation_sensor_0_z_pathological",
+            "Simulated Measurement Sensor 0 - z",
+            "H [pT]",
+        );
+
+
+        let time_index = simulation.system_states.values.shape()[0] / 3;
+
+        plot_states_at_time(
+            &simulation.system_states,
+            &simulation.model.spatial_description.voxels,
+            f32::MAX,
+            f32::MIN,
+            time_index,
+            &format!("tests/simulation_states_{}_pathological", time_index),
+            &format!("Simulated Current Densities at Time Index {}", time_index),
+        );
+
+        let fps = 20;
+        let playback_speed = 0.1;
+        plot_states_over_time(
+            &simulation.system_states,
+            &simulation.model.spatial_description.voxels,
+            fps,
+            playback_speed,
+            "tests/simulation_states_pathological",
             "Simulated Current Densities",
         );
     }
