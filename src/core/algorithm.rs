@@ -15,6 +15,10 @@ pub mod estimation;
 pub mod metrics;
 pub mod refinement;
 
+/// Runs the algorithm for one epoch.
+///
+/// This includes calculating the system estimates
+/// and performing one gradient descent step.
 fn run_epoch(
     functional_description: &mut FunctionalDescription,
     estimations: &mut Estimations,
@@ -65,6 +69,7 @@ fn run(
     config: &Algorithm,
 ) {
     for epoch_index in 0..config.epochs {
+        println!("Epoch: {}", epoch_index);
         run_epoch(
             functional_description,
             &mut results.estimations,
@@ -80,11 +85,15 @@ fn run(
 
 #[cfg(test)]
 mod test {
+    use std::fmt::Debug;
+
     use ndarray::Dim;
 
     use crate::core::config::model::Model as ModelConfig;
     use crate::core::config::simulation::Simulation as SimulationConfig;
     use crate::core::model::Model;
+    use crate::vis::plotting::matrix::plot_states_over_time;
+    use crate::vis::plotting::time::{standard_time_plot, standard_y_plot};
 
     use super::*;
 
@@ -166,13 +175,16 @@ mod test {
         let data = Data::from_simulation_config(&simulation_config);
 
         let mut algorithm_config = Algorithm::default();
+
         let mut model = Model::from_model_config(
             &algorithm_config.model,
             simulation_config.sample_rate_hz,
             simulation_config.duration_s,
         )
         .unwrap();
-        algorithm_config.epochs = 3;
+        algorithm_config.epochs = 5;
+        algorithm_config.model.apply_system_update = true;
+        algorithm_config.learning_rate = 1e-3;
 
         let mut results = Results::new(
             algorithm_config.epochs,
@@ -192,10 +204,25 @@ mod test {
             &algorithm_config,
         );
 
-        println!(
-            "0: {}, 1: {}",
-            results.metrics.loss_epoch.values[0], results.metrics.loss_epoch.values[1]
+        standard_y_plot(
+            &results.metrics.loss.values,
+            "tests/algorithm_loss",
+            "Loss",
+            "Loss",
+            "Step",
         );
-        assert!(results.metrics.loss_epoch.values[0] == results.metrics.loss_epoch.values[1]);
+        standard_y_plot(
+            &results.metrics.loss_epoch.values,
+            "tests/algorithm_loss_epoch",
+            "Sum Loss Per Epoch",
+            "Loss",
+            "Epoch",
+        );
+
+        (0..algorithm_config.epochs - 1).for_each(|i| {
+            assert!(
+                results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
+            );
+        })
     }
 }
