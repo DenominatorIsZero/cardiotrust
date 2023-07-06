@@ -101,8 +101,8 @@ pub fn calculate_residuals(
     time_index: usize,
 ) {
     residuals.values.slice_mut(s![0, ..]).assign(
-        &(&actual_measurements.values.slice(s![time_index, ..])
-            - &predicted_measurements.values.slice(s![time_index, ..])),
+        &(&predicted_measurements.values.slice(s![time_index, ..])
+            - &actual_measurements.values.slice(s![time_index, ..])),
     );
 }
 
