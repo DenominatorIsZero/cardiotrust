@@ -144,19 +144,6 @@ impl fmt::Debug for Gif {
 impl Gif {
     /// Writes the animated Gif to any output that implements Write.
     ///
-    /// # Examples
-    ///
-    /// ```rust,no_run
-    /// use std::fs::File;
-    /// # use engiffen::{Image, engiffen, Quantizer};
-    /// # fn foo() -> Result<(), engiffen::Error> {
-    /// # let images: Vec<Image> = vec![];
-    /// let mut output = File::create("output.gif")?;
-    /// let gif = engiffen(&images, 10, Quantizer::NeuQuant(2))?;
-    /// gif.write(&mut output)?;
-    /// # Ok(())
-    /// # }
-    /// ```
     ///
     /// # Errors
     ///
@@ -179,16 +166,6 @@ impl Gif {
 
 /// Loads an image from the given file path.
 ///
-/// # Examples
-///
-/// ```rust,no_run
-/// # use engiffen::{load_image, Image, Error};
-/// # use std::path::PathBuf;
-/// # fn foo() -> Result<Image, Error> {
-/// let image = load_image("test/ball/ball01.bmp")?;
-/// # Ok(image)
-/// # }
-/// ```
 ///
 /// # Errors
 ///
@@ -214,15 +191,6 @@ where
 /// Loads images from a list of given paths. Errors encountered while loading files
 /// are skipped.
 ///
-/// # Examples
-///
-/// ```rust,no_run
-/// # use engiffen::load_images;
-/// let paths = vec!["tests/ball/ball06.bmp", "tests/ball/ball07.bmp", "tests/ball/ball08.bmp"];
-/// let images = load_images(&paths);
-/// assert_eq!(images.len(), 2); // The last path doesn't exist. It was silently skipped.
-/// ```
-///
 /// Skips images that fail to load. If all images fail, returns an empty vector.
 pub fn load_images<P>(paths: &[P]) -> Vec<Image>
 where
@@ -237,19 +205,6 @@ where
 
 /// Converts a sequence of images into a `Gif` at a given frame rate. The `quantizer`
 /// parameter selects the algorithm that quantizes the palette into 256-colors.
-///
-/// # Examples
-///
-/// ```rust,no_run
-/// # use engiffen::{load_images, engiffen, Gif, Error, Quantizer};
-/// # fn foo() -> Result<Gif, Error> {
-/// let paths = vec!["tests/ball/ball01.bmp", "tests/ball/ball02.bmp", "tests/ball/ball03.bmp"];
-/// let images = load_images(&paths);
-/// let gif = engiffen(&images, 10, Quantizer::NeuQuant(2))?;
-/// assert_eq!(gif.images.len(), 3);
-/// # Ok(gif)
-/// # }
-/// ```
 ///
 /// # Errors
 ///
