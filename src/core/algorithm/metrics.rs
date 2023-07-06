@@ -31,10 +31,6 @@ impl Metrics {
         let number_of_steps = self.loss.values.shape()[0] / self.loss_epoch.values.shape()[0];
         let start_index = epoch_index * number_of_steps;
         let stop_index = (epoch_index + 1) * number_of_steps;
-        println!(
-            "steps: {}, start: {}, stop: {}",
-            number_of_steps, start_index, stop_index
-        );
 
         self.loss_epoch.values[epoch_index] =
             self.loss.values.slice(s![start_index..stop_index]).sum();
