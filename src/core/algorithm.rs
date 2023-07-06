@@ -82,6 +82,10 @@ fn run(
 mod test {
     use ndarray::Dim;
 
+    use crate::core::config::model::Model as ModelConfig;
+    use crate::core::config::simulation::Simulation as SimulationConfig;
+    use crate::core::model::Model;
+
     use super::*;
 
     #[test]
@@ -153,5 +157,45 @@ mod test {
         );
 
         run(&mut functional_description, &mut results, &data, &config);
+    }
+
+    #[test]
+    fn loss_decreases() {
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config);
+
+        let mut algorithm_config = Algorithm::default();
+        let mut model = Model::from_model_config(
+            &algorithm_config.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .unwrap();
+        algorithm_config.epochs = 3;
+
+        let mut results = Results::new(
+            algorithm_config.epochs,
+            model
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+        );
+
+        run(
+            &mut model.functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
+
+        println!(
+            "0: {}, 1: {}",
+            results.metrics.loss_epoch.values[0], results.metrics.loss_epoch.values[1]
+        );
+        assert!(results.metrics.loss_epoch.values[0] == results.metrics.loss_epoch.values[1]);
     }
 }
