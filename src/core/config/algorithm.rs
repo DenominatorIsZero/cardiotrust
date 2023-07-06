@@ -13,7 +13,7 @@ impl Algorithm {
         Algorithm {
             epochs: 1,
             snapshots_interval: 0,
-            learning_rate: 1e8,
+            learning_rate: 1e-3,
             model: Model::default(),
         }
     }
