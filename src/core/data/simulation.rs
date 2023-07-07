@@ -81,7 +81,7 @@ mod test {
     use crate::{
         core::model::spatial::voxels::VoxelType,
         vis::plotting::{
-            matrix::{plot_states_at_time, plot_states_over_time},
+            matrix::{plot_states_at_time, plot_states_max, plot_states_over_time},
             time::{plot_state_xyz, standard_time_plot},
         },
     };
@@ -171,6 +171,13 @@ mod test {
             &format!("Simulated Current Densities at Time Index {}", time_index),
         );
 
+        plot_states_max(
+            &simulation.system_states,
+            &simulation.model.spatial_description.voxels,
+            "tests/simulation_states_max",
+            "Maximum Simulated Current Densities",
+        );
+
         let fps = 20;
         let playback_speed = 0.1;
         plot_states_over_time(
@@ -256,7 +263,6 @@ mod test {
             "H [pT]",
         );
 
-
         let time_index = simulation.system_states.values.shape()[0] / 3;
 
         plot_states_at_time(
@@ -267,6 +273,13 @@ mod test {
             time_index,
             &format!("tests/simulation_states_{}_pathological", time_index),
             &format!("Simulated Current Densities at Time Index {}", time_index),
+        );
+
+        plot_states_max(
+            &simulation.system_states,
+            &simulation.model.spatial_description.voxels,
+            "tests/simulation_states_max_pathological",
+            "Maximum Simulated Current Densities",
         );
 
         let fps = 20;
