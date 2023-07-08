@@ -347,6 +347,25 @@ mod test {
             );
             assert!(activation_time_ms.unwrap() >= 0.0);
         }
+    }
+
+    #[test]
+    #[ignore]
+    fn activation_time_is_some_and_plot() {
+        let config = &Model::default();
+        let spatial_description = &SpatialDescription::from_model_config(config);
+        let sample_rate_hz = 2000.0;
+        let ap_params =
+            APParameters::from_model_config(config, spatial_description, sample_rate_hz).unwrap();
+
+        for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
+            assert!(
+                activation_time_ms.is_some(),
+                "Activation time at {:?} was none.",
+                index
+            );
+            assert!(activation_time_ms.unwrap() >= 0.0);
+        }
         plot_activation_time(
             &ap_params.activation_time_ms,
             "tests/ap_params_activation_times_default",
@@ -356,6 +375,28 @@ mod test {
 
     #[test]
     fn activation_time_fast_av() {
+        let mut config = Model::default();
+        config
+            .propagation_velocities_m_per_s
+            .insert(VoxelType::Atrioventricular, 0.8);
+        let spatial_description = &SpatialDescription::from_model_config(&config);
+        let sample_rate_hz = 2000.0;
+        let ap_params =
+            APParameters::from_model_config(&config, spatial_description, sample_rate_hz).unwrap();
+
+        for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
+            assert!(
+                activation_time_ms.is_some(),
+                "Activation time at {:?} was none.",
+                index
+            );
+            assert!(activation_time_ms.unwrap() >= 0.0);
+        }
+    }
+
+    #[test]
+    #[ignore]
+    fn activation_time_fast_av_and_plot() {
         let mut config = Model::default();
         config
             .propagation_velocities_m_per_s

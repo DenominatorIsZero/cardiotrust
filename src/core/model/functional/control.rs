@@ -114,6 +114,19 @@ mod test {
         let control_function =
             ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
         assert_eq!(expected_length_samples, control_function.values.shape()[0]);
+    }
+
+    #[test]
+    #[ignore]
+    fn function_from_model_config_no_crash_and_plot() {
+        let sample_rate_hz = 3000.0;
+        let duration_s = 1.5;
+        let expected_length_samples = (sample_rate_hz * duration_s) as usize;
+        let config = Model::default();
+
+        let control_function =
+            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
+        assert_eq!(expected_length_samples, control_function.values.shape()[0]);
 
         plotting::time::standard_time_plot(
             &control_function.values,

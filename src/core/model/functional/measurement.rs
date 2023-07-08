@@ -88,6 +88,22 @@ mod tests {
         let measurement_matrix =
             MeasurementMatrix::from_model_config(&config, &spatial_description);
 
+        assert!(!measurement_matrix.values.is_empty());
+    }
+
+    #[test]
+    #[ignore]
+    fn from_model_config_no_crash_and_plot() {
+        let mut config = Model::default();
+        config.sensors_per_axis = [3, 3, 3];
+        config.voxel_size_mm = 20.0;
+        let spatial_description = SpatialDescription::from_model_config(&config);
+
+        let measurement_matrix =
+            MeasurementMatrix::from_model_config(&config, &spatial_description);
+
+        assert!(!measurement_matrix.values.is_empty());
+
         plot_matrix(
             &measurement_matrix.values,
             "tests/measurement_matrix_default",

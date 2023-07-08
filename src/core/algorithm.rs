@@ -182,8 +182,154 @@ mod test {
             simulation_config.duration_s,
         )
         .unwrap();
+        algorithm_config.epochs = 3;
+        algorithm_config.model.apply_system_update = true;
+        algorithm_config.learning_rate = 1e-3;
+
+        let mut results = Results::new(
+            algorithm_config.epochs,
+            model
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+        );
+
+        run(
+            &mut model.functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
+
+        (0..algorithm_config.epochs - 1).for_each(|i| {
+            assert!(
+                results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
+            );
+        })
+    }
+
+    #[test]
+    #[ignore]
+    fn loss_decreases_and_plot() {
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config);
+
+        let mut algorithm_config = Algorithm::default();
+
+        let mut model = Model::from_model_config(
+            &algorithm_config.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .unwrap();
         algorithm_config.epochs = 5;
         algorithm_config.model.apply_system_update = true;
+        algorithm_config.learning_rate = 1e-3;
+
+        let mut results = Results::new(
+            algorithm_config.epochs,
+            model
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+        );
+
+        run(
+            &mut model.functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
+
+        standard_y_plot(
+            &results.metrics.loss.values,
+            "tests/algorithm_loss",
+            "Loss",
+            "Loss",
+            "Step",
+        );
+        standard_y_plot(
+            &results.metrics.loss_epoch.values,
+            "tests/algorithm_loss_epoch",
+            "Sum Loss Per Epoch",
+            "Loss",
+            "Epoch",
+        );
+
+        (0..algorithm_config.epochs - 1).for_each(|i| {
+            assert!(
+                results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
+            );
+        })
+    }
+
+    #[test]
+    fn loss_decreases_no_update() {
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config);
+
+        let mut algorithm_config = Algorithm::default();
+
+        let mut model = Model::from_model_config(
+            &algorithm_config.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .unwrap();
+        algorithm_config.epochs = 3;
+        algorithm_config.model.apply_system_update = false;
+        algorithm_config.learning_rate = 1e-3;
+
+        let mut results = Results::new(
+            algorithm_config.epochs,
+            model
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+        );
+
+        run(
+            &mut model.functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
+
+        (0..algorithm_config.epochs - 1).for_each(|i| {
+            assert!(
+                results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
+            );
+        })
+    }
+
+    #[test]
+    #[ignore]
+    fn loss_decreases_no_update_and_plot() {
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config);
+
+        let mut algorithm_config = Algorithm::default();
+
+        let mut model = Model::from_model_config(
+            &algorithm_config.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .unwrap();
+        algorithm_config.epochs = 5;
+        algorithm_config.model.apply_system_update = false;
         algorithm_config.learning_rate = 1e-3;
 
         let mut results = Results::new(

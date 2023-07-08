@@ -383,12 +383,123 @@ mod tests {
             .count();
 
         assert_eq!(num_pathological, 0);
+    }
+
+    #[test]
+    #[ignore]
+    fn some_voxel_types_default_and_plot() {
+        let config = Model::default();
+        let types = VoxelTypes::from_simulation_config(&config);
+
+        let num_sa = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Sinoatrial)
+            .count();
+
+        assert_eq!(num_sa, 1);
+
+        let num_atrium = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Atrium)
+            .count();
+
+        assert!(num_atrium > 0);
+
+        let num_avn = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Atrioventricular)
+            .count();
+
+        assert_eq!(num_avn, 1);
+
+        let num_ventricle = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Ventricle)
+            .count();
+
+        assert!(num_ventricle > 0);
+
+        let num_hps = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::HPS)
+            .count();
+
+        assert!(num_hps > 0);
+
+        let num_pathological = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Pathological)
+            .count();
+
+        assert_eq!(num_pathological, 0);
 
         plot_voxel_types(&types.values, "tests/voxel_types_default", "Voxel Types")
     }
 
     #[test]
     fn some_voxel_types_pathological() {
+        let mut config = Model::default();
+        config.pathological = true;
+        let types = VoxelTypes::from_simulation_config(&config);
+
+        let num_sa = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Sinoatrial)
+            .count();
+
+        assert_eq!(num_sa, 1);
+
+        let num_atrium = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Atrium)
+            .count();
+
+        assert!(num_atrium > 0);
+
+        let num_avn = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Atrioventricular)
+            .count();
+
+        assert_eq!(num_avn, 1);
+
+        let num_ventricle = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Ventricle)
+            .count();
+
+        assert!(num_ventricle > 0);
+
+        let num_hps = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::HPS)
+            .count();
+
+        assert!(num_hps > 0);
+
+        let num_pathological = types
+            .values
+            .iter()
+            .filter(|v_type| **v_type == VoxelType::Pathological)
+            .count();
+
+        assert!(num_pathological > 0);
+    }
+
+    #[test]
+    #[ignore]
+    fn some_voxel_types_pathological_and_plot() {
         let mut config = Model::default();
         config.pathological = true;
         let types = VoxelTypes::from_simulation_config(&config);

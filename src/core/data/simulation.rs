@@ -109,6 +109,18 @@ mod test {
         assert!(max.relative_eq(&1.0, 0.001, 0.001));
         let max = *simulation.measurements.values.max_skipnan();
         assert!(max > 0.0);
+    }
+
+    #[test]
+    #[ignore]
+    fn run_simulation_default_and_plot() {
+        let config = &SimulationConfig::default();
+        let mut simulation = Simulation::from_config(config).unwrap();
+        simulation.run();
+        let max = *simulation.system_states.values.max_skipnan();
+        assert!(max.relative_eq(&1.0, 0.001, 0.001));
+        let max = *simulation.measurements.values.max_skipnan();
+        assert!(max > 0.0);
 
         let sa_index = simulation
             .model
@@ -192,6 +204,19 @@ mod test {
 
     #[test]
     fn run_simulation_pathological() {
+        let mut config = SimulationConfig::default();
+        config.model.pathological = true;
+        let mut simulation = Simulation::from_config(&config).unwrap();
+        simulation.run();
+        let max = *simulation.system_states.values.max_skipnan();
+        assert!(max.relative_eq(&1.0, 0.001, 0.001));
+        let max = *simulation.measurements.values.max_skipnan();
+        assert!(max > 0.0);
+    }
+
+    #[test]
+    #[ignore]
+    fn run_simulation_pathological_and_plot() {
         let mut config = SimulationConfig::default();
         config.model.pathological = true;
         let mut simulation = Simulation::from_config(&config).unwrap();
