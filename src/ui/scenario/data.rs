@@ -98,7 +98,6 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                         });
                         // Pathological
-                        let _model_preset = &mut simulation.model;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Pathological");
@@ -138,6 +137,150 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                                 ui.label("The number of sensors used per axis.");
                             });
                         });
+                        // Sensor array size
+                        let sensor_array_size_mm = &mut simulation.model.sensor_array_size_mm;
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Sensor array size");
+                            });
+                            row.col(|ui| {
+                                ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                                    ui.add(
+                                        egui::DragValue::new(&mut sensor_array_size_mm[0])
+                                            .prefix("x: ")
+                                            .suffix(" mm"),
+                                    );
+                                    ui.add(
+                                        egui::DragValue::new(&mut sensor_array_size_mm[1])
+                                            .prefix("y: ")
+                                            .suffix(" mm"),
+                                    );
+                                    ui.add(
+                                        egui::DragValue::new(&mut sensor_array_size_mm[2])
+                                            .prefix("z: ")
+                                            .suffix(" mm"),
+                                    );
+                                });
+                            });
+                            row.col(|ui| {
+                                ui.label("The overall size of the sensor array in mm.");
+                            });
+                        });
+                        // Sensor array origin
+                        let sensor_array_origin_mm = &mut simulation.model.sensor_array_origin_mm;
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Sensor array origin");
+                            });
+                            row.col(|ui| {
+                                ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                                    ui.add(
+                                        egui::DragValue::new(&mut sensor_array_origin_mm[0])
+                                            .prefix("x: ")
+                                            .suffix(" mm"),
+                                    );
+                                    ui.add(
+                                        egui::DragValue::new(&mut sensor_array_origin_mm[1])
+                                            .prefix("y: ")
+                                            .suffix(" mm"),
+                                    );
+                                    ui.add(
+                                        egui::DragValue::new(&mut sensor_array_origin_mm[2])
+                                            .prefix("z: ")
+                                            .suffix(" mm"),
+                                    );
+                                });
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The origin of the sensor array with\
+                                regard to the body coordinate system in mm.",
+                                );
+                            });
+                        });
+                        // voxel size mm
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Voxel size");
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut simulation.model.voxel_size_mm,
+                                        1.0..=10.0,
+                                    )
+                                    .suffix(" mm"),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The desired size of the voxels in mm.\
+                                    Might be rounded to the closest fit depending\
+                                    on the choosen heart size.",
+                                );
+                            });
+                        });
+                        // Heart size
+                        let heart_size_mm = &mut simulation.model.heart_size_mm;
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Heart size");
+                            });
+                            row.col(|ui| {
+                                ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                                    ui.add(
+                                        egui::DragValue::new(&mut heart_size_mm[0])
+                                            .prefix("x: ")
+                                            .suffix(" mm"),
+                                    );
+                                    ui.add(
+                                        egui::DragValue::new(&mut heart_size_mm[1])
+                                            .prefix("y: ")
+                                            .suffix(" mm"),
+                                    );
+                                    ui.add(
+                                        egui::DragValue::new(&mut heart_size_mm[2])
+                                            .prefix("z: ")
+                                            .suffix(" mm"),
+                                    );
+                                });
+                            });
+                            row.col(|ui| {
+                                ui.label("The overall size of the heart in mm.");
+                            });
+                        });
+                        // Heart origin
+                        let heart_origin_mm = &mut simulation.model.heart_origin_mm;
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Heart origin");
+                            });
+                            row.col(|ui| {
+                                ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                                    ui.add(
+                                        egui::DragValue::new(&mut heart_origin_mm[0])
+                                            .prefix("x: ")
+                                            .suffix(" mm"),
+                                    );
+                                    ui.add(
+                                        egui::DragValue::new(&mut heart_origin_mm[1])
+                                            .prefix("y: ")
+                                            .suffix(" mm"),
+                                    );
+                                    ui.add(
+                                        egui::DragValue::new(&mut heart_origin_mm[2])
+                                            .prefix("z: ")
+                                            .suffix(" mm"),
+                                    );
+                                });
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The origin of the sensor array with\
+                                regard to the body coordinate system in mm.",
+                                );
+                            });
+                        });
                         // measurement covariance mean
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
@@ -147,7 +290,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                                 ui.add(
                                     egui::Slider::new(
                                         &mut simulation.model.measurement_covariance_mean,
-                                        1e-30..=1e-10,
+                                        1e-10..=1e10,
                                     )
                                     .logarithmic(true)
                                     .custom_formatter(|n, _| format!("{:+.4e}", n)),

@@ -9,11 +9,11 @@ pub struct Model {
     pub control_function: ControlFunction,
     pub pathological: bool,
     pub sensors_per_axis: [usize; 3],
-    pub sensor_array_size_mm: [f32; 3],   // TODO: Add to UI
-    pub sensor_array_origin_mm: [f32; 3], // TODO: Add to UI
-    pub voxel_size_mm: f32,               // TODO: Add to UI
-    pub heart_size_mm: [f32; 3],          // TODO: Add to UI
-    pub heart_origin_mm: [f32; 3],        // TODO: Add to UI
+    pub sensor_array_size_mm: [f32; 3],
+    pub sensor_array_origin_mm: [f32; 3],
+    pub voxel_size_mm: f32,
+    pub heart_size_mm: [f32; 3],
+    pub heart_origin_mm: [f32; 3],
     pub measurement_covariance_mean: f32,
     // the measurement noise covariance matrix will be a diagonal matrix
     // if std is set to zero, every value will be set to mean
