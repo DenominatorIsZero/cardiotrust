@@ -94,6 +94,12 @@ impl Scenario {
         }
     }
 
+    /// Set't the status of the scenario to "Planning".
+    ///
+    /// This removes the scenario from the queue and allows
+    /// for the parameters to be changed again
+    ///
+    /// TODO: Look into types as states
     pub fn unschedule(&mut self) -> Result<(), String> {
         match self.status {
             Status::Scheduled => {
@@ -116,8 +122,16 @@ impl Scenario {
         Ok(())
     }
 
-    pub(crate) fn get_status(&self) -> &Status {
+    pub fn get_status(&self) -> &Status {
         &self.status
+    }
+
+    pub fn run(&mut self) {
+        todo!();
+        // create or load data
+        // init model
+        // run algorithm
+        // save
     }
 }
 
