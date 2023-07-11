@@ -87,7 +87,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 ui.add(
                                     egui::Slider::new(
                                         &mut algorithm.model.measurement_covariance_mean,
-                                        1e-30..=1e-10,
+                                        1e-10..=1e10,
                                     )
                                     .logarithmic(true)
                                     .custom_formatter(|n, _| format!("{:+.4e}", n)),
@@ -132,7 +132,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 ui.add(
                                     egui::Slider::new(
                                         &mut algorithm.model.process_covariance_mean,
-                                        1e-30..=1e-10,
+                                        1e-10..=1e10,
                                     )
                                     .logarithmic(true)
                                     .custom_formatter(|n, _| format!("{:+.4e}", n)),
