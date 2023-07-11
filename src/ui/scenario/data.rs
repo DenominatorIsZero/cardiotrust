@@ -111,6 +111,24 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                                 );
                             });
                         });
+                        // Current Factor in Pathology
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Current Factor\nin Pathology");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.current_factor_in_pathology,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "A factor describing how much to reduce the\
+                                    current densities in pathological voxels.",
+                                );
+                            });
+                        });
                         // Sensors per axis
                         let sensors_per_axis = &mut simulation.model.sensors_per_axis;
                         body.row(30.0, |mut row| {
