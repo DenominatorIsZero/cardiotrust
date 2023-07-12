@@ -7,7 +7,14 @@ fn main() {
     App::new()
         .init_resource::<Scenarios>()
         .init_resource::<SelectedSenario>()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Rusty CDE".into(),
+                resolution: (2048., 1080.).into(),
+                ..default()
+            }),
+            ..default()
+        }))
         .add_plugin(PanOrbitCameraPlugin)
         .add_plugin(UiPlugin)
         .add_startup_system(setup)

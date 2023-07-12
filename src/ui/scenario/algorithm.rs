@@ -12,9 +12,9 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
             ui.separator();
             ui.push_id("algorithm_parameter_table", |ui| {
                 TableBuilder::new(ui)
+                    .column(Column::initial(125.0).resizable(true))
                     .column(Column::auto().resizable(true))
-                    .column(Column::auto().resizable(true))
-                    .column(Column::initial(300.0).resizable(true))
+                    .column(Column::initial(600.0).resizable(true))
                     .header(20.0, |mut header| {
                         header.col(|ui| {
                             ui.heading("Parameter");

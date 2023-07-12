@@ -17,9 +17,9 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
             ui.separator();
             ui.push_id("simulation_parameter_table", |ui| {
                 TableBuilder::new(ui)
+                    .column(Column::initial(125.0).resizable(true))
                     .column(Column::auto().resizable(true))
-                    .column(Column::auto().resizable(true))
-                    .column(Column::initial(300.0).resizable(true))
+                    .column(Column::initial(600.0).resizable(true))
                     .header(20.0, |mut header| {
                         header.col(|ui| {
                             ui.heading("Parameter");
@@ -459,6 +459,224 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                                     pathological tissue in m/s. Note that the \
                                     maximum propagation velocity is limited \
                                     by the voxel size and sample rate.",
+                                );
+                            });
+                        });
+                        // sinoatrial node x center percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("X Center\nSinoatrial Node");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.sa_x_center_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The center of the sinoatrial node \
+                                    in x-direction in percent.",
+                                );
+                            });
+                        });
+                        // sinoatrial node y center percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Y Center\nSinoatrial Node");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.sa_y_center_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The center of the sinoatrial node \
+                                    in y-direction in percent.",
+                                );
+                            });
+                        });
+                        // atrium y stop percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Y Stop\nAtrium");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.atrium_y_stop_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The end of the atrium \
+                                    / start of the ventricles
+                                    in y-direction in percent.",
+                                );
+                            });
+                        });
+                        // atrioventricular node x center percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("X Center\nAtrioventricular Node");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.av_x_center_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The center of the atrioventricular node \
+                                    in x-direction in percent.",
+                                );
+                            });
+                        });
+                        // hps y stop percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Y Stop\nHPS");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.hps_y_stop_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The end of the His-Purkinje-System \
+                                    in y-direction in percent.",
+                                );
+                            });
+                        });
+                        // hps x start percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("X Start\nHPS");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.hps_x_start_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The start of the His-Purkinje-System \
+                                    in x-direction in percent.",
+                                );
+                            });
+                        });
+                        // hps x stop percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("X Stop\nHPS");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.hps_x_stop_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The end of the His-Purkinje-System \
+                                    in x-direction in percent.",
+                                );
+                            });
+                        });
+                        // hps y up percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Y Up\nHPS");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.hps_y_up_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The end of the upwards portion \
+                                    of the His-Purkinje-System \
+                                    in x-direction in percent.",
+                                );
+                            });
+                        });
+                        // pathology x start percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("X Start\nPathology");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.pathology_x_start_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The start of the pathology \
+                                    in x-direction in percent.",
+                                );
+                            });
+                        });
+                        // pathology x stop percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("X Stop\nPathology");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.hps_x_stop_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The end of the pathology \
+                                    in x-direction in percent.",
+                                );
+                            });
+                        });
+                        // pathology y start percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Y Start\nPathology");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.pathology_y_start_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The start of the pathology \
+                                    in y-direction in percent.",
+                                );
+                            });
+                        });
+                        // pathology y stop percentage
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Y Stop\nPathology");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut simulation.model.pathology_y_stop_percentage,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The end of the pathology \
+                                    in y-direction in percent.",
                                 );
                             });
                         });
