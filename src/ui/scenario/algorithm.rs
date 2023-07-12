@@ -2,6 +2,8 @@ use egui_extras::{Column, TableBuilder};
 
 use crate::core::scenario::{Scenario, Status};
 
+use super::common::draw_ui_scenario_common;
+
 pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenario) {
     parent.set_enabled(*scenario.get_status() == Status::Planning);
     let algorithm = &mut scenario.get_config_mut().algorithm;
@@ -78,51 +80,6 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 );
                             });
                         });
-                        // Measurement covariance mean
-                        body.row(30.0, |mut row| {
-                            row.col(|ui| {
-                                ui.label("Measurement\ncovariance mean");
-                            });
-                            row.col(|ui| {
-                                ui.add(
-                                    egui::Slider::new(
-                                        &mut algorithm.model.measurement_covariance_mean,
-                                        1e-10..=1e10,
-                                    )
-                                    .logarithmic(true)
-                                    .custom_formatter(|n, _| format!("{:+.4e}", n)),
-                                );
-                            });
-                            row.col(|ui| {
-                                ui.label(
-                                    "The mean value of the measurement\
-                                 noise covariance matrix.",
-                                );
-                            });
-                        });
-                        // Measurement covariance std
-                        body.row(80.0, |mut row| {
-                            row.col(|ui| {
-                                ui.label("Measurement\ncovariance std");
-                            });
-                            row.col(|ui| {
-                                ui.add(egui::Slider::new(
-                                    &mut algorithm.model.measurement_covariance_std,
-                                    0.0..=1.0,
-                                ));
-                            });
-                            row.col(|ui| {
-                                ui.label(
-                                    "The standard deviation of the\
-                                measurement noise covariance matrix.\
-                                If this is zero, all diagonal values will\
-                                be choosen as the mean.\
-                                Otherwise they will be drawn from a normal\
-                                distribution according\
-                                to the mean value and standard deviation.",
-                                );
-                            });
-                        });
                         // Process covariance mean
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
@@ -184,6 +141,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 );
                             });
                         });
+                        draw_ui_scenario_common(&mut body, &mut algorithm.model);
                     });
             });
         });

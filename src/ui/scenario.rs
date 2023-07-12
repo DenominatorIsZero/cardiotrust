@@ -1,4 +1,5 @@
 mod algorithm;
+pub mod common;
 mod data;
 
 use bevy::prelude::*;
