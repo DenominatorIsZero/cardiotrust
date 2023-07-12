@@ -29,6 +29,18 @@ pub struct Model {
     pub apply_system_update: bool,
     pub propagation_velocities_m_per_s: HashMap<VoxelType, f32>, // TOOD: Add to UI
     pub current_factor_in_pathology: f32,
+    pub sa_x_center_percentage: f32,
+    pub sa_y_center_percentage: f32,
+    pub atrium_y_stop_percentage: f32,
+    pub av_x_center_percentage: f32,
+    pub hps_y_stop_percentage: f32,
+    pub hps_x_start_percentage: f32,
+    pub hps_x_stop_percentage: f32,
+    pub hps_y_up_percentage: f32,
+    pub pathology_x_start_percentage: f32,
+    pub pathology_x_stop_percentage: f32,
+    pub pathology_y_start_percentage: f32,
+    pub pathology_y_stop_percentage: f32,
 }
 
 impl Model {
@@ -57,6 +69,18 @@ impl Model {
             apply_system_update: true,
             propagation_velocities_m_per_s,
             current_factor_in_pathology: 0.01,
+            sa_x_center_percentage: 0.2,
+            sa_y_center_percentage: 0.15,
+            atrium_y_stop_percentage: 0.3,
+            av_x_center_percentage: 0.5,
+            hps_y_stop_percentage: 0.85,
+            hps_x_start_percentage: 0.2,
+            hps_x_stop_percentage: 0.8,
+            hps_y_up_percentage: 0.5,
+            pathology_x_start_percentage: 0.1,
+            pathology_x_stop_percentage: 0.3,
+            pathology_y_start_percentage: 0.7,
+            pathology_y_stop_percentage: 0.8,
         }
     }
 }

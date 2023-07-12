@@ -99,36 +99,24 @@ impl VoxelTypes {
             .iter_mut()
             .for_each(|v| *v = if *v == 0 { 1 } else { *v });
 
-        // Fixed Parameters - will add to config at later time
-        let sa_x_center_percentage = 0.2;
-        let sa_y_center_percentage = 0.15;
-        let atrium_y_stop_percentage = 0.3;
-        let av_x_center_percentage = 0.5;
-        let hps_y_stop_percentage = 0.85;
-        let hps_x_start_percentage = 0.2;
-        let hps_x_stop_percentage = 0.8;
-        let hps_y_up_percentage = 0.5;
-        let pathology_x_start_percentage = 0.1;
-        let pathology_x_stop_percentage = 0.3;
-        let pathology_y_start_percentage = 0.7;
-        let pathology_y_stop_percentage = 0.8;
         // Derived Parameters
-        let sa_x_center_index = (voxels_in_dims[0] as f32 * sa_x_center_percentage) as usize;
-        let sa_y_center_index = (voxels_in_dims[1] as f32 * sa_y_center_percentage) as usize;
-        let atrium_y_stop_index = (voxels_in_dims[1] as f32 * atrium_y_stop_percentage) as usize;
-        let av_x_center_index = (voxels_in_dims[0] as f32 * av_x_center_percentage) as usize;
-        let hps_y_stop_index = (voxels_in_dims[1] as f32 * hps_y_stop_percentage) as usize;
-        let hps_x_start_index = (voxels_in_dims[0] as f32 * hps_x_start_percentage) as usize;
-        let hps_x_stop_index = (voxels_in_dims[0] as f32 * hps_x_stop_percentage) as usize;
-        let hps_y_up_index = (voxels_in_dims[1] as f32 * hps_y_up_percentage) as usize;
+        let sa_x_center_index = (voxels_in_dims[0] as f32 * config.sa_x_center_percentage) as usize;
+        let sa_y_center_index = (voxels_in_dims[1] as f32 * config.sa_y_center_percentage) as usize;
+        let atrium_y_stop_index =
+            (voxels_in_dims[1] as f32 * config.atrium_y_stop_percentage) as usize;
+        let av_x_center_index = (voxels_in_dims[0] as f32 * config.av_x_center_percentage) as usize;
+        let hps_y_stop_index = (voxels_in_dims[1] as f32 * config.hps_y_stop_percentage) as usize;
+        let hps_x_start_index = (voxels_in_dims[0] as f32 * config.hps_x_start_percentage) as usize;
+        let hps_x_stop_index = (voxels_in_dims[0] as f32 * config.hps_x_stop_percentage) as usize;
+        let hps_y_up_index = (voxels_in_dims[1] as f32 * config.hps_y_up_percentage) as usize;
         let pathology_x_start_index =
-            (voxels_in_dims[0] as f32 * pathology_x_start_percentage) as usize;
+            (voxels_in_dims[0] as f32 * config.pathology_x_start_percentage) as usize;
         let pathology_x_stop_index =
-            (voxels_in_dims[0] as f32 * pathology_x_stop_percentage) as usize;
+            (voxels_in_dims[0] as f32 * config.pathology_x_stop_percentage) as usize;
         let pathology_y_start_index =
-            (voxels_in_dims[1] as f32 * pathology_y_start_percentage) as usize;
+            (voxels_in_dims[1] as f32 * config.pathology_y_start_percentage) as usize;
         let pathology_y_stop_index =
-            (voxels_in_dims[1] as f32 * pathology_y_stop_percentage) as usize;
+            (voxels_in_dims[1] as f32 * config.pathology_y_stop_percentage) as usize;
 
         let mut voxel_types = VoxelTypes::empty(voxels_in_dims);
         voxel_types
