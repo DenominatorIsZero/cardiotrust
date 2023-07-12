@@ -3,6 +3,7 @@ use egui_extras::{Column, TableBuilder};
 
 use crate::core::{
     config::model::ControlFunction,
+    model::spatial::voxels::VoxelType,
     scenario::{Scenario, Status},
 };
 
@@ -92,7 +93,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                             row.col(|ui| {
                                 ui.label(
-                                    "The control function used as the input tthe system\
+                                    "The control function used as the input tthe system \
                                     / The shape of the assumed current density curve.",
                                 );
                             });
@@ -124,7 +125,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                             row.col(|ui| {
                                 ui.label(
-                                    "A factor describing how much to reduce the\
+                                    "A factor describing how much to reduce the \
                                     current densities in pathological voxels.",
                                 );
                             });
@@ -211,7 +212,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                             row.col(|ui| {
                                 ui.label(
-                                    "The origin of the sensor array with\
+                                    "The origin of the sensor array with \
                                 regard to the body coordinate system in mm.",
                                 );
                             });
@@ -232,8 +233,8 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                             row.col(|ui| {
                                 ui.label(
-                                    "The desired size of the voxels in mm.\
-                                    Might be rounded to the closest fit depending\
+                                    "The desired size of the voxels in mm. \
+                                    Might be rounded to the closest fit depending \
                                     on the choosen heart size.",
                                 );
                             });
@@ -294,8 +295,170 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                             row.col(|ui| {
                                 ui.label(
-                                    "The origin of the sensor array with\
+                                    "The origin of the sensor array with \
                                 regard to the body coordinate system in mm.",
+                                );
+                            });
+                        });
+                        // Propagation velocity sinoatrial node
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Propagaion Velocity\nSinoatrial Node");
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Slider::new(
+                                        simulation
+                                            .model
+                                            .propagation_velocities_m_per_s
+                                            .get_mut(&VoxelType::Sinoatrial)
+                                            .unwrap(),
+                                        0.01..=10.0,
+                                    )
+                                    .suffix(" m/s"),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "Desired propagation velocity in the \
+                                    sinoatrial node in m/s. Note that the \
+                                    maximum propagation velocity is limited \
+                                    by the voxel size and sample rate.",
+                                );
+                            });
+                        });
+                        // Propagation velocity Atrium
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Propagaion Velocity\nAtrium");
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Slider::new(
+                                        simulation
+                                            .model
+                                            .propagation_velocities_m_per_s
+                                            .get_mut(&VoxelType::Atrium)
+                                            .unwrap(),
+                                        0.01..=10.0,
+                                    )
+                                    .suffix(" m/s"),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "Desired propagation velocity in the \
+                                    atrium in m/s. Note that the \
+                                    maximum propagation velocity is limited \
+                                    by the voxel size and sample rate.",
+                                );
+                            });
+                        });
+                        // Propagation velocity atrioventricular node
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Propagaion Velocity\nAtrioventricular Node");
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Slider::new(
+                                        simulation
+                                            .model
+                                            .propagation_velocities_m_per_s
+                                            .get_mut(&VoxelType::Atrioventricular)
+                                            .unwrap(),
+                                        0.01..=10.0,
+                                    )
+                                    .suffix(" m/s"),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "Desired propagation velocity in the \
+                                    atrioventricular node in m/s. Note that the \
+                                    maximum propagation velocity is limited \
+                                    by the voxel size and sample rate.",
+                                );
+                            });
+                        });
+                        // Propagation velocity HPS
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Propagaion Velocity\nHPS");
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Slider::new(
+                                        simulation
+                                            .model
+                                            .propagation_velocities_m_per_s
+                                            .get_mut(&VoxelType::HPS)
+                                            .unwrap(),
+                                        0.01..=10.0,
+                                    )
+                                    .suffix(" m/s"),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "Desired propagation velocity in the \
+                                    His-Purkinje system in m/s. Note that the \
+                                    maximum propagation velocity is limited \
+                                    by the voxel size and sample rate.",
+                                );
+                            });
+                        });
+                        // Propagation velocity ventricle
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Propagaion Velocity\nVentricle");
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Slider::new(
+                                        simulation
+                                            .model
+                                            .propagation_velocities_m_per_s
+                                            .get_mut(&VoxelType::Ventricle)
+                                            .unwrap(),
+                                        0.01..=10.0,
+                                    )
+                                    .suffix(" m/s"),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "Desired propagation velocity in the \
+                                    ventricle in m/s. Note that the \
+                                    maximum propagation velocity is limited \
+                                    by the voxel size and sample rate.",
+                                );
+                            });
+                        });
+                        // Propagation velocity pathological
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Propagaion Velocity\nPathological");
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Slider::new(
+                                        simulation
+                                            .model
+                                            .propagation_velocities_m_per_s
+                                            .get_mut(&VoxelType::Pathological)
+                                            .unwrap(),
+                                        0.01..=10.0,
+                                    )
+                                    .suffix(" m/s"),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "Desired propagation velocity in the \
+                                    pathological tissue in m/s. Note that the \
+                                    maximum propagation velocity is limited \
+                                    by the voxel size and sample rate.",
                                 );
                             });
                         });
@@ -316,8 +479,8 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                             row.col(|ui| {
                                 ui.label(
-                                    "The mean value of the measurement\
-                                 noise covariance matrix.",
+                                    "The mean value of the measurement \
+                                noise covariance matrix.",
                                 );
                             });
                         });
@@ -334,12 +497,12 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                             row.col(|ui| {
                                 ui.label(
-                                    "The standard deviation of the\
-                                measurement noise covariance matrix.\
-                                If this is zero, all diagonal values will\
-                                be choosen as the mean.\
-                                Otherwise they will be drawn from a normal\
-                                distribution according\
+                                    "The standard deviation of the \
+                                measurement noise covariance matrix. \
+                                If this is zero, all diagonal values will \
+                                be choosen as the mean. \
+                                Otherwise they will be drawn from a normal \
+                                distribution according \
                                 to the mean value and standard deviation.",
                                 );
                             });
