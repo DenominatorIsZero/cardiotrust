@@ -1,4 +1,6 @@
 use std::path::Path;
+use std::thread;
+use std::time::Duration;
 use std::{fs, fs::File, io::Write};
 
 use chrono;
@@ -127,7 +129,12 @@ impl Scenario {
     }
 
     pub fn run(&mut self) {
-        todo!();
+        self.status = Status::Running(0);
+        for epoch in 0..self.config.algorithm.epochs {
+            self.status = Status::Running(epoch);
+            thread::sleep(Duration::from_millis(1000));
+        }
+        self.status = Status::Done;
         // create or load data
         // init model
         // run algorithm
@@ -139,7 +146,7 @@ impl Scenario {
 pub enum Status {
     Planning,
     Done,
-    Running(f32),
+    Running(usize),
     Aborted,
     Scheduled,
 }

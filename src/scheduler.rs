@@ -1,4 +1,8 @@
-use bevy::prelude::*;
+use std::mem::discriminant;
+
+use bevy::{prelude::*, transform::commands};
+
+use crate::{core::scenario::Status, Scenarios};
 
 pub struct SchedulerPlugin;
 
@@ -18,6 +22,30 @@ pub enum SchedulerState {
     Unavailale,
 }
 
-pub fn start_scenarios() {}
+pub fn start_scenarios(mut commands: Commands, mut scenarios: ResMut<Scenarios>) {
+    match scenarios
+        .scenarios
+        .iter_mut()
+        .filter(|scenario| *scenario.get_status() == Status::Scheduled)
+        .next()
+    {
+        Some(scenario) => {
+            println!("Starting scenario with id {}", scenario.get_id());
+            scenario.run();
+            println!("Moving scheduler to state unavailable.");
+            commands.insert_resource(NextState(Some(SchedulerState::Unavailale)));
+        }
+        None => (),
+    }
+}
 
-pub fn check_scenarios() {}
+pub fn check_scenarios(mut commands: Commands, scenarios: ResMut<Scenarios>) {
+    if !scenarios
+        .scenarios
+        .iter()
+        .any(|scenario| discriminant(scenario.get_status()) == discriminant(&Status::Running(1)))
+    {
+        println!("Moving scheduler to state available.");
+        commands.insert_resource(NextState(Some(SchedulerState::Available)));
+    }
+}
