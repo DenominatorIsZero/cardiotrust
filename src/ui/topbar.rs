@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
+use egui::Separator;
+
+use crate::scheduler::SchedulerState;
 
 use super::UiState;
 
@@ -7,6 +10,7 @@ pub fn draw_ui_topbar(
     mut commands: Commands,
     mut contexts: EguiContexts,
     ui_state: Res<State<UiState>>,
+    scheduler_state: Res<State<SchedulerState>>,
 ) {
     egui::TopBottomPanel::top("menu_panel").show(contexts.ctx_mut(), |ui| {
         ui.horizontal(|ui| {
@@ -46,6 +50,27 @@ pub fn draw_ui_topbar(
             {
                 println!("Opening Volumetric UI");
                 commands.insert_resource(NextState(Some(UiState::Volumetric)));
+            };
+            ui.add(Separator::default().spacing(200.0));
+            if ui
+                .add_enabled(
+                    scheduler_state.0 == SchedulerState::Paused,
+                    egui::Button::new("Start"),
+                )
+                .clicked()
+            {
+                println!("Starting Scheduler");
+                commands.insert_resource(NextState(Some(SchedulerState::Available)));
+            };
+            if ui
+                .add_enabled(
+                    scheduler_state.0 != SchedulerState::Paused,
+                    egui::Button::new("Stop"),
+                )
+                .clicked()
+            {
+                println!("Stopping Scheduler");
+                commands.insert_resource(NextState(Some(SchedulerState::Paused)));
             };
         });
     });

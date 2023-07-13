@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
-use rusty_cde::{ui::UiPlugin, Scenarios, SelectedSenario};
+use rusty_cde::{scheduler::SchedulerPlugin, ui::UiPlugin, Scenarios, SelectedSenario};
 
 fn main() {
     App::new()
@@ -17,6 +17,7 @@ fn main() {
         }))
         .add_plugin(PanOrbitCameraPlugin)
         .add_plugin(UiPlugin)
+        .add_plugin(SchedulerPlugin)
         .add_startup_system(setup)
         .run();
 }

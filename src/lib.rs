@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 pub mod core;
+pub mod scheduler;
 pub mod ui;
 pub mod vis;
 
