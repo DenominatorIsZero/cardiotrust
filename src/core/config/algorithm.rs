@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::model::Model;
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Algorithm {
     pub epochs: usize,
     pub snapshots_interval: usize,

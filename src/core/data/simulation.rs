@@ -11,7 +11,7 @@ use crate::core::{
 
 use super::shapes::ArraySystemStates;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Simulation {
     pub measurements: ArrayMeasurements,
     pub system_states: ArraySystemStates,

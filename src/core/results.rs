@@ -1,7 +1,7 @@
 use super::algorithm::{
     estimation::Estimations, metrics::Metrics, refinement::derivation::Derivatives,
 };
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Results {
     pub metrics: Metrics,
     pub estimations: Estimations,
@@ -25,5 +25,5 @@ impl Results {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Snapshot {}

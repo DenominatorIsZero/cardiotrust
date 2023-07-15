@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::model::Model;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Simulation {
     pub sample_rate_hz: f32,
     pub duration_s: f32,

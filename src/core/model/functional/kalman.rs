@@ -7,7 +7,7 @@ use crate::core::config::model::Model;
 
 use super::measurement::MeasurementMatrix;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct KalmanGain {
     pub values: Array2<f32>,
 }

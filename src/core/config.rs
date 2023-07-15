@@ -7,7 +7,7 @@ use std::path::Path;
 
 use self::{algorithm::Algorithm, simulation::Simulation};
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Config {
     pub measurement: Option<Box<Path>>,
     pub simulation: Option<Simulation>,

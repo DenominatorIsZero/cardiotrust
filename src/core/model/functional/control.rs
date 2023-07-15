@@ -8,7 +8,7 @@ use crate::core::{
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ControlMatrix {
     pub values: Array1<f32>,
 }
@@ -40,7 +40,7 @@ impl ControlMatrix {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ControlFunction {
     pub values: Array1<f32>,
 }

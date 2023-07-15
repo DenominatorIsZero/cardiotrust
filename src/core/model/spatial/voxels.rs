@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::config::model::Model;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Voxels {
     pub size_mm: f32,
     pub types: VoxelTypes,
@@ -72,7 +72,7 @@ impl Voxels {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct VoxelTypes {
     pub values: Array3<VoxelType>,
 }
@@ -161,7 +161,7 @@ impl VoxelTypes {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct VoxelNumbers {
     pub values: Array3<Option<usize>>,
 }
@@ -195,7 +195,7 @@ impl VoxelNumbers {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct VoxelPositions {
     pub values: Array4<f32>,
 }

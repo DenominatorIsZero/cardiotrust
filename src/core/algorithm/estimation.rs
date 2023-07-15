@@ -8,7 +8,7 @@ use crate::core::model::{
 };
 
 use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Estimations {
     pub ap_outputs: ArrayGains<f32>,
     pub system_states: ArraySystemStates,

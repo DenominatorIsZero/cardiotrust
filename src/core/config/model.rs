@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::model::spatial::voxels::VoxelType;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Model {
     pub control_function: ControlFunction,
     pub pathological: bool,
@@ -85,7 +85,7 @@ impl Model {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum ControlFunction {
     Sinosodal,
     Ohara,

@@ -1,7 +1,7 @@
 use ndarray::{Array3, Array4, Array5, Dim};
 use num_traits::Zero;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ArrayGains<T>
 where
     T: Clone + Zero + PartialEq,
@@ -20,7 +20,7 @@ where
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ArrayIndicesGains {
     pub values: Array5<Option<usize>>,
 }
@@ -33,7 +33,7 @@ impl ArrayIndicesGains {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ArrayDelays<T>
 where
     T: Clone + Zero + PartialEq,
@@ -53,7 +53,7 @@ where
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ArrayActivationTime {
     pub values: Array3<Option<f32>>,
 }

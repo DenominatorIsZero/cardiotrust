@@ -17,7 +17,7 @@ use self::{
 use super::spatial::SpatialDescription;
 use crate::core::config::model::Model;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct FunctionalDescription {
     pub ap_params: APParameters,
     pub measurement_matrix: MeasurementMatrix,

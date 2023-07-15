@@ -1,8 +1,11 @@
-use std::mem::discriminant;
+use std::{mem::discriminant, thread};
 
 use bevy::{prelude::*, transform::commands};
 
-use crate::{core::scenario::Status, Scenarios};
+use crate::{
+    core::scenario::{run_scenario, Status},
+    ScenarioList,
+};
 
 pub struct SchedulerPlugin;
 
@@ -22,16 +25,19 @@ pub enum SchedulerState {
     Unavailale,
 }
 
-pub fn start_scenarios(mut commands: Commands, mut scenarios: ResMut<Scenarios>) {
-    match scenarios
-        .scenarios
+pub fn start_scenarios(mut commands: Commands, mut scenario_list: ResMut<ScenarioList>) {
+    match scenario_list
+        .entries
         .iter_mut()
-        .filter(|scenario| *scenario.get_status() == Status::Scheduled)
+        .filter(|entry| *entry.scenario.get_status() == Status::Scheduled)
         .next()
     {
-        Some(scenario) => {
-            println!("Starting scenario with id {}", scenario.get_id());
-            scenario.run();
+        Some(entry) => {
+            println!("Starting scenario with id {}", entry.scenario.get_id());
+            let send_scenario = entry.scenario.clone();
+            let handle = thread::spawn(move || run_scenario(send_scenario));
+            entry.scenario.set_running(0);
+            entry.join_handle = Some(handle);
             println!("Moving scheduler to state unavailable.");
             commands.insert_resource(NextState(Some(SchedulerState::Unavailale)));
         }
@@ -39,11 +45,27 @@ pub fn start_scenarios(mut commands: Commands, mut scenarios: ResMut<Scenarios>)
     }
 }
 
-pub fn check_scenarios(mut commands: Commands, scenarios: ResMut<Scenarios>) {
-    if !scenarios
-        .scenarios
+pub fn check_scenarios(mut commands: Commands, mut scenario_list: ResMut<ScenarioList>) {
+    scenario_list
+        .entries
+        .iter_mut()
+        .filter(|entry| {
+            discriminant(entry.scenario.get_status()) == discriminant(&Status::Running(1))
+        })
+        .for_each(|entry| match &entry.join_handle {
+            Some(join_handle) => {
+                if join_handle.is_finished() {
+                    entry.scenario.set_done();
+                    entry.join_handle = None;
+                }
+            }
+            None => panic!("Running scenario does not a join handle."),
+        });
+
+    if !scenario_list
+        .entries
         .iter()
-        .any(|scenario| discriminant(scenario.get_status()) == discriminant(&Status::Running(1)))
+        .any(|entry| discriminant(entry.scenario.get_status()) == discriminant(&Status::Running(1)))
     {
         println!("Moving scheduler to state available.");
         commands.insert_resource(NextState(Some(SchedulerState::Available)));

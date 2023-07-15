@@ -21,7 +21,7 @@ mod direction;
 mod gain;
 pub mod shapes;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct APParameters {
     pub gains: ArrayGains<f32>,
     pub output_state_indices: ArrayIndicesGains,

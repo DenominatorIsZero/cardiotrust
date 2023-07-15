@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
-use rusty_cde::{scheduler::SchedulerPlugin, ui::UiPlugin, Scenarios, SelectedSenario};
+use rusty_cde::{scheduler::SchedulerPlugin, ui::UiPlugin, ScenarioList, SelectedSenario};
 
 fn main() {
     App::new()
-        .init_resource::<Scenarios>()
+        .init_resource::<ScenarioList>()
         .init_resource::<SelectedSenario>()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {

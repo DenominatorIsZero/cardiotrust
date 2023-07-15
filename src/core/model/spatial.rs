@@ -6,7 +6,7 @@ use crate::core::config::model::Model;
 
 use self::{heart::Heart, sensors::Sensors, voxels::Voxels};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SpatialDescription {
     pub heart: Heart,
     pub voxels: Voxels,

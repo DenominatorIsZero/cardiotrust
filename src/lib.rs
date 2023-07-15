@@ -4,7 +4,7 @@ pub mod scheduler;
 pub mod ui;
 pub mod vis;
 
-use std::{fs, path::Path};
+use std::{fs, path::Path, rc::Rc, thread::JoinHandle};
 
 use bevy::prelude::*;
 
@@ -21,15 +21,21 @@ impl Default for SelectedSenario {
     }
 }
 
-#[derive(Resource, Debug)]
-pub struct Scenarios {
-    pub scenarios: Vec<Scenario>,
+#[derive(Debug)]
+pub struct ScenarioBundle {
+    pub scenario: Scenario,
+    pub join_handle: Option<JoinHandle<()>>,
 }
 
-impl Default for Scenarios {
+#[derive(Resource, Debug)]
+pub struct ScenarioList {
+    pub entries: Vec<ScenarioBundle>,
+}
+
+impl Default for ScenarioList {
     fn default() -> Self {
-        let mut scenarios = Scenarios {
-            scenarios: Vec::<Scenario>::new(),
+        let mut scenario_list = ScenarioList {
+            entries: Vec::<ScenarioBundle>::new(),
         };
         let dir = Path::new("./results");
         for entry in
@@ -38,9 +44,12 @@ impl Default for Scenarios {
             let entry = entry.expect("Invalid path found");
             let path = entry.path();
             if path.is_dir() {
-                scenarios.scenarios.push(Scenario::load(&path));
+                scenario_list.entries.push(ScenarioBundle {
+                    scenario: Scenario::load(&path),
+                    join_handle: None,
+                });
             }
         }
-        scenarios
+        scenario_list
     }
 }

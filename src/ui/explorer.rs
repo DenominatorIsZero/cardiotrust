@@ -3,14 +3,14 @@ use bevy_egui::{egui, EguiContexts};
 use egui_extras::{Column, TableBuilder};
 
 use crate::core::scenario::Scenario;
-use crate::{Scenarios, SelectedSenario};
+use crate::{ScenarioBundle, ScenarioList, SelectedSenario};
 
 use super::UiState;
 
 pub fn draw_ui_explorer(
     mut commands: Commands,
     mut contexts: EguiContexts,
-    mut scenarios: ResMut<Scenarios>,
+    mut scenario_list: ResMut<ScenarioList>,
     mut selected_scenario: ResMut<SelectedSenario>,
 ) {
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
@@ -30,12 +30,12 @@ pub fn draw_ui_explorer(
                 });
             })
             .body(|mut body| {
-                for (index, scenario) in scenarios.scenarios.iter().enumerate() {
+                for (index, entry) in scenario_list.entries.iter().enumerate() {
                     draw_row(
                         &mut commands,
                         &mut body,
                         index,
-                        scenario,
+                        &entry.scenario,
                         &mut selected_scenario,
                     );
                 }
@@ -43,8 +43,11 @@ pub fn draw_ui_explorer(
                     row.col(|_ui| {});
                     row.col(|ui| {
                         if ui.button("New").clicked() {
-                            scenarios.scenarios.push(Scenario::build(None));
-                            selected_scenario.index = Some(scenarios.scenarios.len() - 1);
+                            scenario_list.entries.push(ScenarioBundle {
+                                scenario: Scenario::build(None),
+                                join_handle: None,
+                            });
+                            selected_scenario.index = Some(scenario_list.entries.len() - 1);
                             commands.insert_resource(NextState(Some(UiState::Scenario)));
                         };
                     });

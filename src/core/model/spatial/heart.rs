@@ -2,7 +2,7 @@ use ndarray::{arr1, Array1};
 
 use crate::core::config::model::Model;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Heart {
     pub origin_mm: Array1<f32>,
     pub size_mm: Array1<f32>,

@@ -13,7 +13,7 @@ use crate::core::data::shapes::ArraySystemStates;
 /// Stuct to calculate and store the derivatives
 /// of the model parameters with regards to the
 /// Loss function.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Derivatives {
     /// Derivatives of the All-pass gains
     pub gains: ArrayGains<f32>,
@@ -100,7 +100,7 @@ impl Derivatives {
 ///
 /// The mapped residuals are calculated as
 /// H_T * y
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 struct ArrayMappedResiduals {
     pub values: Array1<f32>,
 }

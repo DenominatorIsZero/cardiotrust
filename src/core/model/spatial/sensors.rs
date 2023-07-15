@@ -4,7 +4,7 @@ use ndarray::{arr1, s, Array2};
 
 use crate::core::config::model::Model;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Sensors {
     pub positions_mm: Array2<f32>,
     pub orientations_xyz: Array2<f32>,

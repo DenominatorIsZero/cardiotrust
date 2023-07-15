@@ -3,7 +3,7 @@ use ndarray::Array2;
 /// Shape for the simulated/estimated system states
 ///
 /// Has dimensions (number_of_steps x number_of_states)
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ArraySystemStates {
     pub values: Array2<f32>,
 }
@@ -16,7 +16,7 @@ impl ArraySystemStates {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ArrayMeasurements {
     pub values: Array2<f32>,
 }

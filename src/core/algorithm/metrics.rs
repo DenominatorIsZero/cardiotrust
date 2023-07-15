@@ -2,7 +2,7 @@ use ndarray::{s, Array1};
 
 use crate::core::data::shapes::ArrayMeasurements;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Metrics {
     pub loss: ArrayMetricsSample,
     pub loss_epoch: ArrayMetricsEpoch,
@@ -37,7 +37,7 @@ impl Metrics {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ArrayMetricsSample {
     pub values: Array1<f32>,
 }
@@ -50,7 +50,7 @@ impl ArrayMetricsSample {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ArrayMetricsEpoch {
     pub values: Array1<f32>,
 }

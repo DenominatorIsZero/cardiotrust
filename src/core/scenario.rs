@@ -9,7 +9,7 @@ use toml;
 
 use super::{config::Config, data::Data, results::Results};
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct Scenario {
     id: String,
     status: Status,
@@ -118,6 +118,14 @@ impl Scenario {
         }
     }
 
+    pub fn set_running(&mut self, epoch: usize) {
+        self.status = Status::Running(epoch);
+    }
+
+    pub fn set_done(&mut self) {
+        self.status = Status::Done;
+    }
+
     pub fn delete(&self) -> Result<(), std::io::Error> {
         let path = Path::new("./results").join(&self.id);
         fs::remove_dir_all(path)?;
@@ -127,22 +135,22 @@ impl Scenario {
     pub fn get_status(&self) -> &Status {
         &self.status
     }
-
-    pub fn run(&mut self) {
-        self.status = Status::Running(0);
-        for epoch in 0..self.config.algorithm.epochs {
-            self.status = Status::Running(epoch);
-            thread::sleep(Duration::from_millis(1000));
-        }
-        self.status = Status::Done;
-        // create or load data
-        // init model
-        // run algorithm
-        // save
-    }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub fn run_scenario(mut scenario: Scenario) {
+    scenario.status = Status::Running(0);
+    for epoch in 0..scenario.config.algorithm.epochs {
+        scenario.status = Status::Running(epoch);
+        thread::sleep(Duration::from_millis(1000));
+    }
+    scenario.status = Status::Done;
+    // create or load data
+    // init model
+    // run algorithm
+    // save
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Status {
     Planning,
     Done,

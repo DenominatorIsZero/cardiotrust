@@ -10,7 +10,7 @@ use self::simulation::Simulation;
 use crate::core::config::simulation::Simulation as SimulationConfig;
 use crate::core::data::shapes::ArrayMeasurements;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Data {
     simulation: Option<Simulation>,
     measurement: Option<Measurement>,

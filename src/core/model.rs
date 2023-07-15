@@ -9,7 +9,7 @@ use self::{functional::FunctionalDescription, spatial::SpatialDescription};
 
 use super::config::model::Model as ModelConfig;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Model {
     pub functional_description: FunctionalDescription,
     pub spatial_description: SpatialDescription,
