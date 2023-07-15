@@ -4,7 +4,12 @@ pub mod scheduler;
 pub mod ui;
 pub mod vis;
 
-use std::{fs, path::Path, rc::Rc, thread::JoinHandle};
+use std::{
+    fs,
+    path::Path,
+    sync::{mpsc::Receiver, Arc, Mutex},
+    thread::JoinHandle,
+};
 
 use bevy::prelude::*;
 
@@ -25,6 +30,7 @@ impl Default for SelectedSenario {
 pub struct ScenarioBundle {
     pub scenario: Scenario,
     pub join_handle: Option<JoinHandle<()>>,
+    pub epoch_rx: Option<Mutex<Receiver<usize>>>,
 }
 
 #[derive(Resource, Debug)]
@@ -47,6 +53,7 @@ impl Default for ScenarioList {
                 scenario_list.entries.push(ScenarioBundle {
                     scenario: Scenario::load(&path),
                     join_handle: None,
+                    epoch_rx: None,
                 });
             }
         }

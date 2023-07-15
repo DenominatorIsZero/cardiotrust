@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
 use std::{fs, fs::File, io::Write};
@@ -135,12 +136,20 @@ impl Scenario {
     pub fn get_status(&self) -> &Status {
         &self.status
     }
+
+    pub fn get_progress(&self) -> f32 {
+        match self.status {
+            Status::Running(epoch) => epoch as f32 / self.config.algorithm.epochs as f32,
+            _ => 0.0,
+        }
+    }
 }
 
-pub fn run_scenario(mut scenario: Scenario) {
+pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>) {
     scenario.status = Status::Running(0);
     for epoch in 0..scenario.config.algorithm.epochs {
         scenario.status = Status::Running(epoch);
+        epoch_tx.send(epoch);
         thread::sleep(Duration::from_millis(1000));
     }
     scenario.status = Status::Done;

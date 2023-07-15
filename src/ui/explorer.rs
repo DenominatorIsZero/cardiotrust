@@ -1,8 +1,11 @@
+use std::mem::discriminant;
+
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
+use egui::ProgressBar;
 use egui_extras::{Column, TableBuilder};
 
-use crate::core::scenario::Scenario;
+use crate::core::scenario::{Scenario, Status};
 use crate::{ScenarioBundle, ScenarioList, SelectedSenario};
 
 use super::UiState;
@@ -46,6 +49,7 @@ pub fn draw_ui_explorer(
                             scenario_list.entries.push(ScenarioBundle {
                                 scenario: Scenario::build(None),
                                 join_handle: None,
+                                epoch_rx: None,
                             });
                             selected_scenario.index = Some(scenario_list.entries.len() - 1);
                             commands.insert_resource(NextState(Some(UiState::Scenario)));
@@ -75,7 +79,11 @@ fn draw_row(
             };
         });
         row.col(|ui| {
-            ui.label(scenario.get_status_str());
+            if discriminant(scenario.get_status()) == discriminant(&Status::Running(1)) {
+                ui.add(ProgressBar::new(scenario.get_progress()));
+            } else {
+                ui.label(scenario.get_status_str());
+            }
         });
     });
 }

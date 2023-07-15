@@ -1,4 +1,8 @@
-use std::{mem::discriminant, thread};
+use std::{
+    mem::discriminant,
+    sync::{mpsc::channel, Mutex},
+    thread,
+};
 
 use bevy::{prelude::*, transform::commands};
 
@@ -35,9 +39,11 @@ pub fn start_scenarios(mut commands: Commands, mut scenario_list: ResMut<Scenari
         Some(entry) => {
             println!("Starting scenario with id {}", entry.scenario.get_id());
             let send_scenario = entry.scenario.clone();
-            let handle = thread::spawn(move || run_scenario(send_scenario));
+            let (tx, rx) = channel::<usize>();
+            let handle = thread::spawn(move || run_scenario(send_scenario, tx));
             entry.scenario.set_running(0);
             entry.join_handle = Some(handle);
+            entry.epoch_rx = Some(Mutex::new(rx));
             println!("Moving scheduler to state unavailable.");
             commands.insert_resource(NextState(Some(SchedulerState::Unavailale)));
         }
@@ -52,14 +58,28 @@ pub fn check_scenarios(mut commands: Commands, mut scenario_list: ResMut<Scenari
         .filter(|entry| {
             discriminant(entry.scenario.get_status()) == discriminant(&Status::Running(1))
         })
-        .for_each(|entry| match &entry.join_handle {
-            Some(join_handle) => {
-                if join_handle.is_finished() {
-                    entry.scenario.set_done();
-                    entry.join_handle = None;
+        .for_each(|entry| {
+            match &entry.epoch_rx {
+                Some(epoch_rx) => {
+                    let epoch_rx = epoch_rx.lock().unwrap();
+                    let epoch = epoch_rx.try_recv();
+                    if epoch.is_ok() {
+                        entry.scenario.set_running(epoch.unwrap());
+                    }
                 }
+                None => (),
             }
-            None => panic!("Running scenario does not a join handle."),
+
+            match &entry.join_handle {
+                Some(join_handle) => {
+                    if join_handle.is_finished() {
+                        entry.scenario.set_done();
+                        entry.join_handle = None;
+                        entry.epoch_rx = None;
+                    }
+                }
+                None => panic!("Running scenario does not a join handle."),
+            }
         });
 
     if !scenario_list
