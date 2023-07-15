@@ -85,15 +85,13 @@ fn run(
 
 #[cfg(test)]
 mod test {
-    use std::fmt::Debug;
 
     use ndarray::Dim;
 
-    use crate::core::config::model::Model as ModelConfig;
     use crate::core::config::simulation::Simulation as SimulationConfig;
     use crate::core::model::Model;
-    use crate::vis::plotting::matrix::plot_states_over_time;
-    use crate::vis::plotting::time::{standard_time_plot, standard_y_plot};
+
+    use crate::vis::plotting::time::standard_y_plot;
 
     use super::*;
 

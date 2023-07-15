@@ -1,7 +1,7 @@
 use color_quant::NeuQuant;
 use fnv::FnvHashMap;
 use gif::{Encoder, Frame, Repeat};
-use image::DynamicImage;
+
 use lab::Lab;
 use rayon::prelude::*;
 use std::borrow::Cow;
@@ -10,10 +10,6 @@ use std::io;
 use std::io::Write;
 use std::path::Path;
 use std::{error, f32, fmt};
-
-#[cfg(feature = "debug-stderr")]
-#[macro_use]
-mod macros;
 
 #[cfg(feature = "debug-stderr")]
 use std::time::Instant;

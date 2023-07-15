@@ -4,7 +4,7 @@ use std::{
     thread,
 };
 
-use bevy::{prelude::*, transform::commands};
+use bevy::prelude::*;
 
 use crate::{
     core::scenario::{run_scenario, Status},

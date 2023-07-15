@@ -1,11 +1,7 @@
 use egui::Align;
 use egui_extras::{Column, TableBuilder};
 
-use crate::core::{
-    config::model::ControlFunction,
-    model::spatial::voxels::VoxelType,
-    scenario::{Scenario, Status},
-};
+use crate::core::scenario::{Scenario, Status};
 
 use super::common::draw_ui_scenario_common;
 

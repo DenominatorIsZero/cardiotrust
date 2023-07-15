@@ -7,7 +7,7 @@ pub mod vis;
 use std::{
     fs,
     path::Path,
-    sync::{mpsc::Receiver, Arc, Mutex},
+    sync::{mpsc::Receiver, Mutex},
     thread::JoinHandle,
 };
 
