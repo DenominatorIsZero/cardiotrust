@@ -21,6 +21,7 @@ pub fn draw_ui_explorer(
             .column(Column::auto().resizable(true))
             .column(Column::initial(150.0).resizable(true))
             .column(Column::initial(100.0).resizable(true))
+            .column(Column::auto().resizable(true))
             .column(Column::remainder())
             .header(20.0, |mut header| {
                 header.col(|ui| {
@@ -34,6 +35,9 @@ pub fn draw_ui_explorer(
                 });
                 header.col(|ui| {
                     ui.heading("Loss");
+                });
+                header.col(|ui| {
+                    ui.heading("Delta\nStates\nMean");
                 });
             })
             .body(|mut body| {
@@ -60,6 +64,7 @@ pub fn draw_ui_explorer(
                             commands.insert_resource(NextState(Some(UiState::Scenario)));
                         };
                     });
+                    row.col(|_ui| {});
                     row.col(|_ui| {});
                     row.col(|_ui| {});
                 });
@@ -94,6 +99,12 @@ fn draw_row(
         row.col(|ui| {
             match &scenario.summary {
                 Some(summary) => ui.label(summary.loss.to_string()),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario.summary {
+                Some(summary) => ui.label(summary.delta_states_mean.to_string()),
                 None => ui.label("-"),
             };
         });

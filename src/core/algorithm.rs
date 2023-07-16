@@ -1,6 +1,7 @@
 use self::{
     estimation::{
-        calculate_residuals, calculate_system_prediction, calculate_system_update, Estimations,
+        calculate_residuals, calculate_system_prediction, calculate_system_states_delta,
+        calculate_system_update, Estimations,
     },
     metrics::Metrics,
     refinement::derivation::Derivatives,
@@ -54,7 +55,18 @@ pub fn run_epoch(
                 time_index,
             )
         }
-        metrics.calculate_step(&estimations.residuals, time_index, epoch_index);
+        calculate_system_states_delta(
+            &mut estimations.system_states_delta,
+            &estimations.system_states,
+            data.get_system_states(),
+            time_index,
+        );
+        metrics.calculate_step(
+            &estimations.residuals,
+            &estimations.system_states_delta,
+            time_index,
+            epoch_index,
+        );
     }
     functional_description
         .ap_params

@@ -5,6 +5,7 @@ pub mod simulation;
 use ndarray::Dim;
 
 use self::measurement::Measurement;
+use self::shapes::ArraySystemStates;
 use self::simulation::Simulation;
 
 use crate::core::config::simulation::Simulation as SimulationConfig;
@@ -16,14 +17,6 @@ pub struct Data {
     measurement: Option<Measurement>,
 }
 impl Data {
-    pub fn get_measurements(&self) -> &ArrayMeasurements {
-        if let Some(simulation) = self.simulation.as_ref() {
-            &(simulation.measurements)
-        } else {
-            &(self.measurement.as_ref().unwrap().measurements)
-        }
-    }
-
     pub fn empty(
         number_of_sensors: usize,
         number_of_states: usize,
@@ -47,6 +40,21 @@ impl Data {
         Data {
             simulation: Some(simulation),
             measurement: None,
+        }
+    }
+
+    pub fn get_measurements(&self) -> &ArrayMeasurements {
+        if let Some(simulation) = self.simulation.as_ref() {
+            &(simulation.measurements)
+        } else {
+            &(self.measurement.as_ref().unwrap().measurements)
+        }
+    }
+
+    pub fn get_system_states(&self) -> &ArraySystemStates {
+        match &self.simulation {
+            Some(simulation) => &simulation.system_states,
+            None => todo!("Non simulation case not implemented yet."),
         }
     }
 }

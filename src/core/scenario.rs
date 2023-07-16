@@ -192,7 +192,10 @@ pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>, summary_tx:
         model.spatial_description.voxels.count_states(),
     );
 
-    let mut summary = Summary { loss: 0.0 };
+    let mut summary = Summary {
+        loss: 0.0,
+        delta_states_mean: 0.0,
+    };
 
     for epoch_index in 0..scenario.config.algorithm.epochs {
         algorithm::run_epoch(
@@ -207,6 +210,7 @@ pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>, summary_tx:
         );
         scenario.status = Status::Running(epoch_index);
         summary.loss = results.metrics.loss_epoch.values[epoch_index];
+        summary.delta_states_mean = results.metrics.delta_states_mean_epoch.values[epoch_index];
         epoch_tx.send(epoch_index).unwrap();
         summary_tx.send(summary.clone()).unwrap();
     }

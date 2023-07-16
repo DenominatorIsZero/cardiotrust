@@ -14,6 +14,7 @@ pub struct Estimations {
     pub system_states: ArraySystemStates,
     pub measurements: ArrayMeasurements,
     pub residuals: ArrayMeasurements,
+    pub system_states_delta: ArraySystemStates,
 }
 
 impl Estimations {
@@ -27,6 +28,7 @@ impl Estimations {
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
             residuals: ArrayMeasurements::empty(1, number_of_sensors),
+            system_states_delta: ArraySystemStates::empty(1, number_of_states),
         }
     }
 
@@ -35,6 +37,7 @@ impl Estimations {
         self.system_states.values.fill(0.0);
         self.measurements.values.fill(0.0);
         self.residuals.values.fill(0.0);
+        self.system_states_delta.values.fill(0.0);
     }
 }
 
@@ -103,6 +106,18 @@ pub fn calculate_residuals(
     residuals.values.slice_mut(s![0, ..]).assign(
         &(&predicted_measurements.values.slice(s![time_index, ..])
             - &actual_measurements.values.slice(s![time_index, ..])),
+    );
+}
+
+pub fn calculate_system_states_delta(
+    system_states_delta: &mut ArraySystemStates,
+    estimated_system_states: &ArraySystemStates,
+    actual_system_states: &ArraySystemStates,
+    time_index: usize,
+) {
+    system_states_delta.values.slice_mut(s![0, ..]).assign(
+        &(&estimated_system_states.values.slice(s![time_index, ..])
+            - &actual_system_states.values.slice(s![time_index, ..])),
     );
 }
 
