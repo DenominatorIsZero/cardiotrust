@@ -6,6 +6,48 @@ use crate::core::{
 };
 
 pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
+    // measurement covariance mean
+    body.row(30.0, |mut row| {
+        row.col(|ui| {
+            ui.label("Measurement\ncovariance mean");
+        });
+        row.col(|ui| {
+            ui.add(
+                egui::Slider::new(&mut model.measurement_covariance_mean, 1e-10..=1e10)
+                    .logarithmic(true)
+                    .custom_formatter(|n, _| format!("{:+.4e}", n)),
+            );
+        });
+        row.col(|ui| {
+            ui.label(
+                "The mean value of the measurement \
+                                noise covariance matrix.",
+            );
+        });
+    });
+    // measurement covariance std
+    body.row(30.0, |mut row| {
+        row.col(|ui| {
+            ui.label("Measurement\ncovariance std");
+        });
+        row.col(|ui| {
+            ui.add(egui::Slider::new(
+                &mut model.measurement_covariance_std,
+                0.0..=1.0,
+            ));
+        });
+        row.col(|ui| {
+            ui.label(
+                "The standard deviation of the \
+                                measurement noise covariance matrix. \
+                                If this is zero, all diagonal values will \
+                                be choosen as the mean. \
+                                Otherwise they will be drawn from a normal \
+                                distribution according \
+                                to the mean value and standard deviation.",
+            );
+        });
+    });
     // Control function
     let control_function = &mut model.control_function;
     body.row(30.0, |mut row| {
@@ -425,48 +467,6 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
             ui.label(
                 "The end of the pathology \
                                     in y-direction in percent.",
-            );
-        });
-    });
-    // measurement covariance mean
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("Measurement\ncovariance mean");
-        });
-        row.col(|ui| {
-            ui.add(
-                egui::Slider::new(&mut model.measurement_covariance_mean, 1e-10..=1e10)
-                    .logarithmic(true)
-                    .custom_formatter(|n, _| format!("{:+.4e}", n)),
-            );
-        });
-        row.col(|ui| {
-            ui.label(
-                "The mean value of the measurement \
-                                noise covariance matrix.",
-            );
-        });
-    });
-    // measurement covariance std
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("Measurement\ncovariance std");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.measurement_covariance_std,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The standard deviation of the \
-                                measurement noise covariance matrix. \
-                                If this is zero, all diagonal values will \
-                                be choosen as the mean. \
-                                Otherwise they will be drawn from a normal \
-                                distribution according \
-                                to the mean value and standard deviation.",
             );
         });
     });

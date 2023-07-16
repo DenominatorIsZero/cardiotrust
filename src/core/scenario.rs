@@ -1,3 +1,6 @@
+pub mod results;
+pub mod summary;
+
 use std::path::Path;
 use std::sync::mpsc::Sender;
 use std::thread;
@@ -8,7 +11,12 @@ use chrono;
 use serde::{Deserialize, Serialize};
 use toml;
 
-use super::{config::Config, data::Data, results::Results};
+use self::results::Results;
+use self::summary::Summary;
+
+use super::algorithm;
+use super::model::Model;
+use super::{config::Config, data::Data};
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct Scenario {
@@ -16,9 +24,10 @@ pub struct Scenario {
     status: Status,
     config: Config,
     #[serde(skip_serializing, skip_deserializing)]
-    data: Option<Data>,
+    pub data: Option<Data>,
     #[serde(skip_serializing, skip_deserializing)]
-    results: Option<Results>,
+    pub results: Option<Results>,
+    pub summary: Option<Summary>,
 }
 
 impl Scenario {
@@ -33,6 +42,7 @@ impl Scenario {
             config: Config::default(),
             data: None,
             results: None,
+            summary: None,
         };
         scenario
             .save()
@@ -85,6 +95,7 @@ impl Scenario {
         match self.status {
             Status::Planning => {
                 self.status = Status::Scheduled;
+                self.unify_configs();
                 return Ok(());
             }
             _ => {
@@ -95,6 +106,21 @@ impl Scenario {
                 ))
             }
         }
+    }
+
+    fn unify_configs(&mut self) {
+        let model = &mut self.config.algorithm.model;
+        match &self.config.simulation {
+            Some(simulation) => {
+                model.sensors_per_axis = simulation.model.sensors_per_axis;
+                model.sensor_array_size_mm = simulation.model.sensor_array_size_mm;
+                model.sensor_array_origin_mm = simulation.model.sensor_array_origin_mm;
+                model.voxel_size_mm = simulation.model.voxel_size_mm;
+                model.heart_size_mm = simulation.model.heart_size_mm;
+                model.heart_origin_mm = simulation.model.heart_origin_mm;
+            }
+            None => todo!(),
+        };
     }
 
     /// Set't the status of the scenario to "Planning".
@@ -145,18 +171,46 @@ impl Scenario {
     }
 }
 
-pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>) {
-    scenario.status = Status::Running(0);
-    for epoch in 0..scenario.config.algorithm.epochs {
-        scenario.status = Status::Running(epoch);
-        epoch_tx.send(epoch);
-        thread::sleep(Duration::from_millis(1000));
+pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>, summary_tx: Sender<Summary>) {
+    let simulation = scenario.config.simulation.unwrap();
+    let data = Data::from_simulation_config(&simulation);
+    let mut model = Model::from_model_config(
+        &scenario.config.algorithm.model,
+        simulation.sample_rate_hz,
+        simulation.duration_s,
+    )
+    .unwrap();
+
+    let mut results = Results::new(
+        scenario.config.algorithm.epochs,
+        model
+            .functional_description
+            .control_function_values
+            .values
+            .shape()[0],
+        model.spatial_description.sensors.count(),
+        model.spatial_description.voxels.count_states(),
+    );
+
+    let mut summary = Summary { loss: 0.0 };
+
+    for epoch_index in 0..scenario.config.algorithm.epochs {
+        algorithm::run_epoch(
+            &mut model.functional_description,
+            &mut results.estimations,
+            &mut results.derivatives,
+            &mut results.metrics,
+            &data,
+            scenario.config.algorithm.learning_rate,
+            scenario.config.algorithm.model.apply_system_update,
+            epoch_index,
+        );
+        scenario.status = Status::Running(epoch_index);
+        summary.loss = results.metrics.loss_epoch.values[epoch_index];
+        epoch_tx.send(epoch_index).unwrap();
+        summary_tx.send(summary.clone()).unwrap();
     }
     scenario.status = Status::Done;
-    // create or load data
-    // init model
-    // run algorithm
-    // save
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]

@@ -5,7 +5,7 @@ use bevy_egui::{egui, EguiContexts};
 use egui::ProgressBar;
 use egui_extras::{Column, TableBuilder};
 
-use crate::core::scenario::{Scenario, Status};
+use crate::core::scenario::{summary, Scenario, Status};
 use crate::{ScenarioBundle, ScenarioList, SelectedSenario};
 
 use super::UiState;
@@ -20,6 +20,7 @@ pub fn draw_ui_explorer(
         TableBuilder::new(ui)
             .column(Column::auto().resizable(true))
             .column(Column::initial(150.0).resizable(true))
+            .column(Column::initial(100.0).resizable(true))
             .column(Column::remainder())
             .header(20.0, |mut header| {
                 header.col(|ui| {
@@ -30,6 +31,9 @@ pub fn draw_ui_explorer(
                 });
                 header.col(|ui| {
                     ui.heading("Status");
+                });
+                header.col(|ui| {
+                    ui.heading("Loss");
                 });
             })
             .body(|mut body| {
@@ -50,11 +54,13 @@ pub fn draw_ui_explorer(
                                 scenario: Scenario::build(None),
                                 join_handle: None,
                                 epoch_rx: None,
+                                summary_rx: None,
                             });
                             selected_scenario.index = Some(scenario_list.entries.len() - 1);
                             commands.insert_resource(NextState(Some(UiState::Scenario)));
                         };
                     });
+                    row.col(|_ui| {});
                     row.col(|_ui| {});
                 });
             });
@@ -84,6 +90,12 @@ fn draw_row(
             } else {
                 ui.label(scenario.get_status_str());
             }
+        });
+        row.col(|ui| {
+            match &scenario.summary {
+                Some(summary) => ui.label(summary.loss.to_string()),
+                None => ui.label("-"),
+            };
         });
     });
 }

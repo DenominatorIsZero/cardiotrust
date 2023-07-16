@@ -49,13 +49,11 @@ fn update_delays(
         .zip(delays.values.iter_mut())
         .for_each(|(ap_coef, delay)| {
             if *ap_coef > 1.0 {
-                *ap_coef -= 1.0;
                 if *delay > 0 {
+                    *ap_coef -= 1.0;
                     *delay -= 1;
                 } else {
-                    warn!(
-                        "Tried to reduce delay due to ap coef wrapping, but delay is already zero."
-                    );
+                    *ap_coef = 1.0;
                 }
             } else if *ap_coef < 0.0 {
                 *ap_coef += 1.0;

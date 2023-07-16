@@ -8,7 +8,7 @@ use self::{
 
 use super::{
     config::algorithm::Algorithm, data::Data, model::functional::FunctionalDescription,
-    results::Results,
+    scenario::results::Results,
 };
 
 pub mod estimation;
@@ -19,7 +19,7 @@ pub mod refinement;
 ///
 /// This includes calculating the system estimates
 /// and performing one gradient descent step.
-fn run_epoch(
+pub fn run_epoch(
     functional_description: &mut FunctionalDescription,
     estimations: &mut Estimations,
     derivatives: &mut Derivatives,
@@ -69,7 +69,6 @@ fn run(
     config: &Algorithm,
 ) {
     for epoch_index in 0..config.epochs {
-        println!("Epoch: {}", epoch_index);
         run_epoch(
             functional_description,
             &mut results.estimations,
@@ -91,6 +90,7 @@ mod test {
     use crate::core::config::simulation::Simulation as SimulationConfig;
     use crate::core::model::Model;
 
+    use crate::vis::plotting::matrix::{plot_states_max, plot_states_over_time};
     use crate::vis::plotting::time::standard_y_plot;
 
     use super::*;
@@ -182,7 +182,6 @@ mod test {
         .unwrap();
         algorithm_config.epochs = 3;
         algorithm_config.model.apply_system_update = true;
-        algorithm_config.learning_rate = 1e-3;
 
         let mut results = Results::new(
             algorithm_config.epochs,
@@ -224,9 +223,8 @@ mod test {
             simulation_config.duration_s,
         )
         .unwrap();
-        algorithm_config.epochs = 5;
+        algorithm_config.epochs = 10;
         algorithm_config.model.apply_system_update = true;
-        algorithm_config.learning_rate = 1e-3;
 
         let mut results = Results::new(
             algorithm_config.epochs,
@@ -261,6 +259,25 @@ mod test {
             "Epoch",
         );
 
+        plot_states_max(
+            &results.estimations.system_states,
+            &model.spatial_description.voxels,
+            "tests/algorith_states_max",
+            "Maximum Estimated Current Densities",
+        );
+
+        let fps = 20;
+        let playback_speed = 0.1;
+
+        plot_states_over_time(
+            &results.estimations.system_states,
+            &model.spatial_description.voxels,
+            fps,
+            playback_speed,
+            "tests/algorithm_states",
+            "Estimated Current Densities",
+        );
+
         (0..algorithm_config.epochs - 1).for_each(|i| {
             assert!(
                 results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
@@ -284,7 +301,6 @@ mod test {
         .unwrap();
         algorithm_config.epochs = 3;
         algorithm_config.model.apply_system_update = false;
-        algorithm_config.learning_rate = 1e-3;
 
         let mut results = Results::new(
             algorithm_config.epochs,
@@ -328,7 +344,6 @@ mod test {
         .unwrap();
         algorithm_config.epochs = 5;
         algorithm_config.model.apply_system_update = false;
-        algorithm_config.learning_rate = 1e-3;
 
         let mut results = Results::new(
             algorithm_config.epochs,
@@ -350,17 +365,36 @@ mod test {
 
         standard_y_plot(
             &results.metrics.loss.values,
-            "tests/algorithm_loss",
+            "tests/algorithm_no_update_loss",
             "Loss",
             "Loss",
             "Step",
         );
         standard_y_plot(
             &results.metrics.loss_epoch.values,
-            "tests/algorithm_loss_epoch",
+            "tests/algorithm_no_update_loss_epoch",
             "Sum Loss Per Epoch",
             "Loss",
             "Epoch",
+        );
+
+        plot_states_max(
+            &results.estimations.system_states,
+            &model.spatial_description.voxels,
+            "tests/algorith_states_max",
+            "Maximum Estimated Current Densities",
+        );
+
+        let fps = 20;
+        let playback_speed = 0.1;
+
+        plot_states_over_time(
+            &results.estimations.system_states,
+            &model.spatial_description.voxels,
+            fps,
+            playback_speed,
+            "tests/algorithm_states",
+            "Estimated Current Densities",
         );
 
         (0..algorithm_config.epochs - 1).for_each(|i| {

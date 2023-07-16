@@ -4,6 +4,7 @@ pub mod scheduler;
 pub mod ui;
 pub mod vis;
 
+use crate::core::scenario::summary::Summary;
 use std::{
     fs,
     path::Path,
@@ -31,6 +32,7 @@ pub struct ScenarioBundle {
     pub scenario: Scenario,
     pub join_handle: Option<JoinHandle<()>>,
     pub epoch_rx: Option<Mutex<Receiver<usize>>>,
+    pub summary_rx: Option<Mutex<Receiver<Summary>>>,
 }
 
 #[derive(Resource, Debug)]
@@ -54,6 +56,7 @@ impl Default for ScenarioList {
                     scenario: Scenario::load(&path),
                     join_handle: None,
                     epoch_rx: None,
+                    summary_rx: None,
                 });
             }
         }
