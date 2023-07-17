@@ -22,6 +22,13 @@ pub fn draw_ui_explorer(
             .column(Column::initial(150.0).resizable(true))
             .column(Column::initial(100.0).resizable(true))
             .column(Column::auto().resizable(true))
+            .column(Column::auto().resizable(true))
+            .column(Column::auto().resizable(true))
+            .column(Column::auto().resizable(true))
+            .column(Column::auto().resizable(true))
+            .column(Column::auto().resizable(true))
+            .column(Column::auto().resizable(true))
+            .column(Column::auto().resizable(true))
             .column(Column::remainder())
             .header(20.0, |mut header| {
                 header.col(|ui| {
@@ -38,6 +45,27 @@ pub fn draw_ui_explorer(
                 });
                 header.col(|ui| {
                     ui.heading("Delta\nStates\nMean");
+                });
+                header.col(|ui| {
+                    ui.heading("Delta\nStates\nMax");
+                });
+                header.col(|ui| {
+                    ui.heading("Delta\nMeas.\nMean");
+                });
+                header.col(|ui| {
+                    ui.heading("Delta\nMeas.\nMax");
+                });
+                header.col(|ui| {
+                    ui.heading("Delta\nGains\nMean");
+                });
+                header.col(|ui| {
+                    ui.heading("Delta\nGains\nMax");
+                });
+                header.col(|ui| {
+                    ui.heading("Delta\nDelays\nMean");
+                });
+                header.col(|ui| {
+                    ui.heading("Delta\nDelays\nMax");
                 });
             })
             .body(|mut body| {
@@ -64,6 +92,13 @@ pub fn draw_ui_explorer(
                             commands.insert_resource(NextState(Some(UiState::Scenario)));
                         };
                     });
+                    row.col(|_ui| {});
+                    row.col(|_ui| {});
+                    row.col(|_ui| {});
+                    row.col(|_ui| {});
+                    row.col(|_ui| {});
+                    row.col(|_ui| {});
+                    row.col(|_ui| {});
                     row.col(|_ui| {});
                     row.col(|_ui| {});
                     row.col(|_ui| {});
@@ -105,6 +140,48 @@ fn draw_row(
         row.col(|ui| {
             match &scenario.summary {
                 Some(summary) => ui.label(summary.delta_states_mean.to_string()),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario.summary {
+                Some(summary) => ui.label(summary.delta_states_max.to_string()),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario.summary {
+                Some(summary) => ui.label(summary.delta_measurements_mean.to_string()),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario.summary {
+                Some(summary) => ui.label(summary.delta_measurements_max.to_string()),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario.summary {
+                Some(summary) => ui.label(summary.delta_gains_mean.to_string()),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario.summary {
+                Some(summary) => ui.label(summary.delta_gains_max.to_string()),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario.summary {
+                Some(summary) => ui.label(summary.delta_delays_mean.to_string()),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario.summary {
+                Some(summary) => ui.label(summary.delta_delays_max.to_string()),
                 None => ui.label("-"),
             };
         });
