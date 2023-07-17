@@ -2,6 +2,8 @@ pub mod shapes;
 
 use ndarray::s;
 
+use crate::core::model::functional::allpass::from_coef_to_samples;
+use crate::core::model::functional::allpass::shapes::ArrayDelays;
 use crate::core::model::functional::kalman::KalmanGain;
 use crate::core::model::{
     functional::allpass::shapes::ArrayGains, functional::FunctionalDescription,
@@ -15,6 +17,8 @@ pub struct Estimations {
     pub measurements: ArrayMeasurements,
     pub residuals: ArrayMeasurements,
     pub system_states_delta: ArraySystemStates,
+    pub gains_delta: ArrayGains<f32>,
+    pub delays_delta: ArrayDelays<f32>,
 }
 
 impl Estimations {
@@ -29,6 +33,8 @@ impl Estimations {
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
             residuals: ArrayMeasurements::empty(1, number_of_sensors),
             system_states_delta: ArraySystemStates::empty(1, number_of_states),
+            gains_delta: ArrayGains::empty(number_of_states),
+            delays_delta: ArrayDelays::empty(number_of_states),
         }
     }
 
@@ -38,6 +44,8 @@ impl Estimations {
         self.measurements.values.fill(0.0);
         self.residuals.values.fill(0.0);
         self.system_states_delta.values.fill(0.0);
+        self.gains_delta.values.fill(0.0);
+        self.delays_delta.values.fill(0.0);
     }
 }
 
@@ -119,6 +127,36 @@ pub fn calculate_system_states_delta(
         &(&estimated_system_states.values.slice(s![time_index, ..])
             - &actual_system_states.values.slice(s![time_index, ..])),
     );
+}
+
+pub fn calculate_gains_delta(
+    gains_delta: &mut ArrayGains<f32>,
+    estimated_gains: &ArrayGains<f32>,
+    actual_gains: &ArrayGains<f32>,
+    time_index: usize,
+) {
+    gains_delta
+        .values
+        .assign(&(&estimated_gains.values - &actual_gains.values));
+}
+
+pub fn calculate_delays_delta(
+    delays_delta: &mut ArrayDelays<f32>,
+    estimated_delays: &ArrayDelays<usize>,
+    actual_delays: &ArrayDelays<usize>,
+    estimated_coefs: &ArrayDelays<f32>,
+    actual_coefs: &ArrayDelays<f32>,
+    time_index: usize,
+) {
+    delays_delta
+        .values
+        .indexed_iter_mut()
+        .for_each(|(index, delay_delta)| {
+            *delay_delta = (estimated_delays.values[index] as f32
+                - actual_delays.values[index] as f32)
+                + (from_coef_to_samples(estimated_coefs.values[index])
+                    - from_coef_to_samples(actual_coefs.values[index]));
+        })
 }
 
 pub fn calculate_system_update(
