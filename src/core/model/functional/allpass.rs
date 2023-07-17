@@ -297,6 +297,10 @@ fn from_samples_to_usize(samples: f32) -> usize {
     samples as usize
 }
 
+pub fn from_coef_to_samples(coef: f32) -> f32 {
+    (1.0 - coef) / (coef - 1.0)
+}
+
 #[cfg(test)]
 mod test {
     use crate::{
