@@ -11,6 +11,8 @@ use self::simulation::Simulation;
 use crate::core::config::simulation::Simulation as SimulationConfig;
 use crate::core::data::shapes::ArrayMeasurements;
 
+use super::model::functional::allpass::shapes::{ArrayDelays, ArrayGains};
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Data {
     simulation: Option<Simulation>,
@@ -54,6 +56,27 @@ impl Data {
     pub fn get_system_states(&self) -> &ArraySystemStates {
         match &self.simulation {
             Some(simulation) => &simulation.system_states,
+            None => todo!("Non simulation case not implemented yet."),
+        }
+    }
+
+    pub fn get_gains(&self) -> &ArrayGains<f32> {
+        match &self.simulation {
+            Some(simulation) => &simulation.model.functional_description.ap_params.gains,
+            None => todo!("Non simulation case not implemented yet."),
+        }
+    }
+
+    pub fn get_coefs(&self) -> &ArrayDelays<f32> {
+        match &self.simulation {
+            Some(simulation) => &simulation.model.functional_description.ap_params.coefs,
+            None => todo!("Non simulation case not implemented yet."),
+        }
+    }
+
+    pub fn get_delays(&self) -> &ArrayDelays<usize> {
+        match &self.simulation {
+            Some(simulation) => &simulation.model.functional_description.ap_params.delays,
             None => todo!("Non simulation case not implemented yet."),
         }
     }
