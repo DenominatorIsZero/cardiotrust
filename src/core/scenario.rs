@@ -8,6 +8,7 @@ use std::time::Duration;
 use std::{fs, fs::File, io::Write};
 
 use chrono;
+use ndarray_linalg::Scalar;
 use serde::{Deserialize, Serialize};
 use toml;
 
@@ -192,10 +193,7 @@ pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>, summary_tx:
         model.spatial_description.voxels.count_states(),
     );
 
-    let mut summary = Summary {
-        loss: 0.0,
-        delta_states_mean: 0.0,
-    };
+    let mut summary = Summary::new();
 
     for epoch_index in 0..scenario.config.algorithm.epochs {
         algorithm::run_epoch(
@@ -209,8 +207,19 @@ pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>, summary_tx:
             epoch_index,
         );
         scenario.status = Status::Running(epoch_index);
+
         summary.loss = results.metrics.loss_epoch.values[epoch_index];
         summary.delta_states_mean = results.metrics.delta_states_mean_epoch.values[epoch_index];
+        summary.delta_states_max = results.metrics.delta_states_max_epoch.values[epoch_index];
+        summary.delta_measurements_mean =
+            results.metrics.delta_measurements_mean_epoch.values[epoch_index];
+        summary.delta_measurements_max =
+            results.metrics.delta_measurements_max_epoch.values[epoch_index];
+        summary.delta_gains_mean = results.metrics.delta_gains_mean_epoch.values[epoch_index];
+        summary.delta_gains_max = results.metrics.delta_gains_max_epoch.values[epoch_index];
+        summary.delta_delays_mean = results.metrics.delta_delays_mean_epoch.values[epoch_index];
+        summary.delta_delays_max = results.metrics.delta_delays_max_epoch.values[epoch_index];
+
         epoch_tx.send(epoch_index).unwrap();
         summary_tx.send(summary.clone()).unwrap();
     }
