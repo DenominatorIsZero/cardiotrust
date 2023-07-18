@@ -23,7 +23,7 @@ pub struct SelectedSenario {
 
 impl Default for SelectedSenario {
     fn default() -> Self {
-        SelectedSenario { index: Some(0) }
+        Self { index: Some(0) }
     }
 }
 
@@ -42,12 +42,12 @@ pub struct ScenarioList {
 
 impl Default for ScenarioList {
     fn default() -> Self {
-        let mut scenario_list = ScenarioList {
+        let mut scenario_list = Self {
             entries: Vec::<ScenarioBundle>::new(),
         };
         let dir = Path::new("./results");
-        for entry in
-            fs::read_dir(dir).expect(&format!("No such directory {}", dir.to_string_lossy()))
+        for entry in fs::read_dir(dir)
+            .unwrap_or_else(|_| panic!("No such directory {}", dir.to_string_lossy()))
         {
             let entry = entry.expect("Invalid path found");
             let path = entry.path();
