@@ -5,7 +5,7 @@ use bevy_egui::{egui, EguiContexts};
 use egui::ProgressBar;
 use egui_extras::{Column, TableBuilder};
 
-use crate::core::scenario::{summary, Scenario, Status};
+use crate::core::scenario::{Scenario, Status};
 use crate::{ScenarioBundle, ScenarioList, SelectedSenario};
 
 use super::UiState;

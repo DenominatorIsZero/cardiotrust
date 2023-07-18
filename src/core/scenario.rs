@@ -3,12 +3,11 @@ pub mod summary;
 
 use std::path::Path;
 use std::sync::mpsc::Sender;
-use std::thread;
-use std::time::Duration;
+
 use std::{fs, fs::File, io::Write};
 
 use chrono;
-use ndarray_linalg::Scalar;
+
 use serde::{Deserialize, Serialize};
 use toml;
 

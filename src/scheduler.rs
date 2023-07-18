@@ -7,7 +7,7 @@ use std::{
 use bevy::prelude::*;
 
 use crate::{
-    core::scenario::{run_scenario, summary, Status},
+    core::scenario::{run_scenario, Status},
     ScenarioList,
 };
 
