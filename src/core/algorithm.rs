@@ -408,7 +408,7 @@ mod test {
         plot_states_max(
             &results.estimations.system_states,
             &model.spatial_description.voxels,
-            "tests/algorith_states_max",
+            "tests/algorith_no_update_states_max",
             "Maximum Estimated Current Densities",
         );
 
@@ -420,7 +420,7 @@ mod test {
             &model.spatial_description.voxels,
             fps,
             playback_speed,
-            "tests/algorithm_states",
+            "tests/algorithm_no_update_states",
             "Estimated Current Densities",
         );
 
