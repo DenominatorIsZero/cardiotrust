@@ -122,7 +122,7 @@ pub fn plot_state_xyz(
         .line(
             plotly::common::Line::new()
                 .color(NamedColor::SkyBlue)
-                .width(2 as f64)
+                .width(2.0)
                 .dash(plotly::common::DashType::Solid),
         )
         .name("x");
@@ -131,7 +131,7 @@ pub fn plot_state_xyz(
         .line(
             plotly::common::Line::new()
                 .color(NamedColor::Orange)
-                .width(2 as f64)
+                .width(2.0)
                 .dash(plotly::common::DashType::Dot),
         )
         .name("y");
@@ -140,7 +140,7 @@ pub fn plot_state_xyz(
         .line(
             plotly::common::Line::new()
                 .color(NamedColor::SeaGreen)
-                .width(2 as f64)
+                .width(2.0)
                 .dash(plotly::common::DashType::Dash),
         )
         .name("z");
