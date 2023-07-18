@@ -44,7 +44,7 @@ pub fn standard_time_plot(
     let width = 800;
     let height = 600;
     let scale = 1.0;
-    save_plot(file_name, plot, width, height, scale);
+    save_plot(file_name, &plot, width, height, scale);
 }
 
 pub fn standard_y_plot(
@@ -81,7 +81,7 @@ pub fn standard_y_plot(
     let width = 800;
     let height = 600;
     let scale = 1.0;
-    save_plot(file_name, plot, width, height, scale);
+    save_plot(file_name, &plot, width, height, scale);
 }
 
 pub fn plot_state_xyz(
@@ -160,5 +160,5 @@ pub fn plot_state_xyz(
     let width = 800;
     let height = 600;
     let scale = 1.0;
-    save_plot(file_name, plot, width, height, scale);
+    save_plot(file_name, &plot, width, height, scale);
 }

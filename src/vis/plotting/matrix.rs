@@ -68,7 +68,7 @@ pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str)
     plot.add_trace(trace);
     plot.set_layout(layout);
 
-    save_plot(file_name, plot, width, height, 1.0);
+    save_plot(file_name, &plot, width, height, 1.0);
 }
 
 pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &str, title: &str) {
@@ -108,7 +108,7 @@ pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &
     plot.add_trace(trace);
     plot.set_layout(layout);
 
-    save_plot(file_name, plot, width, height, 1.0);
+    save_plot(file_name, &plot, width, height, 1.0);
 }
 
 /// Plots current densities at given time for x-y plane at z=0
@@ -285,7 +285,7 @@ pub fn plot_states_at_time(
 
     plot.set_layout(layout);
 
-    save_plot(file_name, plot, width, height, 1.0);
+    save_plot(file_name, &plot, width, height, 1.0);
 }
 
 /// Plots maximum current densities for x-y plane at z=0
@@ -491,7 +491,7 @@ pub fn plot_states_max(
 
     plot.set_layout(layout);
 
-    save_plot(file_name, plot, width, height, 1.0);
+    save_plot(file_name, &plot, width, height, 1.0);
 }
 
 pub fn plot_states_over_time(
@@ -575,5 +575,5 @@ pub fn plot_matrix(matrix: &Array2<f32>, file_name: &str, title: &str) {
     plot.add_trace(trace);
     plot.set_layout(layout);
 
-    save_plot(file_name, plot, width, height, 1.0);
+    save_plot(file_name, &plot, width, height, 1.0);
 }
