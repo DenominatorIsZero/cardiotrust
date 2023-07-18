@@ -66,7 +66,6 @@ pub fn run_epoch(
             &mut estimations.gains_delta,
             &functional_description.ap_params.gains,
             data.get_gains(),
-            time_index,
         );
         calculate_delays_delta(
             &mut estimations.delays_delta,
@@ -74,7 +73,6 @@ pub fn run_epoch(
             data.get_delays(),
             &functional_description.ap_params.coefs,
             data.get_coefs(),
-            time_index,
         );
         metrics.calculate_step(
             &estimations.residuals,

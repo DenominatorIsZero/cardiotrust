@@ -133,7 +133,6 @@ pub fn calculate_gains_delta(
     gains_delta: &mut ArrayGains<f32>,
     estimated_gains: &ArrayGains<f32>,
     actual_gains: &ArrayGains<f32>,
-    time_index: usize,
 ) {
     gains_delta
         .values
@@ -146,7 +145,6 @@ pub fn calculate_delays_delta(
     actual_delays: &ArrayDelays<usize>,
     estimated_coefs: &ArrayDelays<f32>,
     actual_coefs: &ArrayDelays<f32>,
-    time_index: usize,
 ) {
     delays_delta
         .values
