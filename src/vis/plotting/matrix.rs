@@ -288,29 +288,25 @@ pub fn plot_states_at_time(
     save_plot(file_name, &plot, width, height, 1.0);
 }
 
-/// Plots maximum current densities for x-y plane at z=0
-/// Creates four subplots:
-///     - in x direction
-///     - in y direction
-///     - in z direction
-///     - absolute value
-pub fn plot_states_max(
+fn get_max_for_state(system_states: &ArraySystemStates, state_index: usize) -> f32 {
+    let system_states = &system_states.values;
+    system_states
+        .slice(s![.., state_index])
+        .max_skipnan()
+        .max(system_states.slice(s![.., state_index]).min_skipnan().abs())
+}
+
+fn fill_vecs_with_states_max(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
-    file_name: &str,
-    title: &str,
-) {
-    let system_states = &system_states.values;
-    let z_index = 0;
-
-    let mut in_x: Vec<Vec<f32>> = Vec::new();
-    let mut in_y: Vec<Vec<f32>> = Vec::new();
-    let mut in_z: Vec<Vec<f32>> = Vec::new();
-    let mut abs: Vec<Vec<f32>> = Vec::new();
-
+    in_x: &mut Vec<Vec<f32>>,
+    in_y: &mut Vec<Vec<f32>>,
+    in_z: &mut Vec<Vec<f32>>,
+    abs: &mut Vec<Vec<f32>>,
+) -> (f32, f32) {
     let mut min_j = f32::MAX;
     let mut max_j = f32::MIN;
-
+    let z_index = 0;
     for y_index in 0..voxels.count_xyz()[1] {
         let mut row_x: Vec<f32> = Vec::new();
         let mut row_y: Vec<f32> = Vec::new();
@@ -327,41 +323,17 @@ pub fn plot_states_max(
                     row_abs.push(0.0);
                 }
                 Some(state_index) => {
-                    row_x.push(
-                        system_states
-                            .slice(s![.., state_index])
-                            .max_skipnan()
-                            .max(system_states.slice(s![.., state_index]).min_skipnan().abs()),
-                    );
-                    row_y.push(
-                        system_states
-                            .slice(s![.., state_index + 1])
-                            .max_skipnan()
-                            .max(
-                                system_states
-                                    .slice(s![.., state_index + 1])
-                                    .min_skipnan()
-                                    .abs(),
-                            ),
-                    );
-                    row_z.push(
-                        system_states
-                            .slice(s![.., state_index + 2])
-                            .max_skipnan()
-                            .max(
-                                system_states
-                                    .slice(s![.., state_index + 2])
-                                    .min_skipnan()
-                                    .abs(),
-                            ),
-                    );
+                    row_x.push(get_max_for_state(system_states, state_index));
+                    row_y.push(get_max_for_state(system_states, state_index + 1));
+                    row_z.push(get_max_for_state(system_states, state_index + 2));
                     row_abs.push(
                         *Array1::from_vec(
-                            (0..system_states.shape()[0])
+                            (0..system_states.values.shape()[0])
                                 .map(|time_index| {
                                     system_states
+                                        .values
                                         .slice(s![time_index, state_index..state_index + 3])
-                                        .mapv(|v| v.abs())
+                                        .mapv(f32::abs)
                                         .sum()
                                 })
                                 .collect_vec(),
@@ -372,18 +344,60 @@ pub fn plot_states_max(
             }
         }
         in_x.push(row_x.clone());
-        min_j = f32::min(min_j, row_x.into_iter().reduce(f32::min).unwrap());
+        min_j = f32::min(
+            min_j,
+            row_x
+                .into_iter()
+                .reduce(f32::min)
+                .expect("Could not calculate min j"),
+        );
         in_y.push(row_y.clone());
-        min_j = f32::min(min_j, row_y.into_iter().reduce(f32::min).unwrap());
+        min_j = f32::min(
+            min_j,
+            row_y
+                .into_iter()
+                .reduce(f32::min)
+                .expect("Could not calculate min j"),
+        );
         in_z.push(row_z.clone());
-        min_j = f32::min(min_j, row_z.into_iter().reduce(f32::min).unwrap());
+        min_j = f32::min(
+            min_j,
+            row_z
+                .into_iter()
+                .reduce(f32::min)
+                .expect("Could not calculate min j"),
+        );
         abs.push(row_abs.clone());
-        min_j = f32::min(min_j, row_abs.clone().into_iter().reduce(f32::min).unwrap());
-        max_j = f32::max(max_j, row_abs.into_iter().reduce(f32::max).unwrap());
+        min_j = f32::min(
+            min_j,
+            row_abs
+                .clone()
+                .into_iter()
+                .reduce(f32::min)
+                .expect("Could not calculate min j"),
+        );
+        max_j = f32::max(
+            max_j,
+            row_abs
+                .into_iter()
+                .reduce(f32::max)
+                .expect("Could not calculate max j"),
+        );
     }
+    (min_j, max_j)
+}
+
+fn calculate_states_max(
+    system_states: &ArraySystemStates,
+    voxels: &Voxels,
+    in_x: &mut Vec<Vec<f32>>,
+    in_y: &mut Vec<Vec<f32>>,
+    in_z: &mut Vec<Vec<f32>>,
+    abs: &mut Vec<Vec<f32>>,
+) {
+    let (min_j, max_j) = fill_vecs_with_states_max(system_states, voxels, in_x, in_y, in_z, abs);
 
     // add invisible row to make all subplots have the same scale
-
     let mut row_x: Vec<f32> = Vec::new();
     let mut row_y: Vec<f32> = Vec::new();
     let mut row_z: Vec<f32> = Vec::new();
@@ -402,39 +416,15 @@ pub fn plot_states_max(
     in_y.push(row_y);
     in_z.push(row_z);
     abs.push(row_abs);
+}
 
-    let trace_x = HeatMap::new_z(in_x)
-        .name("x")
-        .x_axis("x1")
-        .y_axis("y1")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
-    let trace_y = HeatMap::new_z(in_y)
-        .name("y")
-        .x_axis("x2")
-        .y_axis("y2")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
-    let trace_z = HeatMap::new_z(in_z)
-        .name("z")
-        .x_axis("x3")
-        .y_axis("y3")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
-    let trace_abs = HeatMap::new_z(abs)
-        .name("abs")
-        .x_axis("x4")
-        .y_axis("y4")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
-
-    let mut plot = Plot::new();
-    plot.add_trace(trace_x);
-    plot.add_trace(trace_y);
-    plot.add_trace(trace_z);
-    plot.add_trace(trace_abs);
-
-    let width =
-        (1000.0 * voxels.count_xyz()[0] as f32 / voxels.count_xyz()[1] as f32) as usize + 175;
-    let height = (1000.0 * voxels.count_xyz()[1] as f32 / voxels.count_xyz()[0] as f32) as usize;
-
-    let layout = Layout::new()
+fn build_plot_states_max_layout(
+    voxels: &Voxels,
+    title: &str,
+    width: usize,
+    height: usize,
+) -> Layout {
+    Layout::new()
         .grid(
             LayoutGrid::new()
                 .rows(2)
@@ -487,7 +477,77 @@ pub fn plot_states_max(
                 .anchor("x"),
         )
         .height(height)
-        .width(width);
+        .width(width)
+}
+
+/// Plots maximum current densities for x-y plane at z=0
+/// Creates four subplots:
+///     - in x direction
+///     - in y direction
+///     - in z direction
+///     - absolute value
+pub fn plot_states_max(
+    system_states: &ArraySystemStates,
+    voxels: &Voxels,
+    file_name: &str,
+    title: &str,
+) {
+    let mut in_x: Vec<Vec<f32>> = Vec::new();
+    let mut in_y: Vec<Vec<f32>> = Vec::new();
+    let mut in_z: Vec<Vec<f32>> = Vec::new();
+    let mut abs: Vec<Vec<f32>> = Vec::new();
+
+    calculate_states_max(
+        system_states,
+        voxels,
+        &mut in_x,
+        &mut in_y,
+        &mut in_z,
+        &mut abs,
+    );
+
+    let trace_x = HeatMap::new_z(in_x)
+        .name("x")
+        .x_axis("x1")
+        .y_axis("y1")
+        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    let trace_y = HeatMap::new_z(in_y)
+        .name("y")
+        .x_axis("x2")
+        .y_axis("y2")
+        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    let trace_z = HeatMap::new_z(in_z)
+        .name("z")
+        .x_axis("x3")
+        .y_axis("y3")
+        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    let trace_abs = HeatMap::new_z(abs)
+        .name("abs")
+        .x_axis("x4")
+        .y_axis("y4")
+        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+
+    let mut plot = Plot::new();
+    plot.add_trace(trace_x);
+    plot.add_trace(trace_y);
+    plot.add_trace(trace_z);
+    plot.add_trace(trace_abs);
+
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation
+    )]
+    let width =
+        (1000.0 * voxels.count_xyz()[0] as f32 / voxels.count_xyz()[1] as f32) as usize + 175;
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation
+    )]
+    let height = (1000.0 * voxels.count_xyz()[1] as f32 / voxels.count_xyz()[0] as f32) as usize;
+
+    let layout = build_plot_states_max_layout(voxels, title, width, height);
 
     plot.set_layout(layout);
 
@@ -505,11 +565,16 @@ pub fn plot_states_over_time(
     let directory = format!("./tmp/{file_name}/");
     let dir_path = Path::new(&directory);
     if dir_path.is_dir() {
-        fs::remove_dir_all(dir_path).unwrap();
+        fs::remove_dir_all(dir_path).expect("Could not delete temporary directory");
     }
-    fs::create_dir_all(dir_path).unwrap();
+    fs::create_dir_all(dir_path).expect("Could not create temporary directory.");
 
     let sample_number = system_states.values.shape()[0];
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation
+    )]
     let image_number = (fps as f32 / playback_speed) as usize;
     let time_step = sample_number / image_number;
 
@@ -532,15 +597,17 @@ pub fn plot_states_over_time(
         );
         image_names.push(format!("{image_name}.png"));
     }
-    let images = engiffen::load_images(&image_names.as_slice());
-    let gif =
-        engiffen::engiffen(&images, fps.try_into().unwrap(), engiffen::Quantizer::Naive).unwrap();
-    let mut output_file = File::create(format!("{file_name}.gif")).unwrap();
-    gif.write(&mut output_file).unwrap();
-    fs::remove_dir_all(dir_path).unwrap();
+    let images = engiffen::load_images(image_names.as_slice());
+    let gif = engiffen::engiffen(&images, fps as usize, engiffen::Quantizer::Naive)
+        .expect("Could not create gif from images.");
+    let mut output_file =
+        File::create(format!("{file_name}.gif")).expect("Could not create gif file.");
+    gif.write(&mut output_file)
+        .expect("Could not write gif file.");
+    fs::remove_dir_all(dir_path).expect("Could not remove temporary folders.");
 }
 
-pub fn plot_matrix(matrix: &Array2<f32>, file_name: &str, title: &str) {
+pub fn plot_matrix_as_heatmap(matrix: &Array2<f32>, file_name: &str, title: &str) {
     let mut z: Vec<Vec<f32>> = Vec::new();
     for y in 0..matrix.shape()[1] {
         let mut row: Vec<f32> = Vec::new();
@@ -554,9 +621,20 @@ pub fn plot_matrix(matrix: &Array2<f32>, file_name: &str, title: &str) {
         HeatMap::new_z(z).color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::RdBu));
     let mut plot = Plot::new();
 
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation
+    )]
     let width = (500.0 * matrix.shape()[0] as f32 / matrix.shape()[1] as f32) as usize + 175;
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation
+    )]
     let height = (500.0 * matrix.shape()[1] as f32 / matrix.shape()[0] as f32) as usize;
 
+    #[allow(clippy::cast_precision_loss)]
     let layout = Layout::new()
         .title(title.into())
         .x_axis(

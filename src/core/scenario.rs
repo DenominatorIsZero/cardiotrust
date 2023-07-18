@@ -70,6 +70,8 @@ impl Scenario {
         fs::create_dir_all(&path)?;
         let mut f = File::create(&path.join("scenario.toml"))?;
         f.write_all(toml.as_bytes())?;
+        self.save_data();
+        self.save_results();
         Ok(())
     }
 
@@ -169,11 +171,22 @@ impl Scenario {
             _ => 0.0,
         }
     }
+
+    fn save_data(&self) {
+        todo!()
+    }
+
+    fn save_results(&self) {
+        todo!()
+    }
 }
 
 pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>, summary_tx: Sender<Summary>) {
-    let simulation = scenario.config.simulation.unwrap();
-    let data = Data::from_simulation_config(&simulation);
+    let simulation = match &scenario.config.simulation {
+        Some(simulation) => simulation,
+        None => todo!("Non-simulation case not yet implemented."),
+    };
+    let data = Data::from_simulation_config(simulation);
     let mut model = Model::from_model_config(
         &scenario.config.algorithm.model,
         simulation.sample_rate_hz,
@@ -222,6 +235,9 @@ pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>, summary_tx:
         epoch_tx.send(epoch_index).unwrap();
         summary_tx.send(summary.clone()).unwrap();
     }
+    scenario.results = Some(results);
+    scenario.data = Some(data);
+    scenario.save().expect("Could not save scenario");
     scenario.status = Status::Done;
 }
 

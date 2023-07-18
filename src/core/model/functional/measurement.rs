@@ -74,7 +74,7 @@ impl MeasurementMatrix {
 
 #[cfg(test)]
 mod tests {
-    use crate::vis::plotting::matrix::plot_matrix;
+    use crate::vis::plotting::matrix::plot_matrix_as_heatmap;
 
     use super::*;
 
@@ -104,7 +104,7 @@ mod tests {
 
         assert!(!measurement_matrix.values.is_empty());
 
-        plot_matrix(
+        plot_matrix_as_heatmap(
             &measurement_matrix.values,
             "tests/measurement_matrix_default",
             "Measurement Matrix",
