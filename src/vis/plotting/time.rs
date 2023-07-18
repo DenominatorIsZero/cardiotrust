@@ -1,3 +1,5 @@
+use std::ops::Mul;
+
 use ndarray::{arr1, s, Array1};
 use ndarray_stats::QuantileExt;
 use plotly::{color::NamedColor, common::Mode, layout::Axis, Layout, Plot, Scatter};
@@ -13,6 +15,7 @@ pub fn standard_time_plot(
     title: &str,
     y_label: &str,
 ) {
+    #[allow(clippy::cast_precision_loss)]
     let t = Array1::from_vec(
         (0..y.shape()[0])
             .map(|i| i as f32 / sample_rate_hz)
@@ -23,9 +26,9 @@ pub fn standard_time_plot(
     let mut y_min = *y.min_skipnan();
     let mut y_max = *y.max_skipnan();
     let y_range = y_max - y_min;
-    let y_margin = 0.1;
-    y_min = y_min - y_margin * y_range;
-    y_max = y_max + y_margin * y_range;
+    let y_margin = 0.1_f32;
+    y_min = y_margin.mul_add(-y_range, y_min);
+    y_max = y_margin.mul_add(y_range, y_max);
 
     let mut plot = Plot::new();
     let trace = Scatter::from_array(t, y.clone()).mode(Mode::Lines);
@@ -55,14 +58,14 @@ pub fn standard_y_plot(
     x_label: &str,
 ) {
     let x = Array1::from_vec((0..y.shape()[0]).collect());
-    let x_min = *x.min().unwrap();
-    let x_max = *x.max().unwrap();
+    let x_min = *x.min().expect("Could not calculate min of X-array");
+    let x_max = *x.max().expect("Could not calculate max of X-array");
     let mut y_min = *y.min_skipnan();
     let mut y_max = *y.max_skipnan();
     let y_range = y_max - y_min;
-    let y_margin = 0.1;
-    y_min = y_min - y_margin * y_range;
-    y_max = y_max + y_margin * y_range;
+    let y_margin = 0.1_f32;
+    y_min = y_margin.mul_add(-y_range, y_min);
+    y_max = y_margin.mul_add(y_range, y_max);
 
     let mut plot = Plot::new();
     let trace = Scatter::from_array(x, y.clone()).mode(Mode::Lines);
@@ -100,6 +103,7 @@ pub fn plot_state_xyz(
         .values
         .slice(s![.., state_index + 2])
         .to_owned();
+    #[allow(clippy::cast_precision_loss)]
     let t = Array1::from_vec(
         (0..y.shape()[0])
             .map(|i| i as f32 / sample_rate_hz)
@@ -135,7 +139,7 @@ pub fn plot_state_xyz(
                 .dash(plotly::common::DashType::Dot),
         )
         .name("y");
-    let trace_z = Scatter::from_array(t.clone(), z)
+    let trace_z = Scatter::from_array(t, z)
         .mode(Mode::Lines)
         .line(
             plotly::common::Line::new()
