@@ -109,9 +109,9 @@ pub fn plot_state_xyz(
     let mut xyz_min = *arr1(&[*x.min_skipnan(), *y.min_skipnan(), *z.min_skipnan()]).min_skipnan();
     let mut xyz_max = *arr1(&[*x.max_skipnan(), *y.max_skipnan(), *z.max_skipnan()]).max_skipnan();
     let xyz_range = xyz_max - xyz_min;
-    let xyz_margin = 0.1;
-    xyz_min = xyz_min - xyz_margin * xyz_range;
-    xyz_max = xyz_max + xyz_margin * xyz_range;
+    let xyz_margin = 0.1_f32;
+    xyz_min = xyz_margin.mul_add(-xyz_range, xyz_min);
+    xyz_max = xyz_margin.mul_add(xyz_range, xyz_max);
 
     let t_min = *t.min_skipnan();
     let t_max = *t.max_skipnan();
