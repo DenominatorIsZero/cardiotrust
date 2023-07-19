@@ -31,8 +31,9 @@ pub struct APParameters {
 }
 
 impl APParameters {
-    pub fn empty(number_of_states: usize, voxels_in_dims: Dim<[usize; 3]>) -> APParameters {
-        APParameters {
+    #[must_use]
+    pub fn empty(number_of_states: usize, voxels_in_dims: Dim<[usize; 3]>) -> Self {
+        Self {
             gains: ArrayGains::empty(number_of_states),
             output_state_indices: ArrayIndicesGains::empty(number_of_states),
             coefs: ArrayDelays::empty(number_of_states),
