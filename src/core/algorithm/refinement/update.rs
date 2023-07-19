@@ -57,7 +57,7 @@ fn update_delays(
                 *ap_coef += 1.0;
                 *delay += 1;
             }
-        })
+        });
 }
 
 #[cfg(test)]
