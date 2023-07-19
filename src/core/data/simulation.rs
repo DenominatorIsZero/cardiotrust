@@ -18,13 +18,14 @@ pub struct Simulation {
     pub model: Model,
 }
 impl Simulation {
+    #[must_use]
     pub fn empty(
         number_of_sensors: usize,
         number_of_states: usize,
         number_of_steps: usize,
         voxels_in_dims: Dim<[usize; 3]>,
-    ) -> Simulation {
-        Simulation {
+    ) -> Self {
+        Self {
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
             model: Model::empty(
@@ -36,17 +37,24 @@ impl Simulation {
         }
     }
 
-    pub fn from_config(config: &SimulationConfig) -> Result<Simulation, Box<dyn Error>> {
+    /// .
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the model parameters
+    /// do not result in a valid model.
+    pub fn from_config(config: &SimulationConfig) -> Result<Self, Box<dyn Error>> {
         let model =
             Model::from_model_config(&config.model, config.sample_rate_hz, config.duration_s)?;
         let number_of_sensors = model.spatial_description.sensors.count();
         let number_of_states = model.spatial_description.voxels.count_states();
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let number_of_steps = (config.sample_rate_hz * config.duration_s) as usize;
 
         let measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
         let system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
 
-        Ok(Simulation {
+        Ok(Self {
             measurements,
             system_states,
             model,
@@ -65,7 +73,7 @@ impl Simulation {
                 measurements,
                 &model.functional_description,
                 time_index,
-            )
+            );
         }
         // TODO: Add noise to measurements here
     }
@@ -179,8 +187,8 @@ mod test {
             f32::MAX,
             f32::MIN,
             time_index,
-            &format!("tests/simulation_states_{}", time_index),
-            &format!("Simulated Current Densities at Time Index {}", time_index),
+            &format!("tests/simulation_states_{time_index}"),
+            &format!("Simulated Current Densities at Time Index {time_index}"),
         );
 
         plot_states_max(
@@ -296,8 +304,8 @@ mod test {
             f32::MAX,
             f32::MIN,
             time_index,
-            &format!("tests/simulation_states_{}_pathological", time_index),
-            &format!("Simulated Current Densities at Time Index {}", time_index),
+            &format!("tests/simulation_states_{time_index}_pathological"),
+            &format!("Simulated Current Densities at Time Index {time_index}"),
         );
 
         plot_states_max(
