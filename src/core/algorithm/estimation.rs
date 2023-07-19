@@ -22,12 +22,9 @@ pub struct Estimations {
 }
 
 impl Estimations {
-    pub fn new(
-        number_of_states: usize,
-        number_of_sensors: usize,
-        number_of_steps: usize,
-    ) -> Estimations {
-        Estimations {
+    #[must_use]
+    pub fn new(number_of_states: usize, number_of_sensors: usize, number_of_steps: usize) -> Self {
+        Self {
             ap_outputs: ArrayGains::empty(number_of_states),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
@@ -73,16 +70,19 @@ pub fn calculate_system_prediction(
             let coef = functional_description.ap_params.coefs.values[coef_index];
             let delay = functional_description.ap_params.delays.values[coef_index];
             let input = if delay <= time_index {
-                system_states.values[(time_index - delay, output_state_index.unwrap())]
+                system_states.values[(time_index - delay, output_state_index.unwrap_or_default())]
             } else {
                 0.0
             };
             let input_delayed = if delay < time_index {
-                system_states.values[(time_index - delay - 1, output_state_index.unwrap())]
+                system_states.values[(
+                    time_index - delay - 1,
+                    output_state_index.unwrap_or_default(),
+                )]
             } else {
                 0.0
             };
-            *ap_output = coef * (input - *ap_output) + input_delayed;
+            *ap_output = coef.mul_add(input - *ap_output, input_delayed);
             let gain = functional_description.ap_params.gains.values[gain_index];
             system_states.values[(time_index, gain_index.0)] += gain * *ap_output;
         });
@@ -146,6 +146,7 @@ pub fn calculate_delays_delta(
     estimated_coefs: &ArrayDelays<f32>,
     actual_coefs: &ArrayDelays<f32>,
 ) {
+    #[allow(clippy::cast_precision_loss)]
     delays_delta
         .values
         .indexed_iter_mut()
@@ -154,7 +155,7 @@ pub fn calculate_delays_delta(
                 - actual_delays.values[index] as f32)
                 + (from_coef_to_samples(estimated_coefs.values[index])
                     - from_coef_to_samples(actual_coefs.values[index]));
-        })
+        });
 }
 
 pub fn calculate_system_update(
@@ -196,7 +197,7 @@ mod tests {
             &mut measurements,
             &functional_description,
             time_index,
-        )
+        );
     }
 
     #[test]
@@ -228,6 +229,6 @@ mod tests {
             &predicted_measurements,
             &actual_measurements,
             time_index,
-        )
+        );
     }
 }
