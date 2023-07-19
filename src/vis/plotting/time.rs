@@ -1,5 +1,3 @@
-use std::ops::Mul;
-
 use ndarray::{arr1, s, Array1};
 use ndarray_stats::QuantileExt;
 use plotly::{color::NamedColor, common::Mode, layout::Axis, Layout, Plot, Scatter};
