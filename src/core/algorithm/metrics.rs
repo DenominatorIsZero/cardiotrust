@@ -33,8 +33,9 @@ pub struct Metrics {
 }
 
 impl Metrics {
-    pub fn new(number_of_epochs: usize, number_of_steps: usize) -> Metrics {
-        Metrics {
+    #[must_use]
+    pub fn new(number_of_epochs: usize, number_of_steps: usize) -> Self {
+        Self {
             loss: ArrayMetricsSample::new(number_of_epochs, number_of_steps),
             loss_epoch: ArrayMetricsEpoch::new(number_of_epochs),
 
@@ -60,6 +61,11 @@ impl Metrics {
         }
     }
 
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if any array is None.
     pub fn calculate_step(
         &mut self,
         residuals: &ArrayMeasurements,
@@ -73,23 +79,28 @@ impl Metrics {
             + epoch_index * (self.loss.values.shape()[0] / self.loss_epoch.values.shape()[0]);
         self.loss.values[index] = residuals.values.mapv(|v| v.powi(2)).sum();
 
-        let states_delta_abs = system_states_delta.values.mapv(|v| v.abs());
+        let states_delta_abs = system_states_delta.values.mapv(f32::abs);
         self.delta_states_mean.values[index] = states_delta_abs.mean().unwrap();
         self.delta_states_max.values[index] = *states_delta_abs.max_skipnan();
 
-        let measurements_delta_abs = residuals.values.mapv(|v| v.abs());
+        let measurements_delta_abs = residuals.values.mapv(f32::abs);
         self.delta_measurements_mean.values[index] = measurements_delta_abs.mean().unwrap();
         self.delta_measurements_max.values[index] = *measurements_delta_abs.max_skipnan();
 
-        let gains_delta_abs = gains_delta.values.mapv(|v| v.abs());
+        let gains_delta_abs = gains_delta.values.mapv(f32::abs);
         self.delta_gains_mean.values[index] = gains_delta_abs.mean().unwrap();
         self.delta_gains_max.values[index] = *gains_delta_abs.max_skipnan();
 
-        let delays_delta_abs = delays_delta.values.mapv(|v| v.abs());
+        let delays_delta_abs = delays_delta.values.mapv(f32::abs);
         self.delta_delays_mean.values[index] = delays_delta_abs.mean().unwrap();
         self.delta_delays_max.values[index] = *delays_delta_abs.max_skipnan();
     }
 
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if any loss array is None.
     pub fn calculate_epoch(&mut self, epoch_index: usize) {
         let number_of_steps = self.loss.values.shape()[0] / self.loss_epoch.values.shape()[0];
         let start_index = epoch_index * number_of_steps;
@@ -133,8 +144,9 @@ pub struct ArrayMetricsSample {
 }
 
 impl ArrayMetricsSample {
-    pub fn new(number_of_epochs: usize, number_of_steps: usize) -> ArrayMetricsSample {
-        ArrayMetricsSample {
+    #[must_use]
+    pub fn new(number_of_epochs: usize, number_of_steps: usize) -> Self {
+        Self {
             values: Array1::zeros(number_of_epochs * number_of_steps),
         }
     }
@@ -146,8 +158,9 @@ pub struct ArrayMetricsEpoch {
 }
 
 impl ArrayMetricsEpoch {
-    pub fn new(number_of_epochs: usize) -> ArrayMetricsEpoch {
-        ArrayMetricsEpoch {
+    #[must_use]
+    pub fn new(number_of_epochs: usize) -> Self {
+        Self {
             values: Array1::zeros(number_of_epochs),
         }
     }
