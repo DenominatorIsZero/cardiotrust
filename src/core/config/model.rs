@@ -43,8 +43,8 @@ pub struct Model {
     pub pathology_y_stop_percentage: f32,
 }
 
-impl Model {
-    pub fn default() -> Model {
+impl Default for Model {
+    fn default() -> Self {
         let mut propagation_velocities_m_per_s = HashMap::new();
         propagation_velocities_m_per_s.insert(VoxelType::Sinoatrial, 1.1);
         propagation_velocities_m_per_s.insert(VoxelType::Atrium, 1.1);
@@ -53,7 +53,7 @@ impl Model {
         propagation_velocities_m_per_s.insert(VoxelType::Ventricle, 1.1);
         propagation_velocities_m_per_s.insert(VoxelType::Pathological, 0.1);
 
-        Model {
+        Self {
             control_function: ControlFunction::Ohara,
             pathological: false,
             sensors_per_axis: [4, 4, 2],
@@ -85,7 +85,7 @@ impl Model {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum ControlFunction {
     Sinosodal,
     Ohara,

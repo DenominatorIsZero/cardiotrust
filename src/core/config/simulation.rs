@@ -8,9 +8,9 @@ pub struct Simulation {
     pub duration_s: f32,
     pub model: Model,
 }
-impl Simulation {
-    pub fn default() -> Simulation {
-        Simulation {
+impl Default for Simulation {
+    fn default() -> Self {
+        Self {
             sample_rate_hz: 2000.0,
             duration_s: 1.0,
             model: Model::default(),

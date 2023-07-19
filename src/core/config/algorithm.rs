@@ -8,9 +8,10 @@ pub struct Algorithm {
     pub learning_rate: f32,
     pub model: Model,
 }
-impl Algorithm {
-    pub fn default() -> Algorithm {
-        Algorithm {
+impl Default for Algorithm {
+    #[must_use]
+    fn default() -> Self {
+        Self {
             epochs: 1,
             snapshots_interval: 0,
             learning_rate: 1e-3,
