@@ -152,12 +152,10 @@ impl APParameters {
                             let delay_s = delay::calculate_delay_s(
                                 input_position_mm,
                                 output_position_mm,
-                                propagation_velocity_m_per_s,
+                                *propagation_velocity_m_per_s,
                             );
-                            let direction = direction::calculate_current_direction(
-                                input_position_mm,
-                                output_position_mm,
-                            );
+                            let direction =
+                                direction::calculate(input_position_mm, output_position_mm);
 
                             // update activation time of input voxel, marking them as connected
                             activation_time_s[input_voxel_index] =
@@ -167,7 +165,7 @@ impl APParameters {
                                 .slice_mut(s![x_in, y_in, z_in, ..])
                                 .assign(&direction);
 
-                            let mut gain = gain::calculate_gain(
+                            let mut gain = gain::calculate(
                                 &direction,
                                 current_directions.slice(s![x_out, y_out, z_out, ..]),
                             );

@@ -1,7 +1,8 @@
+use approx::assert_relative_eq;
 use ndarray::{Array3, Array4, Array5, Dim};
 use num_traits::Zero;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ArrayGains<T>
 where
     T: Clone + Zero + PartialEq,
@@ -13,27 +14,29 @@ impl<T> ArrayGains<T>
 where
     T: Clone + Zero + PartialEq,
 {
-    pub fn empty(number_of_states: usize) -> ArrayGains<T> {
-        ArrayGains {
+    #[must_use]
+    pub fn empty(number_of_states: usize) -> Self {
+        Self {
             values: Array5::zeros((number_of_states, 3, 3, 3, 3)),
         }
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ArrayIndicesGains {
     pub values: Array5<Option<usize>>,
 }
 
 impl ArrayIndicesGains {
-    pub fn empty(number_of_states: usize) -> ArrayIndicesGains {
-        ArrayIndicesGains {
+    #[must_use]
+    pub fn empty(number_of_states: usize) -> Self {
+        Self {
             values: Array5::from_elem((number_of_states, 3, 3, 3, 3), None),
         }
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ArrayDelays<T>
 where
     T: Clone + Zero + PartialEq,
@@ -45,9 +48,11 @@ impl<T> ArrayDelays<T>
 where
     T: Clone + Zero + PartialEq,
 {
-    pub fn empty(number_of_states: usize) -> ArrayDelays<T> {
-        assert_eq!(number_of_states as f32 % 3.0, 0.0);
-        ArrayDelays {
+    #[must_use]
+    #[allow(clippy::cast_precision_loss)]
+    pub fn empty(number_of_states: usize) -> Self {
+        assert_relative_eq!(number_of_states as f32 % 3.0, 0.0);
+        Self {
             values: Array4::zeros((number_of_states / 3, 3, 3, 3)),
         }
     }
@@ -59,8 +64,9 @@ pub struct ArrayActivationTime {
 }
 
 impl ArrayActivationTime {
-    pub fn empty(voxels_in_dims: Dim<[usize; 3]>) -> ArrayActivationTime {
-        ArrayActivationTime {
+    #[must_use]
+    pub fn empty(voxels_in_dims: Dim<[usize; 3]>) -> Self {
+        Self {
             values: Array3::from_elem(voxels_in_dims, None),
         }
     }

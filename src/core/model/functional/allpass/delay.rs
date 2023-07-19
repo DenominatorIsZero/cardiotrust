@@ -10,11 +10,11 @@ use super::shapes::ArrayDelays;
 pub fn calculate_delay_s(
     input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
     output_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
-    propagation_velocity_m_per_s: &f32,
+    propagation_velocity_m_per_s: f32,
 ) -> f32 {
     let distance_m = (input_position_mm - output_position_mm) / 1000.0;
     let distance_norm_m = distance_m.mapv(|v| v.powi(2)).sum().sqrt();
-    distance_norm_m / *propagation_velocity_m_per_s
+    distance_norm_m / propagation_velocity_m_per_s
 }
 
 pub fn calculate_delay_samples_array(
@@ -22,7 +22,8 @@ pub fn calculate_delay_samples_array(
     propagation_velocities_m_per_s: &HashMap<VoxelType, f32>,
     sample_rate_hz: f32,
 ) -> Result<ArrayDelays<f32>, Box<dyn Error>> {
-    let mut delays_samples = ArrayDelays::<f32>::empty(spatial_description.voxels.count_states());
+    let mut delay_samples_array =
+        ArrayDelays::<f32>::empty(spatial_description.voxels.count_states());
 
     let v_types = &spatial_description.voxels.types.values;
     let v_position_mm = &spatial_description.voxels.positions_mm.values;
@@ -42,46 +43,45 @@ pub fn calculate_delay_samples_array(
                 continue;
             }
             let ouput_voxel_index = [
-                x_in as i32 + x_offset,
-                y_in as i32 + y_offset,
-                z_in as i32 + z_offset,
+                i32::try_from(x_in).unwrap() + x_offset,
+                i32::try_from(y_in).unwrap() + y_offset,
+                i32::try_from(z_in).unwrap() + z_offset,
             ];
             if !spatial_description.voxels.is_valid_index(ouput_voxel_index) {
                 continue;
             }
             let [x_out, y_out, z_out] = [
-                (x_in as i32 + x_offset) as usize,
-                (y_in as i32 + y_offset) as usize,
-                (z_in as i32 + z_offset) as usize,
+                usize::try_from(i32::try_from(x_in).unwrap() + x_offset).unwrap(),
+                usize::try_from(i32::try_from(y_in).unwrap() + y_offset).unwrap(),
+                usize::try_from(i32::try_from(z_in).unwrap() + z_offset).unwrap(),
             ];
             let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
 
             let delay_s = calculate_delay_s(
                 input_position_mm,
                 output_position_mm,
-                propagation_velocities_m_per_s.get(v_type).unwrap(),
+                *propagation_velocities_m_per_s.get(v_type).unwrap(),
             );
             let delay_samples = delay_s * sample_rate_hz;
 
             if delay_samples < 1.0 {
                 return Err(format!(
                     "Can not configure delays below 1 sample.\
-                        Calculated delay: {:?}.\
-                        For voxel type: {:?}",
-                    delay_samples, v_type
+                        Calculated delay: {delay_samples}.\
+                        For voxel type: {v_type:?}",
                 )
                 .into());
             }
 
-            delays_samples.values[(
+            delay_samples_array.values[(
                 v_numbers[input_voxel_index].unwrap() / 3,
-                (1 + x_offset) as usize,
-                (1 + y_offset) as usize,
-                (1 + z_offset) as usize,
+                usize::try_from(1 + x_offset).unwrap(),
+                usize::try_from(1 + y_offset).unwrap(),
+                usize::try_from(1 + z_offset).unwrap(),
             )] = delay_samples;
         }
     }
-    Ok(delays_samples)
+    Ok(delay_samples_array)
 }
 
 #[cfg(test)]
@@ -106,10 +106,10 @@ mod test {
         let delay_s = calculate_delay_s(
             &input_position_mm.view(),
             &output_position_mm.view(),
-            &propagation_velocity_m_per_s,
+            propagation_velocity_m_per_s,
         );
 
-        assert_relative_eq!(delay_s, 0.5)
+        assert_relative_eq!(delay_s, 0.5);
     }
 
     #[test]
@@ -121,10 +121,10 @@ mod test {
         let delay_s = calculate_delay_s(
             &input_position_mm.view(),
             &output_position_mm.view(),
-            &propagation_velocity_m_per_s,
+            propagation_velocity_m_per_s,
         );
 
-        assert_relative_eq!(delay_s, 2.5)
+        assert_relative_eq!(delay_s, 2.5);
     }
 
     #[test]
