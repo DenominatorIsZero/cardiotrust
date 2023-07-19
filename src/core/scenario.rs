@@ -70,8 +70,12 @@ impl Scenario {
         fs::create_dir_all(&path)?;
         let mut f = File::create(&path.join("scenario.toml"))?;
         f.write_all(toml.as_bytes())?;
-        self.save_data();
-        self.save_results();
+        if self.data.is_some() {
+            self.save_data();
+        }
+        if self.results.is_some() {
+            self.save_results();
+        }
         Ok(())
     }
 

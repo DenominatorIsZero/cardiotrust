@@ -1,9 +1,4 @@
-#![warn(
-    clippy::pedantic,
-    clippy::nursery,
-    clippy::unwrap_used,
-    clippy::expect_used
-)]
+#![warn(clippy::pedantic, clippy::nursery)]
 pub mod core;
 pub mod scheduler;
 pub mod ui;

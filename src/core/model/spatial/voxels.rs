@@ -12,8 +12,8 @@ pub struct Voxels {
 }
 
 impl Voxels {
-    pub fn empty(voxels_in_dims: [usize; 3]) -> Voxels {
-        Voxels {
+    #[must_use] pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
+        Self {
             size_mm: 0.0,
             types: VoxelTypes::empty(voxels_in_dims),
             numbers: VoxelNumbers::empty(voxels_in_dims),
@@ -21,11 +21,11 @@ impl Voxels {
         }
     }
 
-    pub fn from_model_config(config: &Model) -> Voxels {
+    #[must_use] pub fn from_model_config(config: &Model) -> Self {
         let types = VoxelTypes::from_simulation_config(config);
         let numbers = VoxelNumbers::from_voxel_types(&types);
         let positions = VoxelPositions::from_model_config(config, &types);
-        Voxels {
+        Self {
             size_mm: config.voxel_size_mm,
             types,
             numbers,
@@ -33,16 +33,16 @@ impl Voxels {
         }
     }
 
-    pub fn count(&self) -> usize {
+    #[must_use] pub fn count(&self) -> usize {
         self.count_xyz().iter().product()
     }
 
-    pub fn count_xyz(&self) -> [usize; 3] {
+    #[must_use] pub fn count_xyz(&self) -> [usize; 3] {
         let shape = self.types.values.raw_dim();
         [shape[0], shape[1], shape[2]]
     }
 
-    pub fn count_states(&self) -> usize {
+    #[must_use] pub fn count_states(&self) -> usize {
         self.types
             .values
             .iter()
@@ -51,45 +51,57 @@ impl Voxels {
             * 3
     }
 
-    pub fn is_valid_index(&self, index: [i32; 3]) -> bool {
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if number of voxels in any direction
+    /// exceed `i32::MAX`.
+    #[must_use] pub fn is_valid_index(&self, index: [i32; 3]) -> bool {
         let [x, y, z] = index;
         let [x_max, y_max, z_max] = self.count_xyz();
-        (0 <= x && x < (x_max as i32))
-            && (0 <= y && y < (y_max as i32))
-            && (0 <= z && z < (z_max as i32))
-            && (self.types.values[(x as usize, y as usize, z as usize)] != VoxelType::None)
+        (0 <= x && x < (i32::try_from(x_max).unwrap()))
+            && (0 <= y && y < (i32::try_from(y_max).unwrap()))
+            && (0 <= z && z < (i32::try_from(z_max).unwrap()))
+            && (self.types.values[(usize::try_from(x).unwrap(), usize::try_from(y).unwrap(), usize::try_from(z).unwrap())] != VoxelType::None)
     }
 
-    pub fn get_first_state_of_type(&self, v_type: VoxelType) -> usize {
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if no voxel of `v_type` is present in `Voxels`.
+    #[must_use] pub fn get_first_state_of_type(&self, v_type: VoxelType) -> usize {
         let query = self
             .types
             .values
             .iter()
             .zip(self.numbers.values.iter())
-            .filter(|(this_type, _)| **this_type == v_type)
-            .next();
+            .find(|(this_type, _)| **this_type == v_type);
         query.unwrap().1.unwrap()
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct VoxelTypes {
     pub values: Array3<VoxelType>,
 }
 
 impl VoxelTypes {
-    pub fn empty(voxels_in_dims: [usize; 3]) -> VoxelTypes {
-        VoxelTypes {
+    #[must_use] pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
+        Self {
             values: Array3::default(voxels_in_dims),
         }
     }
 
-    pub fn from_simulation_config(config: &Model) -> VoxelTypes {
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss, clippy::similar_names)]
+    #[must_use] pub fn from_simulation_config(config: &Model) -> Self {
         // Config Parameters
         let voxel_size_mm = config.voxel_size_mm;
         let heart_size_mm = config.heart_size_mm;
 
         let mut voxels_in_dims = [0, 0, 0];
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         voxels_in_dims
             .iter_mut()
             .zip(heart_size_mm.iter())
@@ -118,7 +130,7 @@ impl VoxelTypes {
         let pathology_y_stop_index =
             (voxels_in_dims[1] as f32 * config.pathology_y_stop_percentage) as usize;
 
-        let mut voxel_types = VoxelTypes::empty(voxels_in_dims);
+        let mut voxel_types = Self::empty(voxels_in_dims);
         voxel_types
             .values
             .indexed_iter_mut()
@@ -133,22 +145,18 @@ impl VoxelTypes {
                 } else if x == av_x_center_index && y == atrium_y_stop_index {
                     *voxel_type = VoxelType::Atrioventricular;
                 }
+                
+                else if 
                 // HPS Downward section
-                else if x == av_x_center_index && y > atrium_y_stop_index && y < hps_y_stop_index
-                {
-                    *voxel_type = VoxelType::HPS;
-                }
+                (x == av_x_center_index && y > atrium_y_stop_index && y < hps_y_stop_index) || 
                 // HPS Across
-                else if x >= hps_x_start_index
+                (x >= hps_x_start_index
                     && x <= hps_x_stop_index
-                    && y == hps_y_stop_index - 1
-                {
-                    *voxel_type = VoxelType::HPS;
-                }
+                    && y == hps_y_stop_index - 1)||
                 // HPS Up
-                else if (x == hps_x_start_index || x == hps_x_stop_index)
-                    && y >= hps_y_up_index
-                    && y < hps_y_stop_index
+                ((x == hps_x_start_index || x == hps_x_stop_index)
+                && y >= hps_y_up_index
+                && y < hps_y_stop_index)
                 {
                     *voxel_type = VoxelType::HPS;
                 } else if y < atrium_y_stop_index {
@@ -161,20 +169,20 @@ impl VoxelTypes {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct VoxelNumbers {
     pub values: Array3<Option<usize>>,
 }
 
 impl VoxelNumbers {
-    pub fn empty(voxels_in_dims: [usize; 3]) -> VoxelNumbers {
-        VoxelNumbers {
+    #[must_use] pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
+        Self {
             values: Array3::default(voxels_in_dims),
         }
     }
 
-    pub fn from_voxel_types(types: &VoxelTypes) -> VoxelNumbers {
-        let mut numbers = VoxelNumbers {
+    #[must_use] pub fn from_voxel_types(types: &VoxelTypes) -> Self {
+        let mut numbers = Self {
             values: Array3::default(types.values.raw_dim()),
         };
 
@@ -184,11 +192,11 @@ impl VoxelNumbers {
             .iter_mut()
             .zip(types.values.iter())
             .for_each(|(number, voxel_type)| {
-                if *voxel_type != VoxelType::None {
+                if *voxel_type == VoxelType::None {
+                    *number = None;
+                } else {
                     *number = Some(current_number);
                     current_number += 3;
-                } else {
-                    *number = None;
                 }
             });
         numbers
@@ -201,22 +209,23 @@ pub struct VoxelPositions {
 }
 
 impl VoxelPositions {
-    pub fn empty(voxels_in_dims: [usize; 3]) -> VoxelPositions {
-        VoxelPositions {
+    #[must_use] pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
+        Self {
             values: Array4::zeros((voxels_in_dims[0], voxels_in_dims[1], voxels_in_dims[2], 3)),
         }
     }
 
-    pub fn from_model_config(config: &Model, types: &VoxelTypes) -> VoxelPositions {
+    #[must_use] pub fn from_model_config(config: &Model, types: &VoxelTypes) -> Self {
         let shape = types.values.raw_dim();
-        let mut positions = VoxelPositions::empty([shape[0], shape[1], shape[2]]);
+        let mut positions = Self::empty([shape[0], shape[1], shape[2]]);
         let offset = config.voxel_size_mm / 2.0;
 
+        #[allow(clippy::cast_precision_loss)]
         types.values.indexed_iter().for_each(|((x, y, z), _)| {
             let position = arr1(&[
-                config.voxel_size_mm * x as f32 + offset,
-                config.voxel_size_mm * y as f32 + offset,
-                config.voxel_size_mm * z as f32 + offset,
+                config.voxel_size_mm.mul_add(x as f32, offset),
+                config.voxel_size_mm.mul_add(y as f32, offset),
+                config.voxel_size_mm.mul_add(z as f32, offset),
             ]);
             positions
                 .values
@@ -239,7 +248,7 @@ pub enum VoxelType {
     Pathological,
 }
 
-pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &VoxelType) -> bool {
+#[must_use] pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &VoxelType) -> bool {
     match output_voxel_type {
         VoxelType::None => false,
         VoxelType::Sinoatrial => [VoxelType::Atrium].contains(input_voxel_type),
@@ -306,7 +315,7 @@ mod tests {
 
         let allowed = is_connection_allowed(&output_voxel_type, &input_voxel_type);
 
-        assert_eq!(allowed, true);
+        assert!(allowed);
     }
 
     #[test]
@@ -316,7 +325,7 @@ mod tests {
 
         let allowed = is_connection_allowed(&output_voxel_type, &input_voxel_type);
 
-        assert_eq!(allowed, false);
+        assert!(!allowed);
     }
 
     #[test]
@@ -427,7 +436,7 @@ mod tests {
 
         assert_eq!(num_pathological, 0);
 
-        plot_voxel_types(&types.values, "tests/voxel_types_default", "Voxel Types")
+        plot_voxel_types(&types.values, "tests/voxel_types_default", "Voxel Types");
     }
 
     #[test]
@@ -544,6 +553,6 @@ mod tests {
             &types.values,
             "tests/voxel_types_pathological",
             "Voxel Types",
-        )
+        );
     }
 }
