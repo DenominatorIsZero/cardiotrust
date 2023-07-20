@@ -12,6 +12,7 @@ use self::{
     topbar::draw_ui_topbar, vol::draw_ui_volumetric,
 };
 
+#[allow(clippy::module_name_repetitions)]
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
@@ -27,6 +28,7 @@ impl Plugin for UiPlugin {
 }
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+#[allow(clippy::module_name_repetitions)]
 pub enum UiState {
     #[default]
     Explorer,

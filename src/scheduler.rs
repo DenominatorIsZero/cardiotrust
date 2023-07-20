@@ -11,6 +11,7 @@ use crate::{
     ScenarioList,
 };
 
+#[allow(clippy::module_name_repetitions)]
 pub struct SchedulerPlugin;
 
 impl Plugin for SchedulerPlugin {
@@ -22,6 +23,7 @@ impl Plugin for SchedulerPlugin {
 }
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+#[allow(clippy::module_name_repetitions)]
 pub enum SchedulerState {
     #[default]
     Paused,
@@ -30,29 +32,31 @@ pub enum SchedulerState {
 }
 
 pub fn start_scenarios(mut commands: Commands, mut scenario_list: ResMut<ScenarioList>) {
-    match scenario_list
+    if let Some(entry) = scenario_list
         .entries
         .iter_mut()
-        .filter(|entry| *entry.scenario.get_status() == Status::Scheduled)
-        .next()
+        .find(|entry| *entry.scenario.get_status() == Status::Scheduled)
     {
-        Some(entry) => {
-            println!("Starting scenario with id {}", entry.scenario.get_id());
-            let send_scenario = entry.scenario.clone();
-            let (epoch_tx, epoch_rx) = channel();
-            let (summary_tx, summary_rx) = channel();
-            let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
-            entry.scenario.set_running(0);
-            entry.join_handle = Some(handle);
-            entry.epoch_rx = Some(Mutex::new(epoch_rx));
-            entry.summary_rx = Some(Mutex::new(summary_rx));
-            println!("Moving scheduler to state unavailable.");
-            commands.insert_resource(NextState(Some(SchedulerState::Unavailale)));
-        }
-        None => (),
+        println!("Starting scenario with id {}", entry.scenario.get_id());
+        let send_scenario = entry.scenario.clone();
+        let (epoch_tx, epoch_rx) = channel();
+        let (summary_tx, summary_rx) = channel();
+        let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
+        entry.scenario.set_running(0);
+        entry.join_handle = Some(handle);
+        entry.epoch_rx = Some(Mutex::new(epoch_rx));
+        entry.summary_rx = Some(Mutex::new(summary_rx));
+        println!("Moving scheduler to state unavailable.");
+        commands.insert_resource(NextState(Some(SchedulerState::Unavailale)));
     }
 }
 
+/// .
+///
+/// # Panics
+///
+/// Panics if a running scenario has no epoch receiver, summary receiver or
+/// join handle.
 pub fn check_scenarios(mut commands: Commands, mut scenario_list: ResMut<ScenarioList>) {
     scenario_list
         .entries
@@ -63,20 +67,18 @@ pub fn check_scenarios(mut commands: Commands, mut scenario_list: ResMut<Scenari
         .for_each(|entry| {
             match &entry.epoch_rx {
                 Some(epoch_rx) => {
-                    let epoch_rx = epoch_rx.lock().unwrap();
-                    let epoch = epoch_rx.try_recv();
-                    if epoch.is_ok() {
-                        entry.scenario.set_running(epoch.unwrap());
+                    let epoch = epoch_rx.lock().unwrap().try_recv();
+                    if let Ok(epoch) = epoch {
+                        entry.scenario.set_running(epoch);
                     }
                 }
                 None => panic!("Running scenario has to epoch receiver."),
             }
             match &entry.summary_rx {
                 Some(summary_rx) => {
-                    let summary_rx = summary_rx.lock().unwrap();
-                    let summary = summary_rx.try_recv();
-                    if summary.is_ok() {
-                        entry.scenario.summary = Some(summary.unwrap());
+                    let summary = summary_rx.lock().unwrap().try_recv();
+                    if let Ok(summary) = summary {
+                        entry.scenario.summary = Some(summary);
                     }
                 }
                 None => panic!("Running scenario has no summary receiver."),
