@@ -191,9 +191,9 @@ fn try_to_connect(
         return false;
     }
     let input_voxel_index = [
-        (x_out as i32 - x_offset) as usize,
-        (y_out as i32 - y_offset) as usize,
-        (z_out as i32 - z_offset) as usize,
+        usize::try_from(i32::try_from(x_out).unwrap() - x_offset).unwrap(),
+        usize::try_from(i32::try_from(y_out).unwrap() - y_offset).unwrap(),
+        usize::try_from(i32::try_from(z_out).unwrap() - z_offset).unwrap(),
     ];
     // SKip if the input voxel is already connected
     if activation_time_s[input_voxel_index].is_some() {
@@ -238,11 +238,11 @@ fn try_to_connect(
     );
     if *input_voxel_type == VoxelType::Pathological && *output_voxel_type != VoxelType::Pathological
     {
-        gain = gain * config.current_factor_in_pathology;
+        gain *= config.current_factor_in_pathology;
     }
     if *output_voxel_type == VoxelType::Pathological && *input_voxel_type != VoxelType::Pathological
     {
-        gain = gain * (1.0 / config.current_factor_in_pathology);
+        gain *= 1.0 / config.current_factor_in_pathology;
     }
     assign_gain(
         ap_params,
@@ -252,7 +252,7 @@ fn try_to_connect(
         z_offset,
         &gain,
     );
-    return true;
+    true
 }
 
 fn assign_gain(
@@ -267,9 +267,9 @@ fn assign_gain(
         for output_dimension in 0..3 {
             ap_params.gains.values[(
                 input_state_number + input_dimension,
-                (1 + x_offset) as usize,
-                (1 + y_offset) as usize,
-                (1 + z_offset) as usize,
+                usize::try_from(1 + x_offset).unwrap(),
+                usize::try_from(1 + y_offset).unwrap(),
+                usize::try_from(1 + z_offset).unwrap(),
                 output_dimension,
             )] = gain[(input_dimension, output_dimension)];
         }
@@ -302,18 +302,21 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Array
             for ((x_offset, y_offset), z_offset) in
                 (-1..=1).cartesian_product(-1..=1).cartesian_product(-1..=1)
             {
-                let ouput_voxel_index = [
-                    x_in as i32 + x_offset,
-                    y_in as i32 + y_offset,
-                    z_in as i32 + z_offset,
+                let ouput_voxel_index_candidate = [
+                    i32::try_from(x_in).unwrap() + x_offset,
+                    i32::try_from(y_in).unwrap() + y_offset,
+                    i32::try_from(z_in).unwrap() + z_offset,
                 ];
-                if !spatial_description.voxels.is_valid_index(ouput_voxel_index) {
+                if !spatial_description
+                    .voxels
+                    .is_valid_index(ouput_voxel_index_candidate)
+                {
                     continue;
                 }
                 let output_voxel_index = [
-                    (x_in as i32 + x_offset) as usize,
-                    (y_in as i32 + y_offset) as usize,
-                    (z_in as i32 + z_offset) as usize,
+                    usize::try_from(ouput_voxel_index_candidate[0]).unwrap(),
+                    usize::try_from(ouput_voxel_index_candidate[1]).unwrap(),
+                    usize::try_from(ouput_voxel_index_candidate[2]).unwrap(),
                 ];
                 for input_direction in 0..3 {
                     let input_state_number =
@@ -323,9 +326,9 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Array
                             v_numbers[output_voxel_index].unwrap() + output_direction;
                         output_state_indices.values[(
                             input_state_number,
-                            (1 + x_offset) as usize,
-                            (1 + y_offset) as usize,
-                            (1 + z_offset) as usize,
+                            usize::try_from(1 + x_offset).unwrap(),
+                            usize::try_from(1 + y_offset).unwrap(),
+                            usize::try_from(1 + z_offset).unwrap(),
                             output_direction,
                         )] = Some(output_state_index);
                     }
@@ -340,16 +343,25 @@ fn from_samples_to_coef(samples: f32) -> f32 {
     (1.0 - fractional) / (1.0 + fractional)
 }
 
-fn from_samples_to_usize(samples: f32) -> usize {
+#[allow(
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation
+)]
+#[must_use]
+const fn from_samples_to_usize(samples: f32) -> usize {
     samples as usize
 }
 
+#[must_use]
 pub fn from_coef_to_samples(coef: f32) -> f32 {
     (1.0 - coef) / (coef - 1.0)
 }
 
 #[cfg(test)]
 mod test {
+    use approx::assert_relative_eq;
+
     use crate::{
         core::{
             config::model::Model,
@@ -373,13 +385,13 @@ mod test {
 
     #[test]
     fn from_samples_to_coef_1() {
-        assert_eq!(1.0 / 3.0, from_samples_to_coef(0.5));
-        assert_eq!(1.0 / 3.0, from_samples_to_coef(1.5));
-        assert_eq!(1.0 / 3.0, from_samples_to_coef(99999.5));
+        assert_relative_eq!(1.0 / 3.0, from_samples_to_coef(0.5));
+        assert_relative_eq!(1.0 / 3.0, from_samples_to_coef(1.5));
+        assert_relative_eq!(1.0 / 3.0, from_samples_to_coef(99999.5));
 
-        assert_eq!(1.0, from_samples_to_coef(0.0));
-        assert_eq!(1.0, from_samples_to_coef(1.0));
-        assert_eq!(1.0, from_samples_to_coef(99999.0));
+        assert_relative_eq!(1.0, from_samples_to_coef(0.0));
+        assert_relative_eq!(1.0, from_samples_to_coef(1.0));
+        assert_relative_eq!(1.0, from_samples_to_coef(99999.0));
     }
 
     #[test]
@@ -393,8 +405,7 @@ mod test {
         for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
             assert!(
                 activation_time_ms.is_some(),
-                "Activation time at {:?} was none.",
-                index
+                "Activation time at {index:?} was none."
             );
             assert!(activation_time_ms.unwrap() >= 0.0);
         }
@@ -412,8 +423,7 @@ mod test {
         for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
             assert!(
                 activation_time_ms.is_some(),
-                "Activation time at {:?} was none.",
-                index
+                "Activation time at {index:?} was none."
             );
             assert!(activation_time_ms.unwrap() >= 0.0);
         }
@@ -421,7 +431,7 @@ mod test {
             &ap_params.activation_time_ms,
             "tests/ap_params_activation_times_default",
             "Activation times [ms]",
-        )
+        );
     }
 
     #[test]
@@ -438,8 +448,7 @@ mod test {
         for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
             assert!(
                 activation_time_ms.is_some(),
-                "Activation time at {:?} was none.",
-                index
+                "Activation time at {index:?} was none."
             );
             assert!(activation_time_ms.unwrap() >= 0.0);
         }
@@ -460,8 +469,7 @@ mod test {
         for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
             assert!(
                 activation_time_ms.is_some(),
-                "Activation time at {:?} was none.",
-                index
+                "Activation time at {index:?} was none."
             );
             assert!(activation_time_ms.unwrap() >= 0.0);
         }
@@ -469,7 +477,7 @@ mod test {
             &ap_params.activation_time_ms,
             "tests/ap_params_activation_times_fast_av",
             "Activation times [ms]",
-        )
+        );
     }
 
     #[test]
