@@ -5,6 +5,7 @@ use crate::core::{
     model::spatial::voxels::VoxelType,
 };
 
+#[allow(clippy::too_many_lines, clippy::module_name_repetitions)]
 pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
     // measurement covariance mean
     body.row(30.0, |mut row| {
@@ -15,7 +16,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
             ui.add(
                 egui::Slider::new(&mut model.measurement_covariance_mean, 1e-10..=1e10)
                     .logarithmic(true)
-                    .custom_formatter(|n, _| format!("{:+.4e}", n)),
+                    .custom_formatter(|n, _| format!("{n:+.4e}")),
             );
         });
         row.col(|ui| {
@@ -56,7 +57,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
         });
         row.col(|ui| {
             egui::ComboBox::new("cb_control_function", "")
-                .selected_text(format!("{:?}", control_function))
+                .selected_text(format!("{control_function:?}"))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(control_function, ControlFunction::Sinosodal, "Sinosodal");
                     ui.selectable_value(control_function, ControlFunction::Ohara, "Ohara");

@@ -10,6 +10,7 @@ use crate::{ScenarioBundle, ScenarioList, SelectedSenario};
 
 use super::UiState;
 
+#[allow(clippy::module_name_repetitions)]
 pub fn draw_ui_explorer(
     mut commands: Commands,
     mut contexts: EguiContexts,

@@ -6,6 +6,7 @@ use crate::scheduler::SchedulerState;
 
 use super::UiState;
 
+#[allow(clippy::module_name_repetitions, clippy::needless_pass_by_value)]
 pub fn draw_ui_topbar(
     mut commands: Commands,
     mut contexts: EguiContexts,

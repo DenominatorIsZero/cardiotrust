@@ -5,6 +5,7 @@ use crate::core::scenario::{Scenario, Status};
 
 use super::common::draw_ui_scenario_common;
 
+#[allow(clippy::too_many_lines, clippy::module_name_repetitions)]
 pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
     parent.set_enabled(*scenario.get_status() == Status::Planning);
     let simulation = scenario.get_config_mut().simulation.as_mut().unwrap();

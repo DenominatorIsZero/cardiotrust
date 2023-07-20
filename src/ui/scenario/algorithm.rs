@@ -4,6 +4,7 @@ use crate::core::scenario::{Scenario, Status};
 
 use super::common::draw_ui_scenario_common;
 
+#[allow(clippy::too_many_lines)]
 pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenario) {
     parent.set_enabled(*scenario.get_status() == Status::Planning);
     let algorithm = &mut scenario.get_config_mut().algorithm;
@@ -70,7 +71,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 ui.add(
                                     egui::Slider::new(&mut algorithm.learning_rate, 1e-10..=1e10)
                                         .logarithmic(true)
-                                        .custom_formatter(|n, _| format!("{:+.4e}", n)),
+                                        .custom_formatter(|n, _| format!("{n:+.4e}")),
                                 );
                             });
                             row.col(|ui| {
@@ -92,7 +93,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                         1e-10..=1e10,
                                     )
                                     .logarithmic(true)
-                                    .custom_formatter(|n, _| format!("{:+.4e}", n)),
+                                    .custom_formatter(|n, _| format!("{n:+.4e}")),
                                 );
                             });
                             row.col(|ui| {

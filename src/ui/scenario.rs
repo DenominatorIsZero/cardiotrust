@@ -13,8 +13,8 @@ use crate::{
     ScenarioList, SelectedSenario,
 };
 
+#[allow(clippy::module_name_repetitions)]
 pub fn draw_ui_scenario(
-    _commands: Commands,
     mut contexts: EguiContexts,
     mut scenarios: ResMut<ScenarioList>,
     mut selected_scenario: ResMut<SelectedSenario>,
