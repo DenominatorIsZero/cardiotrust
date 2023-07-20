@@ -9,53 +9,61 @@ use ndarray::Dim;
 
 use self::{
     allpass::APParameters,
-    control::{CFunction, CMatrix},
+    control::{ControlFunction, ControlMatrix},
     kalman::Gain,
-    measurement::MMatrix,
+    measurement::MeasurementMatrix,
 };
 
 use super::spatial::SpatialDescription;
 use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq, Clone)]
+#[allow(clippy::module_name_repetitions)]
 pub struct FunctionalDescription {
     pub ap_params: APParameters,
-    pub measurement_matrix: MMatrix,
-    pub control_matrix: CMatrix,
+    pub measurement_matrix: MeasurementMatrix,
+    pub control_matrix: ControlMatrix,
     pub kalman_gain: Gain,
-    pub control_function_values: CFunction,
+    pub control_function_values: ControlFunction,
 }
 
 impl FunctionalDescription {
+    #[must_use]
     pub fn empty(
         number_of_states: usize,
         number_of_sensors: usize,
         number_of_steps: usize,
         voxels_in_dims: Dim<[usize; 3]>,
-    ) -> FunctionalDescription {
-        FunctionalDescription {
+    ) -> Self {
+        Self {
             ap_params: APParameters::empty(number_of_states, voxels_in_dims),
-            measurement_matrix: MMatrix::empty(number_of_states, number_of_sensors),
-            control_matrix: CMatrix::empty(number_of_states),
+            measurement_matrix: MeasurementMatrix::empty(number_of_states, number_of_sensors),
+            control_matrix: ControlMatrix::empty(number_of_states),
             kalman_gain: Gain::empty(number_of_states, number_of_sensors),
-            control_function_values: CFunction::empty(number_of_steps),
+            control_function_values: ControlFunction::empty(number_of_steps),
         }
     }
+    /// .
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the config does not
+    /// result in valid delay values.
     pub fn from_model_config(
         config: &Model,
         spatial_description: &SpatialDescription,
         sample_rate_hz: f32,
         duration_s: f32,
-    ) -> Result<FunctionalDescription, Box<dyn Error>> {
+    ) -> Result<Self, Box<dyn Error>> {
         let ap_params =
             APParameters::from_model_config(config, spatial_description, sample_rate_hz)?;
-        let measurement_matrix = MMatrix::from_model_config(config, spatial_description);
-        let control_matrix = CMatrix::from_model_config(config, spatial_description);
+        let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);
+        let control_matrix = ControlMatrix::from_model_config(config, spatial_description);
         let kalman_gain = Gain::from_model_config(config, &measurement_matrix);
         let control_function_values =
-            CFunction::from_model_config(config, sample_rate_hz, duration_s);
+            ControlFunction::from_model_config(config, sample_rate_hz, duration_s);
 
-        Ok(FunctionalDescription {
+        Ok(Self {
             ap_params,
             measurement_matrix,
             control_matrix,

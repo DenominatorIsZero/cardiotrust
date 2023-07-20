@@ -9,11 +9,12 @@ use crate::core::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct CMatrix {
+#[allow(clippy::module_name_repetitions)]
+pub struct ControlMatrix {
     pub values: Array1<f32>,
 }
 
-impl CMatrix {
+impl ControlMatrix {
     #[must_use]
     pub fn empty(number_of_states: usize) -> Self {
         Self {
@@ -45,11 +46,12 @@ impl CMatrix {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct CFunction {
+#[allow(clippy::module_name_repetitions)]
+pub struct ControlFunction {
     pub values: Array1<f32>,
 }
 
-impl CFunction {
+impl ControlFunction {
     #[must_use]
     pub fn empty(number_of_steps: usize) -> Self {
         Self {
@@ -116,7 +118,7 @@ mod test {
         let config = Model::default();
         let spatial_description = SpatialDescription::from_model_config(&config);
 
-        let control_matrix = CMatrix::from_model_config(&config, &spatial_description);
+        let control_matrix = ControlMatrix::from_model_config(&config, &spatial_description);
         let sum = control_matrix.values.sum();
         assert_relative_eq!(sum, 1.0);
     }
@@ -133,7 +135,8 @@ mod test {
         let expected_length_samples = (sample_rate_hz * duration_s) as usize;
         let config = Model::default();
 
-        let control_function = CFunction::from_model_config(&config, sample_rate_hz, duration_s);
+        let control_function =
+            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
         assert_eq!(expected_length_samples, control_function.values.shape()[0]);
     }
 
@@ -150,7 +153,8 @@ mod test {
         let expected_length_samples = (sample_rate_hz * duration_s) as usize;
         let config = Model::default();
 
-        let control_function = CFunction::from_model_config(&config, sample_rate_hz, duration_s);
+        let control_function =
+            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
         assert_eq!(expected_length_samples, control_function.values.shape()[0]);
 
         plotting::time::standard_time_plot(

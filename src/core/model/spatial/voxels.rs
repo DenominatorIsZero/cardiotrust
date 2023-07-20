@@ -298,10 +298,11 @@ mod tests {
 
     #[test]
     fn no_pathology_full_states() {
-        let mut config = Model::default();
-        config.heart_size_mm = [10.0, 10.0, 10.0];
-        config.voxel_size_mm = 1.0;
-
+        let config = Model{
+        heart_size_mm: [10.0, 10.0, 10.0],
+        voxel_size_mm: 1.0,
+        ..Default::default()
+        };
         let voxels = Voxels::from_model_config(&config);
 
         assert_eq!(1000, voxels.count());
@@ -441,8 +442,7 @@ mod tests {
 
     #[test]
     fn some_voxel_types_pathological() {
-        let mut config = Model::default();
-        config.pathological = true;
+        let config = Model{pathological: true, ..Default::default()};
         let types = VoxelTypes::from_simulation_config(&config);
 
         let num_sa = types
@@ -497,8 +497,7 @@ mod tests {
     #[test]
     #[ignore]
     fn some_voxel_types_pathological_and_plot() {
-        let mut config = Model::default();
-        config.pathological = true;
+        let config = Model{pathological: true, ..Default::default()};
         let types = VoxelTypes::from_simulation_config(&config);
 
         let num_sa = types

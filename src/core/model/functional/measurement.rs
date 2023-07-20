@@ -9,11 +9,12 @@ use crate::core::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct MMatrix {
+#[allow(clippy::module_name_repetitions)]
+pub struct MeasurementMatrix {
     pub values: Array2<f32>,
 }
 
-impl MMatrix {
+impl MeasurementMatrix {
     #[must_use]
     pub fn empty(number_of_states: usize, number_of_sensors: usize) -> Self {
         Self {
@@ -92,7 +93,8 @@ mod tests {
         };
         let spatial_description = SpatialDescription::from_model_config(&config);
 
-        let measurement_matrix = MMatrix::from_model_config(&config, &spatial_description);
+        let measurement_matrix =
+            MeasurementMatrix::from_model_config(&config, &spatial_description);
 
         assert!(!measurement_matrix.values.is_empty());
     }
@@ -107,7 +109,8 @@ mod tests {
         };
         let spatial_description = SpatialDescription::from_model_config(&config);
 
-        let measurement_matrix = MMatrix::from_model_config(&config, &spatial_description);
+        let measurement_matrix =
+            MeasurementMatrix::from_model_config(&config, &spatial_description);
 
         assert!(!measurement_matrix.values.is_empty());
 

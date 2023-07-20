@@ -1,5 +1,3 @@
-use core::panic;
-
 use ndarray::{arr1, s, Array2};
 
 use crate::core::config::model::Model;
@@ -11,34 +9,38 @@ pub struct Sensors {
 }
 
 impl Sensors {
-    pub fn empty(number_of_sensors: usize) -> Sensors {
-        Sensors {
+    #[must_use]
+    pub fn empty(number_of_sensors: usize) -> Self {
+        Self {
             positions_mm: Array2::zeros((number_of_sensors, 3)),
             orientations_xyz: Array2::zeros((number_of_sensors, 3)),
         }
     }
 
-    pub fn from_model_config(config: &Model) -> Sensors {
+    #[must_use]
+    pub fn from_model_config(config: &Model) -> Self {
+        #[allow(clippy::cast_precision_loss)]
         let distance = [
             config.sensor_array_size_mm[0] / config.sensors_per_axis[0] as f32,
             config.sensor_array_size_mm[1] / config.sensors_per_axis[1] as f32,
             config.sensor_array_size_mm[2] / config.sensors_per_axis[2] as f32,
         ];
-        let mut sensors = Sensors::empty(config.sensors_per_axis.iter().product());
+        let mut sensors = Self::empty(config.sensors_per_axis.iter().product());
         let mut i: usize = 0;
         for x in 0..config.sensors_per_axis[0] {
             for y in 0..config.sensors_per_axis[1] {
                 for z in 0..config.sensors_per_axis[2] {
+                    #[allow(clippy::cast_precision_loss)]
                     sensors.positions_mm.slice_mut(s![i, ..]).assign(&arr1(&[
-                        x as f32 * distance[0] + config.sensor_array_origin_mm[0],
-                        y as f32 * distance[1] + config.sensor_array_origin_mm[1],
-                        z as f32 * distance[2] + config.sensor_array_origin_mm[2],
+                        (x as f32).mul_add(distance[0], config.sensor_array_origin_mm[0]),
+                        (y as f32).mul_add(distance[1], config.sensor_array_origin_mm[1]),
+                        (z as f32).mul_add(distance[2], config.sensor_array_origin_mm[2]),
                     ]));
                     let orientation = match i % 3 {
                         0 => arr1(&[1.0, 0.0, 0.0]),
                         1 => arr1(&[0.0, 1.0, 0.0]),
                         2 => arr1(&[0.0, 0.0, 1.0]),
-                        _ => panic!(),
+                        _ => arr1(&[0.0, 0.0, 0.0]),
                     };
                     sensors
                         .orientations_xyz
@@ -51,6 +53,7 @@ impl Sensors {
         sensors
     }
 
+    #[must_use]
     pub fn count(&self) -> usize {
         self.positions_mm.shape()[0]
     }
@@ -70,8 +73,10 @@ mod tests {
 
     #[test]
     fn count_from_simulation() {
-        let mut config = Model::default();
-        config.sensors_per_axis = [10, 20, 30];
+        let config = Model {
+            sensors_per_axis: [10, 20, 30],
+            ..Default::default()
+        };
         let sensors = Sensors::from_model_config(&config);
 
         assert_eq!(6000, sensors.count());

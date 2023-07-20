@@ -9,15 +9,17 @@ pub struct Heart {
 }
 
 impl Heart {
-    pub fn empty() -> Heart {
-        Heart {
+    #[must_use]
+    pub fn empty() -> Self {
+        Self {
             origin_mm: Array1::zeros(3),
             size_mm: Array1::zeros(3),
         }
     }
 
-    pub fn from_model_config(config: &Model) -> Heart {
-        Heart {
+    #[must_use]
+    pub fn from_model_config(config: &Model) -> Self {
+        Self {
             origin_mm: arr1(&config.heart_origin_mm),
             size_mm: arr1(&config.heart_size_mm),
         }

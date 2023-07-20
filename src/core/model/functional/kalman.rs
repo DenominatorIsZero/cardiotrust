@@ -5,7 +5,7 @@ use rand_distr::{Distribution, Normal};
 
 use crate::core::config::model::Model;
 
-use super::measurement::MMatrix;
+use super::measurement::MeasurementMatrix;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Gain {
@@ -26,7 +26,7 @@ impl Gain {
     ///
     /// Panics if covariances are invalid.
     #[must_use]
-    pub fn from_model_config(config: &Model, measurement_matrix: &MMatrix) -> Self {
+    pub fn from_model_config(config: &Model, measurement_matrix: &MeasurementMatrix) -> Self {
         let mut process_covariance = Array2::<f32>::zeros((
             measurement_matrix.values.shape()[1],
             measurement_matrix.values.shape()[1],
@@ -86,7 +86,8 @@ mod tests {
     fn from_model_config_no_crash() {
         let config = Model::default();
         let spatial_description = SpatialDescription::from_model_config(&config);
-        let measurement_matrix = MMatrix::from_model_config(&config, &spatial_description);
+        let measurement_matrix =
+            MeasurementMatrix::from_model_config(&config, &spatial_description);
 
         let _kalman_gain = Gain::from_model_config(&config, &measurement_matrix);
     }

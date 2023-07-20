@@ -7,6 +7,7 @@ use crate::core::config::model::Model;
 use self::{heart::Heart, sensors::Sensors, voxels::Voxels};
 
 #[derive(Debug, PartialEq, Clone)]
+#[allow(clippy::module_name_repetitions)]
 pub struct SpatialDescription {
     pub heart: Heart,
     pub voxels: Voxels,
@@ -14,20 +15,22 @@ pub struct SpatialDescription {
 }
 
 impl SpatialDescription {
-    pub fn empty(number_of_sensors: usize, voxels_in_dims: [usize; 3]) -> SpatialDescription {
-        SpatialDescription {
+    #[must_use]
+    pub fn empty(number_of_sensors: usize, voxels_in_dims: [usize; 3]) -> Self {
+        Self {
             heart: Heart::empty(),
             voxels: Voxels::empty(voxels_in_dims),
             sensors: Sensors::empty(number_of_sensors),
         }
     }
 
-    pub fn from_model_config(config: &Model) -> SpatialDescription {
+    #[must_use]
+    pub fn from_model_config(config: &Model) -> Self {
         let heart = Heart::from_model_config(config);
         let voxels = Voxels::from_model_config(config);
         let sensors = Sensors::from_model_config(config);
 
-        SpatialDescription {
+        Self {
             heart,
             voxels,
             sensors,
