@@ -6,21 +6,10 @@ use lab::Lab;
 use rayon::prelude::*;
 use std::borrow::Cow;
 use std::io;
-#[cfg(feature = "debug-stderr")]
-use std::io::Write;
 use std::path::Path;
 use std::{error, f32, fmt};
 
-#[cfg(feature = "debug-stderr")]
-use std::time::Instant;
-
-#[cfg(feature = "debug-stderr")]
-fn ms(duration: Instant) -> u64 {
-    let duration = duration.elapsed();
-    duration.as_secs() * 1000 + duration.subsec_nanos() as u64 / 1000000
-}
-
-type RGBA = [u8; 4];
+type Rgba = [u8; 4];
 
 /// A color quantizing strategy.
 ///
@@ -28,7 +17,7 @@ type RGBA = [u8; 4];
 /// to be the palette, then reassigns the less frequently occuring colors to
 /// the closest matching palette color.
 ///
-/// `NeuQuant` uses the NeuQuant algorithm from the `color_quant` crate. It
+/// `NeuQuant` uses the `NeuQuant` algorithm from the `color_quant` crate. It
 /// trains a neural network using a pseudorandom subset of pixels, then
 /// assigns each pixel its closest matching color in the palette.
 ///
@@ -56,7 +45,7 @@ pub enum Quantizer {
 /// disk through the `load_image` or `load_images` functions, its path property
 /// contains the path used to read it from disk.
 pub struct Image {
-    pub pixels: Vec<RGBA>,
+    pub pixels: Vec<Rgba>,
     pub width: u32,
     pub height: u32,
 }
@@ -80,24 +69,24 @@ pub enum Error {
 }
 
 impl From<image::ImageError> for Error {
-    fn from(err: image::ImageError) -> Error {
-        Error::ImageLoad(err)
+    fn from(err: image::ImageError) -> Self {
+        Self::ImageLoad(err)
     }
 }
 
 impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Error {
-        Error::ImageWrite(err)
+    fn from(err: io::Error) -> Self {
+        Self::ImageWrite(err)
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::NoImages => write!(f, "No frames sent for engiffening"),
-            Error::Mismatch(_, _) => write!(f, "Frames don't have the same dimensions"),
-            Error::ImageLoad(ref e) => write!(f, "Image load error: {}", e),
-            Error::ImageWrite(ref e) => write!(f, "Image write error: {}", e),
+            Self::NoImages => write!(f, "No frames sent for engiffening"),
+            Self::Mismatch(_, _) => write!(f, "Frames don't have the same dimensions"),
+            Self::ImageLoad(ref e) => write!(f, "Image load error: {e}"),
+            Self::ImageWrite(ref e) => write!(f, "Image write error: {e}"),
         }
     }
 }
@@ -105,10 +94,10 @@ impl fmt::Display for Error {
 impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
-            Error::NoImages => "No frames sent for engiffening",
-            Error::Mismatch(_, _) => "Frames don't have the same dimensions",
-            Error::ImageLoad(_) => "Unable to load image",
-            Error::ImageWrite(_) => "Unable to write image",
+            Self::NoImages => "No frames sent for engiffening",
+            Self::Mismatch(_, _) => "Frames don't have the same dimensions",
+            Self::ImageLoad(_) => "Unable to load image",
+            Self::ImageWrite(_) => "Unable to write image",
         }
     }
 }
@@ -140,6 +129,8 @@ impl fmt::Debug for Gif {
 impl Gif {
     /// Writes the animated Gif to any output that implements Write.
     ///
+    /// # Panics
+    /// Panics if encoder could not be created
     ///
     /// # Errors
     ///
@@ -148,12 +139,14 @@ impl Gif {
         let mut encoder = Encoder::new(&mut out, self.width, self.height, &self.palette).unwrap();
         encoder.set_repeat(Repeat::Infinite).unwrap();
         for img in &self.images {
-            let mut frame = Frame::default();
-            frame.delay = self.delay / 10;
-            frame.width = self.width;
-            frame.height = self.height;
-            frame.buffer = Cow::Borrowed(&*img);
-            frame.transparent = self.transparency;
+            let frame = Frame {
+                delay: self.delay / 10,
+                width: self.width,
+                height: self.height,
+                buffer: Cow::Borrowed(img),
+                transparent: self.transparency,
+                ..Default::default()
+            };
             encoder.write_frame(&frame).unwrap();
         }
         Ok(())
@@ -173,7 +166,7 @@ where
     let img = image::open(&path)?;
     let width = img.width();
     let height = img.height();
-    let mut pixels: Vec<RGBA> = Vec::with_capacity(0);
+    let mut pixels: Vec<Rgba> = Vec::with_capacity(0);
     for (_, _, px) in img.into_rgba8().enumerate_pixels() {
         pixels.push(px.0);
     }
@@ -194,17 +187,20 @@ where
 {
     paths
         .iter()
-        .map(|path| load_image(path))
-        .filter_map(|img| img.ok())
+        .map(load_image)
+        .filter_map(std::result::Result::ok)
         .collect()
 }
 
 /// Converts a sequence of images into a `Gif` at a given frame rate. The `quantizer`
 /// parameter selects the algorithm that quantizes the palette into 256-colors.
 ///
+/// # Panics
+/// Panics if fps, height or width do not fit into a u16
+///
 /// # Errors
 ///
-/// If any image dimensions differ, this function will return an Error::Mismatch
+/// If any image dimensions differ, this function will return an `Error::Mismatch`
 /// containing tuples of the conflicting image dimensions.
 pub fn engiffen(imgs: &[Image], fps: usize, quantizer: Quantizer) -> Result<Gif, Error> {
     if imgs.is_empty() {
@@ -214,7 +210,7 @@ pub fn engiffen(imgs: &[Image], fps: usize, quantizer: Quantizer) -> Result<Gif,
     printerr!("Engiffening {} images", imgs.len());
 
     let (width, height) = {
-        let ref first = imgs[0];
+        let first = &imgs[0];
         let first_dimensions = (first.width, first.height);
         for img in imgs.iter() {
             let other_dimensions = (img.width, img.height);
@@ -226,19 +222,19 @@ pub fn engiffen(imgs: &[Image], fps: usize, quantizer: Quantizer) -> Result<Gif,
     };
 
     let (palette, palettized_imgs, transparency) = match quantizer {
-        Quantizer::NeuQuant(sample_rate) => neuquant_palettize(&imgs, sample_rate, width, height),
-        Quantizer::Naive => naive_palettize(&imgs),
+        Quantizer::NeuQuant(sample_rate) => neuquant_palettize(imgs, sample_rate, width, height),
+        Quantizer::Naive => naive_palettize(imgs),
     };
 
-    let delay = (1000 / fps) as u16;
+    let delay = u16::try_from(1000 / fps).unwrap();
 
     Ok(Gif {
-        palette: palette,
-        transparency: transparency,
-        width: width as u16,
-        height: height as u16,
+        palette,
+        transparency,
+        width: u16::try_from(width).unwrap(),
+        height: u16::try_from(height).unwrap(),
         images: palettized_imgs,
-        delay: delay,
+        delay,
     })
 }
 
@@ -259,10 +255,8 @@ fn neuquant_palettize(
         .map(|img| {
             let mut temp: Vec<_> = Vec::with_capacity(image_len);
             for (n, px) in img.pixels.iter().enumerate() {
-                if sample_rate > 1 {
-                    if n % sample_rate != 0 || (n / width) % sample_rate != 0 {
-                        continue;
-                    }
+                if sample_rate > 1 && (n % sample_rate != 0 || (n / width) % sample_rate != 0) {
+                    continue;
                 }
                 if px[3] == 0 {
                     temp.extend_from_slice(&transparent_black);
@@ -296,7 +290,7 @@ fn neuquant_palettize(
     #[cfg(feature = "debug-stderr")]
     let time_map = Instant::now();
     let mut transparency = None;
-    let mut cache: FnvHashMap<RGBA, u8> = FnvHashMap::default();
+    let mut cache: FnvHashMap<Rgba, u8> = FnvHashMap::default();
     let palettized_imgs: Vec<Vec<u8>> = imgs
         .iter()
         .map(|img| {
@@ -304,7 +298,7 @@ fn neuquant_palettize(
                 .iter()
                 .map(|px| {
                     *cache.entry(*px).or_insert_with(|| {
-                        let idx = quant.index_of(px) as u8;
+                        let idx = u8::try_from(quant.index_of(px)).unwrap();
                         if transparency.is_none() && px[3] == 0 {
                             transparency = Some(idx);
                         }
@@ -323,26 +317,23 @@ fn neuquant_palettize(
 fn naive_palettize(imgs: &[Image]) -> (Vec<u8>, Vec<Vec<u8>>, Option<u8>) {
     #[cfg(feature = "debug-stderr")]
     let time_count = Instant::now();
-    let frequencies: FnvHashMap<RGBA, usize> = imgs
+    let frequencies: FnvHashMap<Rgba, usize> = imgs
         .par_iter()
         .map(|img| {
-            let mut fr: FnvHashMap<RGBA, usize> = FnvHashMap::default();
-            for pixel in img.pixels.iter() {
+            let mut fr: FnvHashMap<Rgba, usize> = FnvHashMap::default();
+            for pixel in &img.pixels {
                 let num = fr.entry(*pixel).or_insert(0);
                 *num += 1;
             }
             fr
         })
-        .reduce(
-            || FnvHashMap::default(),
-            |mut acc, fr| {
-                for (color, count) in fr {
-                    let num = acc.entry(color).or_insert(0);
-                    *num += count;
-                }
-                acc
-            },
-        );
+        .reduce(FnvHashMap::default, |mut acc, fr| {
+            for (color, count) in fr {
+                let num = acc.entry(color).or_insert(0);
+                *num += count;
+            }
+            acc
+        });
     #[cfg(feature = "debug-stderr")]
     printerr!("Naive: Counted color frequencies in {} ms", ms(time_count));
     #[cfg(feature = "debug-stderr")]
@@ -360,9 +351,9 @@ fn naive_palettize(imgs: &[Image]) -> (Vec<u8>, Vec<Vec<u8>>, Option<u8>) {
         (&sorted[..], &[] as &[_])
     };
 
-    let mut map: FnvHashMap<RGBA, u8> = FnvHashMap::default();
+    let mut map: FnvHashMap<Rgba, u8> = FnvHashMap::default();
     for (i, color) in palette.iter().enumerate() {
-        map.insert(color.0, i as u8);
+        map.insert(color.0, u8::try_from(i).unwrap());
     }
     for color in rest {
         let closest_index = palette
