@@ -16,13 +16,14 @@ pub struct Model {
 }
 
 impl Model {
+    #[must_use]
     pub fn empty(
         number_of_states: usize,
         number_of_sensors: usize,
         number_of_steps: usize,
         voxels_in_dims: Dim<[usize; 3]>,
-    ) -> Model {
-        Model {
+    ) -> Self {
+        Self {
             functional_description: FunctionalDescription::empty(
                 number_of_states,
                 number_of_sensors,
@@ -31,15 +32,20 @@ impl Model {
             ),
             spatial_description: SpatialDescription::empty(
                 number_of_sensors,
-                [number_of_states / 3 as usize, 1, 1],
+                [number_of_states / 3_usize, 1, 1],
             ),
         }
     }
+    /// .
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if model parameters do not result in valid delays.
     pub fn from_model_config(
         config: &ModelConfig,
         sample_rate_hz: f32,
         duration_s: f32,
-    ) -> Result<Model, Box<dyn Error>> {
+    ) -> Result<Self, Box<dyn Error>> {
         let spatial_description = SpatialDescription::from_model_config(config);
         let functional_description = FunctionalDescription::from_model_config(
             config,
@@ -47,7 +53,7 @@ impl Model {
             sample_rate_hz,
             duration_s,
         )?;
-        Ok(Model {
+        Ok(Self {
             functional_description,
             spatial_description,
         })

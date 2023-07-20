@@ -7,7 +7,7 @@ use std::{
 use bevy::prelude::*;
 
 use crate::{
-    core::scenario::{run_scenario, Status},
+    core::scenario::{run, Status},
     ScenarioList,
 };
 
@@ -41,7 +41,7 @@ pub fn start_scenarios(mut commands: Commands, mut scenario_list: ResMut<Scenari
             let send_scenario = entry.scenario.clone();
             let (epoch_tx, epoch_rx) = channel();
             let (summary_tx, summary_rx) = channel();
-            let handle = thread::spawn(move || run_scenario(send_scenario, epoch_tx, summary_tx));
+            let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
             entry.scenario.set_running(0);
             entry.join_handle = Some(handle);
             entry.epoch_rx = Some(Mutex::new(epoch_rx));

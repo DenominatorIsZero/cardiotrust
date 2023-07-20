@@ -31,13 +31,13 @@ pub struct Scenario {
 }
 
 impl Scenario {
-    pub fn build(id: Option<String>) -> Scenario {
-        println!("Creating new scenario!");
-        let scenario = Scenario {
-            id: match id {
-                Some(id) => id,
-                None => format!("{}", chrono::Utc::now().format("%Y-%m-%d-%H-%M-%S-%f")),
-            },
+    #[must_use]
+    pub fn build(id: Option<String>) -> Self {
+        let scenario = Self {
+            id: id.map_or_else(
+                || format!("{}", chrono::Utc::now().format("%Y-%m-%d-%H-%M-%S-%f")),
+                |id| id,
+            ),
             status: Status::Planning,
             config: Config::default(),
             data: None,
@@ -50,25 +50,45 @@ impl Scenario {
         scenario
     }
 
-    pub fn load(path: &Path) -> Scenario {
-        let contents = fs::read_to_string(path.join("scenario.toml")).expect(&format!(
-            "Could not read scenario.toml file in directory '{}'",
-            path.to_string_lossy()
-        ));
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if scenario.toml could not be read in scenario directory.
+    /// Panics if scenario.toml data could not be parsed into scenario struct.
+    #[must_use]
+    pub fn load(path: &Path) -> Self {
+        let contents = fs::read_to_string(path.join("scenario.toml")).unwrap_or_else(|_| {
+            panic!(
+                "Could not read scenario.toml file in directory '{}'",
+                path.to_string_lossy()
+            )
+        });
 
-        let scenario: Scenario = toml::from_str(&contents).expect(&format!(
-            "Could not parse data found in scenario.toml in directory '{}'",
-            path.to_string_lossy()
-        ));
+        let scenario: Self = toml::from_str(&contents).unwrap_or_else(|_| {
+            panic!(
+                "Could not parse data found in scenario.toml in directory '{}'",
+                path.to_string_lossy()
+            )
+        });
 
         scenario
     }
 
+    /// # Panics
+    ///
+    /// Panics if scenario could not be parsed into toml string.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if scenario.toml file could not be created.
+    ///
+    /// This function will return an error if scenario.toml file could not be written to.
     pub fn save(&self) -> Result<(), std::io::Error> {
         let path = Path::new("./results").join(&self.id);
         let toml = toml::to_string(&self).unwrap();
         fs::create_dir_all(&path)?;
-        let mut f = File::create(&path.join("scenario.toml"))?;
+        let mut f = File::create(path.join("scenario.toml"))?;
         f.write_all(toml.as_bytes())?;
         if self.data.is_some() {
             self.save_data();
@@ -79,11 +99,13 @@ impl Scenario {
         Ok(())
     }
 
-    pub fn get_id(&self) -> &String {
+    #[must_use]
+    pub const fn get_id(&self) -> &String {
         &self.id
     }
 
-    pub fn get_status_str(&self) -> &str {
+    #[must_use]
+    pub const fn get_status_str(&self) -> &str {
         match self.status {
             Status::Planning => "Planning",
             Status::Done => "Done",
@@ -93,24 +115,28 @@ impl Scenario {
         }
     }
 
+    #[must_use]
     pub fn get_config_mut(&mut self) -> &mut Config {
         &mut self.config
     }
 
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if scenario is not in plannig
+    /// phase.
     pub fn schedule(&mut self) -> Result<(), String> {
         match self.status {
             Status::Planning => {
                 self.status = Status::Scheduled;
                 self.unify_configs();
-                return Ok(());
+                Ok(())
             }
-            _ => {
-                return Err(format!(
-                    "Can only schedule scenarios that are in the planning\
+            _ => Err(format!(
+                "Can only schedule scenarios that are in the planning\
              phase but scenario was in phase {:?}",
-                    self.get_status_str()
-                ))
-            }
+                self.get_status_str()
+            )),
         }
     }
 
@@ -135,19 +161,22 @@ impl Scenario {
     /// for the parameters to be changed again
     ///
     /// TODO: Look into types as states
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if scenario is not in scheduled
+    /// phase.
     pub fn unschedule(&mut self) -> Result<(), String> {
         match self.status {
             Status::Scheduled => {
                 self.status = Status::Planning;
-                return Ok(());
+                Ok(())
             }
-            _ => {
-                return Err(format!(
-                    "Can only unschedule scenarios that are in the\
+            _ => Err(format!(
+                "Can only unschedule scenarios that are in the\
             scheduled phase but scenario was in phase {:?}",
-                    self.get_status_str()
-                ))
-            }
+                self.get_status_str()
+            )),
         }
     }
 
@@ -159,17 +188,24 @@ impl Scenario {
         self.status = Status::Done;
     }
 
+    /// # Errors
+    ///
+    /// This function will return an error if directories could not
+    /// be deleted.
     pub fn delete(&self) -> Result<(), std::io::Error> {
         let path = Path::new("./results").join(&self.id);
         fs::remove_dir_all(path)?;
         Ok(())
     }
 
-    pub fn get_status(&self) -> &Status {
+    #[must_use]
+    pub const fn get_status(&self) -> &Status {
         &self.status
     }
 
+    #[must_use]
     pub fn get_progress(&self) -> f32 {
+        #[allow(clippy::cast_precision_loss)]
         match self.status {
             Status::Running(epoch) => epoch as f32 / self.config.algorithm.epochs as f32,
             _ => 0.0,
@@ -185,11 +221,13 @@ impl Scenario {
     }
 }
 
-pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>, summary_tx: Sender<Summary>) {
-    let simulation = match &scenario.config.simulation {
-        Some(simulation) => simulation,
-        None => todo!("Non-simulation case not yet implemented."),
-    };
+/// .
+///
+/// # Panics
+///
+/// Panics if .
+pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender<Summary>) {
+    let Some(simulation) = &scenario.config.simulation else { todo!("Non-simulation case not yet implemented.") };
     let data = Data::from_simulation_config(simulation);
     let mut model = Model::from_model_config(
         &scenario.config.algorithm.model,
@@ -243,7 +281,7 @@ pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>, summary_tx:
     scenario.status = Status::Done;
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum Status {
     Planning,
     Done,
