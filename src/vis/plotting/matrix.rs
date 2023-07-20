@@ -34,9 +34,9 @@ pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str)
     let mut row: Vec<i32> = Vec::new();
     for x in 0..types.shape()[0] {
         if x < 7 {
-            row.push(x as i32);
+            row.push(i32::try_from(x).unwrap_or_default());
         } else {
-            row.push(0)
+            row.push(0);
         }
     }
     z.push(row);
@@ -46,7 +46,17 @@ pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str)
     ));
     let mut plot = Plot::new();
 
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
     let width = (500.0 * types.shape()[0] as f32 / types.shape()[1] as f32) as usize + 175;
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
     let height = (500.0 * types.shape()[1] as f32 / types.shape()[0] as f32) as usize;
 
     let layout = Layout::new()
@@ -86,7 +96,17 @@ pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &
         HeatMap::new_z(z).color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
     let mut plot = Plot::new();
 
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
     let width = (500.0 * times.shape()[0] as f32 / times.shape()[1] as f32) as usize + 175;
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
     let height = (500.0 * times.shape()[1] as f32 / times.shape()[0] as f32) as usize;
 
     let layout = Layout::new()
@@ -117,6 +137,7 @@ pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &
 ///     - in y direction
 ///     - in z direction
 ///     - absolute value
+#[allow(clippy::too_many_lines)]
 pub fn plot_states_at_time(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
@@ -159,25 +180,43 @@ pub fn plot_states_at_time(
                     row_abs.push(
                         system_states
                             .slice(s![time_index, state_index..state_index + 3])
-                            .mapv(|v| v.abs())
+                            .mapv(f32::abs)
                             .sum(),
                     );
                 }
             }
         }
         in_x.push(row_x.clone());
-        min_j = f32::min(min_j, row_x.into_iter().reduce(f32::min).unwrap());
+        min_j = f32::min(
+            min_j,
+            row_x.into_iter().reduce(f32::min).unwrap_or_default(),
+        );
         in_y.push(row_y.clone());
-        min_j = f32::min(min_j, row_y.into_iter().reduce(f32::min).unwrap());
+        min_j = f32::min(
+            min_j,
+            row_y.into_iter().reduce(f32::min).unwrap_or_default(),
+        );
         in_z.push(row_z.clone());
-        min_j = f32::min(min_j, row_z.into_iter().reduce(f32::min).unwrap());
+        min_j = f32::min(
+            min_j,
+            row_z.into_iter().reduce(f32::min).unwrap_or_default(),
+        );
         abs.push(row_abs.clone());
-        min_j = f32::min(min_j, row_abs.clone().into_iter().reduce(f32::min).unwrap());
-        max_j = f32::max(max_j, row_abs.into_iter().reduce(f32::max).unwrap());
+        min_j = f32::min(
+            min_j,
+            row_abs
+                .clone()
+                .into_iter()
+                .reduce(f32::min)
+                .unwrap_or_default(),
+        );
+        max_j = f32::max(
+            max_j,
+            row_abs.into_iter().reduce(f32::max).unwrap_or_default(),
+        );
     }
 
     // add invisible row to make all subplots have the same scale
-
     let mut row_x: Vec<f32> = Vec::new();
     let mut row_y: Vec<f32> = Vec::new();
     let mut row_z: Vec<f32> = Vec::new();
@@ -224,8 +263,18 @@ pub fn plot_states_at_time(
     plot.add_trace(trace_z);
     plot.add_trace(trace_abs);
 
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
     let width =
         (1000.0 * voxels.count_xyz()[0] as f32 / voxels.count_xyz()[1] as f32) as usize + 175;
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
     let height = (1000.0 * voxels.count_xyz()[1] as f32 / voxels.count_xyz()[0] as f32) as usize;
 
     let layout = Layout::new()
