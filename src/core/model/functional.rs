@@ -10,8 +10,8 @@ use ndarray::Dim;
 use self::{
     allpass::APParameters,
     control::{CFunction, CMatrix},
-    kalman::KalmanGain,
-    measurement::MeasurementMatrix,
+    kalman::Gain,
+    measurement::MMatrix,
 };
 
 use super::spatial::SpatialDescription;
@@ -20,9 +20,9 @@ use crate::core::config::model::Model;
 #[derive(Debug, PartialEq, Clone)]
 pub struct FunctionalDescription {
     pub ap_params: APParameters,
-    pub measurement_matrix: MeasurementMatrix,
+    pub measurement_matrix: MMatrix,
     pub control_matrix: CMatrix,
-    pub kalman_gain: KalmanGain,
+    pub kalman_gain: Gain,
     pub control_function_values: CFunction,
 }
 
@@ -35,9 +35,9 @@ impl FunctionalDescription {
     ) -> FunctionalDescription {
         FunctionalDescription {
             ap_params: APParameters::empty(number_of_states, voxels_in_dims),
-            measurement_matrix: MeasurementMatrix::empty(number_of_states, number_of_sensors),
+            measurement_matrix: MMatrix::empty(number_of_states, number_of_sensors),
             control_matrix: CMatrix::empty(number_of_states),
-            kalman_gain: KalmanGain::empty(number_of_states, number_of_sensors),
+            kalman_gain: Gain::empty(number_of_states, number_of_sensors),
             control_function_values: CFunction::empty(number_of_steps),
         }
     }
@@ -49,9 +49,9 @@ impl FunctionalDescription {
     ) -> Result<FunctionalDescription, Box<dyn Error>> {
         let ap_params =
             APParameters::from_model_config(config, spatial_description, sample_rate_hz)?;
-        let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);
+        let measurement_matrix = MMatrix::from_model_config(config, spatial_description);
         let control_matrix = CMatrix::from_model_config(config, spatial_description);
-        let kalman_gain = KalmanGain::from_model_config(config, &measurement_matrix);
+        let kalman_gain = Gain::from_model_config(config, &measurement_matrix);
         let control_function_values =
             CFunction::from_model_config(config, sample_rate_hz, duration_s);
 

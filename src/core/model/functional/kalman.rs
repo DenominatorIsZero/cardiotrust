@@ -5,21 +5,28 @@ use rand_distr::{Distribution, Normal};
 
 use crate::core::config::model::Model;
 
-use super::measurement::MeasurementMatrix;
+use super::measurement::MMatrix;
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct KalmanGain {
+pub struct Gain {
     pub values: Array2<f32>,
 }
 
-impl KalmanGain {
-    pub fn empty(number_of_states: usize, number_of_sensors: usize) -> KalmanGain {
-        KalmanGain {
+impl Gain {
+    #[must_use]
+    pub fn empty(number_of_states: usize, number_of_sensors: usize) -> Self {
+        Self {
             values: Array2::zeros((number_of_states, number_of_sensors)),
         }
     }
 
-    pub fn from_model_config(config: &Model, measurement_matrix: &MeasurementMatrix) -> KalmanGain {
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if covariances are invalid.
+    #[must_use]
+    pub fn from_model_config(config: &Model, measurement_matrix: &MMatrix) -> Self {
         let mut process_covariance = Array2::<f32>::zeros((
             measurement_matrix.values.shape()[1],
             measurement_matrix.values.shape()[1],
@@ -65,7 +72,7 @@ impl KalmanGain {
         let s_inv = s.inv().unwrap();
         let k = process_covariance.dot(&h.t()).dot(&s_inv);
 
-        KalmanGain { values: k }
+        Self { values: k }
     }
 }
 
@@ -79,9 +86,8 @@ mod tests {
     fn from_model_config_no_crash() {
         let config = Model::default();
         let spatial_description = SpatialDescription::from_model_config(&config);
-        let measurement_matrix =
-            MeasurementMatrix::from_model_config(&config, &spatial_description);
+        let measurement_matrix = MMatrix::from_model_config(&config, &spatial_description);
 
-        let _kalman_gain = KalmanGain::from_model_config(&config, &measurement_matrix);
+        let _kalman_gain = Gain::from_model_config(&config, &measurement_matrix);
     }
 }
