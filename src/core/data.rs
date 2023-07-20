@@ -19,13 +19,14 @@ pub struct Data {
     measurement: Option<Measurement>,
 }
 impl Data {
+    #[must_use]
     pub fn empty(
         number_of_sensors: usize,
         number_of_states: usize,
         number_of_steps: usize,
         voxels_in_dims: Dim<[usize; 3]>,
-    ) -> Data {
-        Data {
+    ) -> Self {
+        Self {
             simulation: Some(Simulation::empty(
                 number_of_sensors,
                 number_of_states,
@@ -36,48 +37,83 @@ impl Data {
         }
     }
 
-    pub fn from_simulation_config(config: &SimulationConfig) -> Data {
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if model parameters to not result in valid delays.
+    #[must_use]
+    pub fn from_simulation_config(config: &SimulationConfig) -> Self {
         let mut simulation = Simulation::from_config(config).unwrap();
         simulation.run();
-        Data {
+        Self {
             simulation: Some(simulation),
             measurement: None,
         }
     }
 
+    /// Returns a reference to the get measurements of this [`Data`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if simulation and measurement are both None.
+    #[must_use]
     pub fn get_measurements(&self) -> &ArrayMeasurements {
-        if let Some(simulation) = self.simulation.as_ref() {
-            &(simulation.measurements)
-        } else {
-            &(self.measurement.as_ref().unwrap().measurements)
-        }
+        self.simulation.as_ref().map_or_else(
+            || &(self.measurement.as_ref().unwrap().measurements),
+            |simulation| &(simulation.measurements),
+        )
     }
 
+    /// Returns a reference to the get system states of this [`Data`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if simulation is None
+    #[must_use]
     pub fn get_system_states(&self) -> &ArraySystemStates {
-        match &self.simulation {
-            Some(simulation) => &simulation.system_states,
-            None => todo!("Non simulation case not implemented yet."),
-        }
+        self.simulation.as_ref().map_or_else(
+            || todo!("Non simulation case not implemented yet."),
+            |simulation| &simulation.system_states,
+        )
     }
 
+    /// Returns a reference to the get gains of this [`Data`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if simulation is None
+    #[must_use]
     pub fn get_gains(&self) -> &ArrayGains<f32> {
-        match &self.simulation {
-            Some(simulation) => &simulation.model.functional_description.ap_params.gains,
-            None => todo!("Non simulation case not implemented yet."),
-        }
+        self.simulation.as_ref().map_or_else(
+            || todo!("Non simulation case not implemented yet."),
+            |simulation| &simulation.model.functional_description.ap_params.gains,
+        )
     }
 
+    /// Returns a reference to the get coefs of this [`Data`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if simulation is None
+    #[must_use]
     pub fn get_coefs(&self) -> &ArrayDelays<f32> {
-        match &self.simulation {
-            Some(simulation) => &simulation.model.functional_description.ap_params.coefs,
-            None => todo!("Non simulation case not implemented yet."),
-        }
+        self.simulation.as_ref().map_or_else(
+            || todo!("Non simulation case not implemented yet."),
+            |simulation| &simulation.model.functional_description.ap_params.coefs,
+        )
     }
 
+    /// Returns a reference to the get delays of this [`Data`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if simulation is None
+    #[must_use]
     pub fn get_delays(&self) -> &ArrayDelays<usize> {
-        match &self.simulation {
-            Some(simulation) => &simulation.model.functional_description.ap_params.delays,
-            None => todo!("Non simulation case not implemented yet."),
-        }
+        self.simulation.as_ref().map_or_else(
+            || todo!("Non simulation case not implemented yet."),
+            |simulation| &simulation.model.functional_description.ap_params.delays,
+        )
     }
 }

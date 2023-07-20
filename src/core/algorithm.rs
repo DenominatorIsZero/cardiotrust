@@ -1,11 +1,6 @@
-use self::{
-    estimation::{
-        calculate_delays_delta, calculate_gains_delta, calculate_residuals,
-        calculate_system_prediction, calculate_system_states_delta, calculate_system_update,
-        Estimations,
-    },
-    metrics::Metrics,
-    refinement::derivation::Derivatives,
+use self::estimation::{
+    calculate_delays_delta, calculate_gains_delta, calculate_residuals,
+    calculate_system_prediction, calculate_system_states_delta, calculate_system_update,
 };
 
 use super::{
@@ -23,72 +18,73 @@ pub mod refinement;
 /// and performing one gradient descent step.
 pub fn run_epoch(
     functional_description: &mut FunctionalDescription,
-    estimations: &mut Estimations,
-    derivatives: &mut Derivatives,
-    metrics: &mut Metrics,
+    results: &mut Results,
     data: &Data,
     learning_rate: f32,
     apply_system_update: bool,
     epoch_index: usize,
 ) {
-    estimations.reset();
-    derivatives.reset();
-    for time_index in 0..estimations.system_states.values.shape()[0] {
+    results.estimations.reset();
+    results.derivatives.reset();
+    for time_index in 0..results.estimations.system_states.values.shape()[0] {
         calculate_system_prediction(
-            &mut estimations.ap_outputs,
-            &mut estimations.system_states,
-            &mut estimations.measurements,
-            &functional_description,
+            &mut results.estimations.ap_outputs,
+            &mut results.estimations.system_states,
+            &mut results.estimations.measurements,
+            functional_description,
             time_index,
         );
         calculate_residuals(
-            &mut estimations.residuals,
-            &estimations.measurements,
+            &mut results.estimations.residuals,
+            &results.estimations.measurements,
             data.get_measurements(),
             time_index,
         );
-        derivatives.calculate(&functional_description, &estimations, time_index);
+        results
+            .derivatives
+            .calculate(functional_description, &results.estimations, time_index);
         if apply_system_update {
             calculate_system_update(
-                &mut estimations.system_states,
-                &estimations.residuals,
+                &mut results.estimations.system_states,
+                &results.estimations.residuals,
                 &functional_description.kalman_gain,
                 time_index,
-            )
+            );
         }
         calculate_system_states_delta(
-            &mut estimations.system_states_delta,
-            &estimations.system_states,
+            &mut results.estimations.system_states_delta,
+            &results.estimations.system_states,
             data.get_system_states(),
             time_index,
         );
         calculate_gains_delta(
-            &mut estimations.gains_delta,
+            &mut results.estimations.gains_delta,
             &functional_description.ap_params.gains,
             data.get_gains(),
         );
         calculate_delays_delta(
-            &mut estimations.delays_delta,
+            &mut results.estimations.delays_delta,
             &functional_description.ap_params.delays,
             data.get_delays(),
             &functional_description.ap_params.coefs,
             data.get_coefs(),
         );
-        metrics.calculate_step(
-            &estimations.residuals,
-            &estimations.system_states_delta,
-            &estimations.gains_delta,
-            &estimations.delays_delta,
+        results.metrics.calculate_step(
+            &results.estimations.residuals,
+            &results.estimations.system_states_delta,
+            &results.estimations.gains_delta,
+            &results.estimations.delays_delta,
             time_index,
             epoch_index,
         );
     }
     functional_description
         .ap_params
-        .update(&derivatives, learning_rate);
-    metrics.calculate_epoch(epoch_index);
+        .update(&results.derivatives, learning_rate);
+    results.metrics.calculate_epoch(epoch_index);
 }
 
+#[allow(dead_code)]
 fn run(
     functional_description: &mut FunctionalDescription,
     results: &mut Results,
@@ -98,9 +94,7 @@ fn run(
     for epoch_index in 0..config.epochs {
         run_epoch(
             functional_description,
-            &mut results.estimations,
-            &mut results.derivatives,
-            &mut results.metrics,
+            results,
             data,
             config.learning_rate,
             config.model.apply_system_update,
@@ -139,10 +133,12 @@ mod test {
             number_of_steps,
             voxels_in_dims,
         );
-        let mut estimations =
-            Estimations::new(number_of_states, number_of_sensors, number_of_steps);
-        let mut derivatives = Derivatives::new(number_of_states);
-        let mut metrics = Metrics::new(number_of_epochs, number_of_steps);
+        let mut results = Results::new(
+            number_of_epochs,
+            number_of_steps,
+            number_of_sensors,
+            number_of_states,
+        );
         let data = Data::empty(
             number_of_sensors,
             number_of_states,
@@ -152,9 +148,7 @@ mod test {
 
         run_epoch(
             &mut functional_description,
-            &mut estimations,
-            &mut derivatives,
-            &mut metrics,
+            &mut results,
             &data,
             learning_rate,
             apply_system_update,
@@ -169,8 +163,10 @@ mod test {
         let number_of_steps = 3;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let mut config = Algorithm::default();
-        config.epochs = 3;
+        let config = Algorithm {
+            epochs: 3,
+            ..Default::default()
+        };
         let mut functional_description = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,
@@ -232,7 +228,7 @@ mod test {
             assert!(
                 results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
             );
-        })
+        });
     }
 
     #[test]
@@ -309,7 +305,7 @@ mod test {
             assert!(
                 results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
             );
-        })
+        });
     }
 
     #[test]
@@ -351,7 +347,7 @@ mod test {
             assert!(
                 results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
             );
-        })
+        });
     }
 
     #[test]
@@ -428,6 +424,6 @@ mod test {
             assert!(
                 results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
             );
-        })
+        });
     }
 }

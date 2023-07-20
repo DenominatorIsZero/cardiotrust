@@ -13,9 +13,10 @@ pub struct Config {
     pub simulation: Option<Simulation>,
     pub algorithm: Algorithm,
 }
-impl Config {
-    pub fn default() -> Config {
-        Config {
+impl Default for Config {
+    #[must_use]
+    fn default() -> Self {
+        Self {
             measurement: None,
             simulation: Some(Simulation::default()),
             algorithm: Algorithm::default(),
@@ -23,7 +24,7 @@ impl Config {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ModelPreset {
     Healthy,
     Pathological,

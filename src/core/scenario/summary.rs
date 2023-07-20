@@ -13,9 +13,10 @@ pub struct Summary {
     pub delta_delays_max: f32,
 }
 
-impl Summary {
-    pub fn new() -> Summary {
-        Summary {
+impl Default for Summary {
+    #[must_use]
+    fn default() -> Self {
+        Self {
             loss: 0.0,
             delta_states_mean: 0.0,
             delta_states_max: 0.0,

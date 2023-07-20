@@ -209,14 +209,12 @@ pub fn run_scenario(mut scenario: Scenario, epoch_tx: Sender<usize>, summary_tx:
         model.spatial_description.voxels.count_states(),
     );
 
-    let mut summary = Summary::new();
+    let mut summary = Summary::default();
 
     for epoch_index in 0..scenario.config.algorithm.epochs {
         algorithm::run_epoch(
             &mut model.functional_description,
-            &mut results.estimations,
-            &mut results.derivatives,
-            &mut results.metrics,
+            &mut results,
             &data,
             scenario.config.algorithm.learning_rate,
             scenario.config.algorithm.model.apply_system_update,
