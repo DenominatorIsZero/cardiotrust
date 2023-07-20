@@ -9,7 +9,7 @@ use ndarray::Dim;
 
 use self::{
     allpass::APParameters,
-    control::{ControlFunction, ControlMatrix},
+    control::{CFunction, CMatrix},
     kalman::KalmanGain,
     measurement::MeasurementMatrix,
 };
@@ -21,9 +21,9 @@ use crate::core::config::model::Model;
 pub struct FunctionalDescription {
     pub ap_params: APParameters,
     pub measurement_matrix: MeasurementMatrix,
-    pub control_matrix: ControlMatrix,
+    pub control_matrix: CMatrix,
     pub kalman_gain: KalmanGain,
-    pub control_function_values: ControlFunction,
+    pub control_function_values: CFunction,
 }
 
 impl FunctionalDescription {
@@ -36,9 +36,9 @@ impl FunctionalDescription {
         FunctionalDescription {
             ap_params: APParameters::empty(number_of_states, voxels_in_dims),
             measurement_matrix: MeasurementMatrix::empty(number_of_states, number_of_sensors),
-            control_matrix: ControlMatrix::empty(number_of_states),
+            control_matrix: CMatrix::empty(number_of_states),
             kalman_gain: KalmanGain::empty(number_of_states, number_of_sensors),
-            control_function_values: ControlFunction::empty(number_of_steps),
+            control_function_values: CFunction::empty(number_of_steps),
         }
     }
     pub fn from_model_config(
@@ -50,10 +50,10 @@ impl FunctionalDescription {
         let ap_params =
             APParameters::from_model_config(config, spatial_description, sample_rate_hz)?;
         let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);
-        let control_matrix = ControlMatrix::from_model_config(config, spatial_description);
+        let control_matrix = CMatrix::from_model_config(config, spatial_description);
         let kalman_gain = KalmanGain::from_model_config(config, &measurement_matrix);
         let control_function_values =
-            ControlFunction::from_model_config(config, sample_rate_hz, duration_s);
+            CFunction::from_model_config(config, sample_rate_hz, duration_s);
 
         Ok(FunctionalDescription {
             ap_params,

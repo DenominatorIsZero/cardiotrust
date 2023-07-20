@@ -9,22 +9,26 @@ use crate::core::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ControlMatrix {
+pub struct CMatrix {
     pub values: Array1<f32>,
 }
 
-impl ControlMatrix {
-    pub fn empty(number_of_states: usize) -> ControlMatrix {
-        ControlMatrix {
+impl CMatrix {
+    #[must_use]
+    pub fn empty(number_of_states: usize) -> Self {
+        Self {
             values: Array1::zeros(number_of_states),
         }
     }
 
-    pub fn from_model_config(
-        _config: &Model,
-        spatial_description: &SpatialDescription,
-    ) -> ControlMatrix {
-        let mut control_matrix = ControlMatrix::empty(spatial_description.voxels.count_states());
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if the `v_number` of the sinoatrial node is None.
+    #[must_use]
+    pub fn from_model_config(_config: &Model, spatial_description: &SpatialDescription) -> Self {
+        let mut control_matrix = Self::empty(spatial_description.voxels.count_states());
         spatial_description
             .voxels
             .types
@@ -41,28 +45,41 @@ impl ControlMatrix {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ControlFunction {
+pub struct CFunction {
     pub values: Array1<f32>,
 }
 
-impl ControlFunction {
-    pub fn empty(number_of_steps: usize) -> ControlFunction {
-        ControlFunction {
+impl CFunction {
+    #[must_use]
+    pub fn empty(number_of_steps: usize) -> Self {
+        Self {
             values: Array1::zeros(number_of_steps),
         }
     }
 
-    pub fn from_model_config(
-        _config: &Model,
-        sample_rate_hz: f32,
-        duration_s: f32,
-    ) -> ControlFunction {
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if the control function input file is missing.
+    #[must_use]
+    pub fn from_model_config(_config: &Model, sample_rate_hz: f32, duration_s: f32) -> Self {
         let sample_rate_hz_in = 2000.0;
         let control_function_raw: Array1<f32> =
             read_npy("assets/control_function_ohara.npy").unwrap();
 
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_precision_loss,
+            clippy::cast_sign_loss
+        )]
         let desired_length_samples = (duration_s * sample_rate_hz) as usize;
 
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_precision_loss,
+            clippy::cast_sign_loss
+        )]
         let control_function_converted = samplerate::convert(
             sample_rate_hz_in as u32,
             sample_rate_hz as u32,
@@ -79,7 +96,7 @@ impl ControlFunction {
             })
             .collect();
 
-        ControlFunction {
+        Self {
             values: Array1::from(control_function_values),
         }
     }
@@ -99,7 +116,7 @@ mod test {
         let config = Model::default();
         let spatial_description = SpatialDescription::from_model_config(&config);
 
-        let control_matrix = ControlMatrix::from_model_config(&config, &spatial_description);
+        let control_matrix = CMatrix::from_model_config(&config, &spatial_description);
         let sum = control_matrix.values.sum();
         assert_relative_eq!(sum, 1.0);
     }
@@ -108,11 +125,15 @@ mod test {
     fn function_from_model_config_no_crash() {
         let sample_rate_hz = 3000.0;
         let duration_s = 1.5;
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_precision_loss,
+            clippy::cast_sign_loss
+        )]
         let expected_length_samples = (sample_rate_hz * duration_s) as usize;
         let config = Model::default();
 
-        let control_function =
-            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
+        let control_function = CFunction::from_model_config(&config, sample_rate_hz, duration_s);
         assert_eq!(expected_length_samples, control_function.values.shape()[0]);
     }
 
@@ -121,11 +142,15 @@ mod test {
     fn function_from_model_config_no_crash_and_plot() {
         let sample_rate_hz = 3000.0;
         let duration_s = 1.5;
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_precision_loss,
+            clippy::cast_sign_loss
+        )]
         let expected_length_samples = (sample_rate_hz * duration_s) as usize;
         let config = Model::default();
 
-        let control_function =
-            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
+        let control_function = CFunction::from_model_config(&config, sample_rate_hz, duration_s);
         assert_eq!(expected_length_samples, control_function.values.shape()[0]);
 
         plotting::time::standard_time_plot(
@@ -134,6 +159,6 @@ mod test {
             "tests/control_function",
             "Control Function",
             "j [A/mm^2]",
-        )
+        );
     }
 }
