@@ -11,7 +11,7 @@ use crate::core::{
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-#[allow(clippy::module_name_repetitions)]
+#[allow(clippy::module_name_repetitions, clippy::unsafe_derive_deserialize)]
 pub struct MeasurementMatrix {
     pub values: Array2<f32>,
 }

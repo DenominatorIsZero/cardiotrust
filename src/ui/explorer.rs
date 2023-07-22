@@ -70,12 +70,12 @@ pub fn draw_ui_explorer(
                 });
             })
             .body(|mut body| {
-                for (index, entry) in scenario_list.entries.iter().enumerate() {
+                for index in 0..scenario_list.entries.len() {
                     draw_row(
                         &mut commands,
                         &mut body,
                         index,
-                        &entry.scenario,
+                        &mut scenario_list,
                         &mut selected_scenario,
                     );
                 }
@@ -112,7 +112,7 @@ fn draw_row(
     commands: &mut Commands,
     body: &mut egui_extras::TableBody,
     index: usize,
-    scenario: &Scenario,
+    scenario_list: &mut ResMut<ScenarioList>,
     selected_scenario: &mut ResMut<SelectedSenario>,
 ) {
     body.row(30.0, |mut row| {
@@ -120,68 +120,89 @@ fn draw_row(
             // Checkbox goes here later
         });
         row.col(|ui| {
-            if ui.button(scenario.get_id()).clicked() {
-                commands.insert_resource(NextState(Some(UiState::Scenario)));
+            if ui
+                .button(scenario_list.entries[index].scenario.get_id())
+                .clicked()
+            {
+                if let Some(current_index) = selected_scenario.index.as_ref() {
+                    if *current_index != index {
+                        scenario_list.entries[*current_index].scenario.data = None;
+                        scenario_list.entries[*current_index].scenario.results = None;
+                    }
+                }
+                scenario_list.entries[index].scenario.load_data();
+                scenario_list.entries[index].scenario.load_results();
                 selected_scenario.index = Some(index);
+                commands.insert_resource(NextState(Some(
+                    match scenario_list.entries[index].scenario.get_status() {
+                        Status::Done => UiState::Results,
+                        _ => UiState::Scenario,
+                    },
+                )));
             };
         });
         row.col(|ui| {
-            if discriminant(scenario.get_status()) == discriminant(&Status::Running(1)) {
-                ui.add(ProgressBar::new(scenario.get_progress()));
+            if discriminant(scenario_list.entries[index].scenario.get_status())
+                == discriminant(&Status::Running(1))
+            {
+                ui.add(
+                    ProgressBar::new(scenario_list.entries[index].scenario.get_progress())
+                        .show_percentage(),
+                );
             } else {
-                ui.label(scenario.get_status_str());
+                ui.label(scenario_list.entries[index].scenario.get_status_str());
             }
         });
         row.col(|ui| {
-            match &scenario.summary {
+            match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(summary.loss.to_string()),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
-            match &scenario.summary {
+            match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(summary.delta_states_mean.to_string()),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
-            match &scenario.summary {
+            match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(summary.delta_states_max.to_string()),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
-            match &scenario.summary {
+            match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(summary.delta_measurements_mean.to_string()),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
-            match &scenario.summary {
+            match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(summary.delta_measurements_max.to_string()),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
-            match &scenario.summary {
+            match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(summary.delta_gains_mean.to_string()),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
-            match &scenario.summary {
+            match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(summary.delta_gains_max.to_string()),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
-            match &scenario.summary {
+            match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(summary.delta_delays_mean.to_string()),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
-            match &scenario.summary {
+            match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(summary.delta_delays_max.to_string()),
                 None => ui.label("-"),
             };

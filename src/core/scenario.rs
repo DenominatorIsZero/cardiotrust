@@ -228,6 +228,29 @@ impl Scenario {
         into_writer(self.results.as_ref().unwrap(), f).unwrap();
         Ok(())
     }
+
+    pub fn load_data(&mut self) {
+        if self.data.is_some() {
+            return;
+        }
+        let file_path = Path::new("./results").join(&self.id).join("data.bin");
+        if file_path.is_file() {
+            self.data = Some(from_reader(File::open(file_path).unwrap()).unwrap());
+        }
+    }
+
+    pub fn load_results(&mut self) {
+        println!("Loading results");
+        if self.results.is_some() {
+            return;
+        }
+        let file_path = Path::new("./results").join(&self.id).join("results.bin");
+        if file_path.is_file() {
+            println!("Found File");
+            self.results = Some(from_reader(File::open(file_path).unwrap()).unwrap());
+        }
+        println!("Loaded results.");
+    }
 }
 
 /// .

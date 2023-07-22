@@ -203,6 +203,7 @@ impl VoxelNumbers {
     }
 }
 
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct VoxelPositions {
     pub values: Array4<f32>,

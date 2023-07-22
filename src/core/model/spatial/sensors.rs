@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::config::model::Model;
 
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Sensors {
     pub positions_mm: Array2<f32>,
