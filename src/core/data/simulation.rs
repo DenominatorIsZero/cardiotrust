@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use ndarray::Dim;
+use serde::{Deserialize, Serialize};
 
 use crate::core::{
     algorithm::estimation::calculate_system_prediction,
@@ -11,7 +12,7 @@ use crate::core::{
 
 use super::shapes::ArraySystemStates;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Simulation {
     pub measurements: ArrayMeasurements,
     pub system_states: ArraySystemStates,

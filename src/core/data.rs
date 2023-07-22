@@ -3,6 +3,7 @@ pub mod shapes;
 pub mod simulation;
 
 use ndarray::Dim;
+use serde::{Deserialize, Serialize};
 
 use self::measurement::Measurement;
 use self::shapes::ArraySystemStates;
@@ -13,7 +14,7 @@ use crate::core::data::shapes::ArrayMeasurements;
 
 use super::model::functional::allpass::shapes::{ArrayDelays, ArrayGains};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Data {
     simulation: Option<Simulation>,
     measurement: Option<Measurement>,

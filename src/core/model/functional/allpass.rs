@@ -5,6 +5,7 @@ use approx::relative_eq;
 use itertools::Itertools;
 use ndarray::{arr1, s, Array1, Array3, Array4, Dim};
 use ndarray_stats::QuantileExt;
+use serde::{Deserialize, Serialize};
 
 use crate::core::{
     config::model::Model,
@@ -21,7 +22,7 @@ mod direction;
 mod gain;
 pub mod shapes;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct APParameters {
     pub gains: ArrayGains<f32>,
     pub output_state_indices: ArrayIndicesGains,
@@ -355,7 +356,7 @@ const fn from_samples_to_usize(samples: f32) -> usize {
 
 #[must_use]
 pub fn from_coef_to_samples(coef: f32) -> f32 {
-    (1.0 - coef) / (coef - 1.0)
+    (1.0 - coef) / (coef + 1.0)
 }
 
 #[cfg(test)]

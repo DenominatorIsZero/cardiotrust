@@ -2,12 +2,13 @@ use approx::relative_eq;
 use ndarray::Array2;
 use ndarray_linalg::Inverse;
 use rand_distr::{Distribution, Normal};
+use serde::{Deserialize, Serialize};
 
 use crate::core::config::model::Model;
 
 use super::measurement::MeasurementMatrix;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Gain {
     pub values: Array2<f32>,
 }

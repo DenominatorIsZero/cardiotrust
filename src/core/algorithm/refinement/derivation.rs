@@ -1,4 +1,5 @@
 use ndarray::{s, Array1};
+use serde::{Deserialize, Serialize};
 
 use crate::core::{
     algorithm::estimation::Estimations,
@@ -16,7 +17,7 @@ use crate::core::data::shapes::ArraySystemStates;
 /// Stuct to calculate and store the derivatives
 /// of the model parameters with regards to the
 /// Loss function.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Derivatives {
     /// Derivatives of the All-pass gains
     pub gains: ArrayGains<f32>,
@@ -177,7 +178,7 @@ impl Derivatives {
 ///
 /// The mapped residuals are calculated as
 /// `H_T` * y
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 struct ArrayMappedResiduals {
     pub values: Array1<f32>,
 }

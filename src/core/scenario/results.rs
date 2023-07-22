@@ -1,7 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use super::algorithm::{
     estimation::Estimations, metrics::Metrics, refinement::derivation::Derivatives,
 };
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Results {
     pub metrics: Metrics,
     pub estimations: Estimations,
@@ -26,5 +28,5 @@ impl Results {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct Snapshot {}

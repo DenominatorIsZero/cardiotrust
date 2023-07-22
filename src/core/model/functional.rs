@@ -7,6 +7,8 @@ use std::error::Error;
 
 use ndarray::Dim;
 
+use serde::{Deserialize, Serialize};
+
 use self::{
     allpass::APParameters,
     control::{ControlFunction, ControlMatrix},
@@ -17,7 +19,7 @@ use self::{
 use super::spatial::SpatialDescription;
 use crate::core::config::model::Model;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
 pub struct FunctionalDescription {
     pub ap_params: APParameters,

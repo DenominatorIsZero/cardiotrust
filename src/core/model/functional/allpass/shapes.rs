@@ -1,8 +1,10 @@
 use approx::assert_relative_eq;
 use ndarray::{Array3, Array4, Array5, Dim};
 use num_traits::Zero;
+use serde::Deserialize;
+use serde::Serialize;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ArrayGains<T>
 where
     T: Clone + Zero + PartialEq,
@@ -22,7 +24,7 @@ where
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ArrayIndicesGains {
     pub values: Array5<Option<usize>>,
 }
@@ -36,7 +38,7 @@ impl ArrayIndicesGains {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ArrayDelays<T>
 where
     T: Clone + Zero + PartialEq,
@@ -58,7 +60,7 @@ where
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ArrayActivationTime {
     pub values: Array3<Option<f32>>,
 }

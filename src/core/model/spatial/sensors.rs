@@ -1,8 +1,9 @@
 use ndarray::{arr1, s, Array2};
+use serde::{Deserialize, Serialize};
 
 use crate::core::config::model::Model;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Sensors {
     pub positions_mm: Array2<f32>,
     pub orientations_xyz: Array2<f32>,

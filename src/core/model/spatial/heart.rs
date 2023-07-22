@@ -1,8 +1,9 @@
 use ndarray::{arr1, Array1};
+use serde::{Deserialize, Serialize};
 
 use crate::core::config::model::Model;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Heart {
     pub origin_mm: Array1<f32>,
     pub size_mm: Array1<f32>,

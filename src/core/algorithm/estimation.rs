@@ -1,6 +1,7 @@
 pub mod shapes;
 
 use ndarray::s;
+use serde::{Deserialize, Serialize};
 
 use crate::core::model::functional::allpass::from_coef_to_samples;
 use crate::core::model::functional::allpass::shapes::ArrayDelays;
@@ -10,7 +11,7 @@ use crate::core::model::{
 };
 
 use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Estimations {
     pub ap_outputs: ArrayGains<f32>,
     pub system_states: ArraySystemStates,

@@ -2,13 +2,14 @@ use ndarray::Array1;
 use ndarray_npy::read_npy;
 
 use samplerate::{self, ConverterType};
+use serde::{Deserialize, Serialize};
 
 use crate::core::{
     config::model::Model,
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
 pub struct ControlMatrix {
     pub values: Array1<f32>,
@@ -45,7 +46,7 @@ impl ControlMatrix {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
 pub struct ControlFunction {
     pub values: Array1<f32>,

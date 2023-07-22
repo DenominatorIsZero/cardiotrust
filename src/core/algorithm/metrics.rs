@@ -1,12 +1,13 @@
 use ndarray::{s, Array1};
-use ndarray_stats::QuantileExt;
+use ndarray_stats::{QuantileExt, SummaryStatisticsExt};
+use serde::{Deserialize, Serialize};
 
 use crate::core::{
     data::shapes::{ArrayMeasurements, ArraySystemStates},
     model::functional::allpass::shapes::{ArrayDelays, ArrayGains},
 };
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Metrics {
     pub loss: ArrayMetricsSample,
     pub loss_epoch: ArrayMetricsEpoch,
@@ -138,7 +139,7 @@ impl Metrics {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ArrayMetricsSample {
     pub values: Array1<f32>,
 }
@@ -152,7 +153,7 @@ impl ArrayMetricsSample {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ArrayMetricsEpoch {
     pub values: Array1<f32>,
 }

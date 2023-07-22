@@ -8,6 +8,7 @@ use std::{fs, fs::File, io::Write};
 
 use chrono;
 
+use ciborium::{from_reader, into_writer};
 use serde::{Deserialize, Serialize};
 use toml;
 
@@ -91,10 +92,10 @@ impl Scenario {
         let mut f = File::create(path.join("scenario.toml"))?;
         f.write_all(toml.as_bytes())?;
         if self.data.is_some() {
-            self.save_data();
+            self.save_data()?;
         }
         if self.results.is_some() {
-            self.save_results();
+            self.save_results()?;
         }
         Ok(())
     }
@@ -212,12 +213,20 @@ impl Scenario {
         }
     }
 
-    fn save_data(&self) {
-        todo!()
+    fn save_data(&self) -> Result<(), std::io::Error> {
+        let path = Path::new("./results").join(&self.id);
+        fs::create_dir_all(&path)?;
+        let f = File::create(path.join("data.bin"))?;
+        into_writer(self.data.as_ref().unwrap(), f).unwrap();
+        Ok(())
     }
 
-    fn save_results(&self) {
-        todo!()
+    fn save_results(&self) -> Result<(), std::io::Error> {
+        let path = Path::new("./results").join(&self.id);
+        fs::create_dir_all(&path)?;
+        let f = File::create(path.join("results.bin"))?;
+        into_writer(self.results.as_ref().unwrap(), f).unwrap();
+        Ok(())
     }
 }
 
@@ -277,8 +286,9 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
     }
     scenario.results = Some(results);
     scenario.data = Some(data);
-    scenario.save().expect("Could not save scenario");
+    scenario.summary = Some(summary);
     scenario.status = Status::Done;
+    scenario.save().expect("Could not save scenario");
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

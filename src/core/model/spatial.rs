@@ -6,7 +6,9 @@ use crate::core::config::model::Model;
 
 use self::{heart::Heart, sensors::Sensors, voxels::Voxels};
 
-#[derive(Debug, PartialEq, Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
 pub struct SpatialDescription {
     pub heart: Heart,
