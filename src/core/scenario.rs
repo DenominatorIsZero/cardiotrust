@@ -229,6 +229,9 @@ impl Scenario {
         Ok(())
     }
 
+    /// # Panics
+    ///
+    /// Panics if the data.bin file can not be parsed into the data struct.
     pub fn load_data(&mut self) {
         if self.data.is_some() {
             return;
@@ -239,6 +242,9 @@ impl Scenario {
         }
     }
 
+    /// # Panics
+    ///
+    /// Panics if the results.bin file can not be parsed into the results struct.
     pub fn load_results(&mut self) {
         println!("Loading results");
         if self.results.is_some() {
