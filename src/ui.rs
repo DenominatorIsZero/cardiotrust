@@ -8,8 +8,11 @@ use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 
 use self::{
-    explorer::draw_ui_explorer, results::draw_ui_results, scenario::draw_ui_scenario,
-    topbar::draw_ui_topbar, vol::draw_ui_volumetric,
+    explorer::draw_ui_explorer,
+    results::{draw_ui_results, ResultImages},
+    scenario::draw_ui_scenario,
+    topbar::draw_ui_topbar,
+    vol::draw_ui_volumetric,
 };
 
 #[allow(clippy::module_name_repetitions)]
@@ -18,6 +21,7 @@ pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<UiState>()
+            .init_resource::<ResultImages>()
             .add_plugin(EguiPlugin)
             .add_system(draw_ui_topbar)
             .add_system(draw_ui_explorer.run_if(in_state(UiState::Explorer)))
