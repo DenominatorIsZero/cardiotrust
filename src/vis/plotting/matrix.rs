@@ -131,6 +131,22 @@ pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &
     save_plot(file_name, &plot, width, height, 1.0);
 }
 
+pub fn plot_activation_time_delta(
+    estimated_activation_times: &ArrayActivationTime,
+    actual_activation_times: &ArrayActivationTime,
+    file_name: &str,
+    title: &str,
+) {
+    let mut delta_activation_times = estimated_activation_times.clone();
+    delta_activation_times
+        .values
+        .iter_mut()
+        .zip(actual_activation_times.values.iter())
+        .for_each(|(delta, actual)| {
+            *delta = Some(delta.unwrap_or_default() - actual.unwrap_or_default())
+        });
+    plot_activation_time(&delta_activation_times, file_name, title);
+}
 /// Plots current densities at given time for x-y plane at z=0
 /// Creates four subplots:
 ///     - in x direction
@@ -613,7 +629,7 @@ pub fn plot_states_max_delta(
     // TODO: reconsider this. Might be not what I want to show..
 
     let mut delta_system_states = estimated_system_states.clone();
-    delta_system_states.values -= &actual_system_states.values;
+    delta_system_states.values = delta_system_states.values - &actual_system_states.values;
 
     plot_states_max(&delta_system_states, voxels, file_name, title);
 }

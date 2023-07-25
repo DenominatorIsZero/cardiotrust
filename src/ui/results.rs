@@ -15,7 +15,9 @@ use std::collections::HashMap;
 
 use crate::{
     core::scenario::{self, results, Scenario},
-    vis::plotting::matrix::{plot_states_max, plot_states_max_delta},
+    vis::plotting::matrix::{
+        plot_activation_time, plot_activation_time_delta, plot_states_max, plot_states_max_delta,
+    },
     ScenarioList, SelectedSenario,
 };
 
@@ -27,15 +29,16 @@ pub struct ImageBundle {
 
 #[derive(EnumIter, Debug, PartialEq, Eq, Hash, Display, Default, Clone, Copy)]
 pub enum ImageType {
-    // Loading
-    #[default]
-    Loading,
     // 2D-Slices
+    #[default]
     StatesMaxAlgorithm,
     StatesMaxSimulation,
     StatesMaxDelta,
-    ActivationTime,
-    VoxelTypes,
+    ActivationTimeAlgorithm,
+    ActivationTimeSimulation,
+    ActivationTimeDelta,
+    VoxelTypesAlgorithm,
+    VoxelTypesSimulation,
     // Losses
     LossEpoch,
     Loss,
@@ -96,15 +99,13 @@ pub fn draw_ui_results(
             .selected_text(selected_image.image_type.to_string())
             .width(300.0)
             .show_ui(ui, |ui| {
-                ImageType::iter()
-                    .filter(|image_type| image_type != &ImageType::Loading)
-                    .for_each(|image_type| {
-                        ui.selectable_value(
-                            &mut selected_image.image_type,
-                            image_type,
-                            image_type.to_string(),
-                        );
-                    });
+                ImageType::iter().for_each(|image_type| {
+                    ui.selectable_value(
+                        &mut selected_image.image_type,
+                        image_type,
+                        image_type.to_string(),
+                    );
+                });
             });
         let image_bundle = result_images
             .image_bundles
@@ -162,52 +163,48 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
     if path.is_file() {
         return;
     }
+    let file_name = path.with_extension("");
     let estimations = &scenario.results.as_ref().unwrap().estimations;
     let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
     let data = scenario.data.as_ref().unwrap();
     match image_type {
-        ImageType::StatesMaxAlgorithm => {
-            plot_states_max(
-                &estimations.system_states,
-                &model.spatial_description.voxels,
-                path.with_extension("").to_str().unwrap(),
-                "Maximum Estimated Current Densities",
-            );
-        }
-        ImageType::StatesMaxSimulation => {
-            plot_states_max(
-                data.get_system_states(),
-                &model.spatial_description.voxels,
-                path.with_extension("").to_str().unwrap(),
-                "Maximum Simulated Current Densities",
-            );
-        }
-        ImageType::StatesMaxDelta => {
-            plot_states_max_delta(
-                &estimations.system_states,
-                data.get_system_states(),
-                &model.spatial_description.voxels,
-                path.with_extension("").to_str().unwrap(),
-                "Maximum Current Densities Delta",
-            );
-        }
+        ImageType::StatesMaxAlgorithm => plot_states_max(
+            &estimations.system_states,
+            &model.spatial_description.voxels,
+            path.with_extension("").to_str().unwrap(),
+            "Maximum Estimated Current Densities",
+        ),
+        ImageType::StatesMaxSimulation => plot_states_max(
+            data.get_system_states(),
+            &model.spatial_description.voxels,
+            path.with_extension("").to_str().unwrap(),
+            "Maximum Simulated Current Densities",
+        ),
+        ImageType::StatesMaxDelta => plot_states_max_delta(
+            &estimations.system_states,
+            data.get_system_states(),
+            &model.spatial_description.voxels,
+            file_name.to_str().unwrap(),
+            "Maximum Current Densities Delta",
+        ),
+        ImageType::ActivationTimeAlgorithm => plot_activation_time(
+            &model.functional_description.ap_params.activation_time_ms,
+            file_name.to_str().unwrap(),
+            "Activation Times Algorithm (Start) [ms]",
+        ),
+        ImageType::ActivationTimeSimulation => plot_activation_time(
+            data.get_activation_time_ms(),
+            file_name.to_str().unwrap(),
+            "Activation Times Simulation [ms]",
+        ),
+        ImageType::ActivationTimeDelta => plot_activation_time_delta(
+            &model.functional_description.ap_params.activation_time_ms,
+            data.get_activation_time_ms(),
+            file_name.to_str().unwrap(),
+            "Activation Times Simulation [ms]",
+        ),
         _ => {
             panic!("Generation of {image_type} not yet imlemented.");
         }
     };
-}
-
-pub fn load_example_image(mut contexts: EguiContexts, mut result_images: ResMut<ResultImages>) {
-    result_images
-        .image_bundles
-        .get_mut(&ImageType::Loading)
-        .unwrap()
-        .texture
-        .get_or_insert_with(|| {
-            contexts.ctx_mut().load_texture(
-                ImageType::Loading.to_string(),
-                egui::ColorImage::example(),
-                TextureOptions::default(),
-            )
-        });
 }

@@ -12,7 +12,7 @@ use self::simulation::Simulation;
 use crate::core::config::simulation::Simulation as SimulationConfig;
 use crate::core::data::shapes::ArrayMeasurements;
 
-use super::model::functional::allpass::shapes::{ArrayDelays, ArrayGains};
+use super::model::functional::allpass::shapes::{ArrayActivationTime, ArrayDelays, ArrayGains};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Data {
@@ -79,8 +79,6 @@ impl Data {
         )
     }
 
-    /// Returns a reference to the get gains of this [`Data`].
-    ///
     /// # Panics
     ///
     /// Panics if simulation is None
@@ -92,8 +90,6 @@ impl Data {
         )
     }
 
-    /// Returns a reference to the get coefs of this [`Data`].
-    ///
     /// # Panics
     ///
     /// Panics if simulation is None
@@ -102,6 +98,23 @@ impl Data {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
             |simulation| &simulation.model.functional_description.ap_params.coefs,
+        )
+    }
+
+    /// # Panics
+    ///
+    /// Panics if simulation is None
+    #[must_use]
+    pub fn get_activation_time_ms(&self) -> &ArrayActivationTime {
+        self.simulation.as_ref().map_or_else(
+            || todo!("Non simulation case not implemented yet."),
+            |simulation| {
+                &simulation
+                    .model
+                    .functional_description
+                    .ap_params
+                    .activation_time_ms
+            },
         )
     }
 
