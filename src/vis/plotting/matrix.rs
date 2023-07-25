@@ -603,6 +603,21 @@ pub fn plot_states_max(
     save_plot(file_name, &plot, width, height, 1.0);
 }
 
+pub fn plot_states_max_delta(
+    estimated_system_states: &ArraySystemStates,
+    actual_system_states: &ArraySystemStates,
+    voxels: &Voxels,
+    file_name: &str,
+    title: &str,
+) {
+    // TODO: reconsider this. Might be not what I want to show..
+
+    let mut delta_system_states = estimated_system_states.clone();
+    delta_system_states.values -= &actual_system_states.values;
+
+    plot_states_max(&delta_system_states, voxels, file_name, title);
+}
+
 pub fn plot_states_over_time(
     system_states: &ArraySystemStates,
     voxels: &Voxels,

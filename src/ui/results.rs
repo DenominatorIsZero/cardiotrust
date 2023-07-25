@@ -14,8 +14,8 @@ use bevy_egui::{egui, EguiContexts};
 use std::collections::HashMap;
 
 use crate::{
-    core::scenario::{self, Scenario},
-    vis::plotting::matrix::plot_states_max,
+    core::scenario::{self, results, Scenario},
+    vis::plotting::matrix::{plot_states_max, plot_states_max_delta},
     ScenarioList, SelectedSenario,
 };
 
@@ -83,7 +83,7 @@ impl Default for ResultImages {
     }
 }
 
-#[allow(clippy::module_name_repetitions)]
+#[allow(clippy::module_name_repetitions, clippy::needless_pass_by_value)]
 pub fn draw_ui_results(
     mut contexts: EguiContexts,
     mut result_images: ResMut<ResultImages>,
@@ -180,6 +180,15 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
                 &model.spatial_description.voxels,
                 path.with_extension("").to_str().unwrap(),
                 "Maximum Simulated Current Densities",
+            );
+        }
+        ImageType::StatesMaxDelta => {
+            plot_states_max_delta(
+                &estimations.system_states,
+                data.get_system_states(),
+                &model.spatial_description.voxels,
+                path.with_extension("").to_str().unwrap(),
+                "Maximum Current Densities Delta",
             );
         }
         _ => {
