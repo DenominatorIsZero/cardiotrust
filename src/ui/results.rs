@@ -1,11 +1,23 @@
-use std::thread::JoinHandle;
+use std::{
+    fs,
+    path::Path,
+    thread::{self, JoinHandle},
+};
 
-use bevy::prelude::Resource;
+use bevy::prelude::*;
+use egui::{Spinner, TextureHandle, TextureOptions, Vec2};
+use image::io::Reader;
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
+use strum_macros::{Display, EnumIter};
 
 use bevy_egui::{egui, EguiContexts};
 use std::collections::HashMap;
+
+use crate::{
+    core::scenario::{self, Scenario},
+    vis::plotting::matrix::plot_states_max,
+    ScenarioList, SelectedSenario,
+};
 
 #[derive(Default)]
 pub struct ImageBundle {
@@ -13,8 +25,11 @@ pub struct ImageBundle {
     pub join_handle: Option<JoinHandle<()>>,
 }
 
-#[derive(EnumIter, Debug, PartialEq, Eq, Hash)]
+#[derive(EnumIter, Debug, PartialEq, Eq, Hash, Display, Default, Clone, Copy)]
 pub enum ImageType {
+    // Loading
+    #[default]
+    Loading,
     // 2D-Slices
     StatesMaxAlgorithm,
     StatesMaxSimulation,
@@ -51,14 +66,17 @@ pub struct ResultImages {
     pub image_bundles: HashMap<ImageType, ImageBundle>,
 }
 
+#[derive(Resource, Default)]
+pub struct SelectedResultImage {
+    pub image_type: ImageType,
+}
+
 impl Default for ResultImages {
     fn default() -> Self {
         let mut image_bundles = HashMap::new();
 
         ImageType::iter().for_each(|image_type| {
-            image_bundles
-                .insert(image_type, ImageBundle::default())
-                .unwrap();
+            image_bundles.insert(image_type, ImageBundle::default());
         });
 
         Self { image_bundles }
@@ -66,8 +84,121 @@ impl Default for ResultImages {
 }
 
 #[allow(clippy::module_name_repetitions)]
-pub fn draw_ui_results(mut contexts: EguiContexts) {
+pub fn draw_ui_results(
+    mut contexts: EguiContexts,
+    mut result_images: ResMut<ResultImages>,
+    mut selected_image: ResMut<SelectedResultImage>,
+    scenario_list: ResMut<ScenarioList>,
+    selected_scenario: ResMut<SelectedSenario>,
+) {
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
-        ui.label("Results");
+        egui::ComboBox::new("cb_result_image", "")
+            .selected_text(selected_image.image_type.to_string())
+            .width(300.0)
+            .show_ui(ui, |ui| {
+                ImageType::iter()
+                    .filter(|image_type| image_type != &ImageType::Loading)
+                    .for_each(|image_type| {
+                        ui.selectable_value(
+                            &mut selected_image.image_type,
+                            image_type,
+                            image_type.to_string(),
+                        );
+                    });
+            });
+        let image_bundle = result_images
+            .image_bundles
+            .get_mut(&selected_image.image_type)
+            .unwrap();
+        if let Some(texture) = image_bundle.texture.as_mut() {
+            let size = texture.size_vec2() / 1.5;
+
+            ui.image(texture, size);
+        } else {
+            let scenario = &scenario_list.entries[selected_scenario.index.unwrap()].scenario;
+            let send_scenario = scenario.clone();
+            let image_type = selected_image.image_type;
+            match image_bundle.join_handle.as_mut() {
+                Some(join_handle) => {
+                    if join_handle.is_finished() {
+                        image_bundle.texture =
+                            Some(load_image(scenario, selected_image.image_type, ui));
+                    } else {
+                    }
+                }
+                None => {
+                    image_bundle.join_handle = Some(thread::spawn(move || {
+                        generate_image(send_scenario, image_type);
+                    }));
+                }
+            }
+            ui.add(Spinner::new().size(480.0));
+        }
     });
+}
+
+fn load_image(scenario: &Scenario, image_type: ImageType, ui: &mut egui::Ui) -> TextureHandle {
+    let path = Path::new("results")
+        .join(scenario.get_id())
+        .join("img")
+        .join(image_type.to_string())
+        .with_extension("png");
+    let img = Reader::open(path).unwrap().decode().unwrap();
+    let size = [img.width() as _, img.height() as _];
+    let image_buffer = img.to_rgba8();
+    let pixels = image_buffer.as_flat_samples();
+    ui.ctx().load_texture(
+        image_type.to_string(),
+        egui::ColorImage::from_rgba_unmultiplied(size, pixels.as_slice()),
+        TextureOptions::default(),
+    )
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn generate_image(scenario: Scenario, image_type: ImageType) {
+    let mut path = Path::new("results").join(scenario.get_id()).join("img");
+    fs::create_dir_all(&path).unwrap();
+    path = path.join(image_type.to_string()).with_extension("png");
+    if path.is_file() {
+        return;
+    }
+    let estimations = &scenario.results.as_ref().unwrap().estimations;
+    let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
+    let data = scenario.data.as_ref().unwrap();
+    match image_type {
+        ImageType::StatesMaxAlgorithm => {
+            plot_states_max(
+                &estimations.system_states,
+                &model.spatial_description.voxels,
+                path.with_extension("").to_str().unwrap(),
+                "Maximum Estimated Current Densities",
+            );
+        }
+        ImageType::StatesMaxSimulation => {
+            plot_states_max(
+                data.get_system_states(),
+                &model.spatial_description.voxels,
+                path.with_extension("").to_str().unwrap(),
+                "Maximum Simulated Current Densities",
+            );
+        }
+        _ => {
+            panic!("Generation of {image_type} not yet imlemented.");
+        }
+    };
+}
+
+pub fn load_example_image(mut contexts: EguiContexts, mut result_images: ResMut<ResultImages>) {
+    result_images
+        .image_bundles
+        .get_mut(&ImageType::Loading)
+        .unwrap()
+        .texture
+        .get_or_insert_with(|| {
+            contexts.ctx_mut().load_texture(
+                ImageType::Loading.to_string(),
+                egui::ColorImage::example(),
+                TextureOptions::default(),
+            )
+        });
 }

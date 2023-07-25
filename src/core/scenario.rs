@@ -313,6 +313,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         epoch_tx.send(epoch_index).unwrap();
         summary_tx.send(summary.clone()).unwrap();
     }
+    results.model = Some(model);
     scenario.results = Some(results);
     scenario.data = Some(data);
     scenario.summary = Some(summary);
