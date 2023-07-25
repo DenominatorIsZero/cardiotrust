@@ -17,6 +17,7 @@ use crate::{
     core::scenario::{self, results, Scenario},
     vis::plotting::matrix::{
         plot_activation_time, plot_activation_time_delta, plot_states_max, plot_states_max_delta,
+        plot_voxel_types,
     },
     ScenarioList, SelectedSenario,
 };
@@ -202,6 +203,16 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             data.get_activation_time_ms(),
             file_name.to_str().unwrap(),
             "Activation Times Simulation [ms]",
+        ),
+        ImageType::VoxelTypesAlgorithm => plot_voxel_types(
+            &model.spatial_description.voxels.types.values,
+            file_name.to_str().unwrap(),
+            "Voxel Types Algorithm",
+        ),
+        ImageType::VoxelTypesSimulation => plot_voxel_types(
+            data.get_voxel_types(),
+            file_name.to_str().unwrap(),
+            "Voxel Types Simulation",
         ),
         _ => {
             panic!("Generation of {image_type} not yet imlemented.");

@@ -2,7 +2,7 @@ pub mod measurement;
 pub mod shapes;
 pub mod simulation;
 
-use ndarray::Dim;
+use ndarray::{Array3, Dim};
 use serde::{Deserialize, Serialize};
 
 use self::measurement::Measurement;
@@ -12,7 +12,10 @@ use self::simulation::Simulation;
 use crate::core::config::simulation::Simulation as SimulationConfig;
 use crate::core::data::shapes::ArrayMeasurements;
 
-use super::model::functional::allpass::shapes::{ArrayActivationTime, ArrayDelays, ArrayGains};
+use super::model::{
+    functional::allpass::shapes::{ArrayActivationTime, ArrayDelays, ArrayGains},
+    spatial::voxels::VoxelType,
+};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Data {
@@ -98,6 +101,17 @@ impl Data {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
             |simulation| &simulation.model.functional_description.ap_params.coefs,
+        )
+    }
+
+    /// # Panics
+    ///
+    /// Panics if simulation is None
+    #[must_use]
+    pub fn get_voxel_types(&self) -> &Array3<VoxelType> {
+        self.simulation.as_ref().map_or_else(
+            || todo!("Non simulation case not implemented yet."),
+            |simulation| &simulation.model.spatial_description.voxels.types.values,
         )
     }
 
