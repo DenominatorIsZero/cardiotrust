@@ -121,6 +121,11 @@ impl Scenario {
         &mut self.config
     }
 
+    #[must_use]
+    pub fn get_config(&self) -> &Config {
+        &self.config
+    }
+
     ///
     /// # Errors
     ///

@@ -13,7 +13,10 @@ use crate::core::config::simulation::Simulation as SimulationConfig;
 use crate::core::data::shapes::ArrayMeasurements;
 
 use super::model::{
-    functional::allpass::shapes::{ArrayActivationTime, ArrayDelays, ArrayGains},
+    functional::{
+        allpass::shapes::{ArrayActivationTime, ArrayDelays, ArrayGains},
+        control::ControlFunction,
+    },
     spatial::voxels::VoxelType,
 };
 
@@ -69,8 +72,6 @@ impl Data {
         )
     }
 
-    /// Returns a reference to the get system states of this [`Data`].
-    ///
     /// # Panics
     ///
     /// Panics if simulation is None
@@ -79,6 +80,22 @@ impl Data {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
             |simulation| &simulation.system_states,
+        )
+    }
+
+    /// # Panics
+    ///
+    /// Panics if simulation is None
+    #[must_use]
+    pub fn get_control_function_values(&self) -> &ControlFunction {
+        self.simulation.as_ref().map_or_else(
+            || todo!("Non simulation case not implemented yet."),
+            |simulation| {
+                &simulation
+                    .model
+                    .functional_description
+                    .control_function_values
+            },
         )
     }
 
