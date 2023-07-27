@@ -5,7 +5,7 @@ use std::{
 };
 
 use bevy::prelude::*;
-use egui::{Spinner, TextureHandle, TextureOptions, Vec2};
+use egui::{Slider, Spinner, TextureHandle, TextureOptions, Vec2};
 use image::io::Reader;
 use ndarray::s;
 use strum::IntoEnumIterator;
@@ -22,7 +22,7 @@ use crate::{
     vis::plotting::{
         matrix::{
             plot_activation_time, plot_activation_time_delta, plot_states_max,
-            plot_states_max_delta, plot_voxel_types,
+            plot_states_max_delta, plot_states_over_time, plot_voxel_types,
         },
         time::{standard_time_plot, standard_y_plot},
     },
@@ -78,6 +78,12 @@ pub enum ImageType {
     MeasurementDelta,
 }
 
+#[derive(EnumIter, Debug, PartialEq, Eq, Hash, Display, Clone, Copy)]
+pub enum GifType {
+    StatesAlgorithm,
+    StatesSimulation,
+}
+
 #[derive(Resource)]
 pub struct ResultImages {
     pub image_bundles: HashMap<ImageType, ImageBundle>,
@@ -86,6 +92,11 @@ pub struct ResultImages {
 #[derive(Resource, Default)]
 pub struct SelectedResultImage {
     pub image_type: ImageType,
+}
+
+#[derive(Resource, Default)]
+pub struct PlaybackSpeed {
+    pub value: f32,
 }
 
 impl Default for ResultImages {
@@ -105,22 +116,52 @@ pub fn draw_ui_results(
     mut contexts: EguiContexts,
     mut result_images: ResMut<ResultImages>,
     mut selected_image: ResMut<SelectedResultImage>,
-    scenario_list: ResMut<ScenarioList>,
-    selected_scenario: ResMut<SelectedSenario>,
+    scenario_list: Res<ScenarioList>,
+    selected_scenario: Res<SelectedSenario>,
+    mut playback_speed: ResMut<PlaybackSpeed>,
 ) {
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
-        egui::ComboBox::new("cb_result_image", "")
-            .selected_text(selected_image.image_type.to_string())
-            .width(300.0)
-            .show_ui(ui, |ui| {
-                ImageType::iter().for_each(|image_type| {
-                    ui.selectable_value(
-                        &mut selected_image.image_type,
-                        image_type,
-                        image_type.to_string(),
+        ui.horizontal(|ui| {
+            egui::ComboBox::new("cb_result_image", "")
+                .selected_text(selected_image.image_type.to_string())
+                .width(300.0)
+                .show_ui(ui, |ui| {
+                    ImageType::iter().for_each(|image_type| {
+                        ui.selectable_value(
+                            &mut selected_image.image_type,
+                            image_type,
+                            image_type.to_string(),
+                        );
+                    });
+                });
+            ui.add(Slider::new(&mut playback_speed.value, 0.001..=0.1));
+            if ui
+                .add(egui::Button::new("Generate Algorithm Gif"))
+                .clicked()
+            {
+                let scenario = &scenario_list.entries[selected_scenario.index.unwrap()].scenario;
+                let send_scenario = scenario.clone();
+                let send_playback_speed = playback_speed.value;
+                thread::spawn(move || {
+                    generate_gifs(send_scenario, GifType::StatesAlgorithm, send_playback_speed);
+                });
+            };
+            if ui
+                .add(egui::Button::new("Generate Simulation Gif"))
+                .clicked()
+            {
+                let scenario = &scenario_list.entries[selected_scenario.index.unwrap()].scenario;
+                let send_scenario = scenario.clone();
+                let send_playback_speed = playback_speed.value;
+                thread::spawn(move || {
+                    generate_gifs(
+                        send_scenario,
+                        GifType::StatesSimulation,
+                        send_playback_speed,
                     );
                 });
-            });
+            };
+        });
         let image_bundle = result_images
             .image_bundles
             .get_mut(&selected_image.image_type)
@@ -469,4 +510,40 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             panic!("Generation of {image_type} not yet imlemented.");
         }
     };
+}
+
+#[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
+fn generate_gifs(scenario: Scenario, gif_type: GifType, playback_speed: f32) {
+    let mut path = Path::new("results").join(scenario.get_id()).join("img");
+    fs::create_dir_all(&path).unwrap();
+    path = path.join(gif_type.to_string()).with_extension("png");
+    if path.is_file() {
+        return;
+    }
+    let file_name = path.with_extension("");
+    let estimations = &scenario.results.as_ref().unwrap().estimations;
+    let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
+    let data = scenario.data.as_ref().unwrap();
+    let metrics = &scenario.results.as_ref().unwrap().metrics;
+    match gif_type {
+        GifType::StatesAlgorithm => plot_states_over_time(
+            &estimations.system_states,
+            &model.spatial_description.voxels,
+            20,
+            playback_speed,
+            file_name.to_str().unwrap(),
+            "Estimated Current Densities",
+        ),
+        GifType::StatesSimulation => plot_states_over_time(
+            data.get_system_states(),
+            &model.spatial_description.voxels,
+            20,
+            playback_speed,
+            file_name.to_str().unwrap(),
+            "Estimated Current Densities",
+        ),
+        _ => {
+            panic!("Generation of {gif_type} not yet imlemented.");
+        }
+    }
 }

@@ -9,7 +9,7 @@ use bevy_egui::EguiPlugin;
 
 use self::{
     explorer::draw_ui_explorer,
-    results::{draw_ui_results, ResultImages, SelectedResultImage},
+    results::{draw_ui_results, PlaybackSpeed, ResultImages, SelectedResultImage},
     scenario::draw_ui_scenario,
     topbar::draw_ui_topbar,
     vol::draw_ui_volumetric,
@@ -23,6 +23,7 @@ impl Plugin for UiPlugin {
         app.add_state::<UiState>()
             .init_resource::<ResultImages>()
             .init_resource::<SelectedResultImage>()
+            .init_resource::<PlaybackSpeed>()
             .add_plugin(EguiPlugin)
             .add_system(draw_ui_topbar)
             .add_system(draw_ui_explorer.run_if(in_state(UiState::Explorer)))
