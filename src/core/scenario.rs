@@ -122,7 +122,7 @@ impl Scenario {
     }
 
     #[must_use]
-    pub fn get_config(&self) -> &Config {
+    pub const fn get_config(&self) -> &Config {
         &self.config
     }
 

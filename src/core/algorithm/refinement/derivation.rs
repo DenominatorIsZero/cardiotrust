@@ -17,6 +17,7 @@ use crate::core::data::shapes::ArraySystemStates;
 /// Stuct to calculate and store the derivatives
 /// of the model parameters with regards to the
 /// Loss function.
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Derivatives {
     /// Derivatives of the All-pass gains

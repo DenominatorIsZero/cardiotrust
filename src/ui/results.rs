@@ -5,7 +5,7 @@ use std::{
 };
 
 use bevy::prelude::*;
-use egui::{Slider, Spinner, TextureHandle, TextureOptions, Vec2};
+use egui::{Slider, Spinner, TextureHandle, TextureOptions};
 use image::io::Reader;
 use ndarray::s;
 use strum::IntoEnumIterator;
@@ -15,10 +15,7 @@ use bevy_egui::{egui, EguiContexts};
 use std::collections::HashMap;
 
 use crate::{
-    core::{
-        algorithm::metrics,
-        scenario::{self, results, Scenario},
-    },
+    core::scenario::Scenario,
     vis::plotting::{
         matrix::{
             plot_activation_time, plot_activation_time_delta, plot_states_max,
@@ -506,9 +503,6 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             "Measurement 0 Delta",
             "z [pT]",
         ),
-        _ => {
-            panic!("Generation of {image_type} not yet imlemented.");
-        }
     };
 }
 
@@ -524,7 +518,6 @@ fn generate_gifs(scenario: Scenario, gif_type: GifType, playback_speed: f32) {
     let estimations = &scenario.results.as_ref().unwrap().estimations;
     let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
     let data = scenario.data.as_ref().unwrap();
-    let metrics = &scenario.results.as_ref().unwrap().metrics;
     match gif_type {
         GifType::StatesAlgorithm => plot_states_over_time(
             &estimations.system_states,
@@ -542,8 +535,5 @@ fn generate_gifs(scenario: Scenario, gif_type: GifType, playback_speed: f32) {
             file_name.to_str().unwrap(),
             "Estimated Current Densities",
         ),
-        _ => {
-            panic!("Generation of {gif_type} not yet imlemented.");
-        }
     }
 }

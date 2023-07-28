@@ -1,5 +1,5 @@
 use ndarray::{s, Array1};
-use ndarray_stats::{QuantileExt, SummaryStatisticsExt};
+use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
@@ -7,6 +7,7 @@ use crate::core::{
     model::functional::allpass::shapes::{ArrayDelays, ArrayGains},
 };
 
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Metrics {
     pub loss: ArrayMetricsSample,
