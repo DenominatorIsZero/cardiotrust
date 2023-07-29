@@ -7,6 +7,7 @@ pub struct Algorithm {
     pub snapshots_interval: usize,
     pub learning_rate: f32,
     pub model: Model,
+    pub constrain_current_density: bool,
 }
 impl Default for Algorithm {
     #[must_use]
@@ -16,6 +17,7 @@ impl Default for Algorithm {
             snapshots_interval: 0,
             learning_rate: 1e-3,
             model: Model::default(),
+            constrain_current_density: true,
         }
     }
 }

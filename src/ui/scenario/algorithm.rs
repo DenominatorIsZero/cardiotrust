@@ -142,6 +142,22 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 );
                             });
                         });
+                        // Apply system update
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Constrain\ncurrent density");
+                            });
+                            row.col(|ui| {
+                                ui.checkbox(&mut algorithm.model.apply_system_update, "");
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "Wether or not to constrain the current\
+                                    density to a maximum value. Doing so\
+                                    prevents fast divergence of the system.",
+                                );
+                            });
+                        });
                         draw_ui_scenario_common(&mut body, &mut algorithm.model);
                     });
             });
