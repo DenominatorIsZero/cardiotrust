@@ -6,6 +6,7 @@ pub struct Algorithm {
     pub epochs: usize,
     pub snapshots_interval: usize,
     pub learning_rate: f32,
+    pub regularization_strength: f32,
     pub model: Model,
     pub constrain_current_density: bool,
 }
@@ -16,6 +17,7 @@ impl Default for Algorithm {
             epochs: 1,
             snapshots_interval: 0,
             learning_rate: 1e-3,
+            regularization_strength: 0.0,
             model: Model::default(),
             constrain_current_density: true,
         }

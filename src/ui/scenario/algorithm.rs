@@ -81,6 +81,25 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 );
                             });
                         });
+                        // Regularization Strength
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Regularization strength");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut algorithm.regularization_strength,
+                                    0.0..=1.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The weighting of the regularization term.\
+                                    The rest of the mse loss get's multiplied by one\
+                                    minus this term.",
+                                );
+                            });
+                        });
                         // Process covariance mean
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
