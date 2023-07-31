@@ -4,7 +4,9 @@ use self::estimation::{
 };
 
 use super::{
-    config::algorithm::Algorithm, data::Data, model::functional::FunctionalDescription,
+    config::algorithm::Algorithm,
+    data::{shapes::ArraySystemStates, Data},
+    model::functional::FunctionalDescription,
     scenario::results::Results,
 };
 
@@ -50,6 +52,9 @@ pub fn run_epoch(
                 time_index,
             );
         }
+        if config.constrain_system_states {
+            constrain_system_states(&mut results.estimations.system_states);
+        }
         calculate_system_states_delta(
             &mut results.estimations.system_states_delta,
             &results.estimations.system_states,
@@ -81,6 +86,12 @@ pub fn run_epoch(
         .ap_params
         .update(&results.derivatives, config.learning_rate);
     results.metrics.calculate_epoch(epoch_index);
+}
+
+fn constrain_system_states(system_states: &mut ArraySystemStates) {
+    system_states.values.iter_mut().for_each(|v| {
+        *v = v.clamp(-2.0, 2.0);
+    });
 }
 
 #[allow(dead_code)]

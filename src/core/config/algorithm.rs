@@ -6,9 +6,11 @@ pub struct Algorithm {
     pub epochs: usize,
     pub snapshots_interval: usize,
     pub learning_rate: f32,
+    #[serde(default)]
     pub regularization_strength: f32,
     pub model: Model,
-    pub constrain_current_density: bool,
+    #[serde(default)]
+    pub constrain_system_states: bool,
 }
 impl Default for Algorithm {
     #[must_use]
@@ -19,7 +21,7 @@ impl Default for Algorithm {
             learning_rate: 1e-3,
             regularization_strength: 0.0,
             model: Model::default(),
-            constrain_current_density: true,
+            constrain_system_states: true,
         }
     }
 }

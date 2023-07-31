@@ -84,7 +84,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                         // Regularization Strength
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
-                                ui.label("Regularization strength");
+                                ui.label("Regularization\nstrength");
                             });
                             row.col(|ui| {
                                 ui.add(egui::Slider::new(
