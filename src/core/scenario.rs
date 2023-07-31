@@ -297,8 +297,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
             &mut model.functional_description,
             &mut results,
             &data,
-            scenario.config.algorithm.learning_rate,
-            scenario.config.algorithm.model.apply_system_update,
+            &scenario.config.algorithm,
             epoch_index,
         );
         scenario.status = Status::Running(epoch_index);

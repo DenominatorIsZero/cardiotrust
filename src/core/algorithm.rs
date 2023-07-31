@@ -20,8 +20,7 @@ pub fn run_epoch(
     functional_description: &mut FunctionalDescription,
     results: &mut Results,
     data: &Data,
-    learning_rate: f32,
-    apply_system_update: bool,
+    config: &Algorithm,
     epoch_index: usize,
 ) {
     results.estimations.reset();
@@ -43,7 +42,7 @@ pub fn run_epoch(
         results
             .derivatives
             .calculate(functional_description, &results.estimations, time_index);
-        if apply_system_update {
+        if config.model.apply_system_update {
             calculate_system_update(
                 &mut results.estimations.system_states,
                 &results.estimations.residuals,
@@ -80,7 +79,7 @@ pub fn run_epoch(
     }
     functional_description
         .ap_params
-        .update(&results.derivatives, learning_rate);
+        .update(&results.derivatives, config.learning_rate);
     results.metrics.calculate_epoch(epoch_index);
 }
 
@@ -89,15 +88,14 @@ fn run(
     functional_description: &mut FunctionalDescription,
     results: &mut Results,
     data: &Data,
-    config: &Algorithm,
+    algorithm_config: &Algorithm,
 ) {
-    for epoch_index in 0..config.epochs {
+    for epoch_index in 0..algorithm_config.epochs {
         run_epoch(
             functional_description,
             results,
             data,
-            config.learning_rate,
-            config.model.apply_system_update,
+            algorithm_config,
             epoch_index,
         );
     }
@@ -108,6 +106,7 @@ mod test {
 
     use ndarray::Dim;
 
+    use crate::core::config::algorithm::Algorithm as AlgorithmConfig;
     use crate::core::config::simulation::Simulation as SimulationConfig;
     use crate::core::model::Model;
 
@@ -122,8 +121,7 @@ mod test {
         let number_of_sensors = 300;
         let number_of_steps = 3;
         let number_of_epochs = 10;
-        let learning_rate = 1e3;
-        let apply_system_update = true;
+        let config = AlgorithmConfig::default();
         let epoch_index = 3;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
@@ -150,8 +148,7 @@ mod test {
             &mut functional_description,
             &mut results,
             &data,
-            learning_rate,
-            apply_system_update,
+            &config,
             epoch_index,
         );
     }
@@ -163,7 +160,7 @@ mod test {
         let number_of_steps = 3;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let config = Algorithm {
+        let algorithm_config = AlgorithmConfig {
             epochs: 3,
             ..Default::default()
         };
@@ -174,7 +171,7 @@ mod test {
             voxels_in_dims,
         );
         let mut results = Results::new(
-            config.epochs,
+            algorithm_config.epochs,
             number_of_steps,
             number_of_sensors,
             number_of_states,
@@ -186,7 +183,12 @@ mod test {
             voxels_in_dims,
         );
 
-        run(&mut functional_description, &mut results, &data, &config);
+        run(
+            &mut functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
     }
 
     #[test]
