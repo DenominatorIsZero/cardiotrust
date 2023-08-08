@@ -41,9 +41,15 @@ pub fn run_epoch(
             data.get_measurements(),
             time_index,
         );
-        results
-            .derivatives
-            .calculate(functional_description, &results.estimations, time_index);
+        if config.constrain_system_states {
+            constrain_system_states(&mut results.estimations.system_states);
+        }
+        results.derivatives.calculate(
+            functional_description,
+            &results.estimations,
+            config.regularization_strength,
+            time_index,
+        );
         if config.model.apply_system_update {
             calculate_system_update(
                 &mut results.estimations.system_states,
@@ -51,9 +57,6 @@ pub fn run_epoch(
                 &functional_description.kalman_gain,
                 time_index,
             );
-        }
-        if config.constrain_system_states {
-            constrain_system_states(&mut results.estimations.system_states);
         }
         calculate_system_states_delta(
             &mut results.estimations.system_states_delta,
@@ -74,10 +77,9 @@ pub fn run_epoch(
             data.get_coefs(),
         );
         results.metrics.calculate_step(
-            &results.estimations.residuals,
-            &results.estimations.system_states_delta,
-            &results.estimations.gains_delta,
-            &results.estimations.delays_delta,
+            &results.estimations,
+            &results.derivatives,
+            config.regularization_strength,
             time_index,
             epoch_index,
         );
@@ -316,7 +318,8 @@ mod test {
 
         (0..algorithm_config.epochs - 1).for_each(|i| {
             assert!(
-                results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
+                results.metrics.loss_mse_epoch.values[i]
+                    > results.metrics.loss_mse_epoch.values[i + 1]
             );
         });
     }
@@ -358,7 +361,8 @@ mod test {
 
         (0..algorithm_config.epochs - 1).for_each(|i| {
             assert!(
-                results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
+                results.metrics.loss_mse_epoch.values[i]
+                    > results.metrics.loss_mse_epoch.values[i + 1]
             );
         });
     }
@@ -435,7 +439,8 @@ mod test {
 
         (0..algorithm_config.epochs - 1).for_each(|i| {
             assert!(
-                results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
+                results.metrics.loss_mse_epoch.values[i]
+                    > results.metrics.loss_mse_epoch.values[i + 1]
             );
         });
     }

@@ -1,4 +1,5 @@
 use ndarray::{s, Array1};
+use ndarray_linalg::Scalar;
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
@@ -34,6 +35,7 @@ pub struct Derivatives {
     /// the measurement matrix.
     /// Stored internally to avoid redundant computation
     mapped_residuals: ArrayMappedResiduals,
+    pub maximum_regularization: ArrayMaximumRegularization,
 }
 
 impl Derivatives {
@@ -45,6 +47,7 @@ impl Derivatives {
             coefs_iir: ArrayGains::empty(number_of_states),
             coefs_fir: ArrayGains::empty(number_of_states),
             mapped_residuals: ArrayMappedResiduals::new(number_of_states),
+            maximum_regularization: ArrayMaximumRegularization::new(number_of_states),
         }
     }
 
@@ -57,6 +60,7 @@ impl Derivatives {
         self.coefs_iir.values.fill(0.0);
         self.coefs_fir.values.fill(0.0);
         self.mapped_residuals.values.fill(0.0);
+        self.maximum_regularization.values.fill(0.0);
     }
 
     /// Calculates the derivatives for the given time index.
@@ -67,6 +71,7 @@ impl Derivatives {
         &mut self,
         functional_description: &FunctionalDescription,
         estimations: &Estimations,
+        regularization_strength: f32,
         time_index: usize,
     ) {
         self.mapped_residuals.values = functional_description
@@ -74,15 +79,18 @@ impl Derivatives {
             .values
             .t()
             .dot(&estimations.residuals.values.slice(s![0, ..]));
+        self.calculate_maximum_regularization(&estimations.system_states, time_index);
         self.calculate_derivatives_gains(
             &estimations.ap_outputs,
             &functional_description.ap_params.output_state_indices,
+            regularization_strength,
         );
         self.calculate_derivatives_coefs(
             &estimations.ap_outputs,
             &estimations.system_states,
             &functional_description.ap_params,
             time_index,
+            regularization_strength,
         );
     }
 
@@ -93,7 +101,9 @@ impl Derivatives {
         ap_outputs: &ArrayGains<f32>,
         // This needed for indexing
         output_state_indices: &ArrayIndicesGains,
+        regularization_strength: f32,
     ) {
+        let scaling = 1.0 - regularization_strength;
         self.gains
             .values
             .iter_mut()
@@ -101,8 +111,12 @@ impl Derivatives {
             .zip(output_state_indices.values.iter())
             .filter(|(_, index_output_state)| index_output_state.is_some())
             .for_each(|((derivative, ap_output), index_output_state)| {
-                *derivative +=
-                    ap_output * self.mapped_residuals.values[index_output_state.unwrap()];
+                *derivative += ap_output
+                    * self.mapped_residuals.values[index_output_state.unwrap()].mul_add(
+                        scaling,
+                        self.maximum_regularization.values[index_output_state.unwrap()]
+                            * regularization_strength,
+                    );
             });
     }
 
@@ -114,6 +128,7 @@ impl Derivatives {
         estimated_system_states: &ArraySystemStates,
         ap_params: &APParameters,
         time_index: usize,
+        regularization_strength: f32,
     ) {
         self.coefs_fir
             .values
@@ -148,6 +163,7 @@ impl Derivatives {
                         ap_params.coefs.values[coef_index].mul_add(*derivative, *ap_output);
                 },
             );
+        let scaling = 1.0 - regularization_strength;
         self.coefs_iir
             .values
             .indexed_iter()
@@ -163,9 +179,38 @@ impl Derivatives {
                     let coef_index = (state_index / 3, x_offset, y_offset, z_offset);
                     self.coefs.values[coef_index] += (fir + iir)
                         * ap_gain
-                        * self.mapped_residuals.values[output_state_index.unwrap()];
+                        * self.mapped_residuals.values[output_state_index.unwrap()].mul_add(
+                            scaling,
+                            self.maximum_regularization.values[output_state_index.unwrap()]
+                                * regularization_strength,
+                        );
                 },
             );
+    }
+
+    fn calculate_maximum_regularization(
+        &mut self,
+        system_states: &ArraySystemStates,
+        time_index: usize,
+    ) {
+        for state_index in (0..system_states.values.raw_dim()[1]).step_by(3) {
+            if (system_states.values[[time_index, state_index]].abs()
+                + system_states.values[[time_index, state_index + 1]].abs()
+                + system_states.values[[time_index, state_index + 2]].abs())
+                > 1.0
+            {
+                self.maximum_regularization.values[state_index] =
+                    system_states.values[[time_index, state_index]];
+                self.maximum_regularization.values[state_index + 1] =
+                    system_states.values[[time_index, state_index + 1]];
+                self.maximum_regularization.values[state_index + 2] =
+                    system_states.values[[time_index, state_index + 2]];
+            } else {
+                self.maximum_regularization.values[state_index] = 0.0;
+                self.maximum_regularization.values[state_index + 1] = 0.0;
+                self.maximum_regularization.values[state_index + 2] = 0.0;
+            }
+        }
     }
 }
 
@@ -193,6 +238,35 @@ impl ArrayMappedResiduals {
     }
 }
 
+/// Shape for the maximum system states regularization.
+///
+/// Has dimensions (`number_of_states`)
+///
+/// The maximum current density in a single voxel should not exceed one.
+/// For this we have to add up all three absoutle values of
+/// components in each voxel.
+/// If this sum is greater than one, the system state get's copied into
+/// this array. Otherwise the component get's set to zero.
+///
+/// You can think about it like a kind of relu activation.
+/// Only if all three components added up are greater than one,
+/// do we want to dercease the components, otherwise the
+/// magnitude should not influence the loss and therefore
+/// the derivatives.
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct ArrayMaximumRegularization {
+    pub values: Array1<f32>,
+}
+
+impl ArrayMaximumRegularization {
+    #[must_use]
+    pub fn new(number_of_states: usize) -> Self {
+        Self {
+            values: Array1::zeros(number_of_states),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use ndarray::Dim;
@@ -203,6 +277,7 @@ mod tests {
     #[test]
     fn gains_success() {
         let number_of_states = 3;
+        let regularization_strength = 0.0;
         let mut ap_outputs = ArrayGains::empty(number_of_states);
         ap_outputs.values.fill(1.0);
         ap_outputs.values[(0, 0, 0, 0, 0)] = 2.0;
@@ -237,7 +312,11 @@ mod tests {
         let mut derivatives = Derivatives::new(number_of_states);
 
         derivatives.mapped_residuals = mapped_residuals;
-        derivatives.calculate_derivatives_gains(&ap_outputs, &output_state_indices);
+        derivatives.calculate_derivatives_gains(
+            &ap_outputs,
+            &output_state_indices,
+            regularization_strength,
+        );
 
         assert!(
             derivatives_gains_exp
@@ -254,6 +333,7 @@ mod tests {
     fn coef_no_crash() {
         let number_of_steps = 2000;
         let number_of_states = 3000;
+        let regularization_strength = 0.0;
         let ap_outputs = ArrayGains::empty(number_of_states);
         let estimated_system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
         let ap_params = APParameters::empty(number_of_states, Dim([1000, 1, 1]));
@@ -270,6 +350,7 @@ mod tests {
             &estimated_system_states,
             &ap_params,
             time_index,
+            regularization_strength,
         );
     }
 
@@ -279,6 +360,7 @@ mod tests {
         let number_of_sensors = 300;
         let number_of_steps = 2000;
         let time_index = 333;
+        let regularization_strength = 0.0;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
         let mut derivates = Derivatives::new(number_of_states);
@@ -290,6 +372,11 @@ mod tests {
         );
         let estimations = Estimations::new(number_of_states, number_of_sensors, number_of_steps);
 
-        derivates.calculate(&functional_description, &estimations, time_index);
+        derivates.calculate(
+            &functional_description,
+            &estimations,
+            regularization_strength,
+            time_index,
+        );
     }
 }

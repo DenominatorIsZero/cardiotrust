@@ -303,6 +303,9 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         scenario.status = Status::Running(epoch_index);
 
         summary.loss = results.metrics.loss_epoch.values[epoch_index];
+        summary.loss_mse = results.metrics.loss_mse_epoch.values[epoch_index];
+        summary.loss_maximum_regularization =
+            results.metrics.loss_maximum_regularization_epoch.values[epoch_index];
         summary.delta_states_mean = results.metrics.delta_states_mean_epoch.values[epoch_index];
         summary.delta_states_max = results.metrics.delta_states_max_epoch.values[epoch_index];
         summary.delta_measurements_mean =

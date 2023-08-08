@@ -30,6 +30,8 @@ pub fn draw_ui_explorer(
             .column(Column::auto().resizable(true))
             .column(Column::auto().resizable(true))
             .column(Column::auto().resizable(true))
+            .column(Column::auto().resizable(true))
+            .column(Column::auto().resizable(true))
             .column(Column::remainder())
             .header(20.0, |mut header| {
                 header.col(|ui| {
@@ -43,6 +45,12 @@ pub fn draw_ui_explorer(
                 });
                 header.col(|ui| {
                     ui.heading("Loss");
+                });
+                header.col(|ui| {
+                    ui.heading("MSE Loss");
+                });
+                header.col(|ui| {
+                    ui.heading("M. R. Loss");
                 });
                 header.col(|ui| {
                     ui.heading("Delta\nStates\nMean");
@@ -156,6 +164,18 @@ fn draw_row(
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(summary.loss.to_string()),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario_list.entries[index].scenario.summary {
+                Some(summary) => ui.label(summary.loss_mse.to_string()),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario_list.entries[index].scenario.summary {
+                Some(summary) => ui.label(summary.loss_maximum_regularization.to_string()),
                 None => ui.label("-"),
             };
         });

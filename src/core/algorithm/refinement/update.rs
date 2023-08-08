@@ -11,12 +11,12 @@ impl APParameters {
     /// Derivatives must be reset before the next update.
     pub fn update(&mut self, derivatives: &Derivatives, learning_rate: f32) {
         update_gains(&mut self.gains, &derivatives.gains, learning_rate);
-        update_delays(
-            &mut self.coefs,
-            &mut self.delays,
-            &derivatives.coefs,
-            learning_rate,
-        );
+        // update_delays(
+        //     &mut self.coefs,
+        //     &mut self.delays,
+        //     &derivatives.coefs,
+        //     learning_rate,
+        // );
     }
 }
 

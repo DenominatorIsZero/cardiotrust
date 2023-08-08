@@ -5,6 +5,12 @@ use serde::{Deserialize, Serialize};
 use crate::core::{
     data::shapes::{ArrayMeasurements, ArraySystemStates},
     model::functional::allpass::shapes::{ArrayDelays, ArrayGains},
+    scenario::results::Results,
+};
+
+use super::{
+    estimation::Estimations,
+    refinement::derivation::{ArrayMaximumRegularization, Derivatives},
 };
 
 #[allow(clippy::unsafe_derive_deserialize)]
@@ -12,6 +18,11 @@ use crate::core::{
 pub struct Metrics {
     pub loss: ArrayMetricsSample,
     pub loss_epoch: ArrayMetricsEpoch,
+
+    pub loss_mse: ArrayMetricsSample,
+    pub loss_mse_epoch: ArrayMetricsEpoch,
+    pub loss_maximum_regularization: ArrayMetricsSample,
+    pub loss_maximum_regularization_epoch: ArrayMetricsEpoch,
 
     pub delta_states_mean: ArrayMetricsSample,
     pub delta_states_mean_epoch: ArrayMetricsEpoch,
@@ -40,6 +51,11 @@ impl Metrics {
         Self {
             loss: ArrayMetricsSample::new(number_of_epochs, number_of_steps),
             loss_epoch: ArrayMetricsEpoch::new(number_of_epochs),
+
+            loss_mse: ArrayMetricsSample::new(number_of_epochs, number_of_steps),
+            loss_mse_epoch: ArrayMetricsEpoch::new(number_of_epochs),
+            loss_maximum_regularization: ArrayMetricsSample::new(number_of_epochs, number_of_steps),
+            loss_maximum_regularization_epoch: ArrayMetricsEpoch::new(number_of_epochs),
 
             delta_states_mean: ArrayMetricsSample::new(number_of_epochs, number_of_steps),
             delta_states_mean_epoch: ArrayMetricsEpoch::new(number_of_epochs),
@@ -70,30 +86,37 @@ impl Metrics {
     /// Panics if any array is None.
     pub fn calculate_step(
         &mut self,
-        residuals: &ArrayMeasurements,
-        system_states_delta: &ArraySystemStates,
-        gains_delta: &ArrayGains<f32>,
-        delays_delta: &ArrayDelays<f32>,
+        estimations: &Estimations,
+        derivatives: &Derivatives,
+        regularization_strength: f32,
         time_index: usize,
         epoch_index: usize,
     ) {
         let index = time_index
             + epoch_index * (self.loss.values.shape()[0] / self.loss_epoch.values.shape()[0]);
-        self.loss.values[index] = residuals.values.mapv(|v| v.powi(2)).sum();
 
-        let states_delta_abs = system_states_delta.values.mapv(f32::abs);
+        self.loss_mse.values[index] = estimations.residuals.values.mapv(|v| v.powi(2)).sum();
+        self.loss_maximum_regularization.values[index] = derivatives
+            .maximum_regularization
+            .values
+            .mapv(f32::abs)
+            .sum();
+        self.loss.values[index] = (1.0 - regularization_strength) * self.loss_mse.values[index]
+            + regularization_strength * self.loss_maximum_regularization.values[index];
+
+        let states_delta_abs = estimations.system_states_delta.values.mapv(f32::abs);
         self.delta_states_mean.values[index] = states_delta_abs.mean().unwrap();
         self.delta_states_max.values[index] = *states_delta_abs.max_skipnan();
 
-        let measurements_delta_abs = residuals.values.mapv(f32::abs);
+        let measurements_delta_abs = estimations.residuals.values.mapv(f32::abs);
         self.delta_measurements_mean.values[index] = measurements_delta_abs.mean().unwrap();
         self.delta_measurements_max.values[index] = *measurements_delta_abs.max_skipnan();
 
-        let gains_delta_abs = gains_delta.values.mapv(f32::abs);
+        let gains_delta_abs = estimations.gains_delta.values.mapv(f32::abs);
         self.delta_gains_mean.values[index] = gains_delta_abs.mean().unwrap();
         self.delta_gains_max.values[index] = *gains_delta_abs.max_skipnan();
 
-        let delays_delta_abs = delays_delta.values.mapv(f32::abs);
+        let delays_delta_abs = estimations.delays_delta.values.mapv(f32::abs);
         self.delta_delays_mean.values[index] = delays_delta_abs.mean().unwrap();
         self.delta_delays_max.values[index] = *delays_delta_abs.max_skipnan();
     }
@@ -109,6 +132,13 @@ impl Metrics {
         let stop_index = (epoch_index + 1) * number_of_steps;
         let slice = s![start_index..stop_index];
 
+        self.loss_mse_epoch.values[epoch_index] = self.loss_mse.values.slice(slice).mean().unwrap();
+        self.loss_maximum_regularization_epoch.values[epoch_index] = self
+            .loss_maximum_regularization
+            .values
+            .slice(slice)
+            .mean()
+            .unwrap();
         self.loss_epoch.values[epoch_index] = self.loss.values.slice(slice).mean().unwrap();
 
         self.delta_states_mean_epoch.values[epoch_index] =

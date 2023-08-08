@@ -18,8 +18,8 @@ impl Default for Algorithm {
         Self {
             epochs: 1,
             snapshots_interval: 0,
-            learning_rate: 1e-3,
-            regularization_strength: 0.0,
+            learning_rate: 1e-5,
+            regularization_strength: 0.1,
             model: Model::default(),
             constrain_system_states: true,
         }
