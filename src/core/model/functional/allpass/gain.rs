@@ -13,7 +13,7 @@ pub fn calculate(
             let mult = if relative_eq!(c, 0.0) {
                 0.0
             } else {
-                c / c.abs()
+                c.signum()
             };
             gain[(input_dimension, output_dimension)] = input_direction[input_dimension] * mult;
         }
