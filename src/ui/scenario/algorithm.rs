@@ -177,6 +177,53 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 );
                             });
                         });
+                        // Freeze Gains
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Freeze\nGains");
+                            });
+                            row.col(|ui| {
+                                ui.checkbox(&mut algorithm.freeze_gains, "");
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "Wether or not to freeze the gains\
+                                    preventing them from being changed.",
+                                );
+                            });
+                        });
+                        // Freeze Delays
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Freeze\nDelays");
+                            });
+                            row.col(|ui| {
+                                ui.checkbox(&mut algorithm.freeze_delays, "");
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "Wether or not to freeze the delays\
+                                    preventing them from being changed",
+                                );
+                            });
+                        });
+                        // calculate Kalman Gain
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Update\nKalman Gain");
+                            });
+                            row.col(|ui| {
+                                ui.checkbox(&mut algorithm.update_kalman_gain, "");
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "Wether or not to update\
+                                    the Kalman gain. If set to false a\
+                                    simplified gain will be calculated once\
+                                    at initialization.",
+                                );
+                            });
+                        });
                         draw_ui_scenario_common(&mut body, &mut algorithm.model);
                     });
             });

@@ -47,7 +47,7 @@ pub fn run_epoch(
         results.derivatives.calculate(
             functional_description,
             &results.estimations,
-            config.regularization_strength,
+            config,
             time_index,
         );
         if config.model.apply_system_update {
@@ -86,7 +86,7 @@ pub fn run_epoch(
     }
     functional_description
         .ap_params
-        .update(&results.derivatives, config.learning_rate);
+        .update(&results.derivatives, config);
     results.metrics.calculate_epoch(epoch_index);
 }
 

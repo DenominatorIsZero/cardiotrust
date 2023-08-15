@@ -1,6 +1,9 @@
-use crate::core::model::{
-    functional::allpass::shapes::{ArrayDelays, ArrayGains},
-    functional::allpass::APParameters,
+use crate::core::{
+    config::algorithm::Algorithm,
+    model::{
+        functional::allpass::shapes::{ArrayDelays, ArrayGains},
+        functional::allpass::APParameters,
+    },
 };
 
 use super::derivation::Derivatives;
@@ -9,14 +12,18 @@ impl APParameters {
     /// Performs one gradient descent step on the all-pass parameters.
     ///
     /// Derivatives must be reset before the next update.
-    pub fn update(&mut self, derivatives: &Derivatives, learning_rate: f32) {
-        update_gains(&mut self.gains, &derivatives.gains, learning_rate);
-        // update_delays(
-        //     &mut self.coefs,
-        //     &mut self.delays,
-        //     &derivatives.coefs,
-        //     learning_rate,
-        // );
+    pub fn update(&mut self, derivatives: &Derivatives, config: &Algorithm) {
+        if !config.freeze_gains {
+            update_gains(&mut self.gains, &derivatives.gains, config.learning_rate);
+        }
+        if !config.freeze_delays {
+            update_delays(
+                &mut self.coefs,
+                &mut self.delays,
+                &derivatives.coefs,
+                config.learning_rate,
+            );
+        }
     }
 }
 
@@ -144,7 +151,10 @@ mod tests {
         derivatives.coefs.values.fill(0.5);
         derivatives.coefs.values[[0, 0, 0, 2]] = -0.9;
 
-        let learning_rate = 1.0;
+        let config = Algorithm {
+            learning_rate: 1.0,
+            ..Default::default()
+        };
 
         let mut ap_coefs_exp = ArrayDelays::empty(number_of_states);
         ap_coefs_exp.values.fill(0.7);
@@ -156,7 +166,7 @@ mod tests {
         delays_exp.values[[0, 0, 0, 1]] = 3;
         delays_exp.values[[0, 0, 0, 2]] = 2;
 
-        ap_parameters.update(&derivatives, learning_rate);
+        ap_parameters.update(&derivatives, &config);
         assert!(
             ap_coefs_exp
                 .values

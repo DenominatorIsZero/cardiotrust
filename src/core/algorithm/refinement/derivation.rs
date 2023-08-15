@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::{
     algorithm::estimation::Estimations,
+    config::algorithm::Algorithm,
     model::functional::{
         allpass::{
             shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains},
@@ -71,7 +72,7 @@ impl Derivatives {
         &mut self,
         functional_description: &FunctionalDescription,
         estimations: &Estimations,
-        regularization_strength: f32,
+        config: &Algorithm,
         time_index: usize,
     ) {
         self.mapped_residuals.values = functional_description
@@ -80,18 +81,22 @@ impl Derivatives {
             .t()
             .dot(&estimations.residuals.values.slice(s![0, ..]));
         self.calculate_maximum_regularization(&estimations.system_states, time_index);
-        self.calculate_derivatives_gains(
-            &estimations.ap_outputs,
-            &functional_description.ap_params.output_state_indices,
-            regularization_strength,
-        );
-        self.calculate_derivatives_coefs(
-            &estimations.ap_outputs,
-            &estimations.system_states,
-            &functional_description.ap_params,
-            time_index,
-            regularization_strength,
-        );
+        if !config.freeze_gains {
+            self.calculate_derivatives_gains(
+                &estimations.ap_outputs,
+                &functional_description.ap_params.output_state_indices,
+                config.regularization_strength,
+            );
+        }
+        if !config.freeze_delays {
+            self.calculate_derivatives_coefs(
+                &estimations.ap_outputs,
+                &estimations.system_states,
+                &functional_description.ap_params,
+                time_index,
+                config.regularization_strength,
+            );
+        }
     }
 
     fn calculate_derivatives_gains(
@@ -360,8 +365,11 @@ mod tests {
         let number_of_sensors = 300;
         let number_of_steps = 2000;
         let time_index = 333;
-        let regularization_strength = 0.0;
         let voxels_in_dims = Dim([1000, 1, 1]);
+        let config = Algorithm {
+            regularization_strength: 0.0,
+            ..Default::default()
+        };
 
         let mut derivates = Derivatives::new(number_of_states);
         let functional_description = FunctionalDescription::empty(
@@ -372,11 +380,6 @@ mod tests {
         );
         let estimations = Estimations::new(number_of_states, number_of_sensors, number_of_steps);
 
-        derivates.calculate(
-            &functional_description,
-            &estimations,
-            regularization_strength,
-            time_index,
-        );
+        derivates.calculate(&functional_description, &estimations, &config, time_index);
     }
 }
