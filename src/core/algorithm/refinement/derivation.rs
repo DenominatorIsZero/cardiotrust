@@ -1,5 +1,4 @@
 use ndarray::{s, Array1};
-use ndarray_linalg::Scalar;
 use serde::{Deserialize, Serialize};
 
 use crate::core::{

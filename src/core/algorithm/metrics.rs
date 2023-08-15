@@ -2,16 +2,7 @@ use ndarray::{s, Array1};
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{
-    data::shapes::{ArrayMeasurements, ArraySystemStates},
-    model::functional::allpass::shapes::{ArrayDelays, ArrayGains},
-    scenario::results::Results,
-};
-
-use super::{
-    estimation::Estimations,
-    refinement::derivation::{ArrayMaximumRegularization, Derivatives},
-};
+use super::{estimation::Estimations, refinement::derivation::Derivatives};
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -101,8 +92,10 @@ impl Metrics {
             .values
             .mapv(f32::abs)
             .sum();
-        self.loss.values[index] = (1.0 - regularization_strength) * self.loss_mse.values[index]
-            + regularization_strength * self.loss_maximum_regularization.values[index];
+        self.loss.values[index] = (1.0 - regularization_strength).mul_add(
+            self.loss_mse.values[index],
+            regularization_strength * self.loss_maximum_regularization.values[index],
+        );
 
         let states_delta_abs = estimations.system_states_delta.values.mapv(f32::abs);
         self.delta_states_mean.values[index] = states_delta_abs.mean().unwrap();
