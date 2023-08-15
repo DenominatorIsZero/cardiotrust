@@ -118,6 +118,7 @@ fn run(
 mod test {
 
     use ndarray::Dim;
+    use ndarray_stats::QuantileExt;
 
     use crate::core::config::algorithm::Algorithm as AlgorithmConfig;
     use crate::core::config::simulation::Simulation as SimulationConfig;
@@ -443,5 +444,86 @@ mod test {
                     > results.metrics.loss_mse_epoch.values[i + 1]
             );
         });
+    }
+
+    #[test]
+    fn current_density_constrained() {
+        let simulation_config = SimulationConfig::default();
+        let data = Data::from_simulation_config(&simulation_config);
+
+        let mut algorithm_config = Algorithm::default();
+
+        let mut model = Model::from_model_config(
+            &algorithm_config.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .unwrap();
+        model.functional_description.ap_params.gains.values *= 2.0;
+        algorithm_config.epochs = 1;
+        algorithm_config.model.apply_system_update = false;
+
+        let mut results = Results::new(
+            algorithm_config.epochs,
+            model
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+        );
+
+        run(
+            &mut model.functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
+
+        results
+            .estimations
+            .system_states
+            .values
+            .for_each(|v| assert!(*v <= 2.0, "{v} was greater than 2."));
+    }
+
+    #[test]
+    fn current_density_not_constrained() {
+        let simulation_config = SimulationConfig::default();
+        let data = Data::from_simulation_config(&simulation_config);
+
+        let mut algorithm_config = Algorithm::default();
+
+        let mut model = Model::from_model_config(
+            &algorithm_config.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .unwrap();
+        model.functional_description.ap_params.gains.values *= 2.0;
+        algorithm_config.epochs = 1;
+        algorithm_config.constrain_system_states = false;
+        algorithm_config.model.apply_system_update = false;
+
+        let mut results = Results::new(
+            algorithm_config.epochs,
+            model
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+        );
+
+        run(
+            &mut model.functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
+
+        assert!(*results.estimations.system_states.values.max().unwrap() > 2.0);
     }
 }
