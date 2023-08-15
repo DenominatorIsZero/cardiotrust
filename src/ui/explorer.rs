@@ -116,6 +116,7 @@ pub fn draw_ui_explorer(
     });
 }
 
+#[allow(clippy::too_many_lines)]
 fn draw_row(
     commands: &mut Commands,
     body: &mut egui_extras::TableBody,
