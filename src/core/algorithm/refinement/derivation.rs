@@ -115,12 +115,15 @@ impl Derivatives {
             .zip(output_state_indices.values.iter())
             .filter(|(_, index_output_state)| index_output_state.is_some())
             .for_each(|((derivative, ap_output), index_output_state)| {
+                let maximum_regularization =
+                    if self.maximum_regularization.values[index_output_state.unwrap()] == 0.0 {
+                        0.0
+                    } else {
+                        self.maximum_regularization.values[index_output_state.unwrap()].signum()
+                    };
                 *derivative += ap_output
-                    * self.mapped_residuals.values[index_output_state.unwrap()].mul_add(
-                        scaling,
-                        self.maximum_regularization.values[index_output_state.unwrap()]
-                            * regularization_strength,
-                    );
+                    * self.mapped_residuals.values[index_output_state.unwrap()]
+                        .mul_add(scaling, maximum_regularization * regularization_strength);
             });
     }
 
@@ -180,14 +183,17 @@ impl Derivatives {
                     ((((state_index, x_offset, y_offset, z_offset, _), iir), fir), ap_gain),
                     output_state_index,
                 )| {
+                    let maximum_regularization =
+                        if self.maximum_regularization.values[output_state_index.unwrap()] == 0.0 {
+                            0.0
+                        } else {
+                            self.maximum_regularization.values[output_state_index.unwrap()].signum()
+                        };
                     let coef_index = (state_index / 3, x_offset, y_offset, z_offset);
                     self.coefs.values[coef_index] += (fir + iir)
                         * ap_gain
-                        * self.mapped_residuals.values[output_state_index.unwrap()].mul_add(
-                            scaling,
-                            self.maximum_regularization.values[output_state_index.unwrap()]
-                                * regularization_strength,
-                        );
+                        * self.mapped_residuals.values[output_state_index.unwrap()]
+                            .mul_add(scaling, maximum_regularization * regularization_strength);
                 },
             );
     }
