@@ -52,10 +52,10 @@ pub fn run_epoch(
         );
         if config.model.apply_system_update {
             calculate_system_update(
-                &mut results.estimations.system_states,
-                &results.estimations.residuals,
-                &functional_description.kalman_gain,
+                &mut results.estimations,
                 time_index,
+                &functional_description,
+                config,
             );
         }
         calculate_system_states_delta(

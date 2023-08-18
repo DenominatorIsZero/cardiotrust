@@ -5,15 +5,17 @@ pub mod measurement;
 
 use std::error::Error;
 
+use approx::relative_eq;
 use ndarray::Dim;
 
+use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
 use self::{
-    allpass::APParameters,
+    allpass::{shapes::ArrayGains, APParameters},
     control::{ControlFunction, ControlMatrix},
     kalman::Gain,
-    measurement::MeasurementMatrix,
+    measurement::{MeasurementCovariance, MeasurementMatrix},
 };
 
 use super::spatial::SpatialDescription;
@@ -25,6 +27,8 @@ pub struct FunctionalDescription {
     pub ap_params: APParameters,
     pub measurement_matrix: MeasurementMatrix,
     pub control_matrix: ControlMatrix,
+    pub process_covariance: ArrayGains<f32>,
+    pub measurement_covariance: MeasurementCovariance,
     pub kalman_gain: Gain,
     pub control_function_values: ControlFunction,
 }
@@ -41,6 +45,8 @@ impl FunctionalDescription {
             ap_params: APParameters::empty(number_of_states, voxels_in_dims),
             measurement_matrix: MeasurementMatrix::empty(number_of_states, number_of_sensors),
             control_matrix: ControlMatrix::empty(number_of_states),
+            process_covariance: ArrayGains::empty(number_of_states),
+            measurement_covariance: MeasurementCovariance::empty(number_of_sensors),
             kalman_gain: Gain::empty(number_of_states, number_of_sensors),
             control_function_values: ControlFunction::empty(number_of_steps),
         }
@@ -61,6 +67,10 @@ impl FunctionalDescription {
             APParameters::from_model_config(config, spatial_description, sample_rate_hz)?;
         let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);
         let control_matrix = ControlMatrix::from_model_config(config, spatial_description);
+        let process_covariance =
+            process_covariance_from_model_config(config, spatial_description, &ap_params);
+        let measurement_covariance =
+            MeasurementCovariance::from_model_config(config, spatial_description);
         let kalman_gain = Gain::from_model_config(config, &measurement_matrix);
         let control_function_values =
             ControlFunction::from_model_config(config, sample_rate_hz, duration_s);
@@ -69,10 +79,44 @@ impl FunctionalDescription {
             ap_params,
             measurement_matrix,
             control_matrix,
+            process_covariance,
+            measurement_covariance,
             kalman_gain,
             control_function_values,
         })
     }
+}
+
+fn process_covariance_from_model_config(
+    config: &Model,
+    spatial_description: &SpatialDescription,
+    ap_params: &APParameters,
+) -> ArrayGains<f32> {
+    let normal = if relative_eq!(config.process_covariance_std, 0.0) {
+        None
+    } else {
+        Some(
+            Normal::<f32>::new(
+                config.process_covariance_mean,
+                config.process_covariance_std,
+            )
+            .unwrap(),
+        )
+    };
+    let mut process_covariance = ArrayGains::empty(spatial_description.voxels.count_states());
+    process_covariance
+        .values
+        .indexed_iter_mut()
+        .zip(ap_params.output_state_indices.values.iter())
+        .filter(|((index, _), output_state_index)| {
+            output_state_index.is_some() && index.0 == output_state_index.unwrap_or(0)
+        })
+        .for_each(|((_, variance), _)| {
+            *variance = normal.map_or(config.process_covariance_mean, |dist| {
+                dist.sample(&mut rand::thread_rng())
+            });
+        });
+    process_covariance
 }
 
 #[cfg(test)]

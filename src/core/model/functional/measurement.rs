@@ -1,7 +1,10 @@
 use std::f32::consts::PI;
 
+use approx::relative_eq;
 use ndarray::{s, Array2};
 use physical_constants::VACUUM_MAG_PERMEABILITY;
+use rand_distr::Distribution;
+use rand_distr::Normal;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -77,6 +80,53 @@ impl MeasurementMatrix {
         }
 
         measurement_matrix
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[allow(clippy::module_name_repetitions, clippy::unsafe_derive_deserialize)]
+pub struct MeasurementCovariance {
+    pub values: Array2<f32>,
+}
+
+impl MeasurementCovariance {
+    #[must_use]
+    pub fn empty(number_of_sensors: usize) -> Self {
+        Self {
+            values: Array2::zeros((number_of_sensors, number_of_sensors)),
+        }
+    }
+
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if voxel numbers are not initialized correctly.
+    #[must_use]
+    pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Self {
+        let mut measurement_covariance = Self::empty(spatial_description.sensors.count());
+
+        if relative_eq!(config.measurement_covariance_std, 0.0) {
+            measurement_covariance
+                .values
+                .diag_mut()
+                .fill(config.measurement_covariance_mean);
+        } else {
+            let normal = Normal::<f32>::new(
+                config.measurement_covariance_mean,
+                config.measurement_covariance_std,
+            )
+            .unwrap();
+            measurement_covariance
+                .values
+                .diag_mut()
+                .iter_mut()
+                .for_each(|v| {
+                    *v = normal.sample(&mut rand::thread_rng());
+                });
+        }
+
+        measurement_covariance
     }
 }
 

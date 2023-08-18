@@ -213,7 +213,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 ui.label("Update\nKalman Gain");
                             });
                             row.col(|ui| {
-                                ui.checkbox(&mut algorithm.update_kalman_gain, "");
+                                ui.checkbox(&mut algorithm.calculate_kalman_gain, "");
                             });
                             row.col(|ui| {
                                 ui.label(

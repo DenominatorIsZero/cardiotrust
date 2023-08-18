@@ -383,7 +383,7 @@ mod tests {
             number_of_steps,
             voxels_in_dims,
         );
-        let estimations = Estimations::new(number_of_states, number_of_sensors, number_of_steps);
+        let estimations = Estimations::empty(number_of_states, number_of_sensors, number_of_steps);
 
         derivates.calculate(&functional_description, &estimations, &config, time_index);
     }

@@ -1,8 +1,9 @@
 pub mod shapes;
 
-use ndarray::s;
+use ndarray::{s, Array2};
 use serde::{Deserialize, Serialize};
 
+use crate::core::config::algorithm::Algorithm;
 use crate::core::model::functional::allpass::from_coef_to_samples;
 use crate::core::model::functional::allpass::shapes::ArrayDelays;
 use crate::core::model::functional::kalman::Gain;
@@ -15,30 +16,41 @@ use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
 pub struct Estimations {
     pub ap_outputs: ArrayGains<f32>,
     pub system_states: ArraySystemStates,
+    pub state_covariance: ArrayGains<f32>,
     pub measurements: ArrayMeasurements,
     pub residuals: ArrayMeasurements,
     pub system_states_delta: ArraySystemStates,
     pub gains_delta: ArrayGains<f32>,
     pub delays_delta: ArrayDelays<f32>,
+    pub s: Array2<f32>,
+    pub s_inv: Array2<f32>,
 }
 
 impl Estimations {
     #[must_use]
-    pub fn new(number_of_states: usize, number_of_sensors: usize, number_of_steps: usize) -> Self {
+    pub fn empty(
+        number_of_states: usize,
+        number_of_sensors: usize,
+        number_of_steps: usize,
+    ) -> Self {
         Self {
             ap_outputs: ArrayGains::empty(number_of_states),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
+            state_covariance: ArrayGains::empty(number_of_states),
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
             residuals: ArrayMeasurements::empty(1, number_of_sensors),
             system_states_delta: ArraySystemStates::empty(1, number_of_states),
             gains_delta: ArrayGains::empty(number_of_states),
             delays_delta: ArrayDelays::empty(number_of_states),
+            s: Array2::zeros([number_of_sensors, number_of_sensors]),
+            s_inv: Array2::zeros([number_of_sensors, number_of_sensors]),
         }
     }
 
     pub fn reset(&mut self) {
         self.ap_outputs.values.fill(0.0);
         self.system_states.values.fill(0.0);
+        self.state_covariance.values.fill(0.0);
         self.measurements.values.fill(0.0);
         self.residuals.values.fill(0.0);
         self.system_states_delta.values.fill(0.0);
@@ -160,18 +172,37 @@ pub fn calculate_delays_delta(
 }
 
 pub fn calculate_system_update(
-    system_states: &mut ArraySystemStates,
-    residuals: &ArrayMeasurements,
-    kalman_gain: &Gain,
+    estimations: &mut Estimations,
     time_index: usize,
+    functional_description: &FunctionalDescription,
+    config: &Algorithm,
 ) {
-    let mut states = system_states.values.slice_mut(s![time_index, ..]);
-    states.assign(&(&states + kalman_gain.values.dot(&residuals.values.slice(s![0, ..]))));
+    if config.calculate_kalman_gain {
+        calculate_kalman_gain(estimations, functional_description);
+    }
+    let mut states = estimations
+        .system_states
+        .values
+        .slice_mut(s![time_index, ..]);
+    states.assign(
+        &(&states
+            + functional_description
+                .kalman_gain
+                .values
+                .dot(&estimations.residuals.values.slice(s![0, ..]))),
+    );
+}
+
+fn calculate_kalman_gain(
+    estimations: &mut Estimations,
+    functional_description: &FunctionalDescription,
+) {
+    todo!()
 }
 
 #[cfg(test)]
 mod tests {
-    use ndarray::Dim;
+    use ndarray::{arr1, Dim};
 
     use super::*;
     #[test]
@@ -207,12 +238,23 @@ mod tests {
         let number_of_sensors = 300;
         let number_of_steps = 2000;
         let time_index = 333;
+        let config = Algorithm::default();
 
-        let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
-        let residuals = ArrayMeasurements::empty(1, number_of_sensors);
-        let kalman_gain = Gain::empty(number_of_states, number_of_sensors);
+        let mut estimations =
+            Estimations::empty(number_of_states, number_of_sensors, number_of_steps);
+        let mut functional_desrciption = FunctionalDescription::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            Dim([number_of_states / 3, 1, 1]),
+        );
 
-        calculate_system_update(&mut system_states, &residuals, &kalman_gain, time_index);
+        calculate_system_update(
+            &mut estimations,
+            time_index,
+            &functional_desrciption,
+            &config,
+        );
     }
 
     #[test]

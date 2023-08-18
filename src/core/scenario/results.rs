@@ -24,7 +24,7 @@ impl Results {
     ) -> Self {
         Self {
             metrics: Metrics::new(number_of_epochs, number_of_steps),
-            estimations: Estimations::new(number_of_states, number_of_sensors, number_of_steps),
+            estimations: Estimations::empty(number_of_states, number_of_sensors, number_of_steps),
             derivatives: Derivatives::new(number_of_states),
             model: None,
             snapshots: Vec::new(),

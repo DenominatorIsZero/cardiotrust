@@ -14,7 +14,7 @@ pub struct Algorithm {
     pub constrain_system_states: bool,
     pub freeze_gains: bool,
     pub freeze_delays: bool,
-    pub update_kalman_gain: bool,
+    pub calculate_kalman_gain: bool,
 }
 impl Default for Algorithm {
     #[must_use]
@@ -28,7 +28,7 @@ impl Default for Algorithm {
             constrain_system_states: true,
             freeze_gains: false,
             freeze_delays: false,
-            update_kalman_gain: false,
+            calculate_kalman_gain: false,
         }
     }
 }
