@@ -1,12 +1,15 @@
 pub mod shapes;
 
+use itertools::Itertools;
 use ndarray::{s, Array2};
+use ndarray_linalg::Inverse;
 use serde::{Deserialize, Serialize};
 
 use crate::core::config::algorithm::Algorithm;
 use crate::core::model::functional::allpass::from_coef_to_samples;
 use crate::core::model::functional::allpass::shapes::ArrayDelays;
 use crate::core::model::functional::kalman::Gain;
+use crate::core::model::spatial::SpatialDescription;
 use crate::core::model::{
     functional::allpass::shapes::ArrayGains, functional::FunctionalDescription,
 };
@@ -16,7 +19,8 @@ use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
 pub struct Estimations {
     pub ap_outputs: ArrayGains<f32>,
     pub system_states: ArraySystemStates,
-    pub state_covariance: ArrayGains<f32>,
+    pub state_covariance_pred: ArrayGains<f32>,
+    pub state_covariance_est: ArrayGains<f32>,
     pub measurements: ArrayMeasurements,
     pub residuals: ArrayMeasurements,
     pub system_states_delta: ArraySystemStates,
@@ -24,6 +28,7 @@ pub struct Estimations {
     pub delays_delta: ArrayDelays<f32>,
     pub s: Array2<f32>,
     pub s_inv: Array2<f32>,
+    pub kalman_gain_converged: bool,
 }
 
 impl Estimations {
@@ -36,7 +41,8 @@ impl Estimations {
         Self {
             ap_outputs: ArrayGains::empty(number_of_states),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
-            state_covariance: ArrayGains::empty(number_of_states),
+            state_covariance_pred: ArrayGains::empty(number_of_states),
+            state_covariance_est: ArrayGains::empty(number_of_states),
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
             residuals: ArrayMeasurements::empty(1, number_of_sensors),
             system_states_delta: ArraySystemStates::empty(1, number_of_states),
@@ -44,18 +50,21 @@ impl Estimations {
             delays_delta: ArrayDelays::empty(number_of_states),
             s: Array2::zeros([number_of_sensors, number_of_sensors]),
             s_inv: Array2::zeros([number_of_sensors, number_of_sensors]),
+            kalman_gain_converged: false,
         }
     }
 
     pub fn reset(&mut self) {
         self.ap_outputs.values.fill(0.0);
         self.system_states.values.fill(0.0);
-        self.state_covariance.values.fill(0.0);
+        self.state_covariance_pred.values.fill(0.0);
+        self.state_covariance_est.values.fill(0.0);
         self.measurements.values.fill(0.0);
         self.residuals.values.fill(0.0);
         self.system_states_delta.values.fill(0.0);
         self.gains_delta.values.fill(0.0);
         self.delays_delta.values.fill(0.0);
+        self.kalman_gain_converged = false;
     }
 }
 
@@ -174,11 +183,20 @@ pub fn calculate_delays_delta(
 pub fn calculate_system_update(
     estimations: &mut Estimations,
     time_index: usize,
-    functional_description: &FunctionalDescription,
+    functional_description: &mut FunctionalDescription,
     config: &Algorithm,
 ) {
-    if config.calculate_kalman_gain {
+    if config.calculate_kalman_gain && !estimations.kalman_gain_converged {
+        let kalman_gain_old = functional_description.kalman_gain.values.clone();
         calculate_kalman_gain(estimations, functional_description);
+        let difference = (kalman_gain_old - &functional_description.kalman_gain.values)
+            .mapv(|v| v.powi(2))
+            .sum();
+        println!("Difference: {difference}");
+        if difference == 0.0 {
+            println!("Kalman gain converged");
+            estimations.kalman_gain_converged = true;
+        }
     }
     let mut states = estimations
         .system_states
@@ -195,9 +213,210 @@ pub fn calculate_system_update(
 
 fn calculate_kalman_gain(
     estimations: &mut Estimations,
+    functional_description: &mut FunctionalDescription,
+) {
+    predict_state_covariance(estimations, functional_description);
+    calculate_s_inv(estimations, functional_description);
+    calculate_k(functional_description, estimations);
+    estimate_state_covariance(estimations, functional_description);
+}
+
+fn estimate_state_covariance(
+    estimations: &mut Estimations,
+    functional_description: &mut FunctionalDescription,
+) {
+    estimations
+        .state_covariance_est
+        .values
+        .indexed_iter_mut()
+        .zip(
+            functional_description
+                .ap_params
+                .output_state_indices
+                .values
+                .iter(),
+        )
+        .filter(|(_, output_state_index)| output_state_index.is_some())
+        .for_each(|((index, variance), output_state_index)| {
+            *variance = 0.0;
+            for (((k_x, k_y), k_z), k_d) in (0..=2) // over neighors of input voxel
+                .cartesian_product(0..=2)
+                .cartesian_product(0..=2)
+                .cartesian_product(0..=2)
+            {
+                let k = functional_description.ap_params.output_state_indices.values
+                    [[output_state_index.unwrap(), k_x, k_y, k_z, k_d]];
+                if k.is_none() {
+                    continue;
+                }
+                let mut sum = 0.0;
+                for m in 0..functional_description.measurement_matrix.values.raw_dim()[0] {
+                    sum += functional_description.kalman_gain.values[[index.0, m]]
+                        * functional_description.measurement_matrix.values[[m, k.unwrap()]];
+                }
+                let i = if index.0 == k.unwrap() { 1.0 } else { 0.0 };
+                *variance += estimations.state_covariance_pred.values[[
+                    k.unwrap(),
+                    flip(k_x),
+                    flip(k_y),
+                    flip(k_z),
+                    output_state_index.unwrap() % 3,
+                ]] * (i - sum);
+            }
+        });
+}
+
+fn calculate_k(functional_description: &mut FunctionalDescription, estimations: &mut Estimations) {
+    functional_description
+        .kalman_gain
+        .values
+        .indexed_iter_mut()
+        .for_each(|(index, value)| {
+            *value = 0.0;
+            for k in 0..estimations.s.raw_dim()[0] {
+                let mut sum = 0.0;
+                for (((m_x, m_y), m_z), m_d) in (0..=2) // over neighbors of output voxel
+                    .cartesian_product(0..=2)
+                    .cartesian_product(0..=2)
+                    .cartesian_product(0..=2)
+                {
+                    let m = functional_description.ap_params.output_state_indices.values
+                        [[index.0, m_x, m_y, m_z, m_d]];
+                    if m.is_none() {
+                        continue;
+                    }
+                    sum += estimations.state_covariance_pred.values[[index.0, m_x, m_y, m_z, m_d]]
+                        * functional_description.measurement_matrix.values[[k, m.unwrap()]];
+                }
+                *value += estimations.s_inv[[k, index.1]] * sum;
+            }
+        });
+}
+
+fn calculate_s_inv(estimations: &mut Estimations, functional_description: &FunctionalDescription) {
+    estimations.s.indexed_iter_mut().for_each(|(index, value)| {
+        *value = functional_description.measurement_covariance.values[index];
+        for k in 0..functional_description
+            .measurement_covariance
+            .values
+            .raw_dim()[1]
+        {
+            let mut sum = 0.0;
+            for (((m_x, m_y), m_z), m_d) in (0..=2) // over neighors of input voxel
+                .cartesian_product(0..=2)
+                .cartesian_product(0..=2)
+                .cartesian_product(0..=2)
+            {
+                // check if voxel m exists.
+                let m = functional_description.ap_params.output_state_indices.values
+                    [[k, m_x, m_y, m_z, m_d]];
+                if m.is_none() {
+                    continue;
+                }
+                sum += functional_description.measurement_matrix.values[[index.0, m.unwrap()]]
+                    * estimations.state_covariance_pred.values
+                        [[m.unwrap(), flip(m_x), flip(m_y), flip(m_z), k % 3]];
+            }
+            *value += functional_description.measurement_matrix.values[[index.1, k]] * sum;
+        }
+    });
+    estimations.s_inv = estimations.s.inv().unwrap();
+}
+
+#[allow(clippy::cast_sign_loss)]
+fn predict_state_covariance(
+    estimations: &mut Estimations,
     functional_description: &FunctionalDescription,
 ) {
-    todo!()
+    estimations
+        .state_covariance_pred
+        .values
+        .indexed_iter_mut()
+        .zip(
+            functional_description
+                .ap_params
+                .output_state_indices
+                .values
+                .iter(),
+        )
+        .filter(|(_, output_state_index)| output_state_index.is_some())
+        .for_each(|((index, variance), output_state_index)| {
+            *variance = functional_description.process_covariance.values[index];
+            for (((k_x, k_y), k_z), k_d) in (0..=2) // over neighbors of output voxel
+                .cartesian_product(0..=2)
+                .cartesian_product(0..=2)
+                .cartesian_product(0..=2)
+            {
+                // skip if neighbor doesn't exist
+                let k = functional_description.ap_params.output_state_indices.values
+                    [[output_state_index.unwrap(), k_x, k_y, k_z, k_d]];
+
+                if k.is_none() {
+                    continue;
+                }
+                let mut sum = 0.0;
+                for (((m_x, m_y), m_z), m_d) in (0..=2) // over neighors of input voxel
+                    .cartesian_product(0..=2)
+                    .cartesian_product(0..=2)
+                    .cartesian_product(0..=2)
+                {
+                    // skip if neighbor doesn't exist
+                    let m = functional_description.ap_params.output_state_indices.values
+                        [[index.0, m_x, m_y, m_z, m_d]];
+
+                    if m.is_none() {
+                        continue;
+                    }
+
+                    // we have to check if m and k are adjacent to see if P_{m, k} exists
+                    #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
+                    let m_to_k_x = (m_x as i32 + k_x as i32 + index.1 as i32) - 3;
+                    #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
+                    let m_to_k_y = (m_y as i32 + k_y as i32 + index.2 as i32) - 3;
+                    #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
+                    let m_to_k_z = (m_z as i32 + k_z as i32 + index.3 as i32) - 3;
+
+                    if !(-1..=1).contains(&m_to_k_x)
+                        || !(-1..=1).contains(&m_to_k_y)
+                        || !(-1..=1).contains(&m_to_k_z)
+                    {
+                        continue;
+                    }
+
+                    sum += functional_description.ap_params.gains.values
+                        [[index.0, m_x, m_y, m_z, m_d]]
+                        * estimations.state_covariance_est.values[[
+                            m.unwrap(),
+                            (m_to_k_x + 1) as usize,
+                            (m_to_k_y + 1) as usize,
+                            (m_to_k_z + 1) as usize,
+                            m_d,
+                        ]];
+                }
+                *variance += functional_description.ap_params.gains.values
+                    [[output_state_index.unwrap(), k_x, k_y, k_z, k_d]]
+                    * sum;
+            }
+        });
+}
+
+fn flip(x: usize) -> usize {
+    // Output state indicies:
+    // 0 = -1
+    // 1 = 0
+    // 2 = 1
+    //
+    // Now if we need it the other way around,
+    // 0 needs to be 2
+    // 2 needs to be 0
+    // 1 needs to be 1
+    // Finally, getting d the other way around d needs to map to index.0 / 3
+    match x {
+        0 => 2,
+        1 => 1,
+        2 => 0,
+        _ => panic!("Please nothing greater than 2. Thanks."),
+    }
 }
 
 #[cfg(test)]
@@ -252,7 +471,7 @@ mod tests {
         calculate_system_update(
             &mut estimations,
             time_index,
-            &functional_desrciption,
+            &mut functional_desrciption,
             &config,
         );
     }

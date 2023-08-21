@@ -161,13 +161,13 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 );
                             });
                         });
-                        // Apply system update
+                        // Constrain Current Density
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Constrain\ncurrent density");
                             });
                             row.col(|ui| {
-                                ui.checkbox(&mut algorithm.model.apply_system_update, "");
+                                ui.checkbox(&mut algorithm.constrain_system_states, "");
                             });
                             row.col(|ui| {
                                 ui.label(

@@ -54,7 +54,7 @@ pub fn run_epoch(
             calculate_system_update(
                 &mut results.estimations,
                 time_index,
-                &functional_description,
+                functional_description,
                 config,
             );
         }
@@ -321,6 +321,51 @@ mod test {
             assert!(
                 results.metrics.loss_mse_epoch.values[i]
                     > results.metrics.loss_mse_epoch.values[i + 1]
+            );
+        });
+    }
+
+    #[test]
+    fn loss_decreases_kalman() {
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config);
+
+        let mut algorithm_config = Algorithm {
+            calculate_kalman_gain: true,
+            ..Default::default()
+        };
+
+        let mut model = Model::from_model_config(
+            &algorithm_config.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .unwrap();
+        algorithm_config.epochs = 3;
+        algorithm_config.model.apply_system_update = true;
+
+        let mut results = Results::new(
+            algorithm_config.epochs,
+            model
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+        );
+
+        run(
+            &mut model.functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
+
+        (0..algorithm_config.epochs - 1).for_each(|i| {
+            assert!(
+                results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
             );
         });
     }

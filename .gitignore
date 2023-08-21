@@ -1,5 +1,6 @@
 /target
 /results
+/results_backup
 /tests
 /tmp
 .DS_STORE
