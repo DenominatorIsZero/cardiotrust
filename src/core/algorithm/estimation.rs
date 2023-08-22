@@ -419,7 +419,7 @@ fn flip(x: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use ndarray::{arr1, Dim};
+    use ndarray::Dim;
 
     use super::*;
     #[test]
