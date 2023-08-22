@@ -8,8 +8,6 @@ use serde::{Deserialize, Serialize};
 use crate::core::config::algorithm::Algorithm;
 use crate::core::model::functional::allpass::from_coef_to_samples;
 use crate::core::model::functional::allpass::shapes::ArrayDelays;
-use crate::core::model::functional::kalman::Gain;
-use crate::core::model::spatial::SpatialDescription;
 use crate::core::model::{
     functional::allpass::shapes::ArrayGains, functional::FunctionalDescription,
 };
