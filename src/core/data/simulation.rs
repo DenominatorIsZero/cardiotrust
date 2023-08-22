@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use ndarray::Dim;
+use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
@@ -62,6 +63,8 @@ impl Simulation {
         })
     }
 
+    /// # Panics
+    /// if there are negative values in the measurement covariance matrix.
     pub fn run(&mut self) {
         let measurements = &mut self.measurements;
         let system_states = &mut self.system_states;
@@ -76,7 +79,18 @@ impl Simulation {
                 time_index,
             );
         }
-        // TODO: Add noise to measurements here
+        for sensor_index in 0..measurements.values.shape()[1] {
+            let dist = Normal::new(
+                0.0,
+                model.functional_description.measurement_covariance.values
+                    [[sensor_index, sensor_index]],
+            )
+            .unwrap();
+            for time_index in 0..measurements.values.shape()[0] {
+                measurements.values[[time_index, sensor_index]] +=
+                    dist.sample(&mut rand::thread_rng());
+            }
+        }
     }
 }
 
