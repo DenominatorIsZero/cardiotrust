@@ -29,6 +29,8 @@ pub struct Scenario {
     #[serde(skip_serializing, skip_deserializing)]
     pub results: Option<Results>,
     pub summary: Option<Summary>,
+    #[serde(default)]
+    pub comment: String,
 }
 
 impl Scenario {
@@ -44,6 +46,7 @@ impl Scenario {
             data: None,
             results: None,
             summary: None,
+            comment: String::new(),
         };
         scenario
             .save()

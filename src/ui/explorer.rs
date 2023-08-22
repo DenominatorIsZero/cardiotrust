@@ -10,7 +10,7 @@ use crate::{ScenarioBundle, ScenarioList, SelectedSenario};
 
 use super::UiState;
 
-#[allow(clippy::module_name_repetitions)]
+#[allow(clippy::module_name_repetitions, clippy::too_many_lines)]
 pub fn draw_ui_explorer(
     mut commands: Commands,
     mut contexts: EguiContexts,
@@ -22,6 +22,7 @@ pub fn draw_ui_explorer(
             .column(Column::auto().resizable(true))
             .column(Column::initial(150.0).resizable(true))
             .column(Column::initial(100.0).resizable(true))
+            .column(Column::auto().resizable(true))
             .column(Column::auto().resizable(true))
             .column(Column::auto().resizable(true))
             .column(Column::auto().resizable(true))
@@ -76,6 +77,9 @@ pub fn draw_ui_explorer(
                 header.col(|ui| {
                     ui.heading("Delta\nDelays\nMax");
                 });
+                header.col(|ui| {
+                    ui.heading("Comment");
+                });
             })
             .body(|mut body| {
                 for index in 0..scenario_list.entries.len() {
@@ -111,6 +115,7 @@ pub fn draw_ui_explorer(
                     row.col(|_ui| {});
                     row.col(|_ui| {});
                     row.col(|_ui| {});
+                    row.col(|_ui| {});
                 });
             });
     });
@@ -133,21 +138,8 @@ fn draw_row(
                 .button(scenario_list.entries[index].scenario.get_id())
                 .clicked()
             {
-                if let Some(current_index) = selected_scenario.index.as_ref() {
-                    if *current_index != index {
-                        scenario_list.entries[*current_index].scenario.data = None;
-                        scenario_list.entries[*current_index].scenario.results = None;
-                    }
-                }
-                scenario_list.entries[index].scenario.load_data();
-                scenario_list.entries[index].scenario.load_results();
                 selected_scenario.index = Some(index);
-                commands.insert_resource(NextState(Some(
-                    match scenario_list.entries[index].scenario.get_status() {
-                        Status::Done => UiState::Results,
-                        _ => UiState::Scenario,
-                    },
-                )));
+                commands.insert_resource(NextState(Some(UiState::Scenario)));
             };
         });
         row.col(|ui| {
@@ -226,6 +218,18 @@ fn draw_row(
             match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(summary.delta_delays_max.to_string()),
                 None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            if ui
+                .add(
+                    egui::TextEdit::multiline(&mut scenario_list.entries[index].scenario.comment)
+                        .desired_width(f32::INFINITY)
+                        .desired_rows(2),
+                )
+                .lost_focus()
+            {
+                scenario_list.entries[index].scenario.save().unwrap();
             };
         });
     });

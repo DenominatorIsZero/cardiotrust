@@ -62,6 +62,15 @@ fn draw_ui_scenario_topbar(
                 scenarios.entries.remove(index);
                 selected_scenario.index = Some(0);
             }
+            ui.separator();
+            let index = selected_scenario.index.unwrap();
+            let scenario = &mut scenarios.entries[index].scenario;
+            if ui
+                .add(egui::TextEdit::multiline(&mut scenario.comment).desired_width(f32::INFINITY))
+                .lost_focus()
+            {
+                scenario.save().unwrap();
+            }
         });
     });
 }

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 use egui::Separator;
 
-use crate::scheduler::SchedulerState;
+use crate::{core::scenario::Status, scheduler::SchedulerState, ScenarioList, SelectedSenario};
 
 use super::UiState;
 
@@ -12,6 +12,8 @@ pub fn draw_ui_topbar(
     mut contexts: EguiContexts,
     ui_state: Res<State<UiState>>,
     scheduler_state: Res<State<SchedulerState>>,
+    mut scenario_list: ResMut<ScenarioList>,
+    selected_scenario: Res<SelectedSenario>,
 ) {
     egui::TopBottomPanel::top("menu_panel").show(contexts.ctx_mut(), |ui| {
         ui.horizontal(|ui| {
@@ -36,9 +38,21 @@ pub fn draw_ui_topbar(
                 commands.insert_resource(NextState(Some(UiState::Scenario)));
             };
             if ui
-                .add_enabled(ui_state.0 != UiState::Results, egui::Button::new("Results"))
+                .add_enabled(
+                    ui_state.0 != UiState::Results
+                        && selected_scenario.index.is_some()
+                        && scenario_list.entries[selected_scenario.index.unwrap()]
+                            .scenario
+                            .get_status()
+                            == &Status::Done,
+                    egui::Button::new("Results"),
+                )
                 .clicked()
             {
+                let index = selected_scenario.index.unwrap();
+                let scenario = &mut scenario_list.entries[index].scenario;
+                scenario.load_data();
+                scenario.load_results();
                 println!("Opening Results UI");
                 commands.insert_resource(NextState(Some(UiState::Results)));
             };
