@@ -12,7 +12,7 @@ use ciborium::{from_reader, into_writer};
 use serde::{Deserialize, Serialize};
 use toml;
 
-use self::results::Results;
+use self::results::{Results, Snapshot};
 use self::summary::Summary;
 
 use super::algorithm;
@@ -319,6 +319,15 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         summary.delta_gains_max = results.metrics.delta_gains_max_epoch.values[epoch_index];
         summary.delta_delays_mean = results.metrics.delta_delays_mean_epoch.values[epoch_index];
         summary.delta_delays_max = results.metrics.delta_delays_max_epoch.values[epoch_index];
+
+        if scenario.config.algorithm.snapshots_interval != 0
+            && epoch_index % scenario.config.algorithm.snapshots_interval == 0
+        {
+            results.snapshots.push(Snapshot::new(
+                &results.estimations,
+                &model.functional_description,
+            ));
+        }
 
         epoch_tx.send(epoch_index).unwrap();
         summary_tx.send(summary.clone()).unwrap();

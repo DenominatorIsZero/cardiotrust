@@ -84,9 +84,11 @@ pub fn run_epoch(
             epoch_index,
         );
     }
-    functional_description
-        .ap_params
-        .update(&results.derivatives, config);
+    functional_description.ap_params.update(
+        &results.derivatives,
+        config,
+        results.estimations.system_states.values.shape()[0],
+    );
     results.metrics.calculate_epoch(epoch_index);
 }
 

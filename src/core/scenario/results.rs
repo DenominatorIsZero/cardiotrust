@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::model::Model;
+use crate::core::{
+    algorithm::estimation,
+    model::{functional::FunctionalDescription, Model},
+};
 
 use super::algorithm::{
     estimation::Estimations, metrics::Metrics, refinement::derivation::Derivatives,
@@ -32,5 +35,18 @@ impl Results {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct Snapshot {}
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct Snapshot {
+    pub estimations: Estimations,
+    pub functional_description: FunctionalDescription,
+}
+
+impl Snapshot {
+    #[must_use]
+    pub fn new(estimations: &Estimations, functional_description: &FunctionalDescription) -> Self {
+        Self {
+            estimations: estimations.clone(),
+            functional_description: functional_description.clone(),
+        }
+    }
+}

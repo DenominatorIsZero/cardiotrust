@@ -85,6 +85,10 @@ impl Derivatives {
                 &estimations.ap_outputs,
                 &functional_description.ap_params.output_state_indices,
                 config.regularization_strength,
+                functional_description
+                    .measurement_covariance
+                    .values
+                    .raw_dim()[0],
             );
         }
         if !config.freeze_delays {
@@ -94,6 +98,10 @@ impl Derivatives {
                 &functional_description.ap_params,
                 time_index,
                 config.regularization_strength,
+                functional_description
+                    .measurement_covariance
+                    .values
+                    .raw_dim()[0],
             );
         }
     }
@@ -106,8 +114,10 @@ impl Derivatives {
         // This needed for indexing
         output_state_indices: &ArrayIndicesGains,
         regularization_strength: f32,
+        number_of_sensors: usize,
     ) {
-        let scaling = 1.0 - regularization_strength;
+        #[allow(clippy::cast_precision_loss)]
+        let scaling = (1.0 - regularization_strength) / number_of_sensors as f32;
         self.gains
             .values
             .iter_mut()
@@ -136,6 +146,7 @@ impl Derivatives {
         ap_params: &APParameters,
         time_index: usize,
         regularization_strength: f32,
+        number_of_sensors: usize,
     ) {
         self.coefs_fir
             .values
@@ -170,7 +181,8 @@ impl Derivatives {
                         ap_params.coefs.values[coef_index].mul_add(*derivative, *ap_output);
                 },
             );
-        let scaling = 1.0 - regularization_strength;
+        #[allow(clippy::cast_precision_loss)]
+        let scaling = (1.0 - regularization_strength) / number_of_sensors as f32;
         self.coefs_iir
             .values
             .indexed_iter()
@@ -326,6 +338,7 @@ mod tests {
             &ap_outputs,
             &output_state_indices,
             regularization_strength,
+            1,
         );
 
         assert!(
@@ -361,6 +374,7 @@ mod tests {
             &ap_params,
             time_index,
             regularization_strength,
+            1,
         );
     }
 

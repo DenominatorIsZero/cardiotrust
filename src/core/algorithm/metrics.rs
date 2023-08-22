@@ -75,6 +75,7 @@ impl Metrics {
     /// # Panics
     ///
     /// Panics if any array is None.
+    #[allow(clippy::cast_precision_loss)]
     pub fn calculate_step(
         &mut self,
         estimations: &Estimations,
@@ -86,7 +87,8 @@ impl Metrics {
         let index = time_index
             + epoch_index * (self.loss.values.shape()[0] / self.loss_epoch.values.shape()[0]);
 
-        self.loss_mse.values[index] = estimations.residuals.values.mapv(|v| v.powi(2)).sum();
+        self.loss_mse.values[index] = estimations.residuals.values.mapv(|v| v.powi(2)).sum()
+            / estimations.residuals.values.raw_dim()[0] as f32;
         self.loss_maximum_regularization.values[index] = derivatives
             .maximum_regularization
             .values
