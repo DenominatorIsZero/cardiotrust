@@ -23,7 +23,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         model.spatial_description.sensors.count(),
         data.get_measurements().values.shape()[0],
     );
-    let time_index = 0;
+    let time_index = 200;
     let mut group = c.benchmark_group("System Prediction");
     group.bench_function("Normal", |b| {
         b.iter(|| {
