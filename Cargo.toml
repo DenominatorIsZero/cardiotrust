@@ -37,5 +37,12 @@ strum_macros = "0.25"
 toml = "0.7.3"
 color_quant = "1.1.0"
 
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "my_benchmark"
+harness = false
+
 [profile.test]
 opt-level = 3
