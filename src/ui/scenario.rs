@@ -9,8 +9,8 @@ use egui::Align;
 
 use self::{algorithm::draw_ui_scenario_algoriothm, data::draw_ui_scenario_data};
 use crate::{
-    core::scenario::{Scenario, Status},
-    ScenarioList, SelectedSenario,
+    core::scenario::{self, Scenario, Status},
+    ScenarioBundle, ScenarioList, SelectedSenario,
 };
 
 #[allow(clippy::module_name_repetitions)]
@@ -56,11 +56,21 @@ fn draw_ui_scenario_topbar(
             }
             if ui.button("Save").clicked() {
                 scenario.save().unwrap();
-            }
-            if ui.button("Delete").clicked() {
+            } else if ui.button("Delete").clicked() {
                 scenario.delete().unwrap();
                 scenarios.entries.remove(index);
                 selected_scenario.index = Some(0);
+            } else if ui.button("Copy").clicked() {
+                let mut new_scenario = Scenario::build(None);
+                new_scenario.config = scenario.config.clone();
+                new_scenario.comment = scenario.comment.clone();
+                scenarios.entries.push(ScenarioBundle {
+                    scenario: new_scenario,
+                    join_handle: None,
+                    epoch_rx: None,
+                    summary_rx: None,
+                });
+                selected_scenario.index = Some(scenarios.entries.len() - 1);
             }
             ui.separator();
             let index = selected_scenario.index.unwrap();

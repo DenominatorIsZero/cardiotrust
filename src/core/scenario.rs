@@ -23,7 +23,7 @@ use super::{config::Config, data::Data};
 pub struct Scenario {
     id: String,
     status: Status,
-    config: Config,
+    pub config: Config,
     #[serde(skip_serializing, skip_deserializing)]
     pub data: Option<Data>,
     #[serde(skip_serializing, skip_deserializing)]
