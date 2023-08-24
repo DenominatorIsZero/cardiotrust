@@ -17,6 +17,7 @@ pub struct SchedulerPlugin;
 impl Plugin for SchedulerPlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<SchedulerState>()
+            .init_resource::<NumberOfJobs>()
             .add_system(start_scenarios.run_if(in_state(SchedulerState::Available)))
             .add_system(check_scenarios.run_if(in_state(SchedulerState::Unavailale)));
     }
@@ -31,7 +32,23 @@ pub enum SchedulerState {
     Unavailale,
 }
 
-pub fn start_scenarios(mut commands: Commands, mut scenario_list: ResMut<ScenarioList>) {
+#[derive(Resource)]
+pub struct NumberOfJobs {
+    pub value: usize,
+}
+
+impl Default for NumberOfJobs {
+    fn default() -> Self {
+        Self { value: 4 }
+    }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+pub fn start_scenarios(
+    mut commands: Commands,
+    mut scenario_list: ResMut<ScenarioList>,
+    number_of_jobs: Res<NumberOfJobs>,
+) {
     if let Some(entry) = scenario_list
         .entries
         .iter_mut()
@@ -46,6 +63,16 @@ pub fn start_scenarios(mut commands: Commands, mut scenario_list: ResMut<Scenari
         entry.join_handle = Some(handle);
         entry.epoch_rx = Some(Mutex::new(epoch_rx));
         entry.summary_rx = Some(Mutex::new(summary_rx));
+    }
+    if scenario_list
+        .entries
+        .iter()
+        .filter(|entry| {
+            discriminant(entry.scenario.get_status()) == discriminant(&Status::Running(1))
+        })
+        .count()
+        >= number_of_jobs.value
+    {
         println!("Moving scheduler to state unavailable.");
         commands.insert_resource(NextState(Some(SchedulerState::Unavailale)));
     }
@@ -57,7 +84,12 @@ pub fn start_scenarios(mut commands: Commands, mut scenario_list: ResMut<Scenari
 ///
 /// Panics if a running scenario has no epoch receiver, summary receiver or
 /// join handle.
-pub fn check_scenarios(mut commands: Commands, mut scenario_list: ResMut<ScenarioList>) {
+#[allow(clippy::needless_pass_by_value)]
+pub fn check_scenarios(
+    mut commands: Commands,
+    mut scenario_list: ResMut<ScenarioList>,
+    number_of_jobs: Res<NumberOfJobs>,
+) {
     scenario_list
         .entries
         .iter_mut()
@@ -98,10 +130,14 @@ pub fn check_scenarios(mut commands: Commands, mut scenario_list: ResMut<Scenari
             }
         });
 
-    if !scenario_list
+    if scenario_list
         .entries
         .iter()
-        .any(|entry| discriminant(entry.scenario.get_status()) == discriminant(&Status::Running(1)))
+        .filter(|entry| {
+            discriminant(entry.scenario.get_status()) == discriminant(&Status::Running(1))
+        })
+        .count()
+        < number_of_jobs.value
     {
         println!("Moving scheduler to state available.");
         commands.insert_resource(NextState(Some(SchedulerState::Available)));
