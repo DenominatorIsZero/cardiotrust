@@ -61,5 +61,8 @@ impl Default for ScenarioList {
             }
         }
         scenario_list
+            .entries
+            .sort_by_key(|entry| entry.scenario.get_id().clone());
+        scenario_list
     }
 }
