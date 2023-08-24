@@ -2,7 +2,11 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 use egui::Separator;
 
-use crate::{core::scenario::Status, scheduler::SchedulerState, ScenarioList, SelectedSenario};
+use crate::{
+    core::scenario::Status,
+    scheduler::{NumberOfJobs, SchedulerState},
+    ScenarioList, SelectedSenario,
+};
 
 use super::UiState;
 
@@ -14,6 +18,7 @@ pub fn draw_ui_topbar(
     scheduler_state: Res<State<SchedulerState>>,
     mut scenario_list: ResMut<ScenarioList>,
     selected_scenario: Res<SelectedSenario>,
+    mut number_of_jobs: ResMut<NumberOfJobs>,
 ) {
     egui::TopBottomPanel::top("menu_panel").show(contexts.ctx_mut(), |ui| {
         ui.horizontal(|ui| {
@@ -87,6 +92,8 @@ pub fn draw_ui_topbar(
                 println!("Stopping Scheduler");
                 commands.insert_resource(NextState(Some(SchedulerState::Paused)));
             };
+            ui.label("Number of jobs:");
+            ui.add(egui::Slider::new(&mut number_of_jobs.value, 1..=32));
         });
     });
 }
