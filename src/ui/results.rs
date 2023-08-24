@@ -112,6 +112,22 @@ impl Default for ResultImages {
     }
 }
 
+impl ResultImages {
+    fn reset(&mut self) {
+        *self = Self::default();
+    }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+pub fn reset_result_images(
+    mut result_images: ResMut<ResultImages>,
+    selected_scenario: Res<SelectedSenario>,
+) {
+    if selected_scenario.is_changed() {
+        result_images.reset();
+    }
+}
+
 #[allow(clippy::module_name_repetitions, clippy::needless_pass_by_value)]
 pub fn draw_ui_results(
     mut contexts: EguiContexts,
