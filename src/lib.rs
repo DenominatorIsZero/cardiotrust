@@ -23,7 +23,7 @@ pub struct SelectedSenario {
 
 impl Default for SelectedSenario {
     fn default() -> Self {
-        Self { index: Some(0) }
+        Self { index: None }
     }
 }
 
@@ -60,9 +60,11 @@ impl Default for ScenarioList {
                 });
             }
         }
-        scenario_list
-            .entries
-            .sort_by_key(|entry| entry.scenario.get_id().clone());
+        if !scenario_list.entries.is_empty() {
+            scenario_list
+                .entries
+                .sort_by_key(|entry| entry.scenario.get_id().clone());
+        }
         scenario_list
     }
 }

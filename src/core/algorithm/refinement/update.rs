@@ -18,12 +18,16 @@ impl APParameters {
         config: &Algorithm,
         number_of_steps: usize,
     ) {
+        let batch_size = match config.batch_size {
+            0 => number_of_steps,
+            _ => config.batch_size,
+        };
         if !config.freeze_gains {
             update_gains(
                 &mut self.gains,
                 &derivatives.gains,
                 config.learning_rate,
-                number_of_steps,
+                batch_size,
             );
         }
         if !config.freeze_delays {
@@ -32,7 +36,7 @@ impl APParameters {
                 &mut self.delays,
                 &derivatives.coefs,
                 config.learning_rate,
-                number_of_steps,
+                batch_size,
             );
         }
     }
@@ -43,9 +47,9 @@ fn update_gains(
     gains: &mut ArrayGains<f32>,
     derivatives: &ArrayGains<f32>,
     learning_rate: f32,
-    number_of_steps: usize,
+    batch_size: usize,
 ) {
-    gains.values -= &(learning_rate / number_of_steps as f32 * &derivatives.values);
+    gains.values -= &(learning_rate / batch_size as f32 * &derivatives.values);
 }
 
 /// Performs one gradient descent step on the all-pass coeffs.
@@ -60,9 +64,9 @@ fn update_delays(
     delays: &mut ArrayDelays<usize>,
     derivatives: &ArrayDelays<f32>,
     learning_rate: f32,
-    number_of_steps: usize,
+    batch_size: usize,
 ) {
-    ap_coefs.values -= &(learning_rate / number_of_steps as f32 * &derivatives.values);
+    ap_coefs.values -= &(learning_rate / batch_size as f32 * &derivatives.values);
     // make sure to keep the all pass coefficients between 0 and 1 by
     // wrapping them around and adjusting the delays accordingly.
     ap_coefs

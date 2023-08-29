@@ -5,6 +5,8 @@ use super::model::Model;
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Algorithm {
     pub epochs: usize,
+    #[serde(default)]
+    pub batch_size: usize,
     pub snapshots_interval: usize,
     pub learning_rate: f32,
     #[serde(default)]
@@ -21,8 +23,9 @@ impl Default for Algorithm {
     fn default() -> Self {
         Self {
             epochs: 1,
+            batch_size: 0,
             snapshots_interval: 0,
-            learning_rate: 1e-5,
+            learning_rate: 1e0,
             regularization_strength: 0.1,
             model: Model::default(),
             constrain_system_states: true,

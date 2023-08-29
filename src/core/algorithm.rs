@@ -1,3 +1,5 @@
+use ndarray_linalg::Scalar;
+
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_residuals,
     calculate_system_prediction, calculate_system_states_delta, calculate_system_update,
@@ -27,6 +29,13 @@ pub fn run_epoch(
 ) {
     results.estimations.reset();
     results.derivatives.reset();
+    let mut batch = match config.batch_size {
+        0 => None,
+        _ => Some(
+            (epoch_index * results.estimations.system_states.values.shape()[0]) % config.batch_size,
+        ),
+    };
+
     for time_index in 0..results.estimations.system_states.values.shape()[0] {
         calculate_system_prediction(
             &mut results.estimations.ap_outputs,
@@ -83,12 +92,27 @@ pub fn run_epoch(
             time_index,
             epoch_index,
         );
+        if let Some(n) = batch.as_mut() {
+            *n += 1;
+            if *n == config.batch_size {
+                functional_description.ap_params.update(
+                    &results.derivatives,
+                    config,
+                    results.estimations.system_states.values.shape()[0],
+                );
+                results.derivatives.reset();
+                results.estimations.kalman_gain_converged = false;
+                *n = 0;
+            }
+        }
     }
-    functional_description.ap_params.update(
-        &results.derivatives,
-        config,
-        results.estimations.system_states.values.shape()[0],
-    );
+    if batch.is_none() {
+        functional_description.ap_params.update(
+            &results.derivatives,
+            config,
+            results.estimations.system_states.values.shape()[0],
+        );
+    }
     results.metrics.calculate_epoch(epoch_index);
 }
 

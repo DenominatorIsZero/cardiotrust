@@ -42,6 +42,22 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 ui.label("The number of epochs to run the algorithm for.");
                             });
                         });
+                        // Batch size
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Batch Size");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(&mut algorithm.batch_size, 0..=50000));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The batch size to use for the algorithm.\
+                                After how many samples to update the weights.\
+                                Default: 0 - one update per Epoch.",
+                                );
+                            });
+                        });
                         // Snapshot interval
                         body.row(60.0, |mut row| {
                             row.col(|ui| {
