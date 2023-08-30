@@ -36,9 +36,9 @@ strum_macros = "0.25"
 toml = "0.7.3"
 color_quant = "1.1.0"
 
-[target.'cfg(windows)'.dependencies]
+[target.'cfg(target_os = "windows")'.dependencies]
 ndarray-linalg = {version="0.16.0", features = ["intel-mkl-static"]}
-[target.'cfg(macos)'.dependencies]
+[target.'cfg(target_os = "macos")'.dependencies]
 ndarray-linalg = {version="0.16.0", features = ["openblas-system"]}
 
 [dev-dependencies]
