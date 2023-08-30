@@ -43,6 +43,7 @@ impl APParameters {
 }
 
 /// Performs one gradient descent step on the all-pass gains.
+#[allow(clippy::cast_precision_loss)]
 fn update_gains(
     gains: &mut ArrayGains<f32>,
     derivatives: &ArrayGains<f32>,
@@ -59,6 +60,7 @@ fn update_gains(
 /// When a step would place a coefficient outside this range,
 /// the integer delay parameter is adjusted to "roll" the
 /// coefficient.
+#[allow(clippy::cast_precision_loss)]
 fn update_delays(
     ap_coefs: &mut ArrayDelays<f32>,
     delays: &mut ArrayDelays<usize>,

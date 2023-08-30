@@ -24,7 +24,7 @@ pub fn draw_ui_topbar(
         ui.horizontal(|ui| {
             if ui
                 .add_enabled(
-                    ui_state.0 != UiState::Explorer,
+                    ui_state.get() != &UiState::Explorer,
                     egui::Button::new("Explorer"),
                 )
                 .clicked()
@@ -34,7 +34,7 @@ pub fn draw_ui_topbar(
             };
             if ui
                 .add_enabled(
-                    ui_state.0 != UiState::Scenario,
+                    ui_state.get() != &UiState::Scenario,
                     egui::Button::new("Scenario"),
                 )
                 .clicked()
@@ -44,7 +44,7 @@ pub fn draw_ui_topbar(
             };
             if ui
                 .add_enabled(
-                    ui_state.0 != UiState::Results
+                    ui_state.get() != &UiState::Results
                         && selected_scenario.index.is_some()
                         && scenario_list.entries[selected_scenario.index.unwrap()]
                             .scenario
@@ -63,7 +63,7 @@ pub fn draw_ui_topbar(
             };
             if ui
                 .add_enabled(
-                    ui_state.0 != UiState::Volumetric,
+                    ui_state.get() != &UiState::Volumetric,
                     egui::Button::new("Volumetric"),
                 )
                 .clicked()
@@ -74,7 +74,7 @@ pub fn draw_ui_topbar(
             ui.add(Separator::default().spacing(200.0));
             if ui
                 .add_enabled(
-                    scheduler_state.0 == SchedulerState::Paused,
+                    scheduler_state.get() == &SchedulerState::Paused,
                     egui::Button::new("Start"),
                 )
                 .clicked()
@@ -84,7 +84,7 @@ pub fn draw_ui_topbar(
             };
             if ui
                 .add_enabled(
-                    scheduler_state.0 != SchedulerState::Paused,
+                    scheduler_state.get() != &SchedulerState::Paused,
                     egui::Button::new("Stop"),
                 )
                 .clicked()

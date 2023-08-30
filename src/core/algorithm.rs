@@ -1,5 +1,3 @@
-use ndarray_linalg::Scalar;
-
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_residuals,
     calculate_system_prediction, calculate_system_states_delta, calculate_system_update,

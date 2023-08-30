@@ -16,15 +16,9 @@ use bevy::prelude::*;
 
 use crate::core::scenario::Scenario;
 
-#[derive(Resource, Debug)]
+#[derive(Resource, Debug, Default)]
 pub struct SelectedSenario {
     pub index: Option<usize>,
-}
-
-impl Default for SelectedSenario {
-    fn default() -> Self {
-        Self { index: None }
-    }
 }
 
 #[derive(Debug)]

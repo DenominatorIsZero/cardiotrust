@@ -3,7 +3,6 @@ pub mod shapes;
 use std::ops::AddAssign;
 
 use itertools::Itertools;
-use ndarray::parallel::prelude::*;
 use ndarray::{s, Array2, Zip};
 use ndarray_linalg::Inverse;
 use serde::{Deserialize, Serialize};

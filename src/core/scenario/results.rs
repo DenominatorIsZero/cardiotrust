@@ -1,9 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::{
-    algorithm::estimation,
-    model::{functional::FunctionalDescription, Model},
-};
+use crate::core::model::{functional::FunctionalDescription, Model};
 
 use super::algorithm::{
     estimation::Estimations, metrics::Metrics, refinement::derivation::Derivatives,

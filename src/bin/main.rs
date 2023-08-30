@@ -15,10 +15,10 @@ fn main() {
             }),
             ..default()
         }))
-        .add_plugin(PanOrbitCameraPlugin)
-        .add_plugin(UiPlugin)
-        .add_plugin(SchedulerPlugin)
-        .add_startup_system(setup)
+        .add_plugins(PanOrbitCameraPlugin)
+        .add_plugins(UiPlugin)
+        .add_plugins(SchedulerPlugin)
+        .add_systems(Startup, setup)
         .run();
 }
 

@@ -18,8 +18,11 @@ impl Plugin for SchedulerPlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<SchedulerState>()
             .init_resource::<NumberOfJobs>()
-            .add_system(start_scenarios.run_if(in_state(SchedulerState::Available)))
-            .add_system(check_scenarios);
+            .add_systems(
+                Update,
+                start_scenarios.run_if(in_state(SchedulerState::Available)),
+            )
+            .add_systems(Update, check_scenarios);
     }
 }
 
@@ -139,7 +142,7 @@ pub fn check_scenarios(
         })
         .count()
         < number_of_jobs.value)
-        && (scheduler_state.0 == SchedulerState::Unavailale)
+        && (scheduler_state.get() == &SchedulerState::Unavailale)
     {
         println!("Moving scheduler to state available.");
         commands.insert_resource(NextState(Some(SchedulerState::Available)));

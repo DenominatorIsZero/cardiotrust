@@ -26,13 +26,16 @@ impl Plugin for UiPlugin {
             .init_resource::<ResultImages>()
             .init_resource::<SelectedResultImage>()
             .init_resource::<PlaybackSpeed>()
-            .add_plugin(EguiPlugin)
-            .add_system(draw_ui_topbar)
-            .add_system(draw_ui_explorer.run_if(in_state(UiState::Explorer)))
-            .add_system(draw_ui_scenario.run_if(in_state(UiState::Scenario)))
-            .add_system(draw_ui_results.run_if(in_state(UiState::Results)))
-            .add_system(draw_ui_volumetric.run_if(in_state(UiState::Volumetric)))
-            .add_system(reset_result_images);
+            .add_plugins(EguiPlugin)
+            .add_systems(Update, draw_ui_topbar)
+            .add_systems(Update, draw_ui_explorer.run_if(in_state(UiState::Explorer)))
+            .add_systems(Update, draw_ui_scenario.run_if(in_state(UiState::Scenario)))
+            .add_systems(Update, draw_ui_results.run_if(in_state(UiState::Results)))
+            .add_systems(
+                Update,
+                draw_ui_volumetric.run_if(in_state(UiState::Volumetric)),
+            )
+            .add_systems(Update, reset_result_images);
     }
 }
 

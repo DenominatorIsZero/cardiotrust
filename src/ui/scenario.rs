@@ -9,7 +9,7 @@ use egui::Align;
 
 use self::{algorithm::draw_ui_scenario_algoriothm, data::draw_ui_scenario_data};
 use crate::{
-    core::scenario::{self, Scenario, Status},
+    core::scenario::{Scenario, Status},
     ScenarioBundle, ScenarioList, SelectedSenario,
 };
 

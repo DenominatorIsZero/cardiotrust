@@ -196,7 +196,6 @@ pub fn draw_ui_results(
                     if join_handle.is_finished() {
                         image_bundle.texture =
                             Some(load_image(scenario, selected_image.image_type, ui));
-                    } else {
                     }
                 }
                 None => {

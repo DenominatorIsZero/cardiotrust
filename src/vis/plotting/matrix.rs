@@ -634,6 +634,11 @@ pub fn plot_states_max_delta(
     plot_states_max(&delta_system_states, voxels, file_name, title);
 }
 
+/// .
+///
+/// # Panics
+///
+/// Panics if something fishy happens with io rights.
 pub fn plot_states_over_time(
     system_states: &ArraySystemStates,
     voxels: &Voxels,

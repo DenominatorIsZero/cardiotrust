@@ -48,6 +48,11 @@ pub fn standard_time_plot(
     save_plot(file_name, &plot, width, height, scale);
 }
 
+/// .
+///
+/// # Panics
+///
+/// Panics if min or max of array couldn't be computed.
 pub fn standard_y_plot(
     y: &Array1<f32>,
     file_name: &str,

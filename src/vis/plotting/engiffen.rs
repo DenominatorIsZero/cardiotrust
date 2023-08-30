@@ -212,7 +212,7 @@ pub fn engiffen(imgs: &[Image], fps: usize, quantizer: Quantizer) -> Result<Gif,
     let (width, height) = {
         let first = &imgs[0];
         let first_dimensions = (first.width, first.height);
-        for img in imgs.iter() {
+        for img in imgs {
             let other_dimensions = (img.width, img.height);
             if first_dimensions != other_dimensions {
                 return Err(Error::Mismatch(first_dimensions, other_dimensions));
