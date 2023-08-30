@@ -29,7 +29,6 @@ pub fn draw_ui_topbar(
                 )
                 .clicked()
             {
-                println!("Opening Explorer UI");
                 commands.insert_resource(NextState(Some(UiState::Explorer)));
             };
             if ui
@@ -39,7 +38,6 @@ pub fn draw_ui_topbar(
                 )
                 .clicked()
             {
-                println!("Opening Scenario UI");
                 commands.insert_resource(NextState(Some(UiState::Scenario)));
             };
             if ui
@@ -58,7 +56,6 @@ pub fn draw_ui_topbar(
                 let scenario = &mut scenario_list.entries[index].scenario;
                 scenario.load_data();
                 scenario.load_results();
-                println!("Opening Results UI");
                 commands.insert_resource(NextState(Some(UiState::Results)));
             };
             if ui
@@ -68,7 +65,6 @@ pub fn draw_ui_topbar(
                 )
                 .clicked()
             {
-                println!("Opening Volumetric UI");
                 commands.insert_resource(NextState(Some(UiState::Volumetric)));
             };
             ui.add(Separator::default().spacing(200.0));
@@ -79,7 +75,6 @@ pub fn draw_ui_topbar(
                 )
                 .clicked()
             {
-                println!("Starting Scheduler");
                 commands.insert_resource(NextState(Some(SchedulerState::Available)));
             };
             if ui
@@ -89,7 +84,6 @@ pub fn draw_ui_topbar(
                 )
                 .clicked()
             {
-                println!("Stopping Scheduler");
                 commands.insert_resource(NextState(Some(SchedulerState::Paused)));
             };
             ui.label("Number of jobs:");

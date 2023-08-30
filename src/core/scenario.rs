@@ -259,16 +259,13 @@ impl Scenario {
     ///
     /// Panics if the results.bin file can not be parsed into the results struct.
     pub fn load_results(&mut self) {
-        println!("Loading results");
         if self.results.is_some() {
             return;
         }
         let file_path = Path::new("./results").join(&self.id).join("results.bin");
         if file_path.is_file() {
-            println!("Found File");
             self.results = Some(from_reader(File::open(file_path).unwrap()).unwrap());
         }
-        println!("Loaded results.");
     }
 }
 

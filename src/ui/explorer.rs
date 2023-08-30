@@ -39,46 +39,46 @@ pub fn draw_ui_explorer(
                     ui.heading("");
                 });
                 header.col(|ui| {
-                    ui.heading("ID");
+                    ui.heading("\nID\n");
                 });
                 header.col(|ui| {
-                    ui.heading("Status");
+                    ui.heading("\nStatus\n");
                 });
                 header.col(|ui| {
-                    ui.heading("Loss");
+                    ui.heading("\nLoss\n");
                 });
                 header.col(|ui| {
-                    ui.heading("MSE Loss");
+                    ui.heading("\nMSE Loss\n");
                 });
                 header.col(|ui| {
-                    ui.heading("M. R. Loss");
+                    ui.heading("\nM. R. Loss\n");
                 });
                 header.col(|ui| {
-                    ui.heading("Delta\nStates\nMean");
+                    ui.heading("\nDelta\nStates\nMean");
                 });
                 header.col(|ui| {
-                    ui.heading("Delta\nStates\nMax");
+                    ui.heading("\nDelta\nStates\nMax");
                 });
                 header.col(|ui| {
-                    ui.heading("Delta\nMeas.\nMean");
+                    ui.heading("\nDelta\nMeas.\nMean");
                 });
                 header.col(|ui| {
-                    ui.heading("Delta\nMeas.\nMax");
+                    ui.heading("\nDelta\nMeas.\nMax");
                 });
                 header.col(|ui| {
-                    ui.heading("Delta\nGains\nMean");
+                    ui.heading("\nDelta\nGains\nMean");
                 });
                 header.col(|ui| {
-                    ui.heading("Delta\nGains\nMax");
+                    ui.heading("\nDelta\nGains\nMax");
                 });
                 header.col(|ui| {
-                    ui.heading("Delta\nDelays\nMean");
+                    ui.heading("\nDelta\nDelays\nMean");
                 });
                 header.col(|ui| {
-                    ui.heading("Delta\nDelays\nMax");
+                    ui.heading("\nDelta\nDelays\nMax");
                 });
                 header.col(|ui| {
-                    ui.heading("Comment");
+                    ui.heading("\nComment");
                 });
             })
             .body(|mut body| {

@@ -247,9 +247,7 @@ pub fn calculate_system_update(
         let difference = (kalman_gain_old - &functional_description.kalman_gain.values)
             .mapv(|v| v.powi(2))
             .sum();
-        println!("Difference: {difference}");
         if difference == 0.0 {
-            println!("Kalman gain converged");
             estimations.kalman_gain_converged = true;
         }
     }
