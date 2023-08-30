@@ -18,7 +18,7 @@ egui_extras = "0.22.0"
 fnv = "1.0.7"
 gif = "0.12.0"
 image = "0.24.6"
-itertools = "0.10.5"
+itertools = "0.11.0"
 lab = "0.11.0"
 ndarray = {version = "0.15.6", features = ["approx", "serde", "rayon"]}
 ndarray-npy = "0.8.1"

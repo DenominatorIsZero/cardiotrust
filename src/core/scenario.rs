@@ -34,6 +34,11 @@ pub struct Scenario {
 }
 
 impl Scenario {
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if scenario could not be saved in location.
     #[must_use]
     pub fn build(id: Option<String>) -> Self {
         let scenario = Self {
@@ -273,7 +278,9 @@ impl Scenario {
 ///
 /// Panics if .
 pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender<Summary>) {
-    let Some(simulation) = &scenario.config.simulation else { todo!("Non-simulation case not yet implemented.") };
+    let Some(simulation) = &scenario.config.simulation else {
+        todo!("Non-simulation case not yet implemented.")
+    };
     let data = Data::from_simulation_config(simulation);
     let mut model = Model::from_model_config(
         &scenario.config.algorithm.model,
