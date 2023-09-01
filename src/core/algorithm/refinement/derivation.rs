@@ -118,6 +118,9 @@ impl Derivatives {
     ) {
         #[allow(clippy::cast_precision_loss)]
         let scaling = (1.0 - regularization_strength) / number_of_sensors as f32;
+        #[allow(clippy::cast_precision_loss)]
+        let regularization_scaling = regularization_strength / number_of_sensors as f32;
+
         self.gains
             .values
             .iter_mut()
@@ -133,7 +136,7 @@ impl Derivatives {
                     };
                 *derivative += ap_output
                     * self.mapped_residuals.values[index_output_state.unwrap()]
-                        .mul_add(scaling, maximum_regularization * regularization_strength);
+                        .mul_add(scaling, maximum_regularization * regularization_scaling);
             });
     }
 
@@ -183,6 +186,8 @@ impl Derivatives {
             );
         #[allow(clippy::cast_precision_loss)]
         let scaling = (1.0 - regularization_strength) / number_of_sensors as f32;
+        #[allow(clippy::cast_precision_loss)]
+        let regularization_scaling = regularization_strength / number_of_sensors as f32;
         self.coefs_iir
             .values
             .indexed_iter()
@@ -205,7 +210,7 @@ impl Derivatives {
                     self.coefs.values[coef_index] += (fir + iir)
                         * ap_gain
                         * self.mapped_residuals.values[output_state_index.unwrap()]
-                            .mul_add(scaling, maximum_regularization * regularization_strength);
+                            .mul_add(scaling, maximum_regularization * regularization_scaling);
                 },
             );
     }
