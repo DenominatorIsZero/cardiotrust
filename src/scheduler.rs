@@ -57,7 +57,6 @@ pub fn start_scenarios(
         .iter_mut()
         .find(|entry| *entry.scenario.get_status() == Status::Scheduled)
     {
-        println!("Starting scenario with id {}", entry.scenario.get_id());
         let send_scenario = entry.scenario.clone();
         let (epoch_tx, epoch_rx) = channel();
         let (summary_tx, summary_rx) = channel();
@@ -76,7 +75,6 @@ pub fn start_scenarios(
         .count()
         >= number_of_jobs.value
     {
-        println!("Moving scheduler to state unavailable.");
         commands.insert_resource(NextState(Some(SchedulerState::Unavailale)));
     }
 }
@@ -144,7 +142,6 @@ pub fn check_scenarios(
         < number_of_jobs.value)
         && (scheduler_state.get() == &SchedulerState::Unavailale)
     {
-        println!("Moving scheduler to state available.");
         commands.insert_resource(NextState(Some(SchedulerState::Available)));
     }
 }

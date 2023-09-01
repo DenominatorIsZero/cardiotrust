@@ -103,7 +103,7 @@ impl Metrics {
         self.delta_states_mean.values[index] = states_delta_abs.mean().unwrap();
         self.delta_states_max.values[index] = *states_delta_abs.max_skipnan();
 
-        let measurements_delta_abs = estimations.residuals.values.mapv(f32::abs);
+        let measurements_delta_abs = estimations.post_update_residuals.values.mapv(f32::abs);
         self.delta_measurements_mean.values[index] = measurements_delta_abs.mean().unwrap();
         self.delta_measurements_max.values[index] = *measurements_delta_abs.max_skipnan();
 

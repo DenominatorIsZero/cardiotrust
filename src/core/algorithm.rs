@@ -1,6 +1,7 @@
 use self::estimation::{
-    calculate_delays_delta, calculate_gains_delta, calculate_residuals,
-    calculate_system_prediction, calculate_system_states_delta, calculate_system_update,
+    calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
+    calculate_residuals, calculate_system_prediction, calculate_system_states_delta,
+    calculate_system_update,
 };
 
 use super::{
@@ -65,6 +66,13 @@ pub fn run_epoch(
                 config,
             );
         }
+        calculate_post_update_residuals(
+            &mut results.estimations.post_update_residuals,
+            &functional_description.measurement_matrix,
+            &results.estimations.system_states,
+            data.get_measurements(),
+            time_index,
+        );
         calculate_system_states_delta(
             &mut results.estimations.system_states_delta,
             &results.estimations.system_states,

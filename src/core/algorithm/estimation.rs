@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::config::algorithm::Algorithm;
 use crate::core::model::functional::allpass::from_coef_to_samples;
 use crate::core::model::functional::allpass::shapes::ArrayDelays;
+use crate::core::model::functional::measurement::MeasurementMatrix;
 use crate::core::model::{
     functional::allpass::shapes::ArrayGains, functional::FunctionalDescription,
 };
@@ -23,6 +24,7 @@ pub struct Estimations {
     pub state_covariance_est: ArrayGains<f32>,
     pub measurements: ArrayMeasurements,
     pub residuals: ArrayMeasurements,
+    pub post_update_residuals: ArrayMeasurements,
     pub system_states_delta: ArraySystemStates,
     pub gains_delta: ArrayGains<f32>,
     pub delays_delta: ArrayDelays<f32>,
@@ -45,6 +47,7 @@ impl Estimations {
             state_covariance_est: ArrayGains::empty(number_of_states),
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
             residuals: ArrayMeasurements::empty(1, number_of_sensors),
+            post_update_residuals: ArrayMeasurements::empty(1, number_of_sensors),
             system_states_delta: ArraySystemStates::empty(1, number_of_states),
             gains_delta: ArrayGains::empty(number_of_states),
             delays_delta: ArrayDelays::empty(number_of_states),
@@ -61,6 +64,7 @@ impl Estimations {
         self.state_covariance_est.values.fill(0.0);
         self.measurements.values.fill(0.0);
         self.residuals.values.fill(0.0);
+        self.post_update_residuals.values.fill(0.0);
         self.system_states_delta.values.fill(0.0);
         self.gains_delta.values.fill(0.0);
         self.delays_delta.values.fill(0.0);
@@ -190,6 +194,21 @@ pub fn calculate_residuals(
 ) {
     residuals.values.slice_mut(s![0, ..]).assign(
         &(&predicted_measurements.values.slice(s![time_index, ..])
+            - &actual_measurements.values.slice(s![time_index, ..])),
+    );
+}
+
+pub fn calculate_post_update_residuals(
+    post_update_residuals: &mut ArrayMeasurements,
+    measurement_matrix: &MeasurementMatrix,
+    estimated_system_states: &ArraySystemStates,
+    actual_measurements: &ArrayMeasurements,
+    time_index: usize,
+) {
+    post_update_residuals.values.slice_mut(s![0, ..]).assign(
+        &(measurement_matrix
+            .values
+            .dot(&estimated_system_states.values.slice(s![time_index, ..]))
             - &actual_measurements.values.slice(s![time_index, ..])),
     );
 }
