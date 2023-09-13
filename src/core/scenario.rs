@@ -335,6 +335,10 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
 
         epoch_tx.send(epoch_index).unwrap();
         summary_tx.send(summary.clone()).unwrap();
+        // Check if algorithm diverged. If so return early
+        if !summary.loss.is_normal() {
+            break;
+        }
     }
     results.model = Some(model);
     scenario.results = Some(results);

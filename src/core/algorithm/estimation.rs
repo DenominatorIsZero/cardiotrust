@@ -209,7 +209,7 @@ pub fn calculate_post_update_residuals(
         &(measurement_matrix
             .values
             .dot(&estimated_system_states.values.slice(s![time_index, ..]))
-            - &actual_measurements.values.slice(s![time_index, ..])),
+            - actual_measurements.values.slice(s![time_index, ..])),
     );
 }
 
