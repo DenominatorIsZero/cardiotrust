@@ -138,6 +138,7 @@ pub fn draw_ui_results(
     mut playback_speed: ResMut<PlaybackSpeed>,
 ) {
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
+        ui.label("");
         ui.horizontal(|ui| {
             egui::ComboBox::new("cb_result_image", "")
                 .selected_text(selected_image.image_type.to_string())
