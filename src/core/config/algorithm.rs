@@ -1,6 +1,15 @@
 use serde::{Deserialize, Serialize};
 
 use super::model::Model;
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Default)]
+pub enum Type {
+    #[default]
+    ModelBased,
+    PseudoInverse,
+    Loreta,
+}
+
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Algorithm {
