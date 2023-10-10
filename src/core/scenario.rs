@@ -16,6 +16,7 @@ use self::results::{Results, Snapshot};
 use self::summary::Summary;
 
 use super::algorithm;
+use super::config::algorithm::AlgorithmType;
 use super::model::Model;
 use super::{config::Config, data::Data};
 
@@ -276,8 +277,14 @@ impl Scenario {
 /// Panics if .
 pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender<Summary>) {
     let Some(simulation) = &scenario.config.simulation else {
-        todo!("Non-simulation case not yet implemented.")
+        panic!("Non-simulation case not yet implemented.")
     };
+
+    assert!(
+        scenario.config.algorithm.algorithm_type == AlgorithmType::ModelBased,
+        "Only Model based algorithm is implemented at the moment."
+    );
+
     let data = Data::from_simulation_config(simulation);
     let mut model = Model::from_model_config(
         &scenario.config.algorithm.model,

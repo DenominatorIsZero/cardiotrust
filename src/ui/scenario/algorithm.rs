@@ -1,6 +1,9 @@
 use egui_extras::{Column, TableBuilder};
 
-use crate::core::scenario::{Scenario, Status};
+use crate::core::{
+    config::algorithm::AlgorithmType,
+    scenario::{Scenario, Status},
+};
 
 use super::common::draw_ui_scenario_common;
 
@@ -30,6 +33,40 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                         });
                     })
                     .body(|mut body| {
+                        // algorithm type
+                        let algorithm_type = &mut algorithm.algorithm_type;
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Algorithm Type");
+                            });
+                            row.col(|ui| {
+                                egui::ComboBox::new("cb_algorithm_type", "")
+                                    .selected_text(format!("{algorithm_type:?}"))
+                                    .show_ui(ui, |ui| {
+                                        ui.selectable_value(
+                                            algorithm_type,
+                                            AlgorithmType::ModelBased,
+                                            "Model Based",
+                                        );
+                                        ui.selectable_value(
+                                            algorithm_type,
+                                            AlgorithmType::PseudoInverse,
+                                            "Pseudo Inverse",
+                                        );
+                                        ui.selectable_value(
+                                            algorithm_type,
+                                            AlgorithmType::Loreta,
+                                            "Loreta",
+                                        );
+                                    });
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The control function used as the input tthe system \
+                                    / The shape of the assumed current density curve.",
+                                );
+                            });
+                        });
                         // Epochs
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
@@ -94,6 +131,50 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 ui.label(
                                     "The learning rate used in the model refinement\
                                 step of the algorithm.",
+                                );
+                            });
+                        });
+                        // Learning rate reduction factor
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Learning rate reduction factor");
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut algorithm.learning_rate_reduction_factor,
+                                        1e-10..=1e10,
+                                    )
+                                    .logarithmic(true)
+                                    .custom_formatter(|n, _| format!("{n:+.4e}")),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The factor with which to multiply the learning rate\
+                                    every n epochs.",
+                                );
+                            });
+                        });
+                        // Learning rate reduction interval
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Learning rate reduction interval");
+                            });
+                            row.col(|ui| {
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut algorithm.learning_rate_reduction_interval,
+                                        0..=50000,
+                                    )
+                                    .logarithmic(true)
+                                    .custom_formatter(|n, _| format!("{n:+.4e}")),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The interval between which to reduce the learning rate.\
+                                    a value of 0 means no learning rate reduction is done.",
                                 );
                             });
                         });
