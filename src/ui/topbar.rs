@@ -33,7 +33,7 @@ pub fn draw_ui_topbar(
             };
             if ui
                 .add_enabled(
-                    ui_state.get() != &UiState::Scenario,
+                    ui_state.get() != &UiState::Scenario && selected_scenario.index.is_some(),
                     egui::Button::new("Scenario"),
                 )
                 .clicked()
