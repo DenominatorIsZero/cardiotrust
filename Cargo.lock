@@ -416,6 +416,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy-aabb-instancing"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b63ee8b9ffdbe6c52210d25d19781faf0d1e47e89c6f388b20a76828c80d4b2c"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_a11y"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4652,6 +4661,7 @@ version = "0.1.0"
 dependencies = [
  "approx 0.5.1",
  "bevy",
+ "bevy-aabb-instancing",
  "bevy_egui",
  "bevy_panorbit_camera",
  "chrono",
