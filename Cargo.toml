@@ -14,10 +14,10 @@ chrono = "0.4.24"
 config = "0.13.3"
 ciborium = "0.2.1"        
 egui = "0.23.0"
-egui_extras = "0.23.0"
+egui_extras = {version="0.23.0", features = ["all_loaders"]}
 fnv = "1.0.7"
 gif = "0.12.0"
-image = "0.24.6"
+image = {version = "0.24.7", features = ["png"]}
 itertools = "0.11.0"
 lab = "0.11.0"
 ndarray = {version = "0.15.6", features = ["approx", "serde", "rayon"]}

@@ -137,6 +137,7 @@ pub fn draw_ui_results(
     selected_scenario: Res<SelectedSenario>,
     mut playback_speed: ResMut<PlaybackSpeed>,
 ) {
+    egui_extras::install_image_loaders(contexts.ctx_mut());
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
         ui.label("");
         ui.horizontal(|ui| {
@@ -209,7 +210,7 @@ pub fn draw_ui_results(
 }
 
 fn get_image_path(scenario: &Scenario, image_type: ImageType) -> String {
-    Path::new("results")
+    Path::new("file://./results")
         .join(scenario.get_id())
         .join("img")
         .join(image_type.to_string())
