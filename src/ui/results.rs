@@ -28,7 +28,7 @@ use crate::{
 
 #[derive(Default)]
 pub struct ImageBundle {
-    pub texture: Option<egui::TextureHandle>,
+    pub path: Option<String>,
     pub join_handle: Option<JoinHandle<()>>,
 }
 
@@ -184,10 +184,8 @@ pub fn draw_ui_results(
             .image_bundles
             .get_mut(&selected_image.image_type)
             .unwrap();
-        if let Some(texture) = image_bundle.texture.as_mut() {
-            let size = texture.size_vec2() / 1.5;
-
-            ui.image(texture, size);
+        if let Some(image_path) = image_bundle.path.as_ref() {
+            ui.image(image_path);
         } else {
             let scenario = &scenario_list.entries[selected_scenario.index.unwrap()].scenario;
             let send_scenario = scenario.clone();
@@ -195,8 +193,8 @@ pub fn draw_ui_results(
             match image_bundle.join_handle.as_mut() {
                 Some(join_handle) => {
                     if join_handle.is_finished() {
-                        image_bundle.texture =
-                            Some(load_image(scenario, selected_image.image_type, ui));
+                        image_bundle.path =
+                            Some(get_image_path(scenario, selected_image.image_type));
                     }
                 }
                 None => {
@@ -210,21 +208,14 @@ pub fn draw_ui_results(
     });
 }
 
-fn load_image(scenario: &Scenario, image_type: ImageType, ui: &mut egui::Ui) -> TextureHandle {
-    let path = Path::new("results")
+fn get_image_path(scenario: &Scenario, image_type: ImageType) -> String {
+    Path::new("results")
         .join(scenario.get_id())
         .join("img")
         .join(image_type.to_string())
-        .with_extension("png");
-    let img = Reader::open(path).unwrap().decode().unwrap();
-    let size = [img.width() as _, img.height() as _];
-    let image_buffer = img.to_rgba8();
-    let pixels = image_buffer.as_flat_samples();
-    ui.ctx().load_texture(
-        image_type.to_string(),
-        egui::ColorImage::from_rgba_unmultiplied(size, pixels.as_slice()),
-        TextureOptions::default(),
-    )
+        .with_extension("png")
+        .to_string_lossy()
+        .into_owned()
 }
 
 #[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
