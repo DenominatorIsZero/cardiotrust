@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::WindowMode};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use rusty_cde::{scheduler::SchedulerPlugin, ui::UiPlugin, ScenarioList, SelectedSenario};
@@ -10,7 +10,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Rusty CDE".into(),
-                resolution: (2048., 1080.).into(),
+                mode: WindowMode::BorderlessFullscreen,
                 ..default()
             }),
             ..default()
