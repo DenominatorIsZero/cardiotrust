@@ -21,7 +21,9 @@ pub struct Algorithm {
     pub batch_size: usize,
     pub snapshots_interval: usize,
     pub learning_rate: f32,
+    #[serde(default)]
     pub learning_rate_reduction_factor: f32,
+    #[serde(default)]
     pub learning_rate_reduction_interval: usize,
     #[serde(default)]
     pub regularization_strength: f32,
