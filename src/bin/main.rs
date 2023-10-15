@@ -31,6 +31,11 @@ fn main() {
         .run();
 }
 
+#[derive(Component)]
+struct Indices {
+    pub test: u32,
+}
+
 pub fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -85,17 +90,21 @@ pub fn setup(
             }
             let cuboids = Cuboids::new(instances);
             let aabb = cuboids.aabb();
-            commands
-                .spawn(SpatialBundle::default())
-                .insert((cuboids, aabb, CuboidMaterialId(0)));
+            let indices = Indices { test: 3u32 };
+            commands.spawn(SpatialBundle::default()).insert((
+                cuboids,
+                aabb,
+                CuboidMaterialId(0),
+                indices,
+            ));
         }
     }
 }
 
-fn update_cuboids_colors(time: Res<Time>, mut query: Query<&mut Cuboids>) {
+fn update_cuboids_colors(time: Res<Time>, mut query: Query<(&mut Cuboids, &Indices)>) {
     let tv: u32 = (1000.0 * (time.elapsed_seconds().sin() + 1.0)) as u32;
-    for mut cuboids in query.iter_mut() {
-        cuboids.instances.par_iter_mut().for_each(|instance| {
+    query.par_iter_mut().for_each_mut(|(mut cuboids, _index)| {
+        cuboids.instances.iter_mut().for_each(|instance| {
             instance.color = Color::as_rgba_u32(Color::Rgba {
                 red: ((time.elapsed_seconds() * 130.0 + instance.minimum.x) / 7.0).sin() + 1.0,
                 green: ((time.elapsed_seconds() * 70.0 + instance.minimum.z) / 13.0).sin() + 1.0,
@@ -103,5 +112,5 @@ fn update_cuboids_colors(time: Res<Time>, mut query: Query<&mut Cuboids>) {
                 alpha: 1.0,
             })
         })
-    }
+    });
 }
