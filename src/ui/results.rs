@@ -5,8 +5,8 @@ use std::{
 };
 
 use bevy::prelude::*;
-use egui::{Slider, Spinner, TextureHandle, TextureOptions};
-use image::io::Reader;
+use egui::{Slider, Spinner};
+
 use ndarray::s;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};

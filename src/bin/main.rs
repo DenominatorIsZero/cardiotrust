@@ -1,9 +1,8 @@
 use bevy::{prelude::*, window::WindowMode};
 use bevy_aabb_instancing::{
-    Cuboid, CuboidMaterial, CuboidMaterialId, CuboidMaterialMap, Cuboids, CuboidsBundle,
-    VertexPullingRenderPlugin,
+    Cuboid, CuboidMaterialId, Cuboids,
 };
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_panorbit_camera::{PanOrbitCamera};
 use rayon::iter::IntoParallelRefMutIterator;
 use rayon::iter::ParallelIterator;
 
@@ -38,8 +37,8 @@ struct Indices {
 
 pub fn setup(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    _meshes: ResMut<Assets<Mesh>>,
+    _materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -102,7 +101,7 @@ pub fn setup(
 }
 
 fn update_cuboids_colors(time: Res<Time>, mut query: Query<(&mut Cuboids, &Indices)>) {
-    let tv: u32 = (1000.0 * (time.elapsed_seconds().sin() + 1.0)) as u32;
+    let _tv: u32 = (1000.0 * (time.elapsed_seconds().sin() + 1.0)) as u32;
     query.par_iter_mut().for_each_mut(|(mut cuboids, _index)| {
         cuboids.instances.iter_mut().for_each(|instance| {
             instance.color = Color::as_rgba_u32(Color::Rgba {

@@ -1,11 +1,11 @@
-use ndarray::{s, Array1, Array2};
+use ndarray::{s, Array1};
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 
 use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
 
 use super::{
-    estimation::{self, Estimations},
+    estimation::{Estimations},
     refinement::derivation::Derivatives,
 };
 

@@ -2,7 +2,7 @@ pub mod measurement;
 pub mod shapes;
 pub mod simulation;
 
-use ndarray::{Array3, Dim};
+use ndarray::{Dim};
 use serde::{Deserialize, Serialize};
 
 use self::measurement::Measurement;
@@ -17,7 +17,7 @@ use super::model::{
         allpass::shapes::{ArrayActivationTime, ArrayDelays, ArrayGains},
         control::ControlFunction,
     },
-    spatial::voxels::{VoxelType, VoxelTypes},
+    spatial::voxels::{VoxelTypes},
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

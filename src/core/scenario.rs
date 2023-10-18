@@ -9,12 +9,12 @@ use std::{fs, fs::File, io::Write};
 use chrono;
 
 use ciborium::{from_reader, into_writer};
-use ndarray_linalg::Scalar;
+
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 use toml;
 
-use crate::core::algorithm::metrics;
+
 
 use self::results::{Results, Snapshot};
 use self::summary::Summary;
