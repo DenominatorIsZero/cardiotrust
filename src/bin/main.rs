@@ -22,12 +22,12 @@ fn main() {
             }),
             ..default()
         }))
-        .add_plugins(PanOrbitCameraPlugin)
         .add_plugins(UiPlugin)
         .add_plugins(SchedulerPlugin)
-        .add_plugins(VertexPullingRenderPlugin { outlines: true })
-        .add_systems(Startup, setup)
-        .add_systems(Update, update_cuboids_colors)
+        // .add_plugins(PanOrbitCameraPlugin)
+        // .add_plugins(VertexPullingRenderPlugin { outlines: true })
+        // .add_systems(Startup, setup)
+        // .add_systems(Update, update_cuboids_colors)
         .run();
 }
 
