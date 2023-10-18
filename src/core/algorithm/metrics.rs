@@ -352,7 +352,7 @@ fn predict_voxeltype(
                     + system_states[[time_index, voxel_index + 1]].abs()
                     + system_states[[time_index, voxel_index + 2]].abs();
             });
-            if *abs.max_skipnan() < threshold {
+            if *abs.max_skipnan() <= threshold {
                 *prediction = VoxelType::Pathological;
             } else {
                 // just using ventricle here to differentiate the prediction
@@ -362,7 +362,7 @@ fn predict_voxeltype(
             }
         });
 
-    todo!()
+    predictions
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
