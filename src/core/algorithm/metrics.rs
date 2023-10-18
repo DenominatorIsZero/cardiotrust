@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
 
-use super::{
-    estimation::{Estimations},
-    refinement::derivation::Derivatives,
-};
+use super::{estimation::Estimations, refinement::derivation::Derivatives};
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -210,10 +207,10 @@ fn calculate_for_threshold(
 ) -> (f32, f32, f32, f32) {
     let predictions = predict_voxeltype(estimations, ground_truth, voxel_numbers, threshold);
 
-    let dice = calculate_dice(&predictions, &ground_truth);
-    let iou = calcultae_iou(&predictions, &ground_truth);
-    let precision = calculate_precision(&predictions, &ground_truth);
-    let recall = calculate_recall(&predictions, &ground_truth);
+    let dice = calculate_dice(&predictions, ground_truth);
+    let iou = calcultae_iou(&predictions, ground_truth);
+    let precision = calculate_precision(&predictions, ground_truth);
+    let recall = calculate_recall(&predictions, ground_truth);
 
     (dice, iou, precision, recall)
 }
@@ -329,6 +326,8 @@ fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     }
 }
 
+#[must_use]
+#[allow(clippy::missing_panics_doc)]
 pub fn predict_voxeltype(
     estimations: &Estimations,
     ground_truth: &VoxelTypes,

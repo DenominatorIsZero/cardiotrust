@@ -1,10 +1,6 @@
 use bevy::{prelude::*, window::WindowMode};
-use bevy_aabb_instancing::{
-    Cuboid, CuboidMaterialId, Cuboids,
-};
-use bevy_panorbit_camera::{PanOrbitCamera};
-use rayon::iter::IntoParallelRefMutIterator;
-use rayon::iter::ParallelIterator;
+use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids};
+use bevy_panorbit_camera::PanOrbitCamera;
 
 use rusty_cde::{scheduler::SchedulerPlugin, ui::UiPlugin, ScenarioList, SelectedSenario};
 
@@ -31,9 +27,7 @@ fn main() {
 }
 
 #[derive(Component)]
-struct Indices {
-    pub test: u32,
-}
+struct Indices {}
 
 pub fn setup(
     mut commands: Commands,
@@ -89,7 +83,7 @@ pub fn setup(
             }
             let cuboids = Cuboids::new(instances);
             let aabb = cuboids.aabb();
-            let indices = Indices { test: 3u32 };
+            let indices = Indices {};
             commands.spawn(SpatialBundle::default()).insert((
                 cuboids,
                 aabb,
@@ -100,6 +94,7 @@ pub fn setup(
     }
 }
 
+#[allow(dead_code)]
 fn update_cuboids_colors(time: Res<Time>, mut query: Query<(&mut Cuboids, &Indices)>) {
     let _tv: u32 = (1000.0 * (time.elapsed_seconds().sin() + 1.0)) as u32;
     query.par_iter_mut().for_each_mut(|(mut cuboids, _index)| {

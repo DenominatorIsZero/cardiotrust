@@ -14,8 +14,6 @@ use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 use toml;
 
-
-
 use self::results::{Results, Snapshot};
 use self::summary::Summary;
 
@@ -365,8 +363,10 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         .argmax_skipnan()
         .unwrap_or_default();
 
-    summary.threshold = optimal_threshold as f32 / 100.0;
-
+    #[allow(clippy::cast_precision_loss)]
+    {
+        summary.threshold = optimal_threshold as f32 / 100.0;
+    }
     summary.dice = results.metrics.dice_score_over_threshold[optimal_threshold];
     summary.iou = results.metrics.iou_over_threshold[optimal_threshold];
     summary.recall = results.metrics.recall_over_threshold[optimal_threshold];
