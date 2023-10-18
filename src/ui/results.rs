@@ -44,6 +44,11 @@ pub enum ImageType {
     ActivationTimeDelta,
     VoxelTypesAlgorithm,
     VoxelTypesSimulation,
+    // Metrics
+    Dice,
+    IoU,
+    Recall,
+    Precision,
     // Losses
     LossEpoch,
     Loss,
@@ -210,7 +215,7 @@ pub fn draw_ui_results(
 }
 
 fn get_image_path(scenario: &Scenario, image_type: ImageType) -> String {
-    Path::new("file://./results")
+    Path::new("file://results")
         .join(scenario.get_id())
         .join("img")
         .join(image_type.to_string())
@@ -431,6 +436,34 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             "Max Absolute Error Of Delays Per Step",
             "Error",
             "Step",
+        ),
+        ImageType::Dice => standard_y_plot(
+            &metrics.dice_score_over_threshold,
+            file_name.to_str().unwrap(),
+            "Dice Score over Threshold",
+            "Dice Score",
+            "Threshold * 100",
+        ),
+        ImageType::IoU => standard_y_plot(
+            &metrics.iou_over_threshold,
+            file_name.to_str().unwrap(),
+            "IoU over Threshold",
+            "IoU",
+            "Threshold * 100",
+        ),
+        ImageType::Recall => standard_y_plot(
+            &metrics.recall_over_threshold,
+            file_name.to_str().unwrap(),
+            "Recall over Threshold",
+            "Recall",
+            "Threshold * 100",
+        ),
+        ImageType::Precision => standard_y_plot(
+            &metrics.precision_over_threshold,
+            file_name.to_str().unwrap(),
+            "Precision over Threshold",
+            "Precision",
+            "Threshold * 100",
         ),
         ImageType::ControlFunctionAlgorithm => standard_time_plot(
             &model.functional_description.control_function_values.values,
