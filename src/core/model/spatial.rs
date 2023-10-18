@@ -10,13 +10,13 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
-pub struct SpatialDescription {
+pub struct VoxelTypes {
     pub heart: Heart,
     pub voxels: Voxels,
     pub sensors: Sensors,
 }
 
-impl SpatialDescription {
+impl VoxelTypes {
     #[must_use]
     pub fn empty(number_of_sensors: usize, voxels_in_dims: [usize; 3]) -> Self {
         Self {
@@ -48,12 +48,12 @@ mod tests {
     fn empty_no_crash() {
         let number_of_sensors = 300;
         let voxels_in_dims = [1000, 1, 1];
-        let _spatial_description = SpatialDescription::empty(number_of_sensors, voxels_in_dims);
+        let _spatial_description = VoxelTypes::empty(number_of_sensors, voxels_in_dims);
     }
 
     #[test]
     fn from_simulation_config_no_crash() {
         let config = Model::default();
-        let _spatial_description = SpatialDescription::from_model_config(&config);
+        let _spatial_description = VoxelTypes::from_model_config(&config);
     }
 }

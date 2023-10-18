@@ -17,7 +17,7 @@ use super::model::{
         allpass::shapes::{ArrayActivationTime, ArrayDelays, ArrayGains},
         control::ControlFunction,
     },
-    spatial::voxels::VoxelType,
+    spatial::voxels::{VoxelType, VoxelTypes},
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -125,10 +125,10 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
-    pub fn get_voxel_types(&self) -> &Array3<VoxelType> {
+    pub fn get_voxel_types(&self) -> &VoxelTypes {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.model.spatial_description.voxels.types.values,
+            |simulation| &simulation.model.spatial_description.voxels.types,
         )
     }
 

@@ -10,7 +10,7 @@ use serde::Serialize;
 
 use crate::core::{
     config::model::Model,
-    model::spatial::{voxels::VoxelType, SpatialDescription},
+    model::spatial::{voxels::VoxelType, VoxelTypes},
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -33,7 +33,7 @@ impl MeasurementMatrix {
     ///
     /// Panics if voxel numbers are not initialized correctly.
     #[must_use]
-    pub fn from_model_config(_config: &Model, spatial_description: &SpatialDescription) -> Self {
+    pub fn from_model_config(_config: &Model, spatial_description: &VoxelTypes) -> Self {
         let mut measurement_matrix = Self::empty(
             spatial_description.voxels.count() * 3,
             spatial_description.sensors.count(),
@@ -103,7 +103,7 @@ impl MeasurementCovariance {
     ///
     /// Panics if voxel numbers are not initialized correctly.
     #[must_use]
-    pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Self {
+    pub fn from_model_config(config: &Model, spatial_description: &VoxelTypes) -> Self {
         let mut measurement_covariance = Self::empty(spatial_description.sensors.count());
 
         if relative_eq!(config.measurement_covariance_std, 0.0) {
@@ -143,7 +143,7 @@ mod tests {
             voxel_size_mm: 20.0,
             ..Default::default()
         };
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = VoxelTypes::from_model_config(&config);
 
         let measurement_matrix =
             MeasurementMatrix::from_model_config(&config, &spatial_description);
@@ -159,7 +159,7 @@ mod tests {
             voxel_size_mm: 20.0,
             ..Default::default()
         };
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = VoxelTypes::from_model_config(&config);
 
         let measurement_matrix =
             MeasurementMatrix::from_model_config(&config, &spatial_description);

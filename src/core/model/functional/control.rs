@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::{
     config::model::Model,
-    model::spatial::{voxels::VoxelType, SpatialDescription},
+    model::spatial::{voxels::VoxelType, VoxelTypes},
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -29,7 +29,7 @@ impl ControlMatrix {
     ///
     /// Panics if the `v_number` of the sinoatrial node is None.
     #[must_use]
-    pub fn from_model_config(_config: &Model, spatial_description: &SpatialDescription) -> Self {
+    pub fn from_model_config(_config: &Model, spatial_description: &VoxelTypes) -> Self {
         let mut control_matrix = Self::empty(spatial_description.voxels.count_states());
         spatial_description
             .voxels
@@ -117,7 +117,7 @@ mod test {
     #[test]
     fn matrix_from_model_config_no_crash() {
         let config = Model::default();
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = VoxelTypes::from_model_config(&config);
 
         let control_matrix = ControlMatrix::from_model_config(&config, &spatial_description);
         let sum = control_matrix.values.sum();

@@ -169,6 +169,19 @@ impl VoxelTypes {
     }
 }
 
+/// Wrapper around a 3d array that contains the state-indices
+/// of each voxel.
+/// 
+/// If the value is none it means that there is no voxel in this position.
+/// In this case, the voxel type at this position is also none.
+/// 
+/// Otherwise it is the first component of the current density at this
+/// position. In other words the component in the x direction. 
+/// The next value is then the component in the y direction
+/// and finally the offset-2 value is the component in the z
+/// direction.
+/// 
+/// This struct is often used to iterate over the voxel-tpyes.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct VoxelNumbers {
     pub values: Array3<Option<usize>>,

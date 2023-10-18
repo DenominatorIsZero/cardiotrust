@@ -3,7 +3,7 @@ use std::{collections::HashMap, error::Error};
 use itertools::Itertools;
 use ndarray::{s, ArrayBase, Dim, ViewRepr};
 
-use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
+use crate::core::model::spatial::{voxels::VoxelType, VoxelTypes};
 
 use super::shapes::ArrayDelays;
 
@@ -18,7 +18,7 @@ pub fn calculate_delay_s(
 }
 
 pub fn calculate_delay_samples_array(
-    spatial_description: &SpatialDescription,
+    spatial_description: &VoxelTypes,
     propagation_velocities_m_per_s: &HashMap<VoxelType, f32>,
     sample_rate_hz: f32,
 ) -> Result<ArrayDelays<f32>, Box<dyn Error>> {
@@ -92,7 +92,7 @@ mod test {
 
     use crate::core::{
         config::model::Model,
-        model::spatial::{voxels::VoxelType, SpatialDescription},
+        model::spatial::{voxels::VoxelType, VoxelTypes},
     };
 
     use super::{calculate_delay_s, calculate_delay_samples_array};
@@ -130,7 +130,7 @@ mod test {
     #[test]
     fn calculate_delay_samples_array_1() {
         let config = &Model::default();
-        let spatial_description = &SpatialDescription::from_model_config(config);
+        let spatial_description = &VoxelTypes::from_model_config(config);
         let sample_rate_hz = 2000.0;
 
         let delay_samples = calculate_delay_samples_array(

@@ -1,8 +1,13 @@
-use ndarray::{s, Array1};
+use ndarray::{s, Array1, Array2};
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 
-use super::{estimation::Estimations, refinement::derivation::Derivatives};
+use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
+
+use super::{
+    estimation::{self, Estimations},
+    refinement::derivation::Derivatives,
+};
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -34,6 +39,11 @@ pub struct Metrics {
     pub delta_delays_mean_epoch: ArrayMetricsEpoch,
     pub delta_delays_max: ArrayMetricsSample,
     pub delta_delays_max_epoch: ArrayMetricsEpoch,
+
+    pub dice_score_over_threshold: Array1<f32>,
+    pub iou_over_threshold: Array1<f32>,
+    pub precision_over_threshold: Array1<f32>,
+    pub recall_over_threshold: Array1<f32>,
 }
 
 impl Metrics {
@@ -67,6 +77,11 @@ impl Metrics {
             delta_delays_mean_epoch: ArrayMetricsEpoch::new(number_of_epochs),
             delta_delays_max: ArrayMetricsSample::new(number_of_epochs, number_of_steps),
             delta_delays_max_epoch: ArrayMetricsEpoch::new(number_of_epochs),
+
+            dice_score_over_threshold: Array1::zeros(101),
+            iou_over_threshold: Array1::zeros(101),
+            precision_over_threshold: Array1::zeros(101),
+            recall_over_threshold: Array1::zeros(101),
         }
     }
 
@@ -163,6 +178,191 @@ impl Metrics {
         self.delta_delays_max_epoch.values[epoch_index] =
             self.delta_delays_max.values[stop_index - 1];
     }
+
+    #[allow(clippy::cast_precision_loss)]
+    pub fn calculate_final(
+        &mut self,
+        estimations: &Estimations,
+        ground_truth: &VoxelTypes,
+        voxel_numbers: &VoxelNumbers,
+    ) {
+        for i in 0..=100 {
+            let threshold = i as f32 / 100.0;
+            let (dice, iou, precision, recall) =
+                calculate_for_threshold(estimations, ground_truth, voxel_numbers, threshold);
+            self.dice_score_over_threshold[i] = dice;
+            self.iou_over_threshold[i] = iou;
+            self.precision_over_threshold[i] = precision;
+            self.recall_over_threshold[i] = recall;
+        }
+    }
+}
+
+fn calculate_for_threshold(
+    estimations: &Estimations,
+    ground_truth: &VoxelTypes,
+    voxel_numbers: &VoxelNumbers,
+    threshold: f32,
+) -> (f32, f32, f32, f32) {
+    let predictions = predict_voxeltype(estimations, ground_truth, voxel_numbers, threshold);
+
+    let dice = calculate_dice(&predictions, &ground_truth);
+    let iou = calcultae_iou(&predictions, &ground_truth);
+    let precision = calculate_precision(&predictions, &ground_truth);
+    let recall = calculate_recall(&predictions, &ground_truth);
+
+    (dice, iou, precision, recall)
+}
+
+#[allow(clippy::cast_precision_loss)]
+fn calculate_recall(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
+    let gt_positives = ground_truth
+        .values
+        .iter()
+        .filter(|voxel_type| **voxel_type == VoxelType::Pathological)
+        .count();
+
+    let true_positives = predictions
+        .values
+        .iter()
+        .zip(ground_truth.values.iter())
+        .filter(|(prediction, ground_truth)| {
+            **ground_truth == VoxelType::Pathological && **prediction == VoxelType::Pathological
+        })
+        .count();
+
+    if gt_positives == 0 {
+        1.0
+    } else {
+        true_positives as f32 / gt_positives as f32
+    }
+}
+
+#[allow(clippy::cast_precision_loss)]
+fn calculate_precision(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
+    let predicted_positves = predictions
+        .values
+        .iter()
+        .filter(|voxel_type| **voxel_type == VoxelType::Pathological)
+        .count();
+
+    let true_positives = predictions
+        .values
+        .iter()
+        .zip(ground_truth.values.iter())
+        .filter(|(prediction, ground_truth)| {
+            **ground_truth == VoxelType::Pathological && **prediction == VoxelType::Pathological
+        })
+        .count();
+
+    if predicted_positves == 0 {
+        1.0
+    } else {
+        true_positives as f32 / predicted_positves as f32
+    }
+}
+
+#[allow(clippy::cast_precision_loss)]
+fn calcultae_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
+    let intersection = predictions
+        .values
+        .iter()
+        .zip(ground_truth.values.iter())
+        .filter(|(prediction, ground_truth)| {
+            **ground_truth == VoxelType::Pathological && **prediction == VoxelType::Pathological
+        })
+        .count();
+
+    let union = predictions
+        .values
+        .iter()
+        .zip(ground_truth.values.iter())
+        .filter(|(prediction, ground_truth)| {
+            **ground_truth == VoxelType::Pathological || **prediction == VoxelType::Pathological
+        })
+        .count();
+
+    if union == 0 {
+        1.0
+    } else {
+        intersection as f32 / union as f32
+    }
+}
+
+#[allow(clippy::cast_precision_loss)]
+fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
+    let true_positives = predictions
+        .values
+        .iter()
+        .zip(ground_truth.values.iter())
+        .filter(|(prediction, ground_truth)| {
+            **ground_truth == VoxelType::Pathological && **prediction == VoxelType::Pathological
+        })
+        .count();
+    let false_positives = predictions
+        .values
+        .iter()
+        .zip(ground_truth.values.iter())
+        .filter(|(prediction, ground_truth)| {
+            **ground_truth != VoxelType::Pathological && **prediction == VoxelType::Pathological
+        })
+        .count();
+    let false_negatives = predictions
+        .values
+        .iter()
+        .zip(ground_truth.values.iter())
+        .filter(|(prediction, ground_truth)| {
+            **ground_truth == VoxelType::Pathological && **prediction != VoxelType::Pathological
+        })
+        .count();
+
+    let denominator = 2 * true_positives + false_positives + false_negatives;
+
+    if denominator == 0 {
+        1.0
+    } else {
+        (2 * true_positives) as f32 / denominator as f32
+    }
+}
+
+fn predict_voxeltype(
+    estimations: &Estimations,
+    ground_truth: &VoxelTypes,
+    voxel_numbers: &VoxelNumbers,
+    threshold: f32,
+) -> VoxelTypes {
+    let mut predictions = VoxelTypes::empty([
+        ground_truth.values.shape()[0],
+        ground_truth.values.shape()[1],
+        ground_truth.values.shape()[2],
+    ]);
+
+    let mut abs = Array1::zeros(estimations.system_states.values.shape()[0]);
+    let system_states = &estimations.system_states.values;
+
+    predictions
+        .values
+        .iter_mut()
+        .zip(voxel_numbers.values.iter())
+        .filter(|(_, number)| number.is_some())
+        .for_each(|(prediction, number)| {
+            let voxel_index = number.unwrap();
+            abs.indexed_iter_mut().for_each(|(time_index, entry)| {
+                *entry = system_states[[time_index, voxel_index]].abs()
+                    + system_states[[time_index, voxel_index + 1]].abs()
+                    + system_states[[time_index, voxel_index + 2]].abs();
+            });
+            if *abs.max_skipnan() < threshold {
+                *prediction = VoxelType::Pathological;
+            } else {
+                // just using ventricle here to differentiate the prediction
+                // from pathological and none.
+                // Might make more sense to introduce a 'healthy' type...
+                *prediction = VoxelType::Ventricle;
+            }
+        });
+
+    todo!()
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

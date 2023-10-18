@@ -13,6 +13,10 @@ pub struct Summary {
     pub delta_gains_max: f32,
     pub delta_delays_mean: f32,
     pub delta_delays_max: f32,
+    pub dice: f32,
+    pub iou: f32,
+    pub precision: f32,
+    pub recall: f32,
 }
 
 impl Default for Summary {
@@ -30,6 +34,10 @@ impl Default for Summary {
             delta_gains_max: 0.0,
             delta_delays_mean: 0.0,
             delta_delays_max: 0.0,
+            dice: 0.0,
+            iou: 0.0,
+            precision: 0.0,
+            recall: 0.0,
         }
     }
 }

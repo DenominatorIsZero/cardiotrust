@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::{
     config::model::Model,
-    model::spatial::{voxels, voxels::VoxelType, SpatialDescription},
+    model::spatial::{voxels, voxels::VoxelType, VoxelTypes},
 };
 
 use self::{
@@ -51,7 +51,7 @@ impl APParameters {
     /// given config.
     pub fn from_model_config(
         config: &Model,
-        spatial_description: &SpatialDescription,
+        spatial_description: &VoxelTypes,
         sample_rate_hz: f32,
     ) -> Result<Self, Box<dyn Error>> {
         let mut ap_params = Self::empty(
@@ -87,11 +87,7 @@ impl APParameters {
     }
 }
 
-fn connect_voxels(
-    spatial_description: &SpatialDescription,
-    config: &Model,
-    ap_params: &mut APParameters,
-) {
+fn connect_voxels(spatial_description: &VoxelTypes, config: &Model, ap_params: &mut APParameters) {
     let mut activation_time_s =
         Array3::<Option<f32>>::from_elem(spatial_description.voxels.types.values.raw_dim(), None);
     let mut current_directions =
@@ -166,7 +162,7 @@ fn connect_voxels(
 fn try_to_connect(
     voxel_offset: (i32, i32, i32),
     output_voxel_index: (usize, usize, usize),
-    spatial_description: &SpatialDescription,
+    spatial_description: &VoxelTypes,
     activation_time_s: &mut ndarray::ArrayBase<ndarray::OwnedRepr<Option<f32>>, Dim<[usize; 3]>>,
     config: &Model,
     current_directions: &mut ndarray::ArrayBase<ndarray::OwnedRepr<f32>, Dim<[usize; 4]>>,
@@ -289,7 +285,7 @@ fn find_candidate_voxels(
     output_voxel_indices
 }
 
-fn init_output_state_indicies(spatial_description: &SpatialDescription) -> ArrayIndicesGains {
+fn init_output_state_indicies(spatial_description: &VoxelTypes) -> ArrayIndicesGains {
     let mut output_state_indices =
         ArrayIndicesGains::empty(spatial_description.voxels.count_states());
     let v_types = &spatial_description.voxels.types.values;
@@ -368,7 +364,7 @@ mod test {
             config::model::Model,
             model::{
                 functional::allpass::{from_samples_to_coef, from_samples_to_usize},
-                spatial::{voxels::VoxelType, SpatialDescription},
+                spatial::{voxels::VoxelType, VoxelTypes},
             },
         },
         vis::plotting::matrix::plot_activation_time,
@@ -398,7 +394,7 @@ mod test {
     #[test]
     fn activation_time_is_some() {
         let config = &Model::default();
-        let spatial_description = &SpatialDescription::from_model_config(config);
+        let spatial_description = &VoxelTypes::from_model_config(config);
         let sample_rate_hz = 2000.0;
         let ap_params =
             APParameters::from_model_config(config, spatial_description, sample_rate_hz).unwrap();
@@ -416,7 +412,7 @@ mod test {
     #[ignore]
     fn activation_time_is_some_and_plot() {
         let config = &Model::default();
-        let spatial_description = &SpatialDescription::from_model_config(config);
+        let spatial_description = &VoxelTypes::from_model_config(config);
         let sample_rate_hz = 2000.0;
         let ap_params =
             APParameters::from_model_config(config, spatial_description, sample_rate_hz).unwrap();
@@ -441,7 +437,7 @@ mod test {
         config
             .propagation_velocities_m_per_s
             .insert(VoxelType::Atrioventricular, 0.8);
-        let spatial_description = &SpatialDescription::from_model_config(&config);
+        let spatial_description = &VoxelTypes::from_model_config(&config);
         let sample_rate_hz = 2000.0;
         let ap_params =
             APParameters::from_model_config(&config, spatial_description, sample_rate_hz).unwrap();
@@ -462,7 +458,7 @@ mod test {
         config
             .propagation_velocities_m_per_s
             .insert(VoxelType::Atrioventricular, 0.8);
-        let spatial_description = &SpatialDescription::from_model_config(&config);
+        let spatial_description = &VoxelTypes::from_model_config(&config);
         let sample_rate_hz = 2000.0;
         let ap_params =
             APParameters::from_model_config(&config, spatial_description, sample_rate_hz).unwrap();
@@ -484,7 +480,7 @@ mod test {
     #[test]
     fn init_output_state_indicies_works() {
         let config = &Model::default();
-        let spatial_description = &SpatialDescription::from_model_config(config);
+        let spatial_description = &VoxelTypes::from_model_config(config);
         let output_state_indicies = init_output_state_indicies(spatial_description);
 
         assert!(output_state_indicies.values[(0, 1, 1, 1, 0)].unwrap() == 0);

@@ -79,14 +79,14 @@ impl Gain {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::model::spatial::SpatialDescription;
+    use crate::core::model::spatial::VoxelTypes;
 
     use super::*;
 
     #[test]
     fn from_model_config_no_crash() {
         let config = Model::default();
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = VoxelTypes::from_model_config(&config);
         let measurement_matrix =
             MeasurementMatrix::from_model_config(&config, &spatial_description);
 

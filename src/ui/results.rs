@@ -274,7 +274,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             "Voxel Types Algorithm",
         ),
         ImageType::VoxelTypesSimulation => plot_voxel_types(
-            data.get_voxel_types(),
+            &data.get_voxel_types().values,
             file_name.to_str().unwrap(),
             "Voxel Types Simulation",
         ),

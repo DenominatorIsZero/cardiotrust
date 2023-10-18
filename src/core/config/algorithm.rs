@@ -42,7 +42,7 @@ impl Default for Algorithm {
             epochs: 1,
             batch_size: 0,
             snapshots_interval: 0,
-            learning_rate: 1e0,
+            learning_rate: 1e-3,
             learning_rate_reduction_factor: 0.0,
             learning_rate_reduction_interval: 0,
             regularization_strength: 0.1,

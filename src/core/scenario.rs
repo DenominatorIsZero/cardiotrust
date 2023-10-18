@@ -9,8 +9,11 @@ use std::{fs, fs::File, io::Write};
 use chrono;
 
 use ciborium::{from_reader, into_writer};
+use ndarray_linalg::Scalar;
 use serde::{Deserialize, Serialize};
 use toml;
+
+use crate::core::algorithm::metrics;
 
 use self::results::{Results, Snapshot};
 use self::summary::Summary;
@@ -274,7 +277,8 @@ impl Scenario {
 ///
 /// # Panics
 ///
-/// Panics if .
+/// Panics if simulation is none, an unimplemented algorithm is selected or
+/// the parameters do not yield a valid model.
 pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender<Summary>) {
     let Some(simulation) = &scenario.config.simulation else {
         panic!("Non-simulation case not yet implemented.")
@@ -347,6 +351,18 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
             break;
         }
     }
+
+    results.metrics.calculate_final(
+        &results.estimations,
+        data.get_voxel_types(),
+        &model.spatial_description.voxels.numbers,
+    );
+
+    summary.dice = results.metrics.dice_score_over_threshold[51];
+    summary.iou = results.metrics.iou_over_threshold[51];
+    summary.recall = results.metrics.recall_over_threshold[51];
+    summary.precision = results.metrics.precision_over_threshold[51];
+
     results.model = Some(model);
     scenario.results = Some(results);
     scenario.data = Some(data);
