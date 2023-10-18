@@ -28,12 +28,29 @@ impl Plugin for UiPlugin {
             .init_resource::<PlaybackSpeed>()
             .add_plugins(EguiPlugin)
             .add_systems(Update, draw_ui_topbar)
-            .add_systems(Update, draw_ui_explorer.run_if(in_state(UiState::Explorer)))
-            .add_systems(Update, draw_ui_scenario.run_if(in_state(UiState::Scenario)))
-            .add_systems(Update, draw_ui_results.run_if(in_state(UiState::Results)))
             .add_systems(
                 Update,
-                draw_ui_volumetric.run_if(in_state(UiState::Volumetric)),
+                draw_ui_explorer
+                    .run_if(in_state(UiState::Explorer))
+                    .after(draw_ui_topbar),
+            )
+            .add_systems(
+                Update,
+                draw_ui_scenario
+                    .run_if(in_state(UiState::Scenario))
+                    .after(draw_ui_topbar),
+            )
+            .add_systems(
+                Update,
+                draw_ui_results
+                    .run_if(in_state(UiState::Results))
+                    .after(draw_ui_topbar),
+            )
+            .add_systems(
+                Update,
+                draw_ui_volumetric
+                    .run_if(in_state(UiState::Volumetric))
+                    .after(draw_ui_topbar),
             )
             .add_systems(Update, reset_result_images);
     }
