@@ -265,23 +265,29 @@ pub enum VoxelType {
 #[must_use] pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &VoxelType) -> bool {
     match output_voxel_type {
         VoxelType::None => false,
-        VoxelType::Sinoatrial => [VoxelType::Atrium].contains(input_voxel_type),
+        VoxelType::Sinoatrial => [VoxelType::Atrium, VoxelType::Pathological].contains(input_voxel_type),
         VoxelType::Atrium => [
             VoxelType::Sinoatrial,
             VoxelType::Atrium,
             VoxelType::Atrioventricular,
+            VoxelType::Pathological
         ]
         .contains(input_voxel_type),
         VoxelType::Atrioventricular => {
-            [VoxelType::Atrium, VoxelType::HPS].contains(input_voxel_type)
+            [VoxelType::Atrium, VoxelType::HPS,
+            VoxelType::Pathological
+            ].contains(input_voxel_type)
         }
         VoxelType::HPS => [
             VoxelType::HPS,
             VoxelType::Atrioventricular,
             VoxelType::Ventricle,
+            VoxelType::Pathological
         ]
         .contains(input_voxel_type),
-        VoxelType::Ventricle => [VoxelType::Ventricle, VoxelType::HPS].contains(input_voxel_type),
+        VoxelType::Ventricle => [VoxelType::Ventricle, VoxelType::HPS,
+            VoxelType::Pathological
+        ].contains(input_voxel_type),
         VoxelType::Pathological => true,
     }
 }
