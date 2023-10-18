@@ -10,6 +10,7 @@ use chrono;
 
 use ciborium::{from_reader, into_writer};
 use ndarray_linalg::Scalar;
+use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 use toml;
 
@@ -358,17 +359,27 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         &model.spatial_description.voxels.numbers,
     );
 
-    summary.dice = results.metrics.dice_score_over_threshold[51];
-    summary.iou = results.metrics.iou_over_threshold[51];
-    summary.recall = results.metrics.recall_over_threshold[51];
-    summary.precision = results.metrics.precision_over_threshold[51];
+    let optimal_threshold = results
+        .metrics
+        .dice_score_over_threshold
+        .argmax_skipnan()
+        .unwrap_or_default();
+
+    summary.threshold = optimal_threshold as f32 / 100.0;
+
+    summary.dice = results.metrics.dice_score_over_threshold[optimal_threshold];
+    summary.iou = results.metrics.iou_over_threshold[optimal_threshold];
+    summary.recall = results.metrics.recall_over_threshold[optimal_threshold];
+    summary.precision = results.metrics.precision_over_threshold[optimal_threshold];
 
     results.model = Some(model);
     scenario.results = Some(results);
     scenario.data = Some(data);
-    scenario.summary = Some(summary);
+    scenario.summary = Some(summary.clone());
     scenario.status = Status::Done;
     scenario.save().expect("Could not save scenario");
+    epoch_tx.send(scenario.config.algorithm.epochs - 1).unwrap();
+    summary_tx.send(summary).unwrap();
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
