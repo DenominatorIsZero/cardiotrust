@@ -12,7 +12,8 @@ pub struct Voxels {
 }
 
 impl Voxels {
-    #[must_use] pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
+    #[must_use]
+    pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
             size_mm: 0.0,
             types: VoxelTypes::empty(voxels_in_dims),
@@ -21,7 +22,8 @@ impl Voxels {
         }
     }
 
-    #[must_use] pub fn from_model_config(config: &Model) -> Self {
+    #[must_use]
+    pub fn from_model_config(config: &Model) -> Self {
         let types = VoxelTypes::from_simulation_config(config);
         let numbers = VoxelNumbers::from_voxel_types(&types);
         let positions = VoxelPositions::from_model_config(config, &types);
@@ -33,16 +35,19 @@ impl Voxels {
         }
     }
 
-    #[must_use] pub fn count(&self) -> usize {
+    #[must_use]
+    pub fn count(&self) -> usize {
         self.count_xyz().iter().product()
     }
 
-    #[must_use] pub fn count_xyz(&self) -> [usize; 3] {
+    #[must_use]
+    pub fn count_xyz(&self) -> [usize; 3] {
         let shape = self.types.values.raw_dim();
         [shape[0], shape[1], shape[2]]
     }
 
-    #[must_use] pub fn count_states(&self) -> usize {
+    #[must_use]
+    pub fn count_states(&self) -> usize {
         self.types
             .values
             .iter()
@@ -57,13 +62,18 @@ impl Voxels {
     ///
     /// Panics if number of voxels in any direction
     /// exceed `i32::MAX`.
-    #[must_use] pub fn is_valid_index(&self, index: [i32; 3]) -> bool {
+    #[must_use]
+    pub fn is_valid_index(&self, index: [i32; 3]) -> bool {
         let [x, y, z] = index;
         let [x_max, y_max, z_max] = self.count_xyz();
         (0 <= x && x < (i32::try_from(x_max).unwrap()))
             && (0 <= y && y < (i32::try_from(y_max).unwrap()))
             && (0 <= z && z < (i32::try_from(z_max).unwrap()))
-            && (self.types.values[(usize::try_from(x).unwrap(), usize::try_from(y).unwrap(), usize::try_from(z).unwrap())] != VoxelType::None)
+            && (self.types.values[(
+                usize::try_from(x).unwrap(),
+                usize::try_from(y).unwrap(),
+                usize::try_from(z).unwrap(),
+            )] != VoxelType::None)
     }
 
     /// .
@@ -71,7 +81,8 @@ impl Voxels {
     /// # Panics
     ///
     /// Panics if no voxel of `v_type` is present in `Voxels`.
-    #[must_use] pub fn get_first_state_of_type(&self, v_type: VoxelType) -> usize {
+    #[must_use]
+    pub fn get_first_state_of_type(&self, v_type: VoxelType) -> usize {
         let query = self
             .types
             .values
@@ -88,14 +99,21 @@ pub struct VoxelTypes {
 }
 
 impl VoxelTypes {
-    #[must_use] pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
+    #[must_use]
+    pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
             values: Array3::default(voxels_in_dims),
         }
     }
 
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::cast_precision_loss, clippy::similar_names)]
-    #[must_use] pub fn from_simulation_config(config: &Model) -> Self {
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss,
+        clippy::similar_names
+    )]
+    #[must_use]
+    pub fn from_simulation_config(config: &Model) -> Self {
         // Config Parameters
         let voxel_size_mm = config.voxel_size_mm;
         let heart_size_mm = config.heart_size_mm;
@@ -144,19 +162,15 @@ impl VoxelTypes {
                     *voxel_type = VoxelType::Sinoatrial;
                 } else if x == av_x_center_index && y == atrium_y_stop_index {
                     *voxel_type = VoxelType::Atrioventricular;
-                }
-                
-                else if 
-                // HPS Downward section
-                (x == av_x_center_index && y > atrium_y_stop_index && y < hps_y_stop_index) || 
-                // HPS Across
-                (x >= hps_x_start_index
-                    && x <= hps_x_stop_index
-                    && y == hps_y_stop_index - 1)||
-                // HPS Up
-                ((x == hps_x_start_index || x == hps_x_stop_index)
-                && y >= hps_y_up_index
-                && y < hps_y_stop_index)
+                } else if (x == av_x_center_index
+                    && y > atrium_y_stop_index
+                    && y < hps_y_stop_index)
+                    || (x >= hps_x_start_index
+                        && x <= hps_x_stop_index
+                        && y == hps_y_stop_index - 1)
+                    || ((x == hps_x_start_index || x == hps_x_stop_index)
+                        && y >= hps_y_up_index
+                        && y < hps_y_stop_index)
                 {
                     *voxel_type = VoxelType::HPS;
                 } else if y < atrium_y_stop_index {
@@ -171,16 +185,16 @@ impl VoxelTypes {
 
 /// Wrapper around a 3d array that contains the state-indices
 /// of each voxel.
-/// 
+///
 /// If the value is none it means that there is no voxel in this position.
 /// In this case, the voxel type at this position is also none.
-/// 
+///
 /// Otherwise it is the first component of the current density at this
-/// position. In other words the component in the x direction. 
+/// position. In other words the component in the x direction.
 /// The next value is then the component in the y direction
 /// and finally the offset-2 value is the component in the z
 /// direction.
-/// 
+///
 /// This struct is often used to iterate over the voxel-tpyes.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct VoxelNumbers {
@@ -188,13 +202,15 @@ pub struct VoxelNumbers {
 }
 
 impl VoxelNumbers {
-    #[must_use] pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
+    #[must_use]
+    pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
             values: Array3::default(voxels_in_dims),
         }
     }
 
-    #[must_use] pub fn from_voxel_types(types: &VoxelTypes) -> Self {
+    #[must_use]
+    pub fn from_voxel_types(types: &VoxelTypes) -> Self {
         let mut numbers = Self {
             values: Array3::default(types.values.raw_dim()),
         };
@@ -223,13 +239,15 @@ pub struct VoxelPositions {
 }
 
 impl VoxelPositions {
-    #[must_use] pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
+    #[must_use]
+    pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
             values: Array4::zeros((voxels_in_dims[0], voxels_in_dims[1], voxels_in_dims[2], 3)),
         }
     }
 
-    #[must_use] pub fn from_model_config(config: &Model, types: &VoxelTypes) -> Self {
+    #[must_use]
+    pub fn from_model_config(config: &Model, types: &VoxelTypes) -> Self {
         let shape = types.values.raw_dim();
         let mut positions = Self::empty([shape[0], shape[1], shape[2]]);
         let offset = config.voxel_size_mm / 2.0;
@@ -262,32 +280,36 @@ pub enum VoxelType {
     Pathological,
 }
 
-#[must_use] pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &VoxelType) -> bool {
+#[must_use]
+pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &VoxelType) -> bool {
     match output_voxel_type {
         VoxelType::None => false,
-        VoxelType::Sinoatrial => [VoxelType::Atrium, VoxelType::Pathological].contains(input_voxel_type),
+        VoxelType::Sinoatrial => {
+            [VoxelType::Atrium, VoxelType::Pathological].contains(input_voxel_type)
+        }
         VoxelType::Atrium => [
             VoxelType::Sinoatrial,
             VoxelType::Atrium,
             VoxelType::Atrioventricular,
-            VoxelType::Pathological
+            VoxelType::Pathological,
         ]
         .contains(input_voxel_type),
         VoxelType::Atrioventricular => {
-            [VoxelType::Atrium, VoxelType::HPS,
-            VoxelType::Pathological
-            ].contains(input_voxel_type)
+            [VoxelType::Atrium, VoxelType::HPS, VoxelType::Pathological].contains(input_voxel_type)
         }
         VoxelType::HPS => [
             VoxelType::HPS,
             VoxelType::Atrioventricular,
             VoxelType::Ventricle,
-            VoxelType::Pathological
+            VoxelType::Pathological,
         ]
         .contains(input_voxel_type),
-        VoxelType::Ventricle => [VoxelType::Ventricle, VoxelType::HPS,
-            VoxelType::Pathological
-        ].contains(input_voxel_type),
+        VoxelType::Ventricle => [
+            VoxelType::Ventricle,
+            VoxelType::HPS,
+            VoxelType::Pathological,
+        ]
+        .contains(input_voxel_type),
         VoxelType::Pathological => true,
     }
 }
@@ -318,10 +340,10 @@ mod tests {
 
     #[test]
     fn no_pathology_full_states() {
-        let config = Model{
-        heart_size_mm: [10.0, 10.0, 10.0],
-        voxel_size_mm: 1.0,
-        ..Default::default()
+        let config = Model {
+            heart_size_mm: [10.0, 10.0, 10.0],
+            voxel_size_mm: 1.0,
+            ..Default::default()
         };
         let voxels = Voxels::from_model_config(&config);
 
@@ -462,7 +484,10 @@ mod tests {
 
     #[test]
     fn some_voxel_types_pathological() {
-        let config = Model{pathological: true, ..Default::default()};
+        let config = Model {
+            pathological: true,
+            ..Default::default()
+        };
         let types = VoxelTypes::from_simulation_config(&config);
 
         let num_sa = types
@@ -517,7 +542,10 @@ mod tests {
     #[test]
     #[ignore]
     fn some_voxel_types_pathological_and_plot() {
-        let config = Model{pathological: true, ..Default::default()};
+        let config = Model {
+            pathological: true,
+            ..Default::default()
+        };
         let types = VoxelTypes::from_simulation_config(&config);
 
         let num_sa = types
