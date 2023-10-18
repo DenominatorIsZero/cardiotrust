@@ -15,7 +15,7 @@ use bevy_egui::{egui, EguiContexts};
 use std::collections::HashMap;
 
 use crate::{
-    core::scenario::Scenario,
+    core::{algorithm::metrics::predict_voxeltype, scenario::Scenario},
     vis::plotting::{
         matrix::{
             plot_activation_time, plot_activation_time_delta, plot_states_max,
@@ -44,6 +44,7 @@ pub enum ImageType {
     ActivationTimeDelta,
     VoxelTypesAlgorithm,
     VoxelTypesSimulation,
+    VoxelTypesPrediction,
     // Metrics
     Dice,
     IoU,
@@ -282,6 +283,17 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             &data.get_voxel_types().values,
             file_name.to_str().unwrap(),
             "Voxel Types Simulation",
+        ),
+        ImageType::VoxelTypesPrediction => plot_voxel_types(
+            &predict_voxeltype(
+                estimations,
+                data.get_voxel_types(),
+                &model.spatial_description.voxels.numbers,
+                scenario.summary.unwrap().threshold,
+            )
+            .values,
+            file_name.to_str().unwrap(),
+            "Voxel Types Predictions",
         ),
         ImageType::LossEpoch => standard_y_plot(
             &metrics.loss_epoch.values,

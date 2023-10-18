@@ -40,9 +40,13 @@ pub struct Metrics {
     pub delta_delays_max: ArrayMetricsSample,
     pub delta_delays_max_epoch: ArrayMetricsEpoch,
 
+    #[serde(default)]
     pub dice_score_over_threshold: Array1<f32>,
+    #[serde(default)]
     pub iou_over_threshold: Array1<f32>,
+    #[serde(default)]
     pub precision_over_threshold: Array1<f32>,
+    #[serde(default)]
     pub recall_over_threshold: Array1<f32>,
 }
 
@@ -256,7 +260,7 @@ fn calculate_precision(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f
         .count();
 
     if predicted_positves == 0 {
-        1.0
+        0.0
     } else {
         true_positives as f32 / predicted_positves as f32
     }
@@ -325,7 +329,7 @@ fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     }
 }
 
-fn predict_voxeltype(
+pub fn predict_voxeltype(
     estimations: &Estimations,
     ground_truth: &VoxelTypes,
     voxel_numbers: &VoxelNumbers,

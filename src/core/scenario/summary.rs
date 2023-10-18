@@ -13,10 +13,16 @@ pub struct Summary {
     pub delta_gains_max: f32,
     pub delta_delays_mean: f32,
     pub delta_delays_max: f32,
+    #[serde(default)]
     pub dice: f32,
+    #[serde(default)]
     pub iou: f32,
+    #[serde(default)]
     pub precision: f32,
+    #[serde(default)]
     pub recall: f32,
+    #[serde(default)]
+    pub threshold: f32,
 }
 
 impl Default for Summary {
@@ -38,6 +44,7 @@ impl Default for Summary {
             iou: 0.0,
             precision: 0.0,
             recall: 0.0,
+            threshold: 0.0,
         }
     }
 }

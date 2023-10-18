@@ -22,17 +22,22 @@ pub fn draw_ui_explorer(
             .column(Column::auto().resizable(true))
             .column(Column::initial(150.0).resizable(true))
             .column(Column::initial(100.0).resizable(true))
-            .column(Column::auto().resizable(true))
-            .column(Column::auto().resizable(true))
-            .column(Column::auto().resizable(true))
-            .column(Column::auto().resizable(true))
-            .column(Column::auto().resizable(true))
-            .column(Column::auto().resizable(true))
-            .column(Column::auto().resizable(true))
-            .column(Column::auto().resizable(true))
-            .column(Column::auto().resizable(true))
-            .column(Column::auto().resizable(true))
-            .column(Column::auto().resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
+            .column(Column::initial(75.0).resizable(true))
             .column(Column::remainder())
             .header(20.0, |mut header| {
                 header.col(|ui| {
@@ -76,6 +81,21 @@ pub fn draw_ui_explorer(
                 });
                 header.col(|ui| {
                     ui.heading("\nDelta\nDelays\nMax");
+                });
+                header.col(|ui| {
+                    ui.heading("\nThreshold");
+                });
+                header.col(|ui| {
+                    ui.heading("\nDice");
+                });
+                header.col(|ui| {
+                    ui.heading("\nIoU");
+                });
+                header.col(|ui| {
+                    ui.heading("\nRecall");
+                });
+                header.col(|ui| {
+                    ui.heading("\nPrecision");
                 });
                 header.col(|ui| {
                     ui.heading("\nComment");
@@ -156,67 +176,97 @@ fn draw_row(
         });
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(summary.loss.to_string()),
+                Some(summary) => ui.label(format!("{:.3e}", summary.loss)),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(summary.loss_mse.to_string()),
+                Some(summary) => ui.label(format!("{:.3e}", summary.loss_mse)),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(summary.loss_maximum_regularization.to_string()),
+                Some(summary) => ui.label(format!("{:.3e}", summary.loss_maximum_regularization)),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(summary.delta_states_mean.to_string()),
+                Some(summary) => ui.label(format!("{:.3e}", summary.delta_states_mean)),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(summary.delta_states_max.to_string()),
+                Some(summary) => ui.label(format!("{:.3e}", summary.delta_states_max)),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(summary.delta_measurements_mean.to_string()),
+                Some(summary) => ui.label(format!("{:.3e}", summary.delta_measurements_mean)),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(summary.delta_measurements_max.to_string()),
+                Some(summary) => ui.label(format!("{:.3e}", summary.delta_measurements_max)),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(summary.delta_gains_mean.to_string()),
+                Some(summary) => ui.label(format!("{:.3e}", summary.delta_gains_mean)),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(summary.delta_gains_max.to_string()),
+                Some(summary) => ui.label(format!("{:.3e}", summary.delta_gains_max)),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(summary.delta_delays_mean.to_string()),
+                Some(summary) => ui.label(format!("{:.3e}", summary.delta_delays_mean)),
                 None => ui.label("-"),
             };
         });
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(summary.delta_delays_max.to_string()),
+                Some(summary) => ui.label(format!("{:.3e}", summary.delta_delays_max)),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario_list.entries[index].scenario.summary {
+                Some(summary) => ui.label(format!("{:.3e}", summary.threshold)),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario_list.entries[index].scenario.summary {
+                Some(summary) => ui.label(format!("{:.3e}", summary.dice)),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario_list.entries[index].scenario.summary {
+                Some(summary) => ui.label(format!("{:.3e}", summary.iou)),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario_list.entries[index].scenario.summary {
+                Some(summary) => ui.label(format!("{:.3e}", summary.recall)),
+                None => ui.label("-"),
+            };
+        });
+        row.col(|ui| {
+            match &scenario_list.entries[index].scenario.summary {
+                Some(summary) => ui.label(format!("{:.3e}", summary.precision)),
                 None => ui.label("-"),
             };
         });
