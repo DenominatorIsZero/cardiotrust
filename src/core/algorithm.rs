@@ -1,3 +1,8 @@
+use nalgebra::{DMatrix, Matrix, OMatrix, SVD};
+use ndarray::{s, Array1};
+
+use crate::vis::plotting::time;
+
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
     calculate_residuals, calculate_system_prediction, calculate_system_states_delta,
@@ -14,6 +19,89 @@ use super::{
 pub mod estimation;
 pub mod metrics;
 pub mod refinement;
+
+#[allow(clippy::missing_panics_doc)]
+pub fn calculate_pseudo_inverse(
+    functional_description: &FunctionalDescription,
+    results: &mut Results,
+    data: &Data,
+    config: &Algorithm,
+) {
+    let rows = functional_description.measurement_matrix.values.shape()[0];
+    let columns = functional_description.measurement_matrix.values.shape()[1];
+    let measurement_matrix = DMatrix::from_row_slice(
+        rows,
+        columns,
+        functional_description
+            .measurement_matrix
+            .values
+            .as_slice()
+            .unwrap(),
+    );
+
+    let decomposition = SVD::new_unordered(measurement_matrix, true, true);
+
+    for time_index in 0..results.estimations.system_states.values.shape()[0] {
+        let rows = data.get_measurements().values.shape()[1];
+        let measurements = DMatrix::from_row_slice(
+            rows,
+            1,
+            data.get_measurements()
+                .values
+                .slice(s![time_index, ..])
+                .as_slice()
+                .unwrap(),
+        );
+
+        let system_states = decomposition.solve(&measurements, 1e-5).unwrap();
+
+        let system_states = Array1::from_iter(system_states.as_slice().iter().map(|v| *v));
+
+        results
+            .estimations
+            .system_states
+            .values
+            .slice_mut(s![time_index, ..])
+            .assign(&system_states);
+
+        results
+            .estimations
+            .measurements
+            .values
+            .slice_mut(s![time_index, ..])
+            .assign(
+                &functional_description.measurement_matrix.values.dot(
+                    &results
+                        .estimations
+                        .system_states
+                        .values
+                        .slice(s![time_index, ..]),
+                ),
+            );
+
+        calculate_post_update_residuals(
+            &mut results.estimations.post_update_residuals,
+            &functional_description.measurement_matrix,
+            &results.estimations.system_states,
+            data.get_measurements(),
+            time_index,
+        );
+        calculate_system_states_delta(
+            &mut results.estimations.system_states_delta,
+            &results.estimations.system_states,
+            data.get_system_states(),
+            time_index,
+        );
+        results.metrics.calculate_step(
+            &results.estimations,
+            &results.derivatives,
+            config.regularization_strength,
+            time_index,
+            0,
+        );
+    }
+    results.metrics.calculate_epoch(0);
+}
 
 /// Runs the algorithm for one epoch.
 ///
@@ -602,5 +690,38 @@ mod test {
         );
 
         assert!(*results.estimations.system_states.values.max().unwrap() > 2.0);
+    }
+
+    #[test]
+    fn pseudo_inverse_success() {
+        let simulation_config = SimulationConfig::default();
+        let data = Data::from_simulation_config(&simulation_config);
+
+        let algorithm_config = Algorithm::default();
+
+        let model = Model::from_model_config(
+            &algorithm_config.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .unwrap();
+
+        let mut results = Results::new(
+            algorithm_config.epochs,
+            model
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+        );
+
+        calculate_pseudo_inverse(
+            &model.functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
     }
 }

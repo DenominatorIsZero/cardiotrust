@@ -17,7 +17,7 @@ use toml;
 use self::results::{Results, Snapshot};
 use self::summary::Summary;
 
-use super::algorithm;
+use super::algorithm::{self, calculate_pseudo_inverse};
 use super::config::algorithm::AlgorithmType;
 use super::model::Model;
 use super::{config::Config, data::Data};
@@ -170,6 +170,9 @@ impl Scenario {
             }
             None => todo!(),
         };
+        if self.config.algorithm.algorithm_type == AlgorithmType::PseudoInverse {
+            self.config.algorithm.epochs = 1;
+        }
     }
 
     /// Set't the status of the scenario to "Planning".
@@ -283,11 +286,6 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         panic!("Non-simulation case not yet implemented.")
     };
 
-    assert!(
-        scenario.config.algorithm.algorithm_type == AlgorithmType::ModelBased,
-        "Only Model based algorithm is implemented at the moment."
-    );
-
     let data = Data::from_simulation_config(simulation);
     let mut model = Model::from_model_config(
         &scenario.config.algorithm.model,
@@ -309,11 +307,92 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
 
     let mut summary = Summary::default();
 
+    match scenario.config.algorithm.algorithm_type {
+        AlgorithmType::ModelBased => {
+            run_model_based(
+                &mut scenario,
+                &mut model,
+                &mut results,
+                &data,
+                &mut summary,
+                epoch_tx,
+                summary_tx,
+            );
+        }
+        AlgorithmType::PseudoInverse => {
+            run_pseudo_inverse(&mut scenario, &mut model, &mut results, &data, &mut summary);
+        }
+        _ => panic!("Algorithm type not implemented"),
+    }
+
+    results.metrics.calculate_final(
+        &results.estimations,
+        data.get_voxel_types(),
+        &model.spatial_description.voxels.numbers,
+    );
+
+    let optimal_threshold = results
+        .metrics
+        .dice_score_over_threshold
+        .argmax_skipnan()
+        .unwrap_or_default();
+
+    #[allow(clippy::cast_precision_loss)]
+    {
+        summary.threshold = optimal_threshold as f32 / 100.0;
+    }
+    summary.dice = results.metrics.dice_score_over_threshold[optimal_threshold];
+    summary.iou = results.metrics.iou_over_threshold[optimal_threshold];
+    summary.recall = results.metrics.recall_over_threshold[optimal_threshold];
+    summary.precision = results.metrics.precision_over_threshold[optimal_threshold];
+
+    results.model = Some(model);
+    scenario.results = Some(results);
+    scenario.data = Some(data);
+    scenario.summary = Some(summary.clone());
+    scenario.status = Status::Done;
+    scenario.save().expect("Could not save scenario");
+    epoch_tx.send(scenario.config.algorithm.epochs - 1).unwrap();
+    summary_tx.send(summary).unwrap();
+}
+
+fn run_pseudo_inverse(
+    scenario: &mut Scenario,
+    model: &mut Model,
+    results: &mut Results,
+    data: &Data,
+    summary: &mut Summary,
+) {
+    calculate_pseudo_inverse(
+        &model.functional_description,
+        results,
+        data,
+        &scenario.config.algorithm,
+    );
+    summary.loss = results.metrics.loss_epoch.values[0];
+    summary.loss_mse = results.metrics.loss_mse_epoch.values[0];
+    summary.loss_maximum_regularization =
+        results.metrics.loss_maximum_regularization_epoch.values[0];
+    summary.delta_states_mean = results.metrics.delta_states_mean_epoch.values[0];
+    summary.delta_states_max = results.metrics.delta_states_max_epoch.values[0];
+    summary.delta_measurements_mean = results.metrics.delta_measurements_mean_epoch.values[0];
+    summary.delta_measurements_max = results.metrics.delta_measurements_max_epoch.values[0];
+}
+
+fn run_model_based(
+    scenario: &mut Scenario,
+    model: &mut Model,
+    results: &mut Results,
+    data: &Data,
+    summary: &mut Summary,
+    epoch_tx: &Sender<usize>,
+    summary_tx: &Sender<Summary>,
+) {
     for epoch_index in 0..scenario.config.algorithm.epochs {
         algorithm::run_epoch(
             &mut model.functional_description,
-            &mut results,
-            &data,
+            results,
+            data,
             &scenario.config.algorithm,
             epoch_index,
         );
@@ -350,36 +429,6 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
             break;
         }
     }
-
-    results.metrics.calculate_final(
-        &results.estimations,
-        data.get_voxel_types(),
-        &model.spatial_description.voxels.numbers,
-    );
-
-    let optimal_threshold = results
-        .metrics
-        .dice_score_over_threshold
-        .argmax_skipnan()
-        .unwrap_or_default();
-
-    #[allow(clippy::cast_precision_loss)]
-    {
-        summary.threshold = optimal_threshold as f32 / 100.0;
-    }
-    summary.dice = results.metrics.dice_score_over_threshold[optimal_threshold];
-    summary.iou = results.metrics.iou_over_threshold[optimal_threshold];
-    summary.recall = results.metrics.recall_over_threshold[optimal_threshold];
-    summary.precision = results.metrics.precision_over_threshold[optimal_threshold];
-
-    results.model = Some(model);
-    scenario.results = Some(results);
-    scenario.data = Some(data);
-    scenario.summary = Some(summary.clone());
-    scenario.status = Status::Done;
-    scenario.save().expect("Could not save scenario");
-    epoch_tx.send(scenario.config.algorithm.epochs - 1).unwrap();
-    summary_tx.send(summary).unwrap();
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
