@@ -424,7 +424,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
         });
         row.col(|ui| {
             ui.add(egui::Slider::new(
-                &mut model.hps_x_stop_percentage,
+                &mut model.pathology_x_stop_percentage,
                 0.0..=1.0,
             ));
         });
