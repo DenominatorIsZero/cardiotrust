@@ -1,8 +1,6 @@
 use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
 
-
-
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
     calculate_residuals, calculate_system_prediction, calculate_system_states_delta,
@@ -55,7 +53,7 @@ pub fn calculate_pseudo_inverse(
 
         let system_states = decomposition.solve(&measurements, 1e-5).unwrap();
 
-        let system_states = Array1::from_iter(system_states.as_slice().iter().map(|v| *v));
+        let system_states = Array1::from_iter(system_states.as_slice().iter().copied());
 
         results
             .estimations

@@ -322,7 +322,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         AlgorithmType::PseudoInverse => {
             run_pseudo_inverse(&mut scenario, &mut model, &mut results, &data, &mut summary);
         }
-        _ => panic!("Algorithm type not implemented"),
+        AlgorithmType::Loreta => panic!("Algorithm type not implemented"),
     }
 
     results.metrics.calculate_final(
