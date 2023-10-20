@@ -140,10 +140,14 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 ui.label("Gradient clamping\nthreshold");
                             });
                             row.col(|ui| {
-                                ui.add(egui::Slider::new(
-                                    &mut algorithm.gradient_clamping_threshold,
-                                    1.0..=10.0,
-                                ));
+                                ui.add(
+                                    egui::Slider::new(
+                                        &mut algorithm.gradient_clamping_threshold,
+                                        1e-6..=1e3,
+                                    )
+                                    .logarithmic(true)
+                                    .custom_formatter(|n, _| format!("{n:+.4e}")),
+                                );
                             });
                             row.col(|ui| {
                                 ui.label(
