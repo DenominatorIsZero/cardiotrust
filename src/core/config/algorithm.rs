@@ -27,6 +27,8 @@ pub struct Algorithm {
     pub learning_rate_reduction_interval: usize,
     #[serde(default)]
     pub regularization_strength: f32,
+    #[serde(default)]
+    pub regularization_threshold: f32,
     pub model: Model,
     #[serde(default)]
     pub constrain_system_states: bool,
@@ -46,6 +48,7 @@ impl Default for Algorithm {
             learning_rate_reduction_factor: 0.0,
             learning_rate_reduction_interval: 0,
             regularization_strength: 0.1,
+            regularization_threshold: 1.1,
             model: Model::default(),
             constrain_system_states: true,
             freeze_gains: false,

@@ -178,6 +178,26 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 );
                             });
                         });
+                        // Regularization Threshold
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Regularization\nthreshold");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut algorithm.regularization_threshold,
+                                    0.5..=1.5,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The absolute value of\
+                                    current density that has to be\
+                                    exceeded before the regularization\
+                                    starts havin an effect. Default: 1.1.",
+                                );
+                            });
+                        });
                         // Regularization Strength
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
