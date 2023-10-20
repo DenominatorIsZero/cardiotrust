@@ -79,7 +79,11 @@ impl Derivatives {
             .values
             .t()
             .dot(&estimations.residuals.values.slice(s![0, ..]));
-        self.calculate_maximum_regularization(&estimations.system_states, time_index);
+        self.calculate_maximum_regularization(
+            &estimations.system_states,
+            time_index,
+            config.regularization_threshold,
+        );
         if !config.freeze_gains {
             self.calculate_derivatives_gains(
                 &estimations.ap_outputs,
@@ -219,19 +223,20 @@ impl Derivatives {
         &mut self,
         system_states: &ArraySystemStates,
         time_index: usize,
+        regularization_threshold: f32,
     ) {
         for state_index in (0..system_states.values.raw_dim()[1]).step_by(3) {
-            if (system_states.values[[time_index, state_index]].abs()
+            let sum = system_states.values[[time_index, state_index]].abs()
                 + system_states.values[[time_index, state_index + 1]].abs()
-                + system_states.values[[time_index, state_index + 2]].abs())
-                > 1.0
-            {
+                + system_states.values[[time_index, state_index + 2]].abs();
+            if sum > regularization_threshold {
+                let factor = sum - regularization_threshold;
                 self.maximum_regularization.values[state_index] =
-                    system_states.values[[time_index, state_index]];
+                    system_states.values[[time_index, state_index]] * factor;
                 self.maximum_regularization.values[state_index + 1] =
-                    system_states.values[[time_index, state_index + 1]];
+                    system_states.values[[time_index, state_index + 1]] * factor;
                 self.maximum_regularization.values[state_index + 2] =
-                    system_states.values[[time_index, state_index + 2]];
+                    system_states.values[[time_index, state_index + 2]] * factor;
             } else {
                 self.maximum_regularization.values[state_index] = 0.0;
                 self.maximum_regularization.values[state_index + 1] = 0.0;
