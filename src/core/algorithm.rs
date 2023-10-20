@@ -77,6 +77,20 @@ pub fn calculate_pseudo_inverse(
                 ),
             );
 
+        calculate_residuals(
+            &mut results.estimations.residuals,
+            &results.estimations.measurements,
+            data.get_measurements(),
+            time_index,
+        );
+
+        results.derivatives.calculate(
+            functional_description,
+            &results.estimations,
+            config,
+            time_index,
+        );
+
         calculate_post_update_residuals(
             &mut results.estimations.post_update_residuals,
             &functional_description.measurement_matrix,
