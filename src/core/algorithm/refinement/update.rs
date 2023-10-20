@@ -50,7 +50,8 @@ fn update_gains(
     learning_rate: f32,
     batch_size: usize,
 ) {
-    gains.values -= &(learning_rate / batch_size as f32 * &derivatives.values);
+    gains.values -=
+        &(learning_rate / batch_size as f32 * &derivatives.values).map(|v| v.clamp(-1e-4, 1e-4));
 }
 
 /// Performs one gradient descent step on the all-pass coeffs.
