@@ -134,6 +134,24 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 );
                             });
                         });
+                        // Gradient Clamping Threshold
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Gradient clamping\nthreshold");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut algorithm.gradient_clamping_threshold,
+                                    1.0..=10.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The maximum value to which the gradients/
+                                    are clamped",
+                                );
+                            });
+                        });
                         // Learning rate reduction factor
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
@@ -294,14 +312,14 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 );
                             });
                         });
-                        // Clamping Threshold
+                        // State Clamping Threshold
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
-                                ui.label("Clamping\nthreshold");
+                                ui.label("State Clamping\nthreshold");
                             });
                             row.col(|ui| {
                                 ui.add(egui::Slider::new(
-                                    &mut algorithm.regularization_threshold,
+                                    &mut algorithm.state_clamping_threshold,
                                     1.0..=10.0,
                                 ));
                             });

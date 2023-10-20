@@ -28,6 +28,7 @@ impl APParameters {
                 &derivatives.gains,
                 config.learning_rate,
                 batch_size,
+                config.gradient_clamping_threshold,
             );
         }
         if !config.freeze_delays {
@@ -37,6 +38,7 @@ impl APParameters {
                 &derivatives.coefs,
                 config.learning_rate,
                 batch_size,
+                config.gradient_clamping_threshold,
             );
         }
     }
@@ -49,9 +51,10 @@ fn update_gains(
     derivatives: &ArrayGains<f32>,
     learning_rate: f32,
     batch_size: usize,
+    clamping_threshold: f32,
 ) {
-    gains.values -=
-        &(learning_rate / batch_size as f32 * &derivatives.values).map(|v| v.clamp(-1e-4, 1e-4));
+    gains.values -= &(learning_rate / batch_size as f32 * &derivatives.values)
+        .map(|v| v.clamp(-clamping_threshold, clamping_threshold));
 }
 
 /// Performs one gradient descent step on the all-pass coeffs.
@@ -68,8 +71,10 @@ fn update_delays(
     derivatives: &ArrayDelays<f32>,
     learning_rate: f32,
     batch_size: usize,
+    clamping_threshold: f32,
 ) {
-    ap_coefs.values -= &(learning_rate / batch_size as f32 * &derivatives.values);
+    ap_coefs.values -= &(learning_rate / batch_size as f32 * &derivatives.values)
+        .map(|v| v.clamp(-clamping_threshold, clamping_threshold));
     // make sure to keep the all pass coefficients between 0 and 1 by
     // wrapping them around and adjusting the delays accordingly.
     ap_coefs
@@ -105,7 +110,7 @@ mod tests {
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
-        update_gains(&mut gains, &derivatives, learning_rate, 1);
+        update_gains(&mut gains, &derivatives, learning_rate, 1, 1.0);
 
         assert_eq!(-derivatives.values, gains.values);
     }
@@ -119,7 +124,14 @@ mod tests {
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
-        update_delays(&mut ap_coefs, &mut delays, &derivatives, learning_rate, 1);
+        update_delays(
+            &mut ap_coefs,
+            &mut delays,
+            &derivatives,
+            learning_rate,
+            1,
+            1.0,
+        );
 
         assert_eq!(-derivatives.values, ap_coefs.values);
     }
@@ -147,7 +159,14 @@ mod tests {
         delays_exp.values[[0, 0, 0, 1]] = 3;
         delays_exp.values[[0, 0, 0, 2]] = 2;
 
-        update_delays(&mut ap_coefs, &mut delays, &derivatives, learning_rate, 1);
+        update_delays(
+            &mut ap_coefs,
+            &mut delays,
+            &derivatives,
+            learning_rate,
+            1,
+            1.0,
+        );
 
         assert!(
             ap_coefs_exp
@@ -177,6 +196,7 @@ mod tests {
 
         let config = Algorithm {
             learning_rate: 1.0,
+            gradient_clamping_threshold: 1.0,
             ..Default::default()
         };
 

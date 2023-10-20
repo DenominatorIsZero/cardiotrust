@@ -143,25 +143,29 @@ pub fn run_epoch(
             functional_description,
             time_index,
         );
+
         calculate_residuals(
             &mut results.estimations.residuals,
             &results.estimations.measurements,
             data.get_measurements(),
             time_index,
         );
+
         if config.constrain_system_states {
             constrain_system_states(
                 &mut results.estimations.system_states,
                 time_index,
-                config.clamping_threshold,
+                config.state_clamping_threshold,
             );
         }
+
         results.derivatives.calculate(
             functional_description,
             &results.estimations,
             config,
             time_index,
         );
+
         if config.model.apply_system_update {
             calculate_system_update(
                 &mut results.estimations,
@@ -170,6 +174,7 @@ pub fn run_epoch(
                 config,
             );
         }
+
         calculate_post_update_residuals(
             &mut results.estimations.post_update_residuals,
             &functional_description.measurement_matrix,
@@ -236,10 +241,10 @@ fn constrain_system_states(
             + system_states.values[[time_index, state_index + 1]].abs()
             + system_states.values[[time_index, state_index + 2]].abs();
         if sum > clamping_threshold {
-            let factor = sum - clamping_threshold;
-            system_states.values[[time_index, state_index]] /= factor;
-            system_states.values[[time_index, state_index + 1]] /= factor;
-            system_states.values[[time_index, state_index + 2]] /= factor;
+            let factor = clamping_threshold / sum;
+            system_states.values[[time_index, state_index]] *= factor;
+            system_states.values[[time_index, state_index + 1]] *= factor;
+            system_states.values[[time_index, state_index + 2]] *= factor;
         }
     }
 }
