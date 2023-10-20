@@ -284,7 +284,7 @@ fn calcultae_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
         .count();
 
     if union == 0 {
-        1.0
+        0.0
     } else {
         intersection as f32 / union as f32
     }
@@ -320,7 +320,7 @@ fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     let denominator = 2 * true_positives + false_positives + false_negatives;
 
     if denominator == 0 {
-        1.0
+        0.0
     } else {
         (2 * true_positives) as f32 / denominator as f32
     }
