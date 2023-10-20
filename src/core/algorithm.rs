@@ -150,7 +150,11 @@ pub fn run_epoch(
             time_index,
         );
         if config.constrain_system_states {
-            constrain_system_states(&mut results.estimations.system_states);
+            constrain_system_states(
+                &mut results.estimations.system_states,
+                time_index,
+                config.clamping_threshold,
+            );
         }
         results.derivatives.calculate(
             functional_description,
@@ -222,10 +226,22 @@ pub fn run_epoch(
     results.metrics.calculate_epoch(epoch_index);
 }
 
-fn constrain_system_states(system_states: &mut ArraySystemStates) {
-    system_states.values.iter_mut().for_each(|v| {
-        *v = v.clamp(-2.0, 2.0);
-    });
+fn constrain_system_states(
+    system_states: &mut ArraySystemStates,
+    time_index: usize,
+    clamping_threshold: f32,
+) {
+    for state_index in (0..system_states.values.raw_dim()[1]).step_by(3) {
+        let sum = system_states.values[[time_index, state_index]].abs()
+            + system_states.values[[time_index, state_index + 1]].abs()
+            + system_states.values[[time_index, state_index + 2]].abs();
+        if sum > clamping_threshold {
+            let factor = sum - clamping_threshold;
+            system_states.values[[time_index, state_index]] /= factor;
+            system_states.values[[time_index, state_index + 1]] /= factor;
+            system_states.values[[time_index, state_index + 2]] /= factor;
+        }
+    }
 }
 
 #[allow(dead_code)]

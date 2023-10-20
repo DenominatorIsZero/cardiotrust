@@ -294,6 +294,26 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 );
                             });
                         });
+                        // Clamping Threshold
+                        body.row(30.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Clamping\nthreshold");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Slider::new(
+                                    &mut algorithm.regularization_threshold,
+                                    1.0..=10.0,
+                                ));
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    "The absolute value of\
+                                    current density that has to be\
+                                    exceeded before the constrain\
+                                    starts havin an effect. Default: 1.5.",
+                                );
+                            });
+                        });
                         // Freeze Gains
                         body.row(30.0, |mut row| {
                             row.col(|ui| {

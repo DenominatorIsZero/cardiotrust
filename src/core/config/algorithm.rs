@@ -32,6 +32,8 @@ pub struct Algorithm {
     pub model: Model,
     #[serde(default)]
     pub constrain_system_states: bool,
+    #[serde(default)]
+    pub clamping_threshold: f32,
     pub freeze_gains: bool,
     pub freeze_delays: bool,
     pub calculate_kalman_gain: bool,
@@ -51,6 +53,7 @@ impl Default for Algorithm {
             regularization_threshold: 1.1,
             model: Model::default(),
             constrain_system_states: true,
+            clamping_threshold: 1.5,
             freeze_gains: false,
             freeze_delays: false,
             calculate_kalman_gain: false,
