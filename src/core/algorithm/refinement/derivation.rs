@@ -123,7 +123,7 @@ impl Derivatives {
         number_of_sensors: usize,
     ) {
         #[allow(clippy::cast_precision_loss)]
-        let scaling = (1.0 - regularization_strength) / number_of_sensors as f32;
+        let scaling = 1.0 / number_of_sensors as f32;
         #[allow(clippy::cast_precision_loss)]
         let regularization_scaling = regularization_strength;
 
@@ -188,7 +188,7 @@ impl Derivatives {
                 },
             );
         #[allow(clippy::cast_precision_loss)]
-        let scaling = (1.0 - regularization_strength) / number_of_sensors as f32;
+        let scaling = 1.0 / number_of_sensors as f32;
         #[allow(clippy::cast_precision_loss)]
         let regularization_scaling = regularization_strength;
         self.coefs_iir
