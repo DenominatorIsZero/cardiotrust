@@ -36,6 +36,7 @@ pub struct Derivatives {
     /// Stored internally to avoid redundant computation
     mapped_residuals: ArrayMappedResiduals,
     pub maximum_regularization: ArrayMaximumRegularization,
+    pub maximum_regularization_sum: f32,
 }
 
 impl Derivatives {
@@ -48,6 +49,7 @@ impl Derivatives {
             coefs_fir: ArrayGains::empty(number_of_states),
             mapped_residuals: ArrayMappedResiduals::new(number_of_states),
             maximum_regularization: ArrayMaximumRegularization::new(number_of_states),
+            maximum_regularization_sum: 0.0,
         }
     }
 
@@ -123,7 +125,7 @@ impl Derivatives {
         #[allow(clippy::cast_precision_loss)]
         let scaling = (1.0 - regularization_strength) / number_of_sensors as f32;
         #[allow(clippy::cast_precision_loss)]
-        let regularization_scaling = regularization_strength / number_of_sensors as f32;
+        let regularization_scaling = regularization_strength;
 
         self.gains
             .values
@@ -132,15 +134,12 @@ impl Derivatives {
             .zip(output_state_indices.values.iter())
             .filter(|(_, index_output_state)| index_output_state.is_some())
             .for_each(|((derivative, ap_output), index_output_state)| {
-                let maximum_regularization =
-                    if self.maximum_regularization.values[index_output_state.unwrap()] == 0.0 {
-                        0.0
-                    } else {
-                        self.maximum_regularization.values[index_output_state.unwrap()].signum()
-                    };
                 *derivative += ap_output
-                    * self.mapped_residuals.values[index_output_state.unwrap()]
-                        .mul_add(scaling, maximum_regularization * regularization_scaling);
+                    * self.mapped_residuals.values[index_output_state.unwrap()].mul_add(
+                        scaling,
+                        self.maximum_regularization.values[index_output_state.unwrap()]
+                            * regularization_scaling,
+                    );
             });
     }
 
@@ -191,7 +190,7 @@ impl Derivatives {
         #[allow(clippy::cast_precision_loss)]
         let scaling = (1.0 - regularization_strength) / number_of_sensors as f32;
         #[allow(clippy::cast_precision_loss)]
-        let regularization_scaling = regularization_strength / number_of_sensors as f32;
+        let regularization_scaling = regularization_strength;
         self.coefs_iir
             .values
             .indexed_iter()
@@ -204,17 +203,14 @@ impl Derivatives {
                     ((((state_index, x_offset, y_offset, z_offset, _), iir), fir), ap_gain),
                     output_state_index,
                 )| {
-                    let maximum_regularization =
-                        if self.maximum_regularization.values[output_state_index.unwrap()] == 0.0 {
-                            0.0
-                        } else {
-                            self.maximum_regularization.values[output_state_index.unwrap()].signum()
-                        };
                     let coef_index = (state_index / 3, x_offset, y_offset, z_offset);
                     self.coefs.values[coef_index] += (fir + iir)
                         * ap_gain
-                        * self.mapped_residuals.values[output_state_index.unwrap()]
-                            .mul_add(scaling, maximum_regularization * regularization_scaling);
+                        * self.mapped_residuals.values[output_state_index.unwrap()].mul_add(
+                            scaling,
+                            self.maximum_regularization.values[output_state_index.unwrap()]
+                                * regularization_scaling,
+                        );
                 },
             );
     }
@@ -225,12 +221,14 @@ impl Derivatives {
         time_index: usize,
         regularization_threshold: f32,
     ) {
+        self.maximum_regularization_sum = 0.0;
         for state_index in (0..system_states.values.raw_dim()[1]).step_by(3) {
             let sum = system_states.values[[time_index, state_index]].abs()
                 + system_states.values[[time_index, state_index + 1]].abs()
                 + system_states.values[[time_index, state_index + 2]].abs();
             if sum > regularization_threshold {
                 let factor = sum - regularization_threshold;
+                self.maximum_regularization_sum += factor.powi(2) * sum;
                 self.maximum_regularization.values[state_index] =
                     system_states.values[[time_index, state_index]] * factor;
                 self.maximum_regularization.values[state_index + 1] =

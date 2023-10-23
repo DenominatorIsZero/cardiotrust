@@ -105,11 +105,7 @@ impl Metrics {
 
         self.loss_mse.values[index] = estimations.residuals.values.mapv(|v| v.powi(2)).sum()
             / estimations.residuals.values.raw_dim()[0] as f32;
-        self.loss_maximum_regularization.values[index] = derivatives
-            .maximum_regularization
-            .values
-            .mapv(f32::abs)
-            .sum();
+        self.loss_maximum_regularization.values[index] = derivatives.maximum_regularization_sum;
         self.loss.values[index] = (1.0 - regularization_strength).mul_add(
             self.loss_mse.values[index],
             regularization_strength * self.loss_maximum_regularization.values[index],
