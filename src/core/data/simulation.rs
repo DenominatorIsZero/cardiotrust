@@ -1,6 +1,8 @@
 use std::error::Error;
 
 use ndarray::Dim;
+use rand::prelude::*;
+use rand_chacha::ChaCha8Rng;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
@@ -79,6 +81,7 @@ impl Simulation {
                 time_index,
             );
         }
+        let mut rng = ChaCha8Rng::seed_from_u64(42);
         for sensor_index in 0..measurements.values.shape()[1] {
             let dist = Normal::new(
                 0.0,
@@ -87,8 +90,7 @@ impl Simulation {
             )
             .unwrap();
             for time_index in 0..measurements.values.shape()[0] {
-                measurements.values[[time_index, sensor_index]] +=
-                    dist.sample(&mut rand::thread_rng());
+                measurements.values[[time_index, sensor_index]] += dist.sample(&mut rng);
             }
         }
     }
