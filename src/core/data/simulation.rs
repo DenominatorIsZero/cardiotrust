@@ -95,9 +95,9 @@ impl Simulation {
         }
     }
 
-    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
-        self.measurements.save_npy(path.clone());
-        self.system_states.save_npy(&path);
+    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        self.measurements.save_npy(path);
+        self.system_states.save_npy(path);
         self.model.save_npy(path.join("simulation"));
     }
 }

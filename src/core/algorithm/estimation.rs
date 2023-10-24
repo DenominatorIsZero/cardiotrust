@@ -71,8 +71,8 @@ impl Estimations {
         self.kalman_gain_converged = false;
     }
 
-    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
-        self.system_states.save_npy(&path);
+    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        self.system_states.save_npy(path);
         self.measurements.save_npy(path);
     }
 }

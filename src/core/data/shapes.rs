@@ -28,7 +28,7 @@ impl ArraySystemStates {
     /// # Panics
     ///
     /// Panics if directory of file cant be created.
-    pub fn save_npy(&self, path: &std::path::PathBuf) {
+    pub fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path.clone()).unwrap();
 
         let writer = BufWriter::new(File::create(path.join("system_states.npy")).unwrap());
@@ -49,8 +49,8 @@ impl ArrayMeasurements {
         }
     }
 
-    pub fn save_npy(&self, path: std::path::PathBuf) {
-        fs::create_dir_all(path.clone()).unwrap();
+    pub fn save_npy(&self, path: &std::path::Path) {
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("measurements.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
     }

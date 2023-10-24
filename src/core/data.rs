@@ -162,10 +162,10 @@ impl Data {
         )
     }
 
-    pub fn save_npy(&self, path: std::path::PathBuf) {
+    pub fn save_npy(&self, path: &std::path::Path) {
         self.simulation
             .as_ref()
             .unwrap()
-            .save_npy(path.join("simulation"));
+            .save_npy(&path.join("simulation"));
     }
 }

@@ -274,13 +274,17 @@ impl Scenario {
         }
     }
 
+    ///
+    /// # Panics
+    ///
+    /// Panics if a file or directory cant be created or written to.
     pub fn save_npy(&self) {
         let path = Path::new("./results").join(&self.id).join("npy");
-        self.data.as_ref().unwrap().save_npy(path.join("data"));
+        self.data.as_ref().unwrap().save_npy(&path.join("data"));
         self.results
             .as_ref()
             .unwrap()
-            .save_npy(path.join("results"));
+            .save_npy(&path.join("results"));
     }
 }
 
