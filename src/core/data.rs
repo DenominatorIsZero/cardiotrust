@@ -161,4 +161,11 @@ impl Data {
             |simulation| &simulation.model.functional_description.ap_params.delays,
         )
     }
+
+    pub fn save_npy(&self, path: std::path::PathBuf) {
+        self.simulation
+            .as_ref()
+            .unwrap()
+            .save_npy(path.join("simulation"));
+    }
 }

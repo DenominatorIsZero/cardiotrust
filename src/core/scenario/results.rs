@@ -30,6 +30,12 @@ impl Results {
             snapshots: Vec::new(),
         }
     }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        self.metrics.save_npy(path.join("metrics"));
+        self.estimations.save_npy(path.join("estimations"));
+        self.model.as_ref().unwrap().save_npy(path.join("model"));
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

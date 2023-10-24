@@ -186,6 +186,13 @@ pub fn draw_ui_results(
                     );
                 });
             };
+            if ui.add(egui::Button::new("Export to .npy")).clicked() {
+                let scenario = &scenario_list.entries[selected_scenario.index.unwrap()].scenario;
+                let send_scenario = scenario.clone();
+                thread::spawn(move || {
+                    send_scenario.save_npy();
+                });
+            };
         });
         let image_bundle = result_images
             .image_bundles

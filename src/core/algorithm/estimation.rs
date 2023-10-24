@@ -70,6 +70,11 @@ impl Estimations {
         self.delays_delta.values.fill(0.0);
         self.kalman_gain_converged = false;
     }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        self.system_states.save_npy(path.clone());
+        self.measurements.save_npy(path);
+    }
 }
 
 pub fn par_calculate_system_prediction(

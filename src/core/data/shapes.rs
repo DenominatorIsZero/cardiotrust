@@ -1,4 +1,10 @@
+use std::{
+    fs::{self, File},
+    io::BufWriter,
+};
+
 use ndarray::Array2;
+use ndarray_npy::WriteNpyExt;
 use serde::{Deserialize, Serialize};
 
 /// Shape for the simulated/estimated system states
@@ -16,6 +22,13 @@ impl ArraySystemStates {
             values: Array2::zeros((number_of_steps, number_of_states)),
         }
     }
+
+    pub fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+
+        let writer = BufWriter::new(File::create(path.join("system_states.npy")).unwrap());
+        self.values.write_npy(writer).unwrap();
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -29,5 +42,11 @@ impl ArrayMeasurements {
         Self {
             values: Array2::zeros((number_of_steps, number_of_sensors)),
         }
+    }
+
+    pub fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join("measurements.npy")).unwrap());
+        self.values.write_npy(writer).unwrap();
     }
 }

@@ -85,6 +85,18 @@ impl FunctionalDescription {
             control_function_values,
         })
     }
+
+    pub fn save_npy(&self, path: std::path::PathBuf) {
+        let path = path.join("functional_description");
+        self.ap_params.save_npy(path.clone());
+        self.measurement_matrix.save_npy(path.clone());
+        self.control_matrix.save_npy(path.clone());
+        self.process_covariance
+            .save_npy(path.clone(), "process_covariance.npy");
+        self.measurement_covariance.save_npy(path.clone());
+        self.kalman_gain.save_npy(path.clone());
+        self.control_function_values.save_npy(path.clone());
+    }
 }
 
 fn process_covariance_from_model_config(

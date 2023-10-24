@@ -1,4 +1,10 @@
+use std::{
+    fs::{self, File},
+    io::BufWriter,
+};
+
 use ndarray::{s, Array1};
+use ndarray_npy::WriteNpyExt;
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 
@@ -193,6 +199,69 @@ impl Metrics {
             self.recall_over_threshold[i] = recall;
         }
     }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        self.loss.save_npy(path.clone(), "loss.npy");
+        self.loss_epoch.save_npy(path.clone(), "loss_epoch.npy");
+
+        self.loss_mse.save_npy(path.clone(), "loss_mse.npy");
+        self.loss_mse_epoch
+            .save_npy(path.clone(), "loss_mse_epoch.npy");
+        self.loss_maximum_regularization
+            .save_npy(path.clone(), "loss_maximum_regularization.npy");
+        self.loss_maximum_regularization_epoch
+            .save_npy(path.clone(), "loss_maximum_regularization_epoch.npy");
+
+        self.delta_delays_mean
+            .save_npy(path.clone(), "delta_states_mean.npy");
+        self.delta_delays_mean_epoch
+            .save_npy(path.clone(), "delta_states_mean_epoch.npy");
+        self.delta_delays_max
+            .save_npy(path.clone(), "delta_states_max.npy");
+        self.delta_delays_max_epoch
+            .save_npy(path.clone(), "delta_states_max_epoch.npy");
+
+        self.delta_measurements_mean
+            .save_npy(path.clone(), "delta_measurements_mean.npy");
+        self.delta_measurements_mean_epoch
+            .save_npy(path.clone(), "delta_measurements_mean_epoch.npy");
+        self.delta_measurements_max
+            .save_npy(path.clone(), "delta_measurements_max.npy");
+        self.delta_measurements_max_epoch
+            .save_npy(path.clone(), "delta_measurements_max_epoch.npy");
+
+        self.delta_gains_mean
+            .save_npy(path.clone(), "delta_gains_mean.npy");
+        self.delta_gains_mean_epoch
+            .save_npy(path.clone(), "delta_gains_mean_epoch.npy");
+        self.delta_gains_max
+            .save_npy(path.clone(), "delta_gains_max.npy");
+        self.delta_gains_max_epoch
+            .save_npy(path.clone(), "delta_gains_max_epoch.npy");
+
+        self.delta_delays_mean
+            .save_npy(path.clone(), "delta_delays_mean.npy");
+        self.delta_delays_mean_epoch
+            .save_npy(path.clone(), "delta_delays_mean_epoch.npy");
+        self.delta_delays_max
+            .save_npy(path.clone(), "delta_delays_max.npy");
+        self.delta_delays_max_epoch
+            .save_npy(path.clone(), "delta_delays_max_epoch.npy");
+
+        fs::create_dir_all(path.clone()).unwrap();
+
+        let writer = BufWriter::new(File::create(path.join("dice.npy")).unwrap());
+        self.dice_score_over_threshold.write_npy(writer).unwrap();
+
+        let writer = BufWriter::new(File::create(path.join("iou.npy")).unwrap());
+        self.iou_over_threshold.write_npy(writer).unwrap();
+
+        let writer = BufWriter::new(File::create(path.join("precision.npy")).unwrap());
+        self.precision_over_threshold.write_npy(writer).unwrap();
+
+        let writer = BufWriter::new(File::create(path.join("recall.npy")).unwrap());
+        self.recall_over_threshold.write_npy(writer).unwrap();
+    }
 }
 
 fn calculate_for_threshold(
@@ -376,6 +445,12 @@ impl ArrayMetricsSample {
             values: Array1::zeros(number_of_epochs * number_of_steps),
         }
     }
+
+    fn save_npy(&self, path: std::path::PathBuf, name: &str) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join(name)).unwrap());
+        self.values.write_npy(writer).unwrap();
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -389,5 +464,11 @@ impl ArrayMetricsEpoch {
         Self {
             values: Array1::zeros(number_of_epochs),
         }
+    }
+
+    fn save_npy(&self, path: std::path::PathBuf, name: &str) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join(name)).unwrap());
+        self.values.write_npy(writer).unwrap();
     }
 }

@@ -1,5 +1,10 @@
+use std::fs;
+use std::fs::File;
+use std::io::BufWriter;
+
 use approx::assert_relative_eq;
 use ndarray::{Array3, Array4, Array5, Dim};
+use ndarray_npy::WriteNpyExt;
 use num_traits::Zero;
 use serde::Deserialize;
 use serde::Serialize;
@@ -23,6 +28,13 @@ where
         }
     }
 }
+impl ArrayGains<f32> {
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf, name: &str) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join(name)).unwrap());
+        self.values.write_npy(writer).unwrap();
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ArrayIndicesGains {
@@ -35,6 +47,18 @@ impl ArrayIndicesGains {
         Self {
             values: Array5::from_elem((number_of_states, 3, 3, 3, 3), None),
         }
+    }
+
+    pub fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join("output_state_indices.npy")).unwrap());
+        self.values
+            .map(|v| match v {
+                Some(index) => *index as i32,
+                None => -1,
+            })
+            .write_npy(writer)
+            .unwrap();
     }
 }
 
@@ -60,6 +84,21 @@ where
     }
 }
 
+impl ArrayDelays<f32> {
+    pub fn save_npy(&self, path: std::path::PathBuf) {
+        let writer = BufWriter::new(File::create(path.join("coefs.npy")).unwrap());
+        self.values.write_npy(writer).unwrap();
+    }
+}
+
+impl ArrayDelays<usize> {
+    pub fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join("delays.npy")).unwrap());
+        self.values.map(|v| *v as u32).write_npy(writer).unwrap();
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ArrayActivationTime {
     pub values: Array3<Option<f32>>,
@@ -71,5 +110,17 @@ impl ArrayActivationTime {
         Self {
             values: Array3::from_elem(voxels_in_dims, None),
         }
+    }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join("activation_time.npy")).unwrap());
+        self.values
+            .map(|v| match v {
+                Some(index) => *index,
+                None => -1.0,
+            })
+            .write_npy(writer)
+            .unwrap();
     }
 }

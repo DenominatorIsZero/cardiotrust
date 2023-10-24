@@ -1,4 +1,10 @@
+use std::{
+    fs::{self, File},
+    io::BufWriter,
+};
+
 use ndarray::{arr1, s, Array3, Array4};
+use ndarray_npy::WriteNpyExt;
 use serde::{Deserialize, Serialize};
 
 use crate::core::config::model::Model;
@@ -91,6 +97,15 @@ impl Voxels {
             .find(|(this_type, _)| **this_type == v_type);
         query.unwrap().1.unwrap()
     }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join("voxel_size_mm.npy")).unwrap());
+        arr1(&[self.size_mm]).write_npy(writer).unwrap();
+        self.types.save_npy(path.clone());
+        self.numbers.save_npy(path.clone());
+        self.positions_mm.save_npy(path);
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
@@ -181,6 +196,22 @@ impl VoxelTypes {
             });
         voxel_types
     }
+
+    fn save_npy(&self, path: std::path::PathBuf) {
+        let writer = BufWriter::new(File::create(path.join("voxel_types.npy")).unwrap());
+        self.values
+            .map(|v| match v {
+                VoxelType::None => 0,
+                VoxelType::Sinoatrial => 1,
+                VoxelType::Atrium => 2,
+                VoxelType::Atrioventricular => 3,
+                VoxelType::HPS => 4,
+                VoxelType::Ventricle => 5,
+                VoxelType::Pathological => 6,
+            })
+            .write_npy(writer)
+            .unwrap();
+    }
 }
 
 /// Wrapper around a 3d array that contains the state-indices
@@ -230,6 +261,17 @@ impl VoxelNumbers {
             });
         numbers
     }
+
+    fn save_npy(&self, path: std::path::PathBuf) {
+        let writer = BufWriter::new(File::create(path.join("voxel_numbers.npy")).unwrap());
+        self.values
+            .map(|v| match v {
+                Some(number) => *number as i32,
+                None => -1,
+            })
+            .write_npy(writer)
+            .unwrap();
+    }
 }
 
 #[allow(clippy::unsafe_derive_deserialize)]
@@ -265,6 +307,11 @@ impl VoxelPositions {
                 .assign(&position);
         });
         positions
+    }
+
+    fn save_npy(&self, path: std::path::PathBuf) {
+        let writer = BufWriter::new(File::create(path.join("voxel_positions_mm.npy")).unwrap());
+        self.values.write_npy(writer).unwrap();
     }
 }
 

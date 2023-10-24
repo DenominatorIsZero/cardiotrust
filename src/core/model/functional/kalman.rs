@@ -1,6 +1,12 @@
+use std::{
+    fs::{self, File},
+    io::BufWriter,
+};
+
 use approx::relative_eq;
 use ndarray::Array2;
 use ndarray_linalg::Inverse;
+use ndarray_npy::WriteNpyExt;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
@@ -74,6 +80,12 @@ impl Gain {
         let k = process_covariance.dot(&h.t()).dot(&s_inv);
 
         Self { values: k }
+    }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join("kalman_gain.npy")).unwrap());
+        self.values.write_npy(writer).unwrap();
     }
 }
 

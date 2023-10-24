@@ -10,6 +10,7 @@ use chrono;
 
 use ciborium::{from_reader, into_writer};
 
+use ndarray_npy::write_npy;
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 use toml;
@@ -272,6 +273,15 @@ impl Scenario {
         if file_path.is_file() {
             self.results = Some(from_reader(File::open(file_path).unwrap()).unwrap());
         }
+    }
+
+    pub fn save_npy(&self) {
+        let path = Path::new("./results").join(&self.id).join("npy");
+        self.data.as_ref().unwrap().save_npy(path.join("data"));
+        self.results
+            .as_ref()
+            .unwrap()
+            .save_npy(path.join("results"));
     }
 }
 

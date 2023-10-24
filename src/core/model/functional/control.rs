@@ -1,5 +1,10 @@
+use std::{
+    fs::{self, File},
+    io::BufWriter,
+};
+
 use ndarray::Array1;
-use ndarray_npy::read_npy;
+use ndarray_npy::{read_npy, WriteNpyExt};
 
 use samplerate::{self, ConverterType};
 use serde::{Deserialize, Serialize};
@@ -43,6 +48,12 @@ impl ControlMatrix {
                 }
             });
         control_matrix
+    }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join("control_matrix.npy")).unwrap());
+        self.values.write_npy(writer).unwrap();
     }
 }
 
@@ -102,6 +113,13 @@ impl ControlFunction {
         Self {
             values: Array1::from(control_function_values),
         }
+    }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer =
+            BufWriter::new(File::create(path.join("control_function_values.npy")).unwrap());
+        self.values.write_npy(writer).unwrap();
     }
 }
 

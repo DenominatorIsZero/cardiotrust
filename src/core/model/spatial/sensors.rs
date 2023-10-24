@@ -1,4 +1,10 @@
+use std::{
+    fs::{self, File},
+    io::BufWriter,
+};
+
 use ndarray::{arr1, s, Array2};
+use ndarray_npy::WriteNpyExt;
 use serde::{Deserialize, Serialize};
 
 use crate::core::config::model::Model;
@@ -58,6 +64,15 @@ impl Sensors {
     #[must_use]
     pub fn count(&self) -> usize {
         self.positions_mm.shape()[0]
+    }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join("sensor_positions_mm.npy")).unwrap());
+        self.positions_mm.write_npy(writer).unwrap();
+        let writer =
+            BufWriter::new(File::create(path.join("sensor_orientations_xyz.npy")).unwrap());
+        self.orientations_xyz.write_npy(writer).unwrap();
     }
 }
 

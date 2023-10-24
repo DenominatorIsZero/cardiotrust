@@ -85,6 +85,15 @@ impl APParameters {
 
         Ok(ap_params)
     }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        let path = path.join("allpass");
+        self.gains.save_npy(path.clone(), "gains.npy");
+        self.output_state_indices.save_npy(path.clone());
+        self.coefs.save_npy(path.clone());
+        self.delays.save_npy(path.clone());
+        self.activation_time_ms.save_npy(path.clone());
+    }
 }
 
 fn connect_voxels(spatial_description: &VoxelTypes, config: &Model, ap_params: &mut APParameters) {

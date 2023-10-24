@@ -59,4 +59,9 @@ impl Model {
             spatial_description,
         })
     }
+
+    pub fn save_npy(&self, path: std::path::PathBuf) {
+        self.functional_description.save_npy(path.clone());
+        self.spatial_description.save_npy(path.clone());
+    }
 }

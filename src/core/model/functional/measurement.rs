@@ -1,7 +1,11 @@
 use std::f32::consts::PI;
+use std::fs;
+use std::fs::File;
+use std::io::BufWriter;
 
 use approx::relative_eq;
 use ndarray::{s, Array2};
+use ndarray_npy::WriteNpyExt;
 use physical_constants::VACUUM_MAG_PERMEABILITY;
 use rand_distr::Distribution;
 use rand_distr::Normal;
@@ -81,6 +85,12 @@ impl MeasurementMatrix {
 
         measurement_matrix
     }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join("measurement_matrix.npy")).unwrap());
+        self.values.write_npy(writer).unwrap();
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -127,6 +137,12 @@ impl MeasurementCovariance {
         }
 
         measurement_covariance
+    }
+
+    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
+        let writer = BufWriter::new(File::create(path.join("process_covariance.npy")).unwrap());
+        self.values.write_npy(writer).unwrap();
     }
 }
 
