@@ -29,8 +29,8 @@ where
     }
 }
 impl ArrayGains<f32> {
-    pub(crate) fn save_npy(&self, path: std::path::PathBuf, name: &str) {
-        fs::create_dir_all(path.clone()).unwrap();
+    pub(crate) fn save_npy(&self, path: &std::path::Path, name: &str) {
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
         self.values.write_npy(writer).unwrap();
     }
@@ -49,8 +49,8 @@ impl ArrayIndicesGains {
         }
     }
 
-    pub fn save_npy(&self, path: std::path::PathBuf) {
-        fs::create_dir_all(path.clone()).unwrap();
+    pub fn save_npy(&self, path: &std::path::Path) {
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("output_state_indices.npy")).unwrap());
         self.values
             .map(|v| match v {
@@ -85,15 +85,15 @@ where
 }
 
 impl ArrayDelays<f32> {
-    pub fn save_npy(&self, path: std::path::PathBuf) {
+    pub fn save_npy(&self, path: &std::path::Path) {
         let writer = BufWriter::new(File::create(path.join("coefs.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
     }
 }
 
 impl ArrayDelays<usize> {
-    pub fn save_npy(&self, path: std::path::PathBuf) {
-        fs::create_dir_all(path.clone()).unwrap();
+    pub fn save_npy(&self, path: &std::path::Path) {
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("delays.npy")).unwrap());
         self.values.map(|v| *v as u32).write_npy(writer).unwrap();
     }
@@ -112,8 +112,8 @@ impl ArrayActivationTime {
         }
     }
 
-    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
-        fs::create_dir_all(path.clone()).unwrap();
+    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("activation_time.npy")).unwrap());
         self.values
             .map(|v| match v {

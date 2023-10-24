@@ -50,7 +50,7 @@ impl ControlMatrix {
         control_matrix
     }
 
-    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path.clone()).unwrap();
         let writer = BufWriter::new(File::create(path.join("control_matrix.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
@@ -115,7 +115,7 @@ impl ControlFunction {
         }
     }
 
-    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path.clone()).unwrap();
         let writer =
             BufWriter::new(File::create(path.join("control_function_values.npy")).unwrap());

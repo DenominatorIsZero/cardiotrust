@@ -49,6 +49,10 @@ impl ArrayMeasurements {
         }
     }
 
+    ///
+    /// # Panics
+    ///
+    /// Panics if file or directory can't be written.
     pub fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("measurements.npy")).unwrap());

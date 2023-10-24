@@ -87,15 +87,15 @@ impl FunctionalDescription {
     }
 
     pub fn save_npy(&self, path: std::path::PathBuf) {
-        let path = path.join("functional_description");
-        self.ap_params.save_npy(path.clone());
-        self.measurement_matrix.save_npy(path.clone());
-        self.control_matrix.save_npy(path.clone());
+        let path = &path.join("functional_description");
+        self.ap_params.save_npy(path);
+        self.measurement_matrix.save_npy(path);
+        self.control_matrix.save_npy(path);
         self.process_covariance
-            .save_npy(path.clone(), "process_covariance.npy");
-        self.measurement_covariance.save_npy(path.clone());
-        self.kalman_gain.save_npy(path.clone());
-        self.control_function_values.save_npy(path.clone());
+            .save_npy(path, "process_covariance.npy");
+        self.measurement_covariance.save_npy(path);
+        self.kalman_gain.save_npy(path);
+        self.control_function_values.save_npy(path);
     }
 }
 
