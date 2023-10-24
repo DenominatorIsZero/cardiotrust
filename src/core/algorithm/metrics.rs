@@ -200,55 +200,53 @@ impl Metrics {
         }
     }
 
-    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
-        self.loss.save_npy(path.clone(), "loss.npy");
-        self.loss_epoch.save_npy(path.clone(), "loss_epoch.npy");
+    pub(crate) fn save_npy(&self, path: &std::path::PathBuf) {
+        fs::create_dir_all(path.clone()).unwrap();
 
-        self.loss_mse.save_npy(path.clone(), "loss_mse.npy");
-        self.loss_mse_epoch
-            .save_npy(path.clone(), "loss_mse_epoch.npy");
+        self.loss.save_npy(&path, "loss.npy");
+        self.loss_epoch.save_npy(&path, "loss_epoch.npy");
+
+        self.loss_mse.save_npy(&path, "loss_mse.npy");
+        self.loss_mse_epoch.save_npy(&path, "loss_mse_epoch.npy");
         self.loss_maximum_regularization
-            .save_npy(path.clone(), "loss_maximum_regularization.npy");
+            .save_npy(&path, "loss_maximum_regularization.npy");
         self.loss_maximum_regularization_epoch
-            .save_npy(path.clone(), "loss_maximum_regularization_epoch.npy");
+            .save_npy(&path, "loss_maximum_regularization_epoch.npy");
 
         self.delta_delays_mean
-            .save_npy(path.clone(), "delta_states_mean.npy");
+            .save_npy(&path, "delta_states_mean.npy");
         self.delta_delays_mean_epoch
-            .save_npy(path.clone(), "delta_states_mean_epoch.npy");
+            .save_npy(&path, "delta_states_mean_epoch.npy");
         self.delta_delays_max
-            .save_npy(path.clone(), "delta_states_max.npy");
+            .save_npy(&path, "delta_states_max.npy");
         self.delta_delays_max_epoch
-            .save_npy(path.clone(), "delta_states_max_epoch.npy");
+            .save_npy(&path, "delta_states_max_epoch.npy");
 
         self.delta_measurements_mean
-            .save_npy(path.clone(), "delta_measurements_mean.npy");
+            .save_npy(&path, "delta_measurements_mean.npy");
         self.delta_measurements_mean_epoch
-            .save_npy(path.clone(), "delta_measurements_mean_epoch.npy");
+            .save_npy(&path, "delta_measurements_mean_epoch.npy");
         self.delta_measurements_max
-            .save_npy(path.clone(), "delta_measurements_max.npy");
+            .save_npy(&path, "delta_measurements_max.npy");
         self.delta_measurements_max_epoch
-            .save_npy(path.clone(), "delta_measurements_max_epoch.npy");
+            .save_npy(&path, "delta_measurements_max_epoch.npy");
 
         self.delta_gains_mean
-            .save_npy(path.clone(), "delta_gains_mean.npy");
+            .save_npy(&path, "delta_gains_mean.npy");
         self.delta_gains_mean_epoch
-            .save_npy(path.clone(), "delta_gains_mean_epoch.npy");
-        self.delta_gains_max
-            .save_npy(path.clone(), "delta_gains_max.npy");
+            .save_npy(&path, "delta_gains_mean_epoch.npy");
+        self.delta_gains_max.save_npy(&path, "delta_gains_max.npy");
         self.delta_gains_max_epoch
-            .save_npy(path.clone(), "delta_gains_max_epoch.npy");
+            .save_npy(&path, "delta_gains_max_epoch.npy");
 
         self.delta_delays_mean
-            .save_npy(path.clone(), "delta_delays_mean.npy");
+            .save_npy(&path, "delta_delays_mean.npy");
         self.delta_delays_mean_epoch
-            .save_npy(path.clone(), "delta_delays_mean_epoch.npy");
+            .save_npy(&path, "delta_delays_mean_epoch.npy");
         self.delta_delays_max
-            .save_npy(path.clone(), "delta_delays_max.npy");
+            .save_npy(&path, "delta_delays_max.npy");
         self.delta_delays_max_epoch
-            .save_npy(path.clone(), "delta_delays_max_epoch.npy");
-
-        fs::create_dir_all(path.clone()).unwrap();
+            .save_npy(&path, "delta_delays_max_epoch.npy");
 
         let writer = BufWriter::new(File::create(path.join("dice.npy")).unwrap());
         self.dice_score_over_threshold.write_npy(writer).unwrap();
@@ -446,7 +444,7 @@ impl ArrayMetricsSample {
         }
     }
 
-    fn save_npy(&self, path: std::path::PathBuf, name: &str) {
+    fn save_npy(&self, path: &std::path::PathBuf, name: &str) {
         fs::create_dir_all(path.clone()).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
         self.values.write_npy(writer).unwrap();
@@ -466,7 +464,7 @@ impl ArrayMetricsEpoch {
         }
     }
 
-    fn save_npy(&self, path: std::path::PathBuf, name: &str) {
+    fn save_npy(&self, path: &std::path::PathBuf, name: &str) {
         fs::create_dir_all(path.clone()).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
         self.values.write_npy(writer).unwrap();
