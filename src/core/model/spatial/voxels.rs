@@ -265,9 +265,9 @@ impl VoxelNumbers {
     fn save_npy(&self, path: &std::path::Path) {
         let writer = BufWriter::new(File::create(path.join("voxel_numbers.npy")).unwrap());
         self.values
-            .map(|v| match v {
-                Some(number) => *number as i32,
-                None => -1,
+            .map(|v| {
+                v.as_ref()
+                    .map_or(-1, |number| i32::try_from(*number).unwrap())
             })
             .write_npy(writer)
             .unwrap();
