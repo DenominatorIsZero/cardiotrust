@@ -39,10 +39,10 @@ impl VoxelTypes {
         }
     }
 
-    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
-        let path = path.join("spatial_description");
-        self.heart.save_npy(path.clone());
-        self.voxels.save_npy(path.clone());
+    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        let path = &path.join("spatial_description");
+        self.heart.save_npy(path);
+        self.voxels.save_npy(path);
         self.sensors.save_npy(path);
     }
 }

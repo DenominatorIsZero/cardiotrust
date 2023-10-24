@@ -86,7 +86,7 @@ impl FunctionalDescription {
         })
     }
 
-    pub fn save_npy(&self, path: std::path::PathBuf) {
+    pub fn save_npy(&self, path: &std::path::Path) {
         let path = &path.join("functional_description");
         self.ap_params.save_npy(path);
         self.measurement_matrix.save_npy(path);

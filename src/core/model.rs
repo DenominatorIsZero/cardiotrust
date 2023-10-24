@@ -60,8 +60,8 @@ impl Model {
         })
     }
 
-    pub fn save_npy(&self, path: std::path::PathBuf) {
-        self.functional_description.save_npy(path.clone());
-        self.spatial_description.save_npy(path.clone());
+    pub fn save_npy(&self, path: &std::path::Path) {
+        self.functional_description.save_npy(path);
+        self.spatial_description.save_npy(path);
     }
 }

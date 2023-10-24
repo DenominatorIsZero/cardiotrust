@@ -49,13 +49,17 @@ impl ArrayIndicesGains {
         }
     }
 
+    ///
+    /// # Panics
+    ///
+    /// Panics if files or directories can't be written or if indices don't fit into i32s.
     pub fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("output_state_indices.npy")).unwrap());
         self.values
-            .map(|v| match v {
-                Some(index) => *index as i32,
-                None => -1,
+            .map(|v| {
+                v.as_ref()
+                    .map_or(-1, |index| i32::try_from(*index).unwrap())
             })
             .write_npy(writer)
             .unwrap();
@@ -85,17 +89,29 @@ where
 }
 
 impl ArrayDelays<f32> {
+    ///
+    /// # Panics
+    ///
+    /// Panics if file or directory can't be written to.
     pub fn save_npy(&self, path: &std::path::Path) {
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("coefs.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
     }
 }
 
 impl ArrayDelays<usize> {
+    ///
+    /// # Panics
+    ///
+    /// Panics if file or directory can't be written to or delays don't fit into u32.
     pub fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("delays.npy")).unwrap());
-        self.values.map(|v| *v as u32).write_npy(writer).unwrap();
+        self.values
+            .map(|v| u32::try_from(*v).unwrap())
+            .write_npy(writer)
+            .unwrap();
     }
 }
 
@@ -112,14 +128,15 @@ impl ArrayActivationTime {
         }
     }
 
+    ///
+    /// # Panics
+    ///
+    /// Panics if file or directory can't be written to.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("activation_time.npy")).unwrap());
         self.values
-            .map(|v| match v {
-                Some(index) => *index,
-                None => -1.0,
-            })
+            .map(|v| v.as_ref().map_or_else(|| -1.0, |index| *index))
             .write_npy(writer)
             .unwrap();
     }

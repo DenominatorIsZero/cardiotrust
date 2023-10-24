@@ -162,6 +162,11 @@ impl Data {
         )
     }
 
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if simulation is none.
     pub fn save_npy(&self, path: &std::path::Path) {
         self.simulation
             .as_ref()

@@ -34,7 +34,7 @@ impl Results {
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         self.metrics.save_npy(&path.join("metrics"));
         self.estimations.save_npy(&path.join("estimations"));
-        self.model.as_ref().unwrap().save_npy(path.join("model"));
+        self.model.as_ref().unwrap().save_npy(&path.join("model"));
     }
 }
 

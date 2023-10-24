@@ -98,12 +98,12 @@ impl Voxels {
         query.unwrap().1.unwrap()
     }
 
-    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
-        fs::create_dir_all(path.clone()).unwrap();
+    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("voxel_size_mm.npy")).unwrap());
         arr1(&[self.size_mm]).write_npy(writer).unwrap();
-        self.types.save_npy(path.clone());
-        self.numbers.save_npy(path.clone());
+        self.types.save_npy(path);
+        self.numbers.save_npy(path);
         self.positions_mm.save_npy(path);
     }
 }
@@ -197,7 +197,7 @@ impl VoxelTypes {
         voxel_types
     }
 
-    fn save_npy(&self, path: std::path::PathBuf) {
+    fn save_npy(&self, path: &std::path::Path) {
         let writer = BufWriter::new(File::create(path.join("voxel_types.npy")).unwrap());
         self.values
             .map(|v| match v {
@@ -262,7 +262,7 @@ impl VoxelNumbers {
         numbers
     }
 
-    fn save_npy(&self, path: std::path::PathBuf) {
+    fn save_npy(&self, path: &std::path::Path) {
         let writer = BufWriter::new(File::create(path.join("voxel_numbers.npy")).unwrap());
         self.values
             .map(|v| match v {
@@ -309,7 +309,7 @@ impl VoxelPositions {
         positions
     }
 
-    fn save_npy(&self, path: std::path::PathBuf) {
+    fn save_npy(&self, path: &std::path::Path) {
         let writer = BufWriter::new(File::create(path.join("voxel_positions_mm.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
     }

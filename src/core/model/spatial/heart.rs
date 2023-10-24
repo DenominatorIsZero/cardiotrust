@@ -32,8 +32,12 @@ impl Heart {
         }
     }
 
-    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
-        fs::create_dir_all(path.clone()).unwrap();
+    ///
+    /// # Panics
+    ///
+    /// Panics if file or directory can't be written to.
+    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("heart_origin_mm.npy")).unwrap());
         self.origin_mm.write_npy(writer).unwrap();
         let writer = BufWriter::new(File::create(path.join("heart_size_mm.npy")).unwrap());

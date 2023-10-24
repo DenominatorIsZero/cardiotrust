@@ -66,8 +66,8 @@ impl Sensors {
         self.positions_mm.shape()[0]
     }
 
-    pub(crate) fn save_npy(&self, path: std::path::PathBuf) {
-        fs::create_dir_all(path.clone()).unwrap();
+    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("sensor_positions_mm.npy")).unwrap());
         self.positions_mm.write_npy(writer).unwrap();
         let writer =
