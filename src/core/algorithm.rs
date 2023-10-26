@@ -109,7 +109,6 @@ pub fn calculate_pseudo_inverse(
             &results.derivatives,
             config.regularization_strength,
             time_index,
-            0,
         );
     }
     results.metrics.calculate_epoch(0);
@@ -205,7 +204,6 @@ pub fn run_epoch(
             &results.derivatives,
             config.regularization_strength,
             time_index,
-            epoch_index,
         );
         if let Some(n) = batch.as_mut() {
             *n += 1;
