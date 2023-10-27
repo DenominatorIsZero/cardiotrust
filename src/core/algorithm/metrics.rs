@@ -3,7 +3,7 @@ use std::{
     io::BufWriter,
 };
 
-use ndarray::{s, Array1};
+use ndarray::Array1;
 use ndarray_npy::WriteNpyExt;
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
