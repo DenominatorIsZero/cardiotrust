@@ -228,7 +228,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                             row.col(|ui| {
                                 ui.add(egui::Slider::new(
                                     &mut algorithm.regularization_strength,
-                                    0.0..=1.0,
+                                    0.0..=1000.0,
                                 ));
                             });
                             row.col(|ui| {
