@@ -401,7 +401,15 @@ fn run_model_based(
     epoch_tx: &Sender<usize>,
     summary_tx: &Sender<Summary>,
 ) {
+    let original_learning_rate = scenario.config.algorithm.learning_rate;
     for epoch_index in 0..scenario.config.algorithm.epochs {
+        if scenario.config.algorithm.learning_rate_reduction_interval != 0
+            && (epoch_index % scenario.config.algorithm.learning_rate_reduction_interval == 0)
+            && epoch_index != 0
+        {
+            scenario.config.algorithm.learning_rate *=
+                scenario.config.algorithm.learning_rate_reduction_factor;
+        }
         algorithm::run_epoch(
             &mut model.functional_description,
             results,
@@ -442,6 +450,7 @@ fn run_model_based(
             break;
         }
     }
+    scenario.config.algorithm.learning_rate = original_learning_rate;
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
