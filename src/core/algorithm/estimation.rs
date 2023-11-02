@@ -150,7 +150,10 @@ pub fn calculate_system_prediction(
                 .values
                 .iter(),
         )
-        .filter(|(_, output_state_index)| output_state_index.is_some())
+        .filter(|((gain_index, _), output_state_index)| {
+            output_state_index.is_some()
+                && !(gain_index.1 == 1 && gain_index.2 == 1 && gain_index.3 == 1)
+        })
         .for_each(|((gain_index, ap_output), output_state_index)| {
             let coef_index = (gain_index.0 / 3, gain_index.1, gain_index.2, gain_index.3);
             let coef = functional_description.ap_params.coefs.values[coef_index];

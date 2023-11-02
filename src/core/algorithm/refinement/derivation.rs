@@ -93,7 +93,6 @@ impl Derivatives {
         if !config.freeze_gains {
             self.calculate_derivatives_gains(
                 &estimations.ap_outputs,
-                &functional_description.ap_params.output_state_indices,
                 config.regularization_strength,
                 functional_description
                     .measurement_covariance
@@ -122,7 +121,6 @@ impl Derivatives {
         // Based on these values
         ap_outputs: &ArrayGains<f32>,
         // This needed for indexing
-        output_state_indices: &ArrayIndicesGains,
         regularization_strength: f32,
         number_of_sensors: usize,
     ) {
@@ -135,17 +133,16 @@ impl Derivatives {
             .values
             .indexed_iter_mut()
             .zip(ap_outputs.values.iter())
-            .zip(output_state_indices.values.iter())
-            .filter(|(_, index_output_state)| index_output_state.is_some())
-            .for_each(
-                |(((gain_index, derivative), ap_output), index_output_state)| {
-                    let maximum_regularization = self.maximum_regularization.values[gain_index.0];
+            .filter(|((gain_index, _), _)| {
+                !(gain_index.1 == 1 && gain_index.2 == 1 && gain_index.3 == 1)
+            })
+            .for_each(|((gain_index, derivative), ap_output)| {
+                let maximum_regularization = self.maximum_regularization.values[gain_index.0];
 
-                    *derivative += ap_output
-                        * self.mapped_residuals.values[index_output_state.unwrap()]
-                            .mul_add(scaling, maximum_regularization * regularization_scaling);
-                },
-            );
+                *derivative += ap_output
+                    * self.mapped_residuals.values[gain_index.0]
+                        .mul_add(scaling, maximum_regularization * regularization_scaling);
+            });
     }
 
     fn calculate_derivatives_coefs(
@@ -347,12 +344,7 @@ mod tests {
         let mut derivatives = Derivatives::new(number_of_states);
 
         derivatives.mapped_residuals = mapped_residuals;
-        derivatives.calculate_derivatives_gains(
-            &ap_outputs,
-            &output_state_indices,
-            regularization_strength,
-            1,
-        );
+        derivatives.calculate_derivatives_gains(&ap_outputs, regularization_strength, 1);
 
         assert!(
             derivatives_gains_exp
