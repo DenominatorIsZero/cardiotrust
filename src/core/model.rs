@@ -6,14 +6,14 @@ use std::error::Error;
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
 
-use self::{functional::FunctionalDescription, spatial::VoxelTypes};
+use self::{functional::FunctionalDescription, spatial::SpatialDescription};
 
 use super::config::model::Model as ModelConfig;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Model {
     pub functional_description: FunctionalDescription,
-    pub spatial_description: VoxelTypes,
+    pub spatial_description: SpatialDescription,
 }
 
 impl Model {
@@ -31,7 +31,7 @@ impl Model {
                 number_of_steps,
                 voxels_in_dims,
             ),
-            spatial_description: VoxelTypes::empty(
+            spatial_description: SpatialDescription::empty(
                 number_of_sensors,
                 [number_of_states / 3_usize, 1, 1],
             ),
@@ -47,7 +47,7 @@ impl Model {
         sample_rate_hz: f32,
         duration_s: f32,
     ) -> Result<Self, Box<dyn Error>> {
-        let spatial_description = VoxelTypes::from_model_config(config);
+        let spatial_description = SpatialDescription::from_model_config(config);
         let functional_description = FunctionalDescription::from_model_config(
             config,
             &spatial_description,

@@ -18,7 +18,7 @@ use self::{
     measurement::{MeasurementCovariance, MeasurementMatrix},
 };
 
-use super::spatial::VoxelTypes;
+use super::spatial::SpatialDescription;
 use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -59,7 +59,7 @@ impl FunctionalDescription {
     /// result in valid delay values.
     pub fn from_model_config(
         config: &Model,
-        spatial_description: &VoxelTypes,
+        spatial_description: &SpatialDescription,
         sample_rate_hz: f32,
         duration_s: f32,
     ) -> Result<Self, Box<dyn Error>> {
@@ -101,7 +101,7 @@ impl FunctionalDescription {
 
 fn process_covariance_from_model_config(
     config: &Model,
-    spatial_description: &VoxelTypes,
+    spatial_description: &SpatialDescription,
     ap_params: &APParameters,
 ) -> ArrayGains<f32> {
     let normal = if relative_eq!(config.process_covariance_std, 0.0) {
@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn from_model_config_no_crash() {
         let config = Model::default();
-        let spatial_description = VoxelTypes::from_model_config(&config);
+        let spatial_description = SpatialDescription::from_model_config(&config);
         let sample_rate_hz = 2000.0;
         let duration_s = 2.0;
         let _functional_description = FunctionalDescription::from_model_config(

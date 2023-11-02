@@ -4,12 +4,16 @@ use serde::{Deserialize, Serialize};
 use crate::core::{
     algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
-    model::functional::{
-        allpass::{
-            shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains},
-            APParameters,
+    model::spatial::SpatialDescription,
+    model::{
+        functional::{
+            allpass::{
+                shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains},
+                APParameters,
+            },
+            FunctionalDescription,
         },
-        FunctionalDescription,
+        spatial::voxels::VoxelNumbers,
     },
 };
 
@@ -129,18 +133,19 @@ impl Derivatives {
 
         self.gains
             .values
-            .iter_mut()
+            .indexed_iter_mut()
             .zip(ap_outputs.values.iter())
             .zip(output_state_indices.values.iter())
             .filter(|(_, index_output_state)| index_output_state.is_some())
-            .for_each(|((derivative, ap_output), index_output_state)| {
-                let maximum_regularization =
-                    self.maximum_regularization.values[index_output_state.unwrap()];
+            .for_each(
+                |(((gain_index, derivative), ap_output), index_output_state)| {
+                    let maximum_regularization = self.maximum_regularization.values[gain_index.0];
 
-                *derivative += ap_output
-                    * self.mapped_residuals.values[index_output_state.unwrap()]
-                        .mul_add(scaling, maximum_regularization * regularization_scaling);
-            });
+                    *derivative += ap_output
+                        * self.mapped_residuals.values[index_output_state.unwrap()]
+                            .mul_add(scaling, maximum_regularization * regularization_scaling);
+                },
+            );
     }
 
     fn calculate_derivatives_coefs(
