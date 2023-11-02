@@ -134,12 +134,12 @@ impl Derivatives {
             .zip(output_state_indices.values.iter())
             .filter(|(_, index_output_state)| index_output_state.is_some())
             .for_each(|((derivative, ap_output), index_output_state)| {
+                let maximum_regularization =
+                    self.maximum_regularization.values[index_output_state.unwrap()];
+
                 *derivative += ap_output
-                    * self.mapped_residuals.values[index_output_state.unwrap()].mul_add(
-                        scaling,
-                        self.maximum_regularization.values[index_output_state.unwrap()]
-                            * regularization_scaling,
-                    );
+                    * self.mapped_residuals.values[index_output_state.unwrap()]
+                        .mul_add(scaling, maximum_regularization * regularization_scaling);
             });
     }
 
@@ -228,13 +228,13 @@ impl Derivatives {
                 + system_states.values[[time_index, state_index + 2]].abs();
             if sum > regularization_threshold {
                 let factor = sum - regularization_threshold;
-                self.maximum_regularization_sum += factor.powi(2) * sum;
+                self.maximum_regularization_sum += factor.powi(2);
                 self.maximum_regularization.values[state_index] =
-                    system_states.values[[time_index, state_index]] * factor;
+                    factor * system_states.values[[time_index, state_index]].signum();
                 self.maximum_regularization.values[state_index + 1] =
-                    system_states.values[[time_index, state_index + 1]] * factor;
+                    factor * system_states.values[[time_index, state_index + 1]].signum();
                 self.maximum_regularization.values[state_index + 2] =
-                    system_states.values[[time_index, state_index + 2]] * factor;
+                    factor * system_states.values[[time_index, state_index + 2]].signum();
             } else {
                 self.maximum_regularization.values[state_index] = 0.0;
                 self.maximum_regularization.values[state_index + 1] = 0.0;
