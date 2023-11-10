@@ -192,27 +192,19 @@ impl Derivatives {
         #[allow(clippy::cast_precision_loss)]
         let scaling = 1.0 / number_of_sensors as f32;
         #[allow(clippy::cast_precision_loss)]
-        let regularization_scaling = regularization_strength;
         self.coefs_iir
             .values
             .indexed_iter()
             .zip(self.coefs_fir.values.iter())
             .zip(ap_params.gains.values.iter())
-            .zip(ap_params.output_state_indices.values.iter())
-            .filter(|(_, output_state_index)| output_state_index.is_some())
+            .filter(|((((_, x_offset, y_offset, z_offset, _), _), _), _)| {
+                !(*x_offset == 1 && *y_offset == 1 && *z_offset == 1)
+            })
             .for_each(
-                |(
-                    ((((state_index, x_offset, y_offset, z_offset, _), iir), fir), ap_gain),
-                    output_state_index,
-                )| {
+                |((((state_index, x_offset, y_offset, z_offset, _), iir), fir), ap_gain)| {
                     let coef_index = (state_index / 3, x_offset, y_offset, z_offset);
-                    self.coefs.values[coef_index] += (fir + iir)
-                        * ap_gain
-                        * self.mapped_residuals.values[output_state_index.unwrap()].mul_add(
-                            scaling,
-                            self.maximum_regularization.values[output_state_index.unwrap()]
-                                * regularization_scaling,
-                        );
+                    self.coefs.values[coef_index] +=
+                        (fir + iir) * ap_gain * self.mapped_residuals.values[state_index] * scaling;
                 },
             );
     }
