@@ -19,7 +19,7 @@ egui_extras = {version="0.23.0", features = ["all_loaders"]}
 fnv = "1.0.7"
 gif = "0.12.0"
 image = {version = "0.24.7", features = ["png"]}
-itertools = "0.11.0"
+itertools = "0.12.0"
 lab = "0.11.0"
 nalgebra = "0.32.3"
 ndarray = {version = "0.15.6", features = ["approx", "serde", "rayon"]}
