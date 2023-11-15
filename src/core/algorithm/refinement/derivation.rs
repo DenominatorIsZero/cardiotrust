@@ -4,16 +4,12 @@ use serde::{Deserialize, Serialize};
 use crate::core::{
     algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
-    model::spatial::SpatialDescription,
-    model::{
-        functional::{
-            allpass::{
-                shapes::{ArrayDelays, ArrayGains, ArrayIndicesGains},
-                APParameters,
-            },
-            FunctionalDescription,
+    model::functional::{
+        allpass::{
+            shapes::{ArrayDelays, ArrayGains},
+            APParameters,
         },
-        spatial::voxels::VoxelNumbers,
+        FunctionalDescription,
     },
 };
 
@@ -106,7 +102,6 @@ impl Derivatives {
                 &estimations.system_states,
                 &functional_description.ap_params,
                 time_index,
-                config.regularization_strength,
                 functional_description
                     .measurement_covariance
                     .values
@@ -153,7 +148,6 @@ impl Derivatives {
         estimated_system_states: &ArraySystemStates,
         ap_params: &APParameters,
         time_index: usize,
-        regularization_strength: f32,
         number_of_sensors: usize,
     ) {
         self.coefs_fir
@@ -299,61 +293,9 @@ mod tests {
 
     use super::*;
     #[test]
-    fn gains_success() {
-        let number_of_states = 3;
-        let regularization_strength = 0.0;
-        let mut ap_outputs = ArrayGains::empty(number_of_states);
-        ap_outputs.values.fill(1.0);
-        ap_outputs.values[(0, 0, 0, 0, 0)] = 2.0;
-        ap_outputs.values[(0, 1, 0, 0, 0)] = 999.0;
-        let mut mapped_residuals = ArrayMappedResiduals::new(number_of_states);
-        mapped_residuals.values[0] = -1.0;
-        mapped_residuals.values[1] = 1.0;
-        mapped_residuals.values[2] = 2.0;
-        let mut output_state_indices = ArrayIndicesGains::empty(number_of_states);
-        output_state_indices
-            .values
-            .indexed_iter_mut()
-            .filter(|((_, x_offset, y_offset, z_offset, _), _)| {
-                *x_offset == 0 && *y_offset == 0 && *z_offset == 0
-            })
-            .for_each(|((_, _, _, _, output_direction), value)| {
-                *value = Some(output_direction);
-            });
-        let mut derivatives_gains_exp: ArrayGains<f32> = ArrayGains::empty(number_of_states);
-        derivatives_gains_exp.values[(0, 0, 0, 0, 0)] = -2.0;
-        derivatives_gains_exp.values[(0, 0, 0, 0, 1)] = 1.0;
-        derivatives_gains_exp.values[(0, 0, 0, 0, 2)] = 2.0;
-
-        derivatives_gains_exp.values[(1, 0, 0, 0, 0)] = -1.0;
-        derivatives_gains_exp.values[(1, 0, 0, 0, 1)] = 1.0;
-        derivatives_gains_exp.values[(1, 0, 0, 0, 2)] = 2.0;
-
-        derivatives_gains_exp.values[(2, 0, 0, 0, 0)] = -1.0;
-        derivatives_gains_exp.values[(2, 0, 0, 0, 1)] = 1.0;
-        derivatives_gains_exp.values[(2, 0, 0, 0, 2)] = 2.0;
-
-        let mut derivatives = Derivatives::new(number_of_states);
-
-        derivatives.mapped_residuals = mapped_residuals;
-        derivatives.calculate_derivatives_gains(&ap_outputs, regularization_strength, 1);
-
-        assert!(
-            derivatives_gains_exp
-                .values
-                .relative_eq(&derivatives.gains.values, 1e-5, 0.001),
-            "expected:\n{}\nactual:\n{}",
-            derivatives_gains_exp.values,
-            derivatives.gains.values
-        );
-    }
-
-    #[allow(clippy::similar_names)]
-    #[test]
     fn coef_no_crash() {
         let number_of_steps = 2000;
         let number_of_states = 3000;
-        let regularization_strength = 0.0;
         let ap_outputs = ArrayGains::empty(number_of_states);
         let estimated_system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
         let ap_params = APParameters::empty(number_of_states, Dim([1000, 1, 1]));
@@ -370,7 +312,6 @@ mod tests {
             &estimated_system_states,
             &ap_params,
             time_index,
-            regularization_strength,
             1,
         );
     }
