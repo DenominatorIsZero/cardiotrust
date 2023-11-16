@@ -175,6 +175,20 @@ pub fn calculate_system_prediction(
             let gain = functional_description.ap_params.gains.values[gain_index];
             system_states.values[(time_index, gain_index.0)] += gain * *ap_output;
         });
+    add_control_function(functional_description, time_index, system_states);
+    predict_measurements(
+        measurements,
+        time_index,
+        &functional_description.measurement_matrix,
+        system_states,
+    );
+}
+
+fn add_control_function(
+    functional_description: &FunctionalDescription,
+    time_index: usize,
+    system_states: &mut ArraySystemStates,
+) {
     // Add control function
     let control_function_value = functional_description.control_function_values.values[time_index];
     system_states
@@ -185,12 +199,6 @@ pub fn calculate_system_prediction(
         .for_each(|(system_state, coef)| {
             *system_state += coef * control_function_value;
         });
-    predict_measurements(
-        measurements,
-        time_index,
-        &functional_description.measurement_matrix,
-        system_states,
-    );
 }
 
 fn predict_measurements(
