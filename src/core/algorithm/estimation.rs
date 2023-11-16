@@ -185,10 +185,23 @@ pub fn calculate_system_prediction(
         .for_each(|(system_state, coef)| {
             *system_state += coef * control_function_value;
         });
+    predict_measurements(
+        measurements,
+        time_index,
+        &functional_description.measurement_matrix,
+        system_states,
+    );
+}
+
+fn predict_measurements(
+    measurements: &mut ArrayMeasurements,
+    time_index: usize,
+    measurement_matrix: &MeasurementMatrix,
+    system_states: &mut ArraySystemStates,
+) {
     // Prediction of measurements H * x
     measurements.values.slice_mut(s![time_index, ..]).assign(
-        &functional_description
-            .measurement_matrix
+        &measurement_matrix
             .values
             .dot(&system_states.values.slice(s![time_index, ..])),
     );
