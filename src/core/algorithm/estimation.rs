@@ -154,7 +154,7 @@ pub fn calculate_system_prediction(
     );
 }
 
-fn innovate_system_states(
+pub fn innovate_system_states(
     ap_outputs: &mut ArrayGains<f32>,
     functional_description: &FunctionalDescription,
     time_index: usize,
@@ -198,7 +198,7 @@ fn innovate_system_states(
         });
 }
 
-fn add_control_function(
+pub fn add_control_function(
     functional_description: &FunctionalDescription,
     time_index: usize,
     system_states: &mut ArraySystemStates,
@@ -215,7 +215,7 @@ fn add_control_function(
         });
 }
 
-fn predict_measurements(
+pub fn predict_measurements(
     measurements: &mut ArrayMeasurements,
     time_index: usize,
     measurement_matrix: &MeasurementMatrix,

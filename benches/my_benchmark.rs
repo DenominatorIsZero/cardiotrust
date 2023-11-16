@@ -1,9 +1,8 @@
 use std::time::Duration;
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use rusty_cde::core::algorithm::estimation::prediction::{
-    self, add_control_function, calculate_system_prediction, innovate_system_states,
-    predict_measurements,
+use rusty_cde::core::algorithm::estimation::{
+    add_control_function, calculate_system_prediction, innovate_system_states, predict_measurements,
 };
 use rusty_cde::core::{
     algorithm::estimation::Estimations, config::Config, data::Data, model::Model,
