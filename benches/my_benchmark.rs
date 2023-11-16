@@ -1,7 +1,10 @@
 use std::time::Duration;
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use rusty_cde::core::algorithm::estimation::calculate_system_prediction;
+use rusty_cde::core::algorithm::estimation::prediction::{
+    self, add_control_function, calculate_system_prediction, innovate_system_states,
+    predict_measurements,
+};
 use rusty_cde::core::{
     algorithm::estimation::Estimations, config::Config, data::Data, model::Model,
 };
@@ -32,14 +35,49 @@ fn system_prediction(c: &mut Criterion) {
         let time_index = 200;
         let number_of_voxels = model.spatial_description.voxels.count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        group.bench_function(BenchmarkId::from_parameter(voxel_size), |b| {
+        group.bench_function(
+            BenchmarkId::new("calculate_system_perdiction", voxel_size),
+            |b| {
+                b.iter(|| {
+                    calculate_system_prediction(
+                        black_box(&mut estimations.ap_outputs),
+                        black_box(&mut estimations.system_states),
+                        black_box(&mut estimations.measurements),
+                        black_box(&model.functional_description),
+                        black_box(time_index),
+                    )
+                })
+            },
+        );
+        group.bench_function(
+            BenchmarkId::new("innovate_system_states", voxel_size),
+            |b| {
+                b.iter(|| {
+                    innovate_system_states(
+                        black_box(&mut estimations.ap_outputs),
+                        black_box(&model.functional_description),
+                        black_box(time_index),
+                        black_box(&mut estimations.system_states),
+                    )
+                })
+            },
+        );
+        group.bench_function(BenchmarkId::new("add_control_function", voxel_size), |b| {
             b.iter(|| {
-                calculate_system_prediction(
-                    black_box(&mut estimations.ap_outputs),
-                    black_box(&mut estimations.system_states),
-                    black_box(&mut estimations.measurements),
+                add_control_function(
                     black_box(&model.functional_description),
                     black_box(time_index),
+                    black_box(&mut estimations.system_states),
+                )
+            })
+        });
+        group.bench_function(BenchmarkId::new("predict_measurements", voxel_size), |b| {
+            b.iter(|| {
+                predict_measurements(
+                    black_box(&mut estimations.measurements),
+                    black_box(time_index),
+                    black_box(&model.functional_description.measurement_matrix),
+                    black_box(&mut estimations.system_states),
                 )
             })
         });
@@ -48,6 +86,6 @@ fn system_prediction(c: &mut Criterion) {
 }
 
 criterion_group! {name = benches;
-config = Criterion::default().measurement_time(Duration::from_secs(20));
+config = Criterion::default().measurement_time(Duration::from_secs(10));
 targets=system_prediction}
 criterion_main!(benches);
