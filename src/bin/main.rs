@@ -1,3 +1,9 @@
+#[cfg(not(target_env = "msvc"))]
+use tikv_jemallocator::Jemalloc;
+
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
 use bevy::{prelude::*, window::WindowMode};
 use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids};
 use bevy_panorbit_camera::PanOrbitCamera;

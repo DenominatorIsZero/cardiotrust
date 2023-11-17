@@ -1,3 +1,10 @@
+#[cfg(not(target_env = "msvc"))]
+use tikv_jemallocator::Jemalloc;
+
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 use std::time::Duration;
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
@@ -8,7 +15,7 @@ use rusty_cde::core::{
     algorithm::estimation::Estimations, config::Config, data::Data, model::Model,
 };
 
-const VOXEL_SIZES: [f32; 4] = [2.5, 3.0, 5.0, 10.0];
+const VOXEL_SIZES: [f32; 1] = [2.5];
 
 fn system_prediction(c: &mut Criterion) {
     let mut group = c.benchmark_group("System Prediction");

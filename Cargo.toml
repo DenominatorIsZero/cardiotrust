@@ -43,6 +43,8 @@ color_quant = "1.1.0"
 ndarray-linalg = {version="0.16.0", features = ["intel-mkl-static"]}
 [target.'cfg(target_os = "macos")'.dependencies]
 ndarray-linalg = {version="0.16.0", features = ["openblas-system"]}
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+tikv-jemallocator = "0.5.4"
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -54,5 +56,6 @@ harness = false
 [profile.test]
 opt-level = 3
 
+
 [profile.release]
-debug = true
+opt-level = 3
