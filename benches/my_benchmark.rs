@@ -46,11 +46,11 @@ fn system_prediction(c: &mut Criterion) {
             |b| {
                 b.iter(|| {
                     calculate_system_prediction(
-                        black_box(&mut estimations.ap_outputs),
-                        black_box(&mut estimations.system_states),
-                        black_box(&mut estimations.measurements),
-                        black_box(&model.functional_description),
-                        black_box(time_index),
+                        &mut estimations.ap_outputs,
+                        &mut estimations.system_states,
+                        &mut estimations.measurements,
+                        &model.functional_description,
+                        time_index,
                     )
                 })
             },
@@ -60,10 +60,10 @@ fn system_prediction(c: &mut Criterion) {
             |b| {
                 b.iter(|| {
                     innovate_system_states(
-                        black_box(&mut estimations.ap_outputs),
-                        black_box(&model.functional_description),
-                        black_box(time_index),
-                        black_box(&mut estimations.system_states),
+                        &mut estimations.ap_outputs,
+                        &model.functional_description,
+                        time_index,
+                        &mut estimations.system_states,
                     )
                 })
             },
@@ -71,19 +71,19 @@ fn system_prediction(c: &mut Criterion) {
         group.bench_function(BenchmarkId::new("add_control_function", voxel_size), |b| {
             b.iter(|| {
                 add_control_function(
-                    black_box(&model.functional_description),
-                    black_box(time_index),
-                    black_box(&mut estimations.system_states),
+                    &model.functional_description,
+                    time_index,
+                    &mut estimations.system_states,
                 )
             })
         });
         group.bench_function(BenchmarkId::new("predict_measurements", voxel_size), |b| {
             b.iter(|| {
                 predict_measurements(
-                    black_box(&mut estimations.measurements),
-                    black_box(time_index),
-                    black_box(&model.functional_description.measurement_matrix),
-                    black_box(&mut estimations.system_states),
+                    &mut estimations.measurements,
+                    time_index,
+                    &model.functional_description.measurement_matrix,
+                    &mut estimations.system_states,
                 )
             })
         });
