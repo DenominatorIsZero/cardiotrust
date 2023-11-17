@@ -1,9 +1,8 @@
+pub mod prediction;
 pub mod shapes;
 
-use std::ops::AddAssign;
-
 use itertools::Itertools;
-use ndarray::{s, Array2, Zip};
+use ndarray::{s, Array2};
 use ndarray_linalg::Inverse;
 use serde::{Deserialize, Serialize};
 
@@ -75,162 +74,6 @@ impl Estimations {
         self.system_states.save_npy(path);
         self.measurements.save_npy(path);
     }
-}
-
-pub fn par_calculate_system_prediction(
-    ap_outputs: &mut ArrayGains<f32>,
-    system_states: &mut ArraySystemStates,
-    measurements: &mut ArrayMeasurements,
-    functional_description: &FunctionalDescription,
-    time_index: usize,
-) {
-    // Calculate ap outputs and system states
-    Zip::indexed(&mut ap_outputs.values)
-        .and(&functional_description.ap_params.output_state_indices.values)
-        .par_for_each(|gain_index, ap_output, output_state_index_option| {
-            if let Some(output_state_index) = output_state_index_option {
-                let coef_index = (gain_index.0 / 3, gain_index.1, gain_index.2, gain_index.3);
-                let coef = functional_description.ap_params.coefs.values[coef_index];
-                let delay = functional_description.ap_params.delays.values[coef_index];
-                let input = if delay <= time_index {
-                    system_states.values[(time_index - delay, *output_state_index)]
-                } else {
-                    0.0
-                };
-                let input_delayed = if delay < time_index {
-                    system_states.values[(time_index - delay - 1, *output_state_index)]
-                } else {
-                    0.0
-                };
-                *ap_output = coef.mul_add(input - *ap_output, input_delayed);
-            }
-        });
-    Zip::indexed(&mut system_states.values.slice_mut(s![time_index, ..])).par_for_each(
-        |state_index, state| {
-            for (((x, y), z), d) in (0..=2) // over neighors of input voxel
-                .cartesian_product(0..=2)
-                .cartesian_product(0..=2)
-                .cartesian_product(0..=2)
-            {
-                *state += functional_description.ap_params.gains.values[[state_index, x, y, z, d]]
-                    * ap_outputs.values[[state_index, x, y, z, d]];
-            }
-        },
-    );
-    // Add control function
-    let control_function_value = functional_description.control_function_values.values[time_index];
-    system_states
-        .values
-        .slice_mut(s![time_index, ..])
-        .add_assign(&(&functional_description.control_matrix.values * control_function_value));
-    // Prediction of measurements H * x
-    measurements.values.slice_mut(s![time_index, ..]).assign(
-        &functional_description
-            .measurement_matrix
-            .values
-            .dot(&system_states.values.slice(s![time_index, ..])),
-    );
-}
-
-#[inline]
-pub fn calculate_system_prediction(
-    ap_outputs: &mut ArrayGains<f32>,
-    system_states: &mut ArraySystemStates,
-    measurements: &mut ArrayMeasurements,
-    functional_description: &FunctionalDescription,
-    time_index: usize,
-) {
-    innovate_system_states(
-        ap_outputs,
-        functional_description,
-        time_index,
-        system_states,
-    );
-    add_control_function(functional_description, time_index, system_states);
-    predict_measurements(
-        measurements,
-        time_index,
-        &functional_description.measurement_matrix,
-        system_states,
-    );
-}
-
-#[inline]
-pub fn innovate_system_states(
-    ap_outputs: &mut ArrayGains<f32>,
-    functional_description: &FunctionalDescription,
-    time_index: usize,
-    system_states: &mut ArraySystemStates,
-) {
-    // Calculate ap outputs and system states
-    ap_outputs
-        .values
-        .indexed_iter_mut()
-        .zip(
-            functional_description
-                .ap_params
-                .output_state_indices
-                .values
-                .iter(),
-        )
-        .filter(|((gain_index, _), output_state_index)| {
-            output_state_index.is_some()
-                && !(gain_index.1 == 1 && gain_index.2 == 1 && gain_index.3 == 1)
-        })
-        .for_each(|((gain_index, ap_output), output_state_index)| {
-            let coef_index = (gain_index.0 / 3, gain_index.1, gain_index.2, gain_index.3);
-            let coef = functional_description.ap_params.coefs.values[coef_index];
-            let delay = functional_description.ap_params.delays.values[coef_index];
-            let input = if delay <= time_index {
-                system_states.values[(time_index - delay, output_state_index.unwrap_or_default())]
-            } else {
-                0.0
-            };
-            let input_delayed = if delay < time_index {
-                system_states.values[(
-                    time_index - delay - 1,
-                    output_state_index.unwrap_or_default(),
-                )]
-            } else {
-                0.0
-            };
-            *ap_output = coef.mul_add(input - *ap_output, input_delayed);
-            let gain = functional_description.ap_params.gains.values[gain_index];
-            system_states.values[(time_index, gain_index.0)] += gain * *ap_output;
-        });
-}
-
-#[inline]
-pub fn add_control_function(
-    functional_description: &FunctionalDescription,
-    time_index: usize,
-    system_states: &mut ArraySystemStates,
-) {
-    // Add control function
-    let control_function_value = functional_description.control_function_values.values[time_index];
-    system_states
-        .values
-        .slice_mut(s![time_index, ..])
-        .iter_mut()
-        .zip(functional_description.control_matrix.values.iter())
-        .for_each(|(system_state, coef)| {
-            *system_state += coef * control_function_value;
-        });
-}
-
-#[inline]
-pub fn predict_measurements(
-    measurements: &mut ArrayMeasurements,
-    time_index: usize,
-    measurement_matrix: &MeasurementMatrix,
-    system_states: &mut ArraySystemStates,
-) {
-    // Prediction of measurements H * x
-    measurements.values.slice_mut(s![time_index, ..]).assign(
-        &measurement_matrix
-            .values
-            .dot(&system_states.values.slice(s![time_index, ..])),
-    );
 }
 
 #[inline]
@@ -554,7 +397,7 @@ fn flip(x: usize) -> usize {
 mod tests {
     use ndarray::Dim;
 
-    use super::*;
+    use super::{prediction::calculate_system_prediction, *};
     #[test]
     fn prediction_no_crash() {
         let number_of_states = 3000;

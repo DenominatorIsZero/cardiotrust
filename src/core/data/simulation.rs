@@ -7,7 +7,7 @@ use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
-    algorithm::estimation::calculate_system_prediction,
+    algorithm::estimation::prediction::calculate_system_prediction,
     config::simulation::Simulation as SimulationConfig,
     data::ArrayMeasurements,
     model::{functional::allpass::shapes::ArrayGains, Model},

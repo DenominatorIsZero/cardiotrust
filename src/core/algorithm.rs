@@ -3,8 +3,8 @@ use ndarray::{s, Array1};
 
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
-    calculate_residuals, calculate_system_prediction, calculate_system_states_delta,
-    calculate_system_update,
+    calculate_residuals, calculate_system_states_delta, calculate_system_update,
+    prediction::calculate_system_prediction,
 };
 
 use super::{

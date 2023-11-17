@@ -10,7 +10,7 @@ static GLOBAL: Jemalloc = Jemalloc;
 use std::time::Duration;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use rusty_cde::core::algorithm::estimation::{
+use rusty_cde::core::algorithm::estimation::prediction::{
     add_control_function, calculate_system_prediction, innovate_system_states, predict_measurements,
 };
 use rusty_cde::core::{
