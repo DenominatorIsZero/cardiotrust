@@ -31,8 +31,10 @@ pub fn calculate_system_prediction(
     );
 }
 
+/// Naive version of state innovation. uses indexed iter.
+///
 #[inline]
-pub fn innovate_system_states(
+pub fn innovate_system_states_v1(
     ap_outputs: &mut ArrayGains<f32>,
     functional_description: &FunctionalDescription,
     time_index: usize,
@@ -161,4 +163,54 @@ pub fn predict_measurements(
             .values
             .dot(&system_states.values.slice(s![time_index, ..])),
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::core::{
+        algorithm::estimation::Estimations, config::Config, data::Data, model::Model,
+    };
+
+    use super::{innovate_system_states_v1, innovate_system_states_v2};
+
+    #[test]
+    fn innovate_system_states_v2_equality() {
+        let config = Config::default();
+        let simulation_config = config.simulation.as_ref().unwrap();
+        let data = Data::from_simulation_config(simulation_config);
+        let model = Model::from_model_config(
+            &config.algorithm.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .unwrap();
+        let mut estimations_v1 = Estimations::empty(
+            model.spatial_description.voxels.count_states(),
+            model.spatial_description.sensors.count(),
+            data.get_measurements().values.shape()[0],
+        );
+        let mut estimations_v2 = Estimations::empty(
+            model.spatial_description.voxels.count_states(),
+            model.spatial_description.sensors.count(),
+            data.get_measurements().values.shape()[0],
+        );
+        for time_index in 0..estimations_v2.measurements.values.shape()[0] {
+            innovate_system_states_v2(
+                &mut estimations_v2.ap_outputs,
+                &model.functional_description,
+                time_index,
+                &mut estimations_v2.system_states,
+            );
+            innovate_system_states_v1(
+                &mut estimations_v1.ap_outputs,
+                &model.functional_description,
+                time_index,
+                &mut estimations_v1.system_states,
+            );
+        }
+        assert_eq!(
+            estimations_v1.system_states.values,
+            estimations_v2.system_states.values
+        );
+    }
 }
