@@ -1,3 +1,5 @@
+use rusty_cde::core::algorithm::run_epoch;
+use rusty_cde::core::scenario::results::Results;
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
 
@@ -17,7 +19,7 @@ use rusty_cde::core::{
 
 const VOXEL_SIZES: [f32; 1] = [2.5];
 
-fn system_prediction(c: &mut Criterion) {
+fn system_prediction_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("System Prediction");
     for voxel_size in VOXEL_SIZES.iter() {
         let samplerate_hz = 2000.0 * 2.5 / voxel_size;
@@ -91,7 +93,7 @@ fn system_prediction(c: &mut Criterion) {
     group.finish();
 }
 
-fn system_prediction_epoch(c: &mut Criterion) {
+fn system_prediction_epoch_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("System Prediction Epoch");
     for voxel_size in VOXEL_SIZES.iter() {
         let samplerate_hz = 2000.0 * 2.5 / voxel_size;
@@ -172,10 +174,49 @@ fn system_prediction_epoch(c: &mut Criterion) {
     group.finish();
 }
 
+fn run_epoch_bench(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Run Epoch");
+    for voxel_size in VOXEL_SIZES.iter() {
+        let samplerate_hz = 2000.0 * 2.5 / voxel_size;
+        let mut config = Config::default();
+        config.simulation.as_mut().unwrap().model.voxel_size_mm = *voxel_size;
+        config.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
+        config.algorithm.model.voxel_size_mm = *voxel_size;
+        let simulation_config = config.simulation.as_ref().unwrap();
+        let data = Data::from_simulation_config(simulation_config);
+        let mut model = Model::from_model_config(
+            &config.algorithm.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .unwrap();
+        let mut results = Results::new(
+            config.algorithm.epochs,
+            data.get_measurements().values.shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+        );
+        let number_of_voxels = model.spatial_description.voxels.count();
+        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
+        group.bench_function(BenchmarkId::new("run_epoch", voxel_size), |b| {
+            b.iter(|| {
+                run_epoch(
+                    &mut model.functional_description,
+                    &mut results,
+                    &data,
+                    &config.algorithm,
+                    0,
+                )
+            })
+        });
+    }
+    group.finish();
+}
+
 criterion_group! {name = sample_benches;
 config = Criterion::default().measurement_time(Duration::from_secs(10));
-targets=system_prediction}
+targets=system_prediction_bench}
 criterion_group! {name = epoch_benches;
 config = Criterion::default().measurement_time(Duration::from_secs(10)).sample_size(10);
-targets=system_prediction_epoch}
+targets=system_prediction_epoch_bench, run_epoch_bench}
 criterion_main!(sample_benches, epoch_benches);
