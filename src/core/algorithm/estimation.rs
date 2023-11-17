@@ -132,6 +132,7 @@ pub fn par_calculate_system_prediction(
     );
 }
 
+#[inline]
 pub fn calculate_system_prediction(
     ap_outputs: &mut ArrayGains<f32>,
     system_states: &mut ArraySystemStates,
@@ -154,6 +155,7 @@ pub fn calculate_system_prediction(
     );
 }
 
+#[inline]
 pub fn innovate_system_states(
     ap_outputs: &mut ArrayGains<f32>,
     functional_description: &FunctionalDescription,
@@ -198,6 +200,7 @@ pub fn innovate_system_states(
         });
 }
 
+#[inline]
 pub fn add_control_function(
     functional_description: &FunctionalDescription,
     time_index: usize,
@@ -215,6 +218,7 @@ pub fn add_control_function(
         });
 }
 
+#[inline]
 pub fn predict_measurements(
     measurements: &mut ArrayMeasurements,
     time_index: usize,
@@ -229,6 +233,7 @@ pub fn predict_measurements(
     );
 }
 
+#[inline]
 pub fn calculate_residuals(
     residuals: &mut ArrayMeasurements,
     predicted_measurements: &ArrayMeasurements,
@@ -241,6 +246,7 @@ pub fn calculate_residuals(
     );
 }
 
+#[inline]
 pub fn calculate_post_update_residuals(
     post_update_residuals: &mut ArrayMeasurements,
     measurement_matrix: &MeasurementMatrix,
@@ -256,6 +262,7 @@ pub fn calculate_post_update_residuals(
     );
 }
 
+#[inline]
 pub fn calculate_system_states_delta(
     system_states_delta: &mut ArraySystemStates,
     estimated_system_states: &ArraySystemStates,
@@ -268,6 +275,7 @@ pub fn calculate_system_states_delta(
     );
 }
 
+#[inline]
 pub fn calculate_gains_delta(
     gains_delta: &mut ArrayGains<f32>,
     estimated_gains: &ArrayGains<f32>,
@@ -278,6 +286,7 @@ pub fn calculate_gains_delta(
         .assign(&(&estimated_gains.values - &actual_gains.values));
 }
 
+#[inline]
 pub fn calculate_delays_delta(
     delays_delta: &mut ArrayDelays<f32>,
     estimated_delays: &ArrayDelays<usize>,
@@ -297,6 +306,7 @@ pub fn calculate_delays_delta(
         });
 }
 
+#[inline]
 pub fn calculate_system_update(
     estimations: &mut Estimations,
     time_index: usize,
@@ -326,6 +336,7 @@ pub fn calculate_system_update(
     );
 }
 
+#[inline]
 fn calculate_kalman_gain(
     estimations: &mut Estimations,
     functional_description: &mut FunctionalDescription,
@@ -336,6 +347,7 @@ fn calculate_kalman_gain(
     estimate_state_covariance(estimations, functional_description);
 }
 
+#[inline]
 fn estimate_state_covariance(
     estimations: &mut Estimations,
     functional_description: &mut FunctionalDescription,
@@ -381,6 +393,7 @@ fn estimate_state_covariance(
         });
 }
 
+#[inline]
 fn calculate_k(functional_description: &mut FunctionalDescription, estimations: &mut Estimations) {
     functional_description
         .kalman_gain
@@ -408,6 +421,7 @@ fn calculate_k(functional_description: &mut FunctionalDescription, estimations: 
         });
 }
 
+#[inline]
 fn calculate_s_inv(estimations: &mut Estimations, functional_description: &FunctionalDescription) {
     estimations.s.indexed_iter_mut().for_each(|(index, value)| {
         *value = functional_description.measurement_covariance.values[index];
@@ -439,6 +453,7 @@ fn calculate_s_inv(estimations: &mut Estimations, functional_description: &Funct
 }
 
 #[allow(clippy::cast_sign_loss)]
+#[inline]
 fn predict_state_covariance(
     estimations: &mut Estimations,
     functional_description: &FunctionalDescription,
@@ -515,6 +530,7 @@ fn predict_state_covariance(
         });
 }
 
+#[inline]
 fn flip(x: usize) -> usize {
     // Output state indicies:
     // 0 = -1
