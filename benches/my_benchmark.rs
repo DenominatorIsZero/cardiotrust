@@ -11,7 +11,8 @@ use std::time::Duration;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use rusty_cde::core::algorithm::estimation::prediction::{
-    add_control_function, calculate_system_prediction, innovate_system_states, predict_measurements,
+    add_control_function, calculate_system_prediction, innovate_system_states,
+    innovate_system_states_v2, predict_measurements,
 };
 use rusty_cde::core::{
     algorithm::estimation::Estimations, config::Config, data::Data, model::Model,
@@ -62,6 +63,19 @@ fn system_prediction_bench(c: &mut Criterion) {
             |b| {
                 b.iter(|| {
                     innovate_system_states(
+                        &mut estimations.ap_outputs,
+                        &model.functional_description,
+                        time_index,
+                        &mut estimations.system_states,
+                    )
+                })
+            },
+        );
+        group.bench_function(
+            BenchmarkId::new("innovate_system_states_v2", voxel_size),
+            |b| {
+                b.iter(|| {
+                    innovate_system_states_v2(
                         &mut estimations.ap_outputs,
                         &model.functional_description,
                         time_index,
@@ -138,6 +152,21 @@ fn system_prediction_epoch_bench(c: &mut Criterion) {
                 b.iter(|| {
                     for time_index in 0..estimations.measurements.values.shape()[0] {
                         innovate_system_states(
+                            &mut estimations.ap_outputs,
+                            &model.functional_description,
+                            time_index,
+                            &mut estimations.system_states,
+                        )
+                    }
+                })
+            },
+        );
+        group.bench_function(
+            BenchmarkId::new("innovate_system_states_v2", voxel_size),
+            |b| {
+                b.iter(|| {
+                    for time_index in 0..estimations.measurements.values.shape()[0] {
+                        innovate_system_states_v2(
                             &mut estimations.ap_outputs,
                             &model.functional_description,
                             time_index,

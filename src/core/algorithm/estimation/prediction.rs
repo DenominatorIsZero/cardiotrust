@@ -7,6 +7,7 @@ use crate::core::model::{
 
 use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
 
+#[allow(clippy::module_name_repetitions)]
 #[inline]
 pub fn calculate_system_prediction(
     ap_outputs: &mut ArrayGains<f32>,
@@ -15,7 +16,7 @@ pub fn calculate_system_prediction(
     functional_description: &FunctionalDescription,
     time_index: usize,
 ) {
-    innovate_system_states(
+    innovate_system_states_v2(
         ap_outputs,
         functional_description,
         time_index,
@@ -73,6 +74,60 @@ pub fn innovate_system_states(
             let gain = functional_description.ap_params.gains.values[gain_index];
             system_states.values[(time_index, gain_index.0)] += gain * *ap_output;
         });
+}
+
+/// .
+///
+/// # Panics
+///
+/// Panics if output state indices are not initialized corrrectly.
+#[inline]
+pub fn innovate_system_states_v2(
+    ap_outputs: &mut ArrayGains<f32>,
+    functional_description: &FunctionalDescription,
+    time_index: usize,
+    system_states: &mut ArraySystemStates,
+) {
+    // Calculate ap outputs and system states
+    let output_state_indices = &functional_description.ap_params.output_state_indices.values;
+    for index_state in 0..ap_outputs.values.shape()[0] {
+        for x in 0..3 {
+            for y in 0..3 {
+                for z in 0..3 {
+                    if (x == 1 && y == 1 && z == 1)
+                        || output_state_indices[(index_state, x, y, z, 0)].is_none()
+                    {
+                        continue;
+                    }
+                    let coef_index = (index_state / 3, x, y, z);
+                    let coef = functional_description.ap_params.coefs.values[coef_index];
+                    let delay = functional_description.ap_params.delays.values[coef_index];
+                    for dim in 0..3 {
+                        let output_state_index =
+                            output_state_indices[(index_state, x, y, z, dim)].unwrap();
+                        let input = if delay <= time_index {
+                            system_states.values[(time_index - delay, output_state_index)]
+                        } else {
+                            0.0
+                        };
+                        let input_delayed = if delay < time_index {
+                            system_states.values[(time_index - delay - 1, output_state_index)]
+                        } else {
+                            0.0
+                        };
+                        ap_outputs.values[(index_state, x, y, z, dim)] = coef.mul_add(
+                            input - ap_outputs.values[(index_state, x, y, z, dim)],
+                            input_delayed,
+                        );
+                        let gain = functional_description.ap_params.gains.values
+                            [(index_state, x, y, z, dim)];
+                        system_states.values[(time_index, index_state)] +=
+                            gain * ap_outputs.values[(index_state, x, y, z, dim)];
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[inline]
