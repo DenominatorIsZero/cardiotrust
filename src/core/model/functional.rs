@@ -12,7 +12,7 @@ use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
 use self::{
-    allpass::{shapes::normal::ArrayGainsNormal, APParameters},
+    allpass::{shapes::normal::ArrayGainsNormal, APParametersNormal},
     control::{ControlFunction, ControlMatrix},
     kalman::Gain,
     measurement::{MeasurementCovariance, MeasurementMatrix},
@@ -24,7 +24,7 @@ use crate::core::config::model::Model;
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
 pub struct FunctionalDescription {
-    pub ap_params: APParameters,
+    pub ap_params: APParametersNormal,
     pub measurement_matrix: MeasurementMatrix,
     pub control_matrix: ControlMatrix,
     pub process_covariance: ArrayGainsNormal<f32>,
@@ -42,7 +42,7 @@ impl FunctionalDescription {
         voxels_in_dims: Dim<[usize; 3]>,
     ) -> Self {
         Self {
-            ap_params: APParameters::empty(number_of_states, voxels_in_dims),
+            ap_params: APParametersNormal::empty(number_of_states, voxels_in_dims),
             measurement_matrix: MeasurementMatrix::empty(number_of_states, number_of_sensors),
             control_matrix: ControlMatrix::empty(number_of_states),
             process_covariance: ArrayGainsNormal::empty(number_of_states),
@@ -64,7 +64,7 @@ impl FunctionalDescription {
         duration_s: f32,
     ) -> Result<Self, Box<dyn Error>> {
         let ap_params =
-            APParameters::from_model_config(config, spatial_description, sample_rate_hz)?;
+            APParametersNormal::from_model_config(config, spatial_description, sample_rate_hz)?;
         let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);
         let control_matrix = ControlMatrix::from_model_config(config, spatial_description);
         let process_covariance =
@@ -102,7 +102,7 @@ impl FunctionalDescription {
 fn process_covariance_from_model_config(
     config: &Model,
     spatial_description: &SpatialDescription,
-    ap_params: &APParameters,
+    ap_params: &APParametersNormal,
 ) -> ArrayGainsNormal<f32> {
     let normal = if relative_eq!(config.process_covariance_std, 0.0) {
         None
@@ -142,7 +142,7 @@ mod tests {
         let number_of_states = 3000;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let _ap_params = APParameters::empty(number_of_states, voxels_in_dims);
+        let _ap_params = APParametersNormal::empty(number_of_states, voxels_in_dims);
     }
 
     #[test]

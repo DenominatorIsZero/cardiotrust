@@ -2,13 +2,13 @@ use crate::core::{
     config::algorithm::Algorithm,
     model::{
         functional::allpass::shapes::normal::{ArrayDelaysNormal, ArrayGainsNormal},
-        functional::allpass::APParameters,
+        functional::allpass::APParametersNormal,
     },
 };
 
 use super::derivation::Derivatives;
 
-impl APParameters {
+impl APParametersNormal {
     /// Performs one gradient descent step on the all-pass parameters.
     ///
     /// Derivatives must be reset before the next update.
@@ -183,7 +183,7 @@ mod tests {
     fn update_ap_params_success() {
         let number_of_states = 3;
         let voxels_in_dims = Dim([1, 1, 1]);
-        let mut ap_parameters = APParameters::empty(number_of_states, voxels_in_dims);
+        let mut ap_parameters = APParametersNormal::empty(number_of_states, voxels_in_dims);
         ap_parameters.coefs.values.fill(0.2);
         ap_parameters.coefs.values[[0, 0, 0, 0]] = 0.8;
         ap_parameters.delays.values.fill(3);

@@ -26,7 +26,7 @@ mod gain;
 pub mod shapes;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct APParameters {
+pub struct APParametersNormal {
     pub gains: ArrayGainsNormal<f32>,
     pub output_state_indices: ArrayIndicesGainsNormal,
     pub coefs: ArrayDelaysNormal<f32>,
@@ -34,7 +34,7 @@ pub struct APParameters {
     pub activation_time_ms: ArrayActivationTime,
 }
 
-impl APParameters {
+impl APParametersNormal {
     #[must_use]
     pub fn empty(number_of_states: usize, voxels_in_dims: Dim<[usize; 3]>) -> Self {
         Self {
@@ -102,7 +102,7 @@ impl APParameters {
 fn connect_voxels(
     spatial_description: &SpatialDescription,
     config: &Model,
-    ap_params: &mut APParameters,
+    ap_params: &mut APParametersNormal,
 ) {
     let mut activation_time_s =
         Array3::<Option<f32>>::from_elem(spatial_description.voxels.types.values.raw_dim(), None);
@@ -180,7 +180,7 @@ fn try_to_connect(
     activation_time_s: &mut ndarray::ArrayBase<ndarray::OwnedRepr<Option<f32>>, Dim<[usize; 3]>>,
     config: &Model,
     current_directions: &mut ndarray::ArrayBase<ndarray::OwnedRepr<f32>, Dim<[usize; 4]>>,
-    ap_params: &mut APParameters,
+    ap_params: &mut APParametersNormal,
 ) -> bool {
     let v_types = &spatial_description.voxels.types.values;
     let v_position_mm = &spatial_description.voxels.positions_mm.values;
@@ -267,7 +267,7 @@ fn try_to_connect(
 }
 
 fn assign_gain(
-    ap_params: &mut APParameters,
+    ap_params: &mut APParametersNormal,
     input_state_number: usize,
     x_offset: i32,
     y_offset: i32,
@@ -384,7 +384,7 @@ mod test {
         vis::plotting::matrix::plot_activation_time,
     };
 
-    use super::{init_output_state_indicies, APParameters};
+    use super::{init_output_state_indicies, APParametersNormal};
 
     #[test]
     fn from_samples_to_usize_1() {
@@ -411,7 +411,8 @@ mod test {
         let spatial_description = &SpatialDescription::from_model_config(config);
         let sample_rate_hz = 2000.0;
         let ap_params =
-            APParameters::from_model_config(config, spatial_description, sample_rate_hz).unwrap();
+            APParametersNormal::from_model_config(config, spatial_description, sample_rate_hz)
+                .unwrap();
 
         for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
             assert!(
@@ -429,7 +430,8 @@ mod test {
         let spatial_description = &SpatialDescription::from_model_config(config);
         let sample_rate_hz = 2000.0;
         let ap_params =
-            APParameters::from_model_config(config, spatial_description, sample_rate_hz).unwrap();
+            APParametersNormal::from_model_config(config, spatial_description, sample_rate_hz)
+                .unwrap();
 
         for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
             assert!(
@@ -454,7 +456,8 @@ mod test {
         let spatial_description = &SpatialDescription::from_model_config(&config);
         let sample_rate_hz = 2000.0;
         let ap_params =
-            APParameters::from_model_config(&config, spatial_description, sample_rate_hz).unwrap();
+            APParametersNormal::from_model_config(&config, spatial_description, sample_rate_hz)
+                .unwrap();
 
         for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
             assert!(
@@ -475,7 +478,8 @@ mod test {
         let spatial_description = &SpatialDescription::from_model_config(&config);
         let sample_rate_hz = 2000.0;
         let ap_params =
-            APParameters::from_model_config(&config, spatial_description, sample_rate_hz).unwrap();
+            APParametersNormal::from_model_config(&config, spatial_description, sample_rate_hz)
+                .unwrap();
 
         for (index, activation_time_ms) in ap_params.activation_time_ms.values.indexed_iter() {
             assert!(

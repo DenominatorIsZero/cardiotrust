@@ -7,7 +7,7 @@ use crate::core::{
     model::functional::{
         allpass::{
             shapes::normal::{ArrayDelaysNormal, ArrayGainsNormal},
-            APParameters,
+            APParametersNormal,
         },
         FunctionalDescription,
     },
@@ -146,7 +146,7 @@ impl Derivatives {
         // Based on these values
         ap_outputs: &ArrayGainsNormal<f32>,
         estimated_system_states: &ArraySystemStates,
-        ap_params: &APParameters,
+        ap_params: &APParametersNormal,
         time_index: usize,
         number_of_sensors: usize,
     ) {
@@ -298,7 +298,7 @@ mod tests {
         let number_of_states = 3000;
         let ap_outputs = ArrayGainsNormal::empty(number_of_states);
         let estimated_system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
-        let ap_params = APParameters::empty(number_of_states, Dim([1000, 1, 1]));
+        let ap_params = APParametersNormal::empty(number_of_states, Dim([1000, 1, 1]));
         let mut delays = ArrayDelaysNormal::empty(number_of_states);
         delays.values.fill(30);
         let mut output_state_indices = ArrayIndicesGainsNormal::empty(number_of_states);
