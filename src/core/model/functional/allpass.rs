@@ -14,8 +14,9 @@ use crate::core::{
 
 use self::{
     delay::calculate_delay_samples_array,
-    shapes::normal::{
-        ArrayActivationTime, ArrayDelaysNormal, ArrayGainsNormal, ArrayIndicesGainsNormal,
+    shapes::{
+        normal::{ArrayDelaysNormal, ArrayGainsNormal, ArrayIndicesGainsNormal},
+        ArrayActivationTime,
     },
 };
 

@@ -15,7 +15,7 @@ use plotly::{
 use crate::core::{
     data::shapes::ArraySystemStates,
     model::{
-        functional::allpass::shapes::normal::ArrayActivationTime,
+        functional::allpass::shapes::ArrayActivationTime,
         spatial::voxels::{VoxelType, Voxels},
     },
 };
