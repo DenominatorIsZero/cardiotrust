@@ -14,7 +14,7 @@ use crate::core::data::shapes::ArrayMeasurements;
 
 use super::model::{
     functional::{
-        allpass::shapes::{ArrayActivationTime, ArrayDelays, ArrayGains},
+        allpass::shapes::normal::{ArrayActivationTime, ArrayDelays, ArrayGains},
         control::ControlFunction,
     },
     spatial::voxels::VoxelTypes,

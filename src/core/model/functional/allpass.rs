@@ -14,7 +14,7 @@ use crate::core::{
 
 use self::{
     delay::calculate_delay_samples_array,
-    shapes::{ArrayActivationTime, ArrayDelays, ArrayGains, ArrayIndicesGains},
+    shapes::normal::{ArrayActivationTime, ArrayDelays, ArrayGains, ArrayIndicesGains},
 };
 
 mod delay;

@@ -6,15 +6,19 @@ use ndarray::{s, Array2};
 use ndarray_linalg::Inverse;
 use serde::{Deserialize, Serialize};
 
-use crate::core::config::algorithm::Algorithm;
-use crate::core::model::functional::allpass::from_coef_to_samples;
-use crate::core::model::functional::allpass::shapes::ArrayDelays;
-use crate::core::model::functional::measurement::MeasurementMatrix;
-use crate::core::model::{
-    functional::allpass::shapes::ArrayGains, functional::FunctionalDescription,
+use crate::core::{
+    config::algorithm::Algorithm,
+    data::shapes::{ArrayMeasurements, ArraySystemStates},
+    model::functional::{
+        allpass::{
+            from_coef_to_samples,
+            shapes::normal::{ArrayDelays, ArrayGains},
+        },
+        measurement::MeasurementMatrix,
+        FunctionalDescription,
+    },
 };
 
-use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Estimations {
     pub ap_outputs: ArrayGains<f32>,
@@ -406,7 +410,7 @@ mod tests {
         let time_index = 333;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let mut ap_outputs = ArrayGains::empty(number_of_states);
+        let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(number_of_states);
         let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
         let mut measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
         let functional_description = FunctionalDescription::empty(

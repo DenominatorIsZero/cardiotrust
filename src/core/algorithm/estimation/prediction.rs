@@ -2,7 +2,7 @@ use ndarray::s;
 
 use crate::core::model::functional::measurement::MeasurementMatrix;
 use crate::core::model::{
-    functional::allpass::shapes::ArrayGains, functional::FunctionalDescription,
+    functional::allpass::shapes::normal::ArrayGains, functional::FunctionalDescription,
 };
 
 use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};

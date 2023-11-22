@@ -12,7 +12,7 @@ use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
 use self::{
-    allpass::{shapes::ArrayGains, APParameters},
+    allpass::{shapes::normal::ArrayGains, APParameters},
     control::{ControlFunction, ControlMatrix},
     kalman::Gain,
     measurement::{MeasurementCovariance, MeasurementMatrix},

@@ -1,7 +1,7 @@
 use crate::core::{
     config::algorithm::Algorithm,
     model::{
-        functional::allpass::shapes::{ArrayDelays, ArrayGains},
+        functional::allpass::shapes::normal::{ArrayDelays, ArrayGains},
         functional::allpass::APParameters,
     },
 };
