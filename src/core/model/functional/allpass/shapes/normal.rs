@@ -10,14 +10,14 @@ use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct ArrayGains<T>
+pub struct ArrayGainsNormal<T>
 where
     T: Clone + Zero + PartialEq,
 {
     pub values: Array5<T>,
 }
 
-impl<T> ArrayGains<T>
+impl<T> ArrayGainsNormal<T>
 where
     T: Clone + Zero + PartialEq,
 {
@@ -28,7 +28,7 @@ where
         }
     }
 }
-impl ArrayGains<f32> {
+impl ArrayGainsNormal<f32> {
     pub(crate) fn save_npy(&self, path: &std::path::Path, name: &str) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
@@ -37,11 +37,11 @@ impl ArrayGains<f32> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct ArrayIndicesGains {
+pub struct ArrayIndicesGainsNormal {
     pub values: Array5<Option<usize>>,
 }
 
-impl ArrayIndicesGains {
+impl ArrayIndicesGainsNormal {
     #[must_use]
     pub fn empty(number_of_states: usize) -> Self {
         Self {
@@ -67,14 +67,14 @@ impl ArrayIndicesGains {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct ArrayDelays<T>
+pub struct ArrayDelaysNormal<T>
 where
     T: Clone + Zero + PartialEq,
 {
     pub values: Array4<T>,
 }
 
-impl<T> ArrayDelays<T>
+impl<T> ArrayDelaysNormal<T>
 where
     T: Clone + Zero + PartialEq,
 {
@@ -88,7 +88,7 @@ where
     }
 }
 
-impl ArrayDelays<f32> {
+impl ArrayDelaysNormal<f32> {
     ///
     /// # Panics
     ///
@@ -100,7 +100,7 @@ impl ArrayDelays<f32> {
     }
 }
 
-impl ArrayDelays<usize> {
+impl ArrayDelaysNormal<usize> {
     ///
     /// # Panics
     ///
@@ -110,33 +110,6 @@ impl ArrayDelays<usize> {
         let writer = BufWriter::new(File::create(path.join("delays.npy")).unwrap());
         self.values
             .map(|v| u32::try_from(*v).unwrap())
-            .write_npy(writer)
-            .unwrap();
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArrayActivationTime {
-    pub values: Array3<Option<f32>>,
-}
-
-impl ArrayActivationTime {
-    #[must_use]
-    pub fn empty(voxels_in_dims: Dim<[usize; 3]>) -> Self {
-        Self {
-            values: Array3::from_elem(voxels_in_dims, None),
-        }
-    }
-
-    ///
-    /// # Panics
-    ///
-    /// Panics if file or directory can't be written to.
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("activation_time.npy")).unwrap());
-        self.values
-            .map(|v| v.as_ref().map_or_else(|| -1.0, |index| *index))
             .write_npy(writer)
             .unwrap();
     }

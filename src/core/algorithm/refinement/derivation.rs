@@ -6,7 +6,7 @@ use crate::core::{
     config::algorithm::Algorithm,
     model::functional::{
         allpass::{
-            shapes::normal::{ArrayDelays, ArrayGains},
+            shapes::normal::{ArrayDelaysNormal, ArrayGainsNormal},
             APParameters,
         },
         FunctionalDescription,
@@ -22,15 +22,15 @@ use crate::core::data::shapes::ArraySystemStates;
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Derivatives {
     /// Derivatives of the All-pass gains
-    pub gains: ArrayGains<f32>,
+    pub gains: ArrayGainsNormal<f32>,
     /// Derivatives of the All-pass coeficients
-    pub coefs: ArrayDelays<f32>,
+    pub coefs: ArrayDelaysNormal<f32>,
     /// IIR component of the coeficients derivatives
     /// only used for internal computation
-    coefs_iir: ArrayGains<f32>,
+    coefs_iir: ArrayGainsNormal<f32>,
     /// FIR component of the coeficients derivatives
     /// only used for internal computation
-    coefs_fir: ArrayGains<f32>,
+    coefs_fir: ArrayGainsNormal<f32>,
     /// Residuals mapped onto the system states via
     /// the measurement matrix.
     /// Stored internally to avoid redundant computation
@@ -43,10 +43,10 @@ impl Derivatives {
     #[must_use]
     pub fn new(number_of_states: usize) -> Self {
         Self {
-            gains: ArrayGains::empty(number_of_states),
-            coefs: ArrayDelays::empty(number_of_states),
-            coefs_iir: ArrayGains::empty(number_of_states),
-            coefs_fir: ArrayGains::empty(number_of_states),
+            gains: ArrayGainsNormal::empty(number_of_states),
+            coefs: ArrayDelaysNormal::empty(number_of_states),
+            coefs_iir: ArrayGainsNormal::empty(number_of_states),
+            coefs_fir: ArrayGainsNormal::empty(number_of_states),
             mapped_residuals: ArrayMappedResiduals::new(number_of_states),
             maximum_regularization: ArrayMaximumRegularization::new(number_of_states),
             maximum_regularization_sum: 0.0,
@@ -114,7 +114,7 @@ impl Derivatives {
         // This gets updated
         &mut self,
         // Based on these values
-        ap_outputs: &ArrayGains<f32>,
+        ap_outputs: &ArrayGainsNormal<f32>,
         // This needed for indexing
         regularization_strength: f32,
         number_of_sensors: usize,
@@ -144,7 +144,7 @@ impl Derivatives {
         // These get updated
         &mut self,
         // Based on these values
-        ap_outputs: &ArrayGains<f32>,
+        ap_outputs: &ArrayGainsNormal<f32>,
         estimated_system_states: &ArraySystemStates,
         ap_params: &APParameters,
         time_index: usize,
@@ -289,19 +289,19 @@ impl ArrayMaximumRegularization {
 mod tests {
     use ndarray::Dim;
 
-    use crate::core::model::functional::allpass::shapes::normal::ArrayIndicesGains;
+    use crate::core::model::functional::allpass::shapes::normal::ArrayIndicesGainsNormal;
 
     use super::*;
     #[test]
     fn coef_no_crash() {
         let number_of_steps = 2000;
         let number_of_states = 3000;
-        let ap_outputs = ArrayGains::empty(number_of_states);
+        let ap_outputs = ArrayGainsNormal::empty(number_of_states);
         let estimated_system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
         let ap_params = APParameters::empty(number_of_states, Dim([1000, 1, 1]));
-        let mut delays = ArrayDelays::empty(number_of_states);
+        let mut delays = ArrayDelaysNormal::empty(number_of_states);
         delays.values.fill(30);
-        let mut output_state_indices = ArrayIndicesGains::empty(number_of_states);
+        let mut output_state_indices = ArrayIndicesGainsNormal::empty(number_of_states);
         output_state_indices.values.fill(Some(3));
         let time_index = 10;
 

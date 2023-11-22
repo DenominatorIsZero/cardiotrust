@@ -14,7 +14,7 @@ use crate::core::data::shapes::ArrayMeasurements;
 
 use super::model::{
     functional::{
-        allpass::shapes::normal::{ArrayActivationTime, ArrayDelays, ArrayGains},
+        allpass::shapes::normal::{ArrayActivationTime, ArrayDelaysNormal, ArrayGainsNormal},
         control::ControlFunction,
     },
     spatial::voxels::VoxelTypes,
@@ -103,7 +103,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
-    pub fn get_gains(&self) -> &ArrayGains<f32> {
+    pub fn get_gains(&self) -> &ArrayGainsNormal<f32> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
             |simulation| &simulation.model.functional_description.ap_params.gains,
@@ -114,7 +114,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
-    pub fn get_coefs(&self) -> &ArrayDelays<f32> {
+    pub fn get_coefs(&self) -> &ArrayDelaysNormal<f32> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
             |simulation| &simulation.model.functional_description.ap_params.coefs,
@@ -155,7 +155,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
-    pub fn get_delays(&self) -> &ArrayDelays<usize> {
+    pub fn get_delays(&self) -> &ArrayDelaysNormal<usize> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
             |simulation| &simulation.model.functional_description.ap_params.delays,

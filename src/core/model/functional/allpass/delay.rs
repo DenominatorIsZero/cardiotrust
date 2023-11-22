@@ -5,7 +5,7 @@ use ndarray::{s, ArrayBase, Dim, ViewRepr};
 
 use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
 
-use super::shapes::normal::ArrayDelays;
+use super::shapes::normal::ArrayDelaysNormal;
 
 pub fn calculate_delay_s(
     input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
@@ -21,9 +21,9 @@ pub fn calculate_delay_samples_array(
     spatial_description: &SpatialDescription,
     propagation_velocities_m_per_s: &HashMap<VoxelType, f32>,
     sample_rate_hz: f32,
-) -> Result<ArrayDelays<f32>, Box<dyn Error>> {
+) -> Result<ArrayDelaysNormal<f32>, Box<dyn Error>> {
     let mut delay_samples_array =
-        ArrayDelays::<f32>::empty(spatial_description.voxels.count_states());
+        ArrayDelaysNormal::<f32>::empty(spatial_description.voxels.count_states());
 
     let v_types = &spatial_description.voxels.types.values;
     let v_position_mm = &spatial_description.voxels.positions_mm.values;

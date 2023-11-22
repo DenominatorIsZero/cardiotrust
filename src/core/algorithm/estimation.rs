@@ -12,7 +12,7 @@ use crate::core::{
     model::functional::{
         allpass::{
             from_coef_to_samples,
-            shapes::normal::{ArrayDelays, ArrayGains},
+            shapes::normal::{ArrayDelaysNormal, ArrayGainsNormal},
         },
         measurement::MeasurementMatrix,
         FunctionalDescription,
@@ -21,16 +21,16 @@ use crate::core::{
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Estimations {
-    pub ap_outputs: ArrayGains<f32>,
+    pub ap_outputs: ArrayGainsNormal<f32>,
     pub system_states: ArraySystemStates,
-    pub state_covariance_pred: ArrayGains<f32>,
-    pub state_covariance_est: ArrayGains<f32>,
+    pub state_covariance_pred: ArrayGainsNormal<f32>,
+    pub state_covariance_est: ArrayGainsNormal<f32>,
     pub measurements: ArrayMeasurements,
     pub residuals: ArrayMeasurements,
     pub post_update_residuals: ArrayMeasurements,
     pub system_states_delta: ArraySystemStates,
-    pub gains_delta: ArrayGains<f32>,
-    pub delays_delta: ArrayDelays<f32>,
+    pub gains_delta: ArrayGainsNormal<f32>,
+    pub delays_delta: ArrayDelaysNormal<f32>,
     pub s: Array2<f32>,
     pub s_inv: Array2<f32>,
     pub kalman_gain_converged: bool,
@@ -44,16 +44,16 @@ impl Estimations {
         number_of_steps: usize,
     ) -> Self {
         Self {
-            ap_outputs: ArrayGains::empty(number_of_states),
+            ap_outputs: ArrayGainsNormal::empty(number_of_states),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
-            state_covariance_pred: ArrayGains::empty(number_of_states),
-            state_covariance_est: ArrayGains::empty(number_of_states),
+            state_covariance_pred: ArrayGainsNormal::empty(number_of_states),
+            state_covariance_est: ArrayGainsNormal::empty(number_of_states),
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
             residuals: ArrayMeasurements::empty(1, number_of_sensors),
             post_update_residuals: ArrayMeasurements::empty(1, number_of_sensors),
             system_states_delta: ArraySystemStates::empty(1, number_of_states),
-            gains_delta: ArrayGains::empty(number_of_states),
-            delays_delta: ArrayDelays::empty(number_of_states),
+            gains_delta: ArrayGainsNormal::empty(number_of_states),
+            delays_delta: ArrayDelaysNormal::empty(number_of_states),
             s: Array2::zeros([number_of_sensors, number_of_sensors]),
             s_inv: Array2::zeros([number_of_sensors, number_of_sensors]),
             kalman_gain_converged: false,
@@ -124,9 +124,9 @@ pub fn calculate_system_states_delta(
 
 #[inline]
 pub fn calculate_gains_delta(
-    gains_delta: &mut ArrayGains<f32>,
-    estimated_gains: &ArrayGains<f32>,
-    actual_gains: &ArrayGains<f32>,
+    gains_delta: &mut ArrayGainsNormal<f32>,
+    estimated_gains: &ArrayGainsNormal<f32>,
+    actual_gains: &ArrayGainsNormal<f32>,
 ) {
     gains_delta
         .values
@@ -135,11 +135,11 @@ pub fn calculate_gains_delta(
 
 #[inline]
 pub fn calculate_delays_delta(
-    delays_delta: &mut ArrayDelays<f32>,
-    estimated_delays: &ArrayDelays<usize>,
-    actual_delays: &ArrayDelays<usize>,
-    estimated_coefs: &ArrayDelays<f32>,
-    actual_coefs: &ArrayDelays<f32>,
+    delays_delta: &mut ArrayDelaysNormal<f32>,
+    estimated_delays: &ArrayDelaysNormal<usize>,
+    actual_delays: &ArrayDelaysNormal<usize>,
+    estimated_coefs: &ArrayDelaysNormal<f32>,
+    actual_coefs: &ArrayDelaysNormal<f32>,
 ) {
     #[allow(clippy::cast_precision_loss)]
     delays_delta
@@ -410,7 +410,7 @@ mod tests {
         let time_index = 333;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(number_of_states);
+        let mut ap_outputs: ArrayGainsNormal<f32> = ArrayGainsNormal::empty(number_of_states);
         let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
         let mut measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
         let functional_description = FunctionalDescription::empty(

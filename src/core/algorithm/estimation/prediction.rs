@@ -2,7 +2,7 @@ use ndarray::s;
 
 use crate::core::model::functional::measurement::MeasurementMatrix;
 use crate::core::model::{
-    functional::allpass::shapes::normal::ArrayGains, functional::FunctionalDescription,
+    functional::allpass::shapes::normal::ArrayGainsNormal, functional::FunctionalDescription,
 };
 
 use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
@@ -10,7 +10,7 @@ use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
 #[allow(clippy::module_name_repetitions)]
 #[inline]
 pub fn calculate_system_prediction(
-    ap_outputs: &mut ArrayGains<f32>,
+    ap_outputs: &mut ArrayGainsNormal<f32>,
     system_states: &mut ArraySystemStates,
     measurements: &mut ArrayMeasurements,
     functional_description: &FunctionalDescription,
@@ -35,7 +35,7 @@ pub fn calculate_system_prediction(
 ///
 #[inline]
 pub fn innovate_system_states_v1(
-    ap_outputs: &mut ArrayGains<f32>,
+    ap_outputs: &mut ArrayGainsNormal<f32>,
     functional_description: &FunctionalDescription,
     time_index: usize,
     system_states: &mut ArraySystemStates,
@@ -85,7 +85,7 @@ pub fn innovate_system_states_v1(
 /// Panics if output state indices are not initialized corrrectly.
 #[inline]
 pub fn innovate_system_states_v2(
-    ap_outputs: &mut ArrayGains<f32>,
+    ap_outputs: &mut ArrayGainsNormal<f32>,
     functional_description: &FunctionalDescription,
     time_index: usize,
     system_states: &mut ArraySystemStates,
@@ -139,7 +139,7 @@ pub fn innovate_system_states_v2(
 /// Panics if output state indices are not initialized corrrectly.
 #[inline]
 pub fn innovate_system_states_v3(
-    ap_outputs: &mut ArrayGains<f32>,
+    ap_outputs: &mut ArrayGainsNormal<f32>,
     functional_description: &FunctionalDescription,
     time_index: usize,
     system_states: &mut ArraySystemStates,

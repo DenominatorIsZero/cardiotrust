@@ -10,7 +10,7 @@ use crate::core::{
     algorithm::estimation::prediction::calculate_system_prediction,
     config::simulation::Simulation as SimulationConfig,
     data::ArrayMeasurements,
-    model::{functional::allpass::shapes::normal::ArrayGains, Model},
+    model::{functional::allpass::shapes::normal::ArrayGainsNormal, Model},
 };
 
 use super::shapes::ArraySystemStates;
@@ -71,7 +71,8 @@ impl Simulation {
         let measurements = &mut self.measurements;
         let system_states = &mut self.system_states;
         let model = &self.model;
-        let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(system_states.values.shape()[1]);
+        let mut ap_outputs: ArrayGainsNormal<f32> =
+            ArrayGainsNormal::empty(system_states.values.shape()[1]);
         for time_index in 0..system_states.values.shape()[0] {
             calculate_system_prediction(
                 &mut ap_outputs,

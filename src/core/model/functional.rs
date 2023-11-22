@@ -12,7 +12,7 @@ use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
 use self::{
-    allpass::{shapes::normal::ArrayGains, APParameters},
+    allpass::{shapes::normal::ArrayGainsNormal, APParameters},
     control::{ControlFunction, ControlMatrix},
     kalman::Gain,
     measurement::{MeasurementCovariance, MeasurementMatrix},
@@ -27,7 +27,7 @@ pub struct FunctionalDescription {
     pub ap_params: APParameters,
     pub measurement_matrix: MeasurementMatrix,
     pub control_matrix: ControlMatrix,
-    pub process_covariance: ArrayGains<f32>,
+    pub process_covariance: ArrayGainsNormal<f32>,
     pub measurement_covariance: MeasurementCovariance,
     pub kalman_gain: Gain,
     pub control_function_values: ControlFunction,
@@ -45,7 +45,7 @@ impl FunctionalDescription {
             ap_params: APParameters::empty(number_of_states, voxels_in_dims),
             measurement_matrix: MeasurementMatrix::empty(number_of_states, number_of_sensors),
             control_matrix: ControlMatrix::empty(number_of_states),
-            process_covariance: ArrayGains::empty(number_of_states),
+            process_covariance: ArrayGainsNormal::empty(number_of_states),
             measurement_covariance: MeasurementCovariance::empty(number_of_sensors),
             kalman_gain: Gain::empty(number_of_states, number_of_sensors),
             control_function_values: ControlFunction::empty(number_of_steps),
@@ -103,7 +103,7 @@ fn process_covariance_from_model_config(
     config: &Model,
     spatial_description: &SpatialDescription,
     ap_params: &APParameters,
-) -> ArrayGains<f32> {
+) -> ArrayGainsNormal<f32> {
     let normal = if relative_eq!(config.process_covariance_std, 0.0) {
         None
     } else {
@@ -115,7 +115,7 @@ fn process_covariance_from_model_config(
             .unwrap(),
         )
     };
-    let mut process_covariance = ArrayGains::empty(spatial_description.voxels.count_states());
+    let mut process_covariance = ArrayGainsNormal::empty(spatial_description.voxels.count_states());
     process_covariance
         .values
         .indexed_iter_mut()

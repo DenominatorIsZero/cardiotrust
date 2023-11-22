@@ -14,7 +14,9 @@ use crate::core::{
 
 use self::{
     delay::calculate_delay_samples_array,
-    shapes::normal::{ArrayActivationTime, ArrayDelays, ArrayGains, ArrayIndicesGains},
+    shapes::normal::{
+        ArrayActivationTime, ArrayDelaysNormal, ArrayGainsNormal, ArrayIndicesGainsNormal,
+    },
 };
 
 mod delay;
@@ -24,10 +26,10 @@ pub mod shapes;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct APParameters {
-    pub gains: ArrayGains<f32>,
-    pub output_state_indices: ArrayIndicesGains,
-    pub coefs: ArrayDelays<f32>,
-    pub delays: ArrayDelays<usize>,
+    pub gains: ArrayGainsNormal<f32>,
+    pub output_state_indices: ArrayIndicesGainsNormal,
+    pub coefs: ArrayDelaysNormal<f32>,
+    pub delays: ArrayDelaysNormal<usize>,
     pub activation_time_ms: ArrayActivationTime,
 }
 
@@ -35,10 +37,10 @@ impl APParameters {
     #[must_use]
     pub fn empty(number_of_states: usize, voxels_in_dims: Dim<[usize; 3]>) -> Self {
         Self {
-            gains: ArrayGains::empty(number_of_states),
-            output_state_indices: ArrayIndicesGains::empty(number_of_states),
-            coefs: ArrayDelays::empty(number_of_states),
-            delays: ArrayDelays::empty(number_of_states),
+            gains: ArrayGainsNormal::empty(number_of_states),
+            output_state_indices: ArrayIndicesGainsNormal::empty(number_of_states),
+            coefs: ArrayDelaysNormal::empty(number_of_states),
+            delays: ArrayDelaysNormal::empty(number_of_states),
             activation_time_ms: ArrayActivationTime::empty(voxels_in_dims),
         }
     }
@@ -108,8 +110,6 @@ fn connect_voxels(
 
     let v_types = &spatial_description.voxels.types.values;
 
-    // TODO: Extract into function
-    // TODO: write tests
     let mut current_time_s: f32 = 0.0;
     // Handle Sinoatrial node
     v_types
@@ -298,9 +298,9 @@ fn find_candidate_voxels(
     output_voxel_indices
 }
 
-fn init_output_state_indicies(spatial_description: &SpatialDescription) -> ArrayIndicesGains {
+fn init_output_state_indicies(spatial_description: &SpatialDescription) -> ArrayIndicesGainsNormal {
     let mut output_state_indices =
-        ArrayIndicesGains::empty(spatial_description.voxels.count_states());
+        ArrayIndicesGainsNormal::empty(spatial_description.voxels.count_states());
     let v_types = &spatial_description.voxels.types.values;
     let v_numbers = &spatial_description.voxels.numbers.values;
     // TODO: write tests

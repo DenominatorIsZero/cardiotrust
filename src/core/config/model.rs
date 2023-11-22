@@ -6,6 +6,7 @@ use crate::core::model::spatial::voxels::VoxelType;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Model {
+    pub use_flat_arrays: bool,
     pub control_function: ControlFunction,
     pub pathological: bool,
     pub sensors_per_axis: [usize; 3],
@@ -27,7 +28,7 @@ pub struct Model {
     // normal distribution
     pub process_covariance_std: f32,
     pub apply_system_update: bool,
-    pub propagation_velocities_m_per_s: HashMap<VoxelType, f32>, // TOOD: Add to UI
+    pub propagation_velocities_m_per_s: HashMap<VoxelType, f32>,
     pub current_factor_in_pathology: f32,
     pub sa_x_center_percentage: f32,
     pub sa_y_center_percentage: f32,
@@ -54,6 +55,7 @@ impl Default for Model {
         propagation_velocities_m_per_s.insert(VoxelType::Pathological, 0.1);
 
         Self {
+            use_flat_arrays: false,
             control_function: ControlFunction::Ohara,
             pathological: false,
             sensors_per_axis: [4, 4, 2],
