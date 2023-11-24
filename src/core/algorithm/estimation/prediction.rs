@@ -1,5 +1,6 @@
 use ndarray::s;
 
+use crate::core::model::functional::allpass::normal::APParametersNormal;
 use crate::core::model::functional::measurement::MeasurementMatrix;
 use crate::core::model::{
     functional::allpass::shapes::normal::ArrayGainsNormal, functional::FunctionalDescription,
@@ -18,7 +19,7 @@ pub fn calculate_system_prediction(
 ) {
     innovate_system_states_v3(
         ap_outputs,
-        functional_description,
+        functional_description.ap_params_normal.as_ref().unwrap(),
         time_index,
         system_states,
     );
@@ -36,7 +37,7 @@ pub fn calculate_system_prediction(
 #[inline]
 pub fn innovate_system_states_v1(
     ap_outputs: &mut ArrayGainsNormal<f32>,
-    functional_description: &FunctionalDescription,
+    ap_params: &APParametersNormal,
     time_index: usize,
     system_states: &mut ArraySystemStates,
 ) {
@@ -44,21 +45,15 @@ pub fn innovate_system_states_v1(
     ap_outputs
         .values
         .indexed_iter_mut()
-        .zip(
-            functional_description
-                .ap_params
-                .output_state_indices
-                .values
-                .iter(),
-        )
+        .zip(ap_params.output_state_indices.values.iter())
         .filter(|((gain_index, _), output_state_index)| {
             output_state_index.is_some()
                 && !(gain_index.1 == 1 && gain_index.2 == 1 && gain_index.3 == 1)
         })
         .for_each(|((gain_index, ap_output), output_state_index)| {
             let coef_index = (gain_index.0 / 3, gain_index.1, gain_index.2, gain_index.3);
-            let coef = functional_description.ap_params.coefs.values[coef_index];
-            let delay = functional_description.ap_params.delays.values[coef_index];
+            let coef = ap_params.coefs.values[coef_index];
+            let delay = ap_params.delays.values[coef_index];
             let input = if delay <= time_index {
                 system_states.values[(time_index - delay, output_state_index.unwrap_or_default())]
             } else {
@@ -73,7 +68,7 @@ pub fn innovate_system_states_v1(
                 0.0
             };
             *ap_output = coef.mul_add(input - *ap_output, input_delayed);
-            let gain = functional_description.ap_params.gains.values[gain_index];
+            let gain = ap_params.gains.values[gain_index];
             system_states.values[(time_index, gain_index.0)] += gain * *ap_output;
         });
 }
@@ -86,12 +81,12 @@ pub fn innovate_system_states_v1(
 #[inline]
 pub fn innovate_system_states_v2(
     ap_outputs: &mut ArrayGainsNormal<f32>,
-    functional_description: &FunctionalDescription,
+    ap_params: &APParametersNormal,
     time_index: usize,
     system_states: &mut ArraySystemStates,
 ) {
     // Calculate ap outputs and system states
-    let output_state_indices = &functional_description.ap_params.output_state_indices.values;
+    let output_state_indices = &ap_params.output_state_indices.values;
     for index_state in 0..ap_outputs.values.shape()[0] {
         for x in 0..3 {
             for y in 0..3 {
@@ -102,8 +97,8 @@ pub fn innovate_system_states_v2(
                         continue;
                     }
                     let coef_index = (index_state / 3, x, y, z);
-                    let coef = functional_description.ap_params.coefs.values[coef_index];
-                    let delay = functional_description.ap_params.delays.values[coef_index];
+                    let coef = ap_params.coefs.values[coef_index];
+                    let delay = ap_params.delays.values[coef_index];
                     for dim in 0..3 {
                         let output_state_index =
                             output_state_indices[(index_state, x, y, z, dim)].unwrap();
@@ -121,8 +116,7 @@ pub fn innovate_system_states_v2(
                             input - ap_outputs.values[(index_state, x, y, z, dim)],
                             input_delayed,
                         );
-                        let gain = functional_description.ap_params.gains.values
-                            [(index_state, x, y, z, dim)];
+                        let gain = ap_params.gains.values[(index_state, x, y, z, dim)];
                         system_states.values[(time_index, index_state)] +=
                             gain * ap_outputs.values[(index_state, x, y, z, dim)];
                     }
@@ -140,12 +134,12 @@ pub fn innovate_system_states_v2(
 #[inline]
 pub fn innovate_system_states_v3(
     ap_outputs: &mut ArrayGainsNormal<f32>,
-    functional_description: &FunctionalDescription,
+    ap_params: &APParametersNormal,
     time_index: usize,
     system_states: &mut ArraySystemStates,
 ) {
     // Calculate ap outputs and system states
-    let output_state_indices = &functional_description.ap_params.output_state_indices.values;
+    let output_state_indices = &ap_params.output_state_indices.values;
     for index_state in 0..ap_outputs.values.shape()[0] {
         for x in 0..3 {
             for y in 0..3 {
@@ -160,20 +154,8 @@ pub fn innovate_system_states_v3(
                         continue;
                     }
                     let coef_index = (index_state / 3, x, y, z);
-                    let coef = unsafe {
-                        *functional_description
-                            .ap_params
-                            .coefs
-                            .values
-                            .uget(coef_index)
-                    };
-                    let delay = unsafe {
-                        *functional_description
-                            .ap_params
-                            .delays
-                            .values
-                            .uget(coef_index)
-                    };
+                    let coef = unsafe { *ap_params.coefs.values.uget(coef_index) };
+                    let delay = unsafe { *ap_params.delays.values.uget(coef_index) };
                     for dim in 0..3 {
                         let output_state_index = unsafe {
                             output_state_indices
@@ -201,15 +183,8 @@ pub fn innovate_system_states_v3(
                         let ap_output =
                             unsafe { ap_outputs.values.uget_mut((index_state, x, y, z, dim)) };
                         *ap_output = coef.mul_add(input - *ap_output, input_delayed);
-                        let gain = unsafe {
-                            *functional_description.ap_params.gains.values.uget((
-                                index_state,
-                                x,
-                                y,
-                                z,
-                                dim,
-                            ))
-                        };
+                        let gain =
+                            unsafe { *ap_params.gains.values.uget((index_state, x, y, z, dim)) };
                         unsafe {
                             *system_states.values.uget_mut((time_index, index_state)) +=
                                 gain * ap_outputs.values.uget((index_state, x, y, z, dim));
@@ -289,13 +264,21 @@ mod tests {
         for time_index in 0..estimations_v2.measurements.values.shape()[0] {
             innovate_system_states_v2(
                 &mut estimations_v2.ap_outputs,
-                &model.functional_description,
+                model
+                    .functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap(),
                 time_index,
                 &mut estimations_v2.system_states,
             );
             innovate_system_states_v1(
                 &mut estimations_v1.ap_outputs,
-                &model.functional_description,
+                &model
+                    .functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap(),
                 time_index,
                 &mut estimations_v1.system_states,
             );
@@ -329,13 +312,21 @@ mod tests {
         for time_index in 0..estimations_v3.measurements.values.shape()[0] {
             innovate_system_states_v3(
                 &mut estimations_v3.ap_outputs,
-                &model.functional_description,
+                &model
+                    .functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap(),
                 time_index,
                 &mut estimations_v3.system_states,
             );
             innovate_system_states_v1(
                 &mut estimations_v1.ap_outputs,
-                &model.functional_description,
+                &model
+                    .functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap(),
                 time_index,
                 &mut estimations_v1.system_states,
             );

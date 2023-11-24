@@ -266,7 +266,12 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             "Maximum Current Densities Delta",
         ),
         ImageType::ActivationTimeAlgorithm => plot_activation_time(
-            &model.functional_description.ap_params.activation_time_ms,
+            &model
+                .functional_description
+                .ap_params_normal
+                .as_ref()
+                .unwrap()
+                .activation_time_ms,
             file_name.to_str().unwrap(),
             "Activation Times Algorithm (Start) [ms]",
         ),
@@ -276,7 +281,12 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             "Activation Times Simulation [ms]",
         ),
         ImageType::ActivationTimeDelta => plot_activation_time_delta(
-            &model.functional_description.ap_params.activation_time_ms,
+            &model
+                .functional_description
+                .ap_params_normal
+                .as_ref()
+                .unwrap()
+                .activation_time_ms,
             data.get_activation_time_ms(),
             file_name.to_str().unwrap(),
             "Activation Times Simulation [ms]",

@@ -64,7 +64,11 @@ fn system_prediction_bench(c: &mut Criterion) {
                 b.iter(|| {
                     innovate_system_states_v1(
                         &mut estimations.ap_outputs,
-                        &model.functional_description,
+                        model
+                            .functional_description
+                            .ap_params_normal
+                            .as_ref()
+                            .unwrap(),
                         time_index,
                         &mut estimations.system_states,
                     )
@@ -77,7 +81,11 @@ fn system_prediction_bench(c: &mut Criterion) {
                 b.iter(|| {
                     innovate_system_states_v2(
                         &mut estimations.ap_outputs,
-                        &model.functional_description,
+                        model
+                            .functional_description
+                            .ap_params_normal
+                            .as_ref()
+                            .unwrap(),
                         time_index,
                         &mut estimations.system_states,
                     )
@@ -90,7 +98,11 @@ fn system_prediction_bench(c: &mut Criterion) {
                 b.iter(|| {
                     innovate_system_states_v3(
                         &mut estimations.ap_outputs,
-                        &model.functional_description,
+                        model
+                            .functional_description
+                            .ap_params_normal
+                            .as_ref()
+                            .unwrap(),
                         time_index,
                         &mut estimations.system_states,
                     )
@@ -166,7 +178,11 @@ fn system_prediction_epoch_bench(c: &mut Criterion) {
                     for time_index in 0..estimations.measurements.values.shape()[0] {
                         innovate_system_states_v1(
                             &mut estimations.ap_outputs,
-                            &model.functional_description,
+                            model
+                                .functional_description
+                                .ap_params_normal
+                                .as_ref()
+                                .unwrap(),
                             time_index,
                             &mut estimations.system_states,
                         )
@@ -181,7 +197,11 @@ fn system_prediction_epoch_bench(c: &mut Criterion) {
                     for time_index in 0..estimations.measurements.values.shape()[0] {
                         innovate_system_states_v2(
                             &mut estimations.ap_outputs,
-                            &model.functional_description,
+                            model
+                                .functional_description
+                                .ap_params_normal
+                                .as_ref()
+                                .unwrap(),
                             time_index,
                             &mut estimations.system_states,
                         )
@@ -196,7 +216,11 @@ fn system_prediction_epoch_bench(c: &mut Criterion) {
                     for time_index in 0..estimations.measurements.values.shape()[0] {
                         innovate_system_states_v3(
                             &mut estimations.ap_outputs,
-                            &model.functional_description,
+                            model
+                                .functional_description
+                                .ap_params_normal
+                                .as_ref()
+                                .unwrap(),
                             time_index,
                             &mut estimations.system_states,
                         )

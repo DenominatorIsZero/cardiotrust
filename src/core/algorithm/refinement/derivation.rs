@@ -6,8 +6,8 @@ use crate::core::{
     config::algorithm::Algorithm,
     model::functional::{
         allpass::{
+            normal::APParametersNormal,
             shapes::normal::{ArrayDelaysNormal, ArrayGainsNormal},
-            APParametersNormal,
         },
         FunctionalDescription,
     },
@@ -100,7 +100,7 @@ impl Derivatives {
             self.calculate_derivatives_coefs(
                 &estimations.ap_outputs,
                 &estimations.system_states,
-                &functional_description.ap_params,
+                &functional_description.ap_params_normal.as_ref().unwrap(),
                 time_index,
                 functional_description
                     .measurement_covariance

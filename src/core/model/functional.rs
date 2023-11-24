@@ -12,7 +12,7 @@ use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
 use self::{
-    allpass::{shapes::normal::ArrayGainsNormal, APParametersNormal},
+    allpass::{normal::APParametersNormal, shapes::normal::ArrayGainsNormal},
     control::{ControlFunction, ControlMatrix},
     kalman::Gain,
     measurement::{MeasurementCovariance, MeasurementMatrix},
@@ -24,7 +24,7 @@ use crate::core::config::model::Model;
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
 pub struct FunctionalDescription {
-    pub ap_params: APParametersNormal,
+    pub ap_params_normal: Option<APParametersNormal>,
     pub measurement_matrix: MeasurementMatrix,
     pub control_matrix: ControlMatrix,
     pub process_covariance: ArrayGainsNormal<f32>,
@@ -42,7 +42,7 @@ impl FunctionalDescription {
         voxels_in_dims: Dim<[usize; 3]>,
     ) -> Self {
         Self {
-            ap_params: APParametersNormal::empty(number_of_states, voxels_in_dims),
+            ap_params_normal: Some(APParametersNormal::empty(number_of_states, voxels_in_dims)),
             measurement_matrix: MeasurementMatrix::empty(number_of_states, number_of_sensors),
             control_matrix: ControlMatrix::empty(number_of_states),
             process_covariance: ArrayGainsNormal::empty(number_of_states),
@@ -76,7 +76,7 @@ impl FunctionalDescription {
             ControlFunction::from_model_config(config, sample_rate_hz, duration_s);
 
         Ok(Self {
-            ap_params,
+            ap_params_normal: Some(ap_params),
             measurement_matrix,
             control_matrix,
             process_covariance,
@@ -88,7 +88,7 @@ impl FunctionalDescription {
 
     pub fn save_npy(&self, path: &std::path::Path) {
         let path = &path.join("functional_description");
-        self.ap_params.save_npy(path);
+        self.ap_params_normal.as_ref().unwrap().save_npy(path);
         self.measurement_matrix.save_npy(path);
         self.control_matrix.save_npy(path);
         self.process_covariance

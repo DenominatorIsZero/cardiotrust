@@ -189,14 +189,26 @@ pub fn run_epoch(
         );
         calculate_gains_delta(
             &mut results.estimations.gains_delta,
-            &functional_description.ap_params.gains,
+            &functional_description
+                .ap_params_normal
+                .as_ref()
+                .unwrap()
+                .gains,
             data.get_gains(),
         );
         calculate_delays_delta(
             &mut results.estimations.delays_delta,
-            &functional_description.ap_params.delays,
+            &functional_description
+                .ap_params_normal
+                .as_ref()
+                .unwrap()
+                .delays,
             data.get_delays(),
-            &functional_description.ap_params.coefs,
+            &functional_description
+                .ap_params_normal
+                .as_ref()
+                .unwrap()
+                .coefs,
             data.get_coefs(),
         );
         results.metrics.calculate_step(
@@ -208,11 +220,15 @@ pub fn run_epoch(
         if let Some(n) = batch.as_mut() {
             *n += 1;
             if *n == config.batch_size {
-                functional_description.ap_params.update(
-                    &results.derivatives,
-                    config,
-                    results.estimations.system_states.values.shape()[0],
-                );
+                functional_description
+                    .ap_params_normal
+                    .as_mut()
+                    .unwrap()
+                    .update(
+                        &results.derivatives,
+                        config,
+                        results.estimations.system_states.values.shape()[0],
+                    );
                 results.derivatives.reset();
                 results.estimations.kalman_gain_converged = false;
                 *n = 0;
@@ -220,11 +236,15 @@ pub fn run_epoch(
         }
     }
     if batch.is_none() {
-        functional_description.ap_params.update(
-            &results.derivatives,
-            config,
-            results.estimations.system_states.values.shape()[0],
-        );
+        functional_description
+            .ap_params_normal
+            .as_mut()
+            .unwrap()
+            .update(
+                &results.derivatives,
+                config,
+                results.estimations.system_states.values.shape()[0],
+            );
     }
     results.metrics.calculate_epoch(epoch_index);
 }
@@ -655,7 +675,13 @@ mod test {
             simulation_config.duration_s,
         )
         .unwrap();
-        model.functional_description.ap_params.gains.values *= 2.0;
+        model
+            .functional_description
+            .ap_params_normal
+            .as_mut()
+            .unwrap()
+            .gains
+            .values *= 2.0;
         algorithm_config.epochs = 1;
         algorithm_config.model.apply_system_update = false;
 
@@ -697,7 +723,13 @@ mod test {
             simulation_config.duration_s,
         )
         .unwrap();
-        model.functional_description.ap_params.gains.values *= 2.0;
+        model
+            .functional_description
+            .ap_params_normal
+            .as_mut()
+            .unwrap()
+            .gains
+            .values *= 2.0;
         algorithm_config.epochs = 1;
         algorithm_config.constrain_system_states = false;
         algorithm_config.model.apply_system_update = false;

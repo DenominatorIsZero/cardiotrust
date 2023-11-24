@@ -205,7 +205,9 @@ fn estimate_state_covariance(
         .indexed_iter_mut()
         .zip(
             functional_description
-                .ap_params
+                .ap_params_normal
+                .as_ref()
+                .unwrap()
                 .output_state_indices
                 .values
                 .iter(),
@@ -218,8 +220,12 @@ fn estimate_state_covariance(
                 .cartesian_product(0..=2)
                 .cartesian_product(0..=2)
             {
-                let k = functional_description.ap_params.output_state_indices.values
-                    [[output_state_index.unwrap(), k_x, k_y, k_z, k_d]];
+                let k = functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap()
+                    .output_state_indices
+                    .values[[output_state_index.unwrap(), k_x, k_y, k_z, k_d]];
                 if k.is_none() {
                     continue;
                 }
@@ -255,8 +261,12 @@ fn calculate_k(functional_description: &mut FunctionalDescription, estimations: 
                     .cartesian_product(0..=2)
                     .cartesian_product(0..=2)
                 {
-                    let m = functional_description.ap_params.output_state_indices.values
-                        [[index.0, m_x, m_y, m_z, m_d]];
+                    let m = functional_description
+                        .ap_params_normal
+                        .as_ref()
+                        .unwrap()
+                        .output_state_indices
+                        .values[[index.0, m_x, m_y, m_z, m_d]];
                     if m.is_none() {
                         continue;
                     }
@@ -284,8 +294,12 @@ fn calculate_s_inv(estimations: &mut Estimations, functional_description: &Funct
                 .cartesian_product(0..=2)
             {
                 // check if voxel m exists.
-                let m = functional_description.ap_params.output_state_indices.values
-                    [[k, m_x, m_y, m_z, m_d]];
+                let m = functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap()
+                    .output_state_indices
+                    .values[[k, m_x, m_y, m_z, m_d]];
                 if m.is_none() {
                     continue;
                 }
@@ -311,7 +325,9 @@ fn predict_state_covariance(
         .indexed_iter_mut()
         .zip(
             functional_description
-                .ap_params
+                .ap_params_normal
+                .as_ref()
+                .unwrap()
                 .output_state_indices
                 .values
                 .iter(),
@@ -325,8 +341,12 @@ fn predict_state_covariance(
                 .cartesian_product(0..=2)
             {
                 // skip if neighbor doesn't exist
-                let k = functional_description.ap_params.output_state_indices.values
-                    [[output_state_index.unwrap(), k_x, k_y, k_z, k_d]];
+                let k = functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap()
+                    .output_state_indices
+                    .values[[output_state_index.unwrap(), k_x, k_y, k_z, k_d]];
 
                 if k.is_none() {
                     continue;
@@ -338,8 +358,12 @@ fn predict_state_covariance(
                     .cartesian_product(0..=2)
                 {
                     // skip if neighbor doesn't exist
-                    let m = functional_description.ap_params.output_state_indices.values
-                        [[index.0, m_x, m_y, m_z, m_d]];
+                    let m = functional_description
+                        .ap_params_normal
+                        .as_ref()
+                        .unwrap()
+                        .output_state_indices
+                        .values[[index.0, m_x, m_y, m_z, m_d]];
 
                     if m.is_none() {
                         continue;
@@ -360,8 +384,12 @@ fn predict_state_covariance(
                         continue;
                     }
 
-                    sum += functional_description.ap_params.gains.values
-                        [[index.0, m_x, m_y, m_z, m_d]]
+                    sum += functional_description
+                        .ap_params_normal
+                        .as_ref()
+                        .unwrap()
+                        .gains
+                        .values[[index.0, m_x, m_y, m_z, m_d]]
                         * estimations.state_covariance_est.values[[
                             m.unwrap(),
                             (m_to_k_x + 1) as usize,
@@ -370,8 +398,12 @@ fn predict_state_covariance(
                             m_d,
                         ]];
                 }
-                *variance += functional_description.ap_params.gains.values
-                    [[output_state_index.unwrap(), k_x, k_y, k_z, k_d]]
+                *variance += functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap()
+                    .gains
+                    .values[[output_state_index.unwrap(), k_x, k_y, k_z, k_d]]
                     * sum;
             }
         });

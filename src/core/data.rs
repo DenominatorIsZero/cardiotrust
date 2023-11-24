@@ -109,7 +109,15 @@ impl Data {
     pub fn get_gains(&self) -> &ArrayGainsNormal<f32> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.model.functional_description.ap_params.gains,
+            |simulation| {
+                &simulation
+                    .model
+                    .functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap()
+                    .gains
+            },
         )
     }
 
@@ -120,7 +128,15 @@ impl Data {
     pub fn get_coefs(&self) -> &ArrayDelaysNormal<f32> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.model.functional_description.ap_params.coefs,
+            |simulation| {
+                &simulation
+                    .model
+                    .functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap()
+                    .coefs
+            },
         )
     }
 
@@ -146,7 +162,9 @@ impl Data {
                 &simulation
                     .model
                     .functional_description
-                    .ap_params
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap()
                     .activation_time_ms
             },
         )
@@ -161,7 +179,15 @@ impl Data {
     pub fn get_delays(&self) -> &ArrayDelaysNormal<usize> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.model.functional_description.ap_params.delays,
+            |simulation| {
+                &simulation
+                    .model
+                    .functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap()
+                    .delays
+            },
         )
     }
 
