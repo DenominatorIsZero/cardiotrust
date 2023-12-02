@@ -5,8 +5,8 @@ use tikv_jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 use bevy::{prelude::*, window::WindowMode};
-use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids};
-use bevy_panorbit_camera::PanOrbitCamera;
+use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids, VertexPullingRenderPlugin};
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use rusty_cde::{scheduler::SchedulerPlugin, ui::UiPlugin, ScenarioList, SelectedSenario};
 
@@ -25,15 +25,17 @@ fn main() {
         }))
         .add_plugins(UiPlugin)
         .add_plugins(SchedulerPlugin)
-        // .add_plugins(PanOrbitCameraPlugin)
-        // .add_plugins(VertexPullingRenderPlugin { outlines: true })
-        // .add_systems(Startup, setup)
-        // .add_systems(Update, update_cuboids_colors)
+        .add_plugins(PanOrbitCameraPlugin)
+        .add_plugins(VertexPullingRenderPlugin { outlines: true })
+        .add_systems(Startup, setup)
+        .add_systems(Update, update_cuboids_colors)
         .run();
 }
 
 #[derive(Component)]
-struct Indices {}
+struct Indices {
+    color_mult: f32,
+}
 
 pub fn setup(
     mut commands: Commands,
@@ -89,7 +91,10 @@ pub fn setup(
             }
             let cuboids = Cuboids::new(instances);
             let aabb = cuboids.aabb();
-            let indices = Indices {};
+            let indices = Indices {
+                color_mult: (x_batch * PATCHES_PER_DIM + z_batch) as f32
+                    / (PATCHES_PER_DIM * PATCHES_PER_DIM) as f32,
+            };
             commands.spawn(SpatialBundle::default()).insert((
                 cuboids,
                 aabb,
@@ -102,15 +107,23 @@ pub fn setup(
 
 #[allow(dead_code)]
 fn update_cuboids_colors(time: Res<Time>, mut query: Query<(&mut Cuboids, &Indices)>) {
-    let _tv: u32 = (1000.0 * (time.elapsed_seconds().sin() + 1.0)) as u32;
-    query.par_iter_mut().for_each_mut(|(mut cuboids, _index)| {
+    query.par_iter_mut().for_each_mut(|(mut cuboids, index)| {
         cuboids.instances.iter_mut().for_each(|instance| {
+            // instance.color = Color::as_rgba_u32(Color::Rgba {
+            //     red: ((time.elapsed_seconds() * 130.0 + instance.minimum.x) / 7.0).sin()
+            //         + index.color_mult,
+            //     green: ((time.elapsed_seconds() * 70.0 + instance.minimum.z) / 13.0).sin()
+            //         + index.color_mult,
+            //     blue: ((time.elapsed_seconds() * 30.0 + instance.minimum.y) / 5.0).sin()
+            //         + index.color_mult,
+            //     alpha: 1.0,
+            // })
             instance.color = Color::as_rgba_u32(Color::Rgba {
-                red: ((time.elapsed_seconds() * 130.0 + instance.minimum.x) / 7.0).sin() + 1.0,
-                green: ((time.elapsed_seconds() * 70.0 + instance.minimum.z) / 13.0).sin() + 1.0,
-                blue: ((time.elapsed_seconds() * 30.0 + instance.minimum.y) / 5.0).sin() + 1.0,
+                red: index.color_mult,
+                blue: index.color_mult,
+                green: index.color_mult,
                 alpha: 1.0,
-            })
-        })
+            });
+        });
     });
 }
