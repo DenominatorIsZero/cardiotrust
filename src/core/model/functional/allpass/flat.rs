@@ -1,20 +1,14 @@
 use std::error::Error;
 
-use approx::relative_eq;
+use ndarray::Dim;
 
-use itertools::Itertools;
-use ndarray::{arr1, s, Array1, Array3, Array4, Dim};
-use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 
-use crate::core::{
-    config::model::Model,
-    model::spatial::{voxels, voxels::VoxelType, SpatialDescription},
-};
+use crate::core::{config::model::Model, model::spatial::SpatialDescription};
 
 use super::{
-    delay::{self, calculate_delay_samples_array},
-    direction, find_candidate_voxels, from_samples_to_coef, from_samples_to_usize, gain,
+    delay::calculate_delay_samples_array,
+    from_samples_to_coef, from_samples_to_usize,
     shapes::{
         flat::{ArrayDelaysFlat, ArrayGainsFlat, ArrayIndicesGainsFlat},
         ArrayActivationTime,
@@ -94,14 +88,14 @@ impl APParametersFlat {
     }
 }
 
-fn init_output_state_indicies(spatial_description: &SpatialDescription) -> ArrayIndicesGainsFlat {
+fn init_output_state_indicies(_spatial_description: &SpatialDescription) -> ArrayIndicesGainsFlat {
     todo!()
 }
 
 fn connect_voxels(
-    spatial_description: &SpatialDescription,
-    config: &Model,
-    ap_params: &mut APParametersFlat,
+    _spatial_description: &SpatialDescription,
+    _config: &Model,
+    _ap_params: &mut APParametersFlat,
 ) {
     todo!()
 }

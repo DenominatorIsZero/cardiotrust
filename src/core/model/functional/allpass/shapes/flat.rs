@@ -9,6 +9,7 @@ use num_traits::Zero;
 use serde::Deserialize;
 use serde::Serialize;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ArrayGainsFlat<T>
 where
@@ -36,6 +37,7 @@ impl ArrayGainsFlat<f32> {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ArrayIndicesGainsFlat {
     pub values: Array2<Option<usize>>,
@@ -66,6 +68,7 @@ impl ArrayIndicesGainsFlat {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ArrayDelaysFlat<T>
 where

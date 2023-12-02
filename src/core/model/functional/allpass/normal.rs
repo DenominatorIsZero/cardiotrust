@@ -20,6 +20,7 @@ use super::{
         ArrayActivationTime,
     },
 };
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct APParametersNormal {
     pub gains: ArrayGainsNormal<f32>,

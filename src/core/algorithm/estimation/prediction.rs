@@ -8,6 +8,11 @@ use crate::core::model::{
 
 use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
 
+/// .
+///
+/// # Panics
+///
+/// Panics if `ap_params_normal` is not set.
 #[allow(clippy::module_name_repetitions)]
 #[inline]
 pub fn calculate_system_prediction(
@@ -274,7 +279,7 @@ mod tests {
             );
             innovate_system_states_v1(
                 &mut estimations_v1.ap_outputs,
-                &model
+                model
                     .functional_description
                     .ap_params_normal
                     .as_ref()
@@ -312,7 +317,7 @@ mod tests {
         for time_index in 0..estimations_v3.measurements.values.shape()[0] {
             innovate_system_states_v3(
                 &mut estimations_v3.ap_outputs,
-                &model
+                model
                     .functional_description
                     .ap_params_normal
                     .as_ref()
@@ -322,7 +327,7 @@ mod tests {
             );
             innovate_system_states_v1(
                 &mut estimations_v1.ap_outputs,
-                &model
+                model
                     .functional_description
                     .ap_params_normal
                     .as_ref()

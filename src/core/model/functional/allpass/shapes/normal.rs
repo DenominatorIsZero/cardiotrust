@@ -3,12 +3,13 @@ use std::fs::File;
 use std::io::BufWriter;
 
 use approx::assert_relative_eq;
-use ndarray::{Array3, Array4, Array5, Dim};
+use ndarray::{Array4, Array5};
 use ndarray_npy::WriteNpyExt;
 use num_traits::Zero;
 use serde::Deserialize;
 use serde::Serialize;
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ArrayGainsNormal<T>
 where
@@ -36,6 +37,7 @@ impl ArrayGainsNormal<f32> {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ArrayIndicesGainsNormal {
     pub values: Array5<Option<usize>>,
@@ -66,6 +68,7 @@ impl ArrayIndicesGainsNormal {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ArrayDelaysNormal<T>
 where

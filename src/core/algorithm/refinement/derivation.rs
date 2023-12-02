@@ -69,6 +69,9 @@ impl Derivatives {
     ///
     /// CAUTION: adds to old values. use "reset" after using the
     /// derivatives to update the parameters.
+    ///
+    /// # Panics
+    /// Panics if `ap_params_normal` is not set.
     pub fn calculate(
         &mut self,
         functional_description: &FunctionalDescription,
@@ -100,7 +103,7 @@ impl Derivatives {
             self.calculate_derivatives_coefs(
                 &estimations.ap_outputs,
                 &estimations.system_states,
-                &functional_description.ap_params_normal.as_ref().unwrap(),
+                functional_description.ap_params_normal.as_ref().unwrap(),
                 time_index,
                 functional_description
                     .measurement_covariance
