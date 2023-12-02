@@ -30,6 +30,7 @@ where
     }
 }
 impl ArrayGainsFlat<f32> {
+    #[allow(dead_code)]
     pub(crate) fn save_npy(&self, path: &std::path::Path, name: &str) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
