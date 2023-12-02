@@ -14,6 +14,7 @@ use super::{
         ArrayActivationTime,
     },
 };
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct APParametersFlat {
     pub gains: ArrayGainsFlat<f32>,
@@ -78,7 +79,7 @@ impl APParametersFlat {
         Ok(ap_params)
     }
 
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+    pub(crate) fn _save_npy(&self, path: &std::path::Path) {
         let path = &path.join("allpass");
         self.gains.save_npy(path, "gains.npy");
         self.output_state_indices.save_npy(path);

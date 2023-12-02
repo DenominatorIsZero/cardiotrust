@@ -86,6 +86,11 @@ impl FunctionalDescription {
         })
     }
 
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if `ap_params_normal` is none.
     pub fn save_npy(&self, path: &std::path::Path) {
         let path = &path.join("functional_description");
         self.ap_params_normal.as_ref().unwrap().save_npy(path);

@@ -118,6 +118,10 @@ pub fn calculate_pseudo_inverse(
 ///
 /// This includes calculating the system estimates
 /// and performing one gradient descent step.
+///
+/// # Panics
+/// If `ap_params_normal` is none
+#[allow(clippy::too_many_lines)]
 pub fn run_epoch(
     functional_description: &mut FunctionalDescription,
     results: &mut Results,
