@@ -44,15 +44,16 @@ pub fn draw_ui_topbar(
                 .add_enabled(
                     ui_state.get() != &UiState::Results
                         && selected_scenario.index.is_some()
-                        && scenario_list.entries[selected_scenario.index.unwrap()]
-                            .scenario
-                            .get_status()
+                        && scenario_list.entries
+                            [selected_scenario.index.expect("Index to be some.")]
+                        .scenario
+                        .get_status()
                             == &Status::Done,
                     egui::Button::new("Results"),
                 )
                 .clicked()
             {
-                let index = selected_scenario.index.unwrap();
+                let index = selected_scenario.index.expect("Index to be some.");
                 let scenario = &mut scenario_list.entries[index].scenario;
                 scenario.load_data();
                 scenario.load_results();
@@ -60,11 +61,21 @@ pub fn draw_ui_topbar(
             };
             if ui
                 .add_enabled(
-                    ui_state.get() != &UiState::Volumetric,
+                    ui_state.get() != &UiState::Volumetric
+                        && selected_scenario.index.is_some()
+                        && scenario_list.entries
+                            [selected_scenario.index.expect("Index to be some.")]
+                        .scenario
+                        .get_status()
+                            == &Status::Done,
                     egui::Button::new("Volumetric"),
                 )
                 .clicked()
             {
+                let index = selected_scenario.index.expect("Index to be some.");
+                let scenario = &mut scenario_list.entries[index].scenario;
+                scenario.load_data();
+                scenario.load_results();
                 commands.insert_resource(NextState(Some(UiState::Volumetric)));
             };
             ui.add(Separator::default().spacing(200.0));
