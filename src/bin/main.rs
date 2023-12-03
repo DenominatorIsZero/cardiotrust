@@ -5,8 +5,6 @@ use tikv_jemallocator::Jemalloc;
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 use bevy::{prelude::*, window::WindowMode};
-use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids, VertexPullingRenderPlugin};
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use rusty_cde::{
     scheduler::SchedulerPlugin, ui::UiPlugin, vis::VisPlugin, ScenarioList, SelectedSenario,
