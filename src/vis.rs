@@ -1,12 +1,20 @@
 use std::default;
 
-use bevy::prelude::*;
+use bevy::{math::vec3, prelude::*};
 use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids, VertexPullingRenderPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use ndarray::{Array1, Array2};
+use ndarray::{arr1, arr3, s, Array1, Array2};
 use num_traits::Pow;
 
-use crate::{core::scenario::Scenario, ui::UiState};
+use crate::{
+    core::{
+        data,
+        model::spatial::voxels::VoxelType,
+        scenario::{self, Scenario},
+    },
+    ui::UiState,
+    ScenarioList, SelectedSenario,
+};
 
 mod body;
 mod heart;
@@ -86,69 +94,125 @@ pub fn setup(mut commands: Commands) {
     setup_light_and_camera(&mut commands);
 }
 
-// this should be run on button press instead using the selected scenario
+/// .
+///
+/// # Panics
+///
+/// Panics if data is missing in sceario.
 #[allow(clippy::cast_precision_loss)]
 pub fn setup_heart_voxels(
     commands: &mut Commands,
     sample_tracker: &mut SampleTracker,
     scenario: &Scenario,
-    vis_mode: &VisMode,
 ) {
-    const PATCHES_PER_DIM: usize = 20;
+    init_sample_tracker(sample_tracker, scenario);
+    init_voxels(commands, scenario, sample_tracker);
+}
+
+#[allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss
+)]
+fn init_voxels(commands: &mut Commands, scenario: &Scenario, sample_tracker: &mut SampleTracker) {
     const PATCH_SIZE: usize = 15;
-    const SCENE_RADIUS: f32 = 150.0;
+    const SCENE_RADIUS: f32 = 1000.0;
+    let data = scenario.data.as_ref().expect("Data to be some");
+    let model = data.get_model();
+    let voxels = &model.spatial_description.voxels;
+    let voxel_count = model.spatial_description.voxels.count_xyz();
+    let x_batches: usize = (voxel_count[0] as f32 / PATCH_SIZE as f32).ceil() as usize;
+    let y_batches: usize = (voxel_count[1] as f32 / PATCH_SIZE as f32).ceil() as usize;
+    let z_batches: usize = (voxel_count[2] as f32 / PATCH_SIZE as f32).ceil() as usize;
+    let offset = arr1(&[voxels.size_mm, voxels.size_mm, voxels.size_mm]) / 2.0;
 
-    sample_tracker.current_sample = 0;
-    sample_tracker.max_sample = 2000;
-    sample_tracker.sample_rate = 2000.0;
-
-    for x_batch in 0..PATCHES_PER_DIM {
-        for z_batch in 0..PATCHES_PER_DIM {
-            let mut instances = Vec::with_capacity(PATCH_SIZE * PATCH_SIZE);
-            for x_index in 0..PATCH_SIZE {
-                for z_index in 0..PATCH_SIZE {
-                    let x_position = (x_batch * PATCH_SIZE) as f32 + x_index as f32 - SCENE_RADIUS;
-                    let z_position = (z_batch * PATCH_SIZE) as f32 + z_index as f32 - SCENE_RADIUS;
-                    let distance_from_origin = x_position.hypot(z_position);
-                    let amplitude = 0.2 * distance_from_origin;
-                    let y_position =
-                        amplitude * ((0.05 * x_position).cos() * (0.05 * z_position).sin());
-                    let position = Vec3::new(x_position, y_position, z_position);
-                    let height = 0.01 * distance_from_origin;
-                    let min = position - Vec3::new(0.5, height, 0.5);
-                    let max = position + Vec3::new(0.5, height, 0.5);
-                    let scalar_color = Color::as_rgba_u32(Color::Rgba {
-                        red: min.x / SCENE_RADIUS,
-                        green: min.z / SCENE_RADIUS,
-                        blue: 0.0,
-                        alpha: 1.0,
-                    });
-                    let mut cuboid = Cuboid::new(min, max, scalar_color);
-                    cuboid.set_depth_bias(0);
-                    instances.push(cuboid);
+    for x_batch in 0..x_batches {
+        for y_batch in 0..y_batches {
+            for z_batch in 0..z_batches {
+                let mut instances = Vec::with_capacity(PATCH_SIZE * PATCH_SIZE * PATCH_SIZE);
+                let mut indices = Array1::zeros(PATCH_SIZE.pow(3));
+                let mut running_index = 0;
+                for x_offset in 0..PATCH_SIZE {
+                    let x_index = x_batch * PATCH_SIZE + x_offset;
+                    if x_index >= voxel_count[0] {
+                        break;
+                    }
+                    for y_offset in 0..PATCH_SIZE {
+                        let y_index = y_batch * PATCH_SIZE + y_offset;
+                        if y_index >= voxel_count[1] {
+                            break;
+                        }
+                        for z_offset in 0..PATCH_SIZE {
+                            let z_index = z_batch * PATCH_SIZE + z_offset;
+                            if z_index >= voxel_count[2] {
+                                break;
+                            }
+                            if voxels.types.values[(x_index, y_index, z_index)] == VoxelType::None {
+                                break;
+                            }
+                            let position =
+                                voxels
+                                    .positions_mm
+                                    .values
+                                    .slice(s!(x_index, y_index, z_index, ..));
+                            let min = &position - &offset;
+                            let min = vec3(min[0], min[2], min[1]);
+                            let max = &position + &offset;
+                            let max = vec3(max[0], max[2], max[1]);
+                            let starting_color = Color::as_rgba_u32(Color::Rgba {
+                                red: min.x / SCENE_RADIUS,
+                                green: min.y / SCENE_RADIUS,
+                                blue: min.z / SCENE_RADIUS,
+                                alpha: 1.0,
+                            });
+                            let mut cuboid = Cuboid::new(min, max, starting_color);
+                            cuboid.set_depth_bias(0);
+                            instances.push(cuboid);
+                            indices[running_index] = voxels.numbers.values
+                                [(x_index, y_index, z_index)]
+                                .expect("Index to be some");
+                            running_index += 1;
+                        }
+                    }
                 }
+                let cuboids = Cuboids::new(instances);
+                let aabb = cuboids.aabb();
+                let mut colors = Array2::zeros((PATCH_SIZE.pow(2), sample_tracker.max_sample));
+                let color_mult = ((x_batch + 1) * (y_batch + 1) * (z_batch + 1)) as f32
+                    / (x_batches * y_batches * z_batches) as f32;
+                colors.fill(Color::as_rgba_u32(Color::Rgba {
+                    red: color_mult,
+                    green: color_mult,
+                    blue: color_mult,
+                    alpha: 1.0,
+                }));
+                let voxel_data = VoxelData { indices, colors };
+                commands.spawn(SpatialBundle::default()).insert((
+                    cuboids,
+                    aabb,
+                    CuboidMaterialId(0),
+                    voxel_data,
+                ));
             }
-            let cuboids = Cuboids::new(instances);
-            let aabb = cuboids.aabb();
-            let indices = Array1::zeros(PATCH_SIZE.pow(2));
-            let mut colors = Array2::zeros((PATCH_SIZE.pow(2), sample_tracker.max_sample));
-            let color_mult = (x_batch * PATCHES_PER_DIM + z_batch) as f32
-                / (PATCHES_PER_DIM * PATCHES_PER_DIM) as f32;
-            colors.fill(Color::as_rgba_u32(Color::Rgba {
-                red: color_mult,
-                green: color_mult,
-                blue: color_mult,
-                alpha: 1.0,
-            }));
-            let voxel_data = VoxelData { indices, colors };
-            commands.spawn(SpatialBundle::default()).insert((
-                cuboids,
-                aabb,
-                CuboidMaterialId(0),
-                voxel_data,
-            ));
         }
     }
+}
+
+fn init_sample_tracker(sample_tracker: &mut SampleTracker, scenario: &Scenario) {
+    sample_tracker.current_sample = 0;
+    sample_tracker.max_sample = scenario
+        .data
+        .as_ref()
+        .expect("Data to be some")
+        .get_measurements()
+        .values
+        .shape()[0];
+    sample_tracker.sample_rate = scenario
+        .config
+        .simulation
+        .as_ref()
+        .expect("Simultaion to be some")
+        .sample_rate_hz;
 }
 
 pub fn setup_light_and_camera(commands: &mut Commands) {
@@ -169,6 +233,14 @@ pub fn setup_light_and_camera(commands: &mut Commands) {
         },
         PanOrbitCamera::default(),
     ));
+}
+
+fn set_heart_voxel_colors(
+    mut query: Query<(&mut Cuboids, &VoxelData)>,
+    selected_scenario: Res<SelectedSenario>,
+    scenario_list: Res<ScenarioList>,
+) {
+    todo!()
 }
 
 #[allow(clippy::needless_pass_by_value)]

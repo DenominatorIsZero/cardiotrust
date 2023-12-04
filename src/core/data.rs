@@ -21,6 +21,7 @@ use super::model::{
         control::ControlFunction,
     },
     spatial::voxels::VoxelTypes,
+    Model,
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -148,6 +149,17 @@ impl Data {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
             |simulation| &simulation.model.spatial_description.voxels.types,
+        )
+    }
+
+    /// # Panics
+    ///
+    /// Panics if simulation is None
+    #[must_use]
+    pub fn get_model(&self) -> &Model {
+        self.simulation.as_ref().map_or_else(
+            || todo!("Non simulation case not implemented yet."),
+            |simulation| &simulation.model,
         )
     }
 

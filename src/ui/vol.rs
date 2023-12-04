@@ -33,7 +33,6 @@ pub fn draw_ui_volumetric(
                     .as_ref()
                     .expect("Scenario to exist.")
                     .scenario,
-                &vis_options.mode,
             );
         };
     });
