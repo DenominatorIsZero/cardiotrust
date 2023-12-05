@@ -183,7 +183,6 @@ fn init_voxels(commands: &mut Commands, scenario: &Scenario, sample_tracker: &mu
                 let cuboids = Cuboids::new(instances);
                 let aabb = cuboids.aabb();
                 let mut colors = Array2::zeros((PATCH_SIZE.pow(2), sample_tracker.max_sample));
-                    / (x_batches * y_batches * z_batches) as f32;
                 let mut voxel_data = VoxelData {
                     indices,
                     colors,
