@@ -1,9 +1,9 @@
-use std::default;
+use std::{default, ops::Index};
 
 use bevy::{math::vec3, prelude::*};
 use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids, VertexPullingRenderPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use ndarray::{arr1, arr3, s, Array1, Array2};
+use ndarray::{arr1, arr3, s, Array1, Array2, Array4};
 use num_traits::Pow;
 
 use crate::{
@@ -88,6 +88,7 @@ pub enum VisMode {
 struct VoxelData {
     indices: Array1<usize>,
     colors: Array2<u32>,
+    positions: Array2<usize>,
 }
 
 pub fn setup(mut commands: Commands) {
@@ -131,6 +132,7 @@ fn init_voxels(commands: &mut Commands, scenario: &Scenario, sample_tracker: &mu
             for z_batch in 0..z_batches {
                 let mut instances = Vec::with_capacity(PATCH_SIZE * PATCH_SIZE * PATCH_SIZE);
                 let mut indices = Array1::zeros(PATCH_SIZE.pow(3));
+                let mut positions_in_grid = Array2::zeros((PATCH_SIZE.pow(3), 3));
                 let mut running_index = 0;
                 for x_offset in 0..PATCH_SIZE {
                     let x_index = x_batch * PATCH_SIZE + x_offset;
@@ -171,6 +173,9 @@ fn init_voxels(commands: &mut Commands, scenario: &Scenario, sample_tracker: &mu
                             indices[running_index] = voxels.numbers.values
                                 [(x_index, y_index, z_index)]
                                 .expect("Index to be some");
+                            positions_in_grid[(running_index, 0)] = x_index;
+                            positions_in_grid[(running_index, 1)] = y_index;
+                            positions_in_grid[(running_index, 2)] = z_index;
                             running_index += 1;
                         }
                     }
@@ -178,15 +183,13 @@ fn init_voxels(commands: &mut Commands, scenario: &Scenario, sample_tracker: &mu
                 let cuboids = Cuboids::new(instances);
                 let aabb = cuboids.aabb();
                 let mut colors = Array2::zeros((PATCH_SIZE.pow(2), sample_tracker.max_sample));
-                let color_mult = ((x_batch + 1) * (y_batch + 1) * (z_batch + 1)) as f32
                     / (x_batches * y_batches * z_batches) as f32;
-                colors.fill(Color::as_rgba_u32(Color::Rgba {
-                    red: color_mult,
-                    green: color_mult,
-                    blue: color_mult,
-                    alpha: 1.0,
-                }));
-                let voxel_data = VoxelData { indices, colors };
+                let mut voxel_data = VoxelData {
+                    indices,
+                    colors,
+                    positions: positions_in_grid,
+                };
+                set_heart_voxel_colors_to_types(&cuboids, &mut voxel_data, scenario);
                 commands.spawn(SpatialBundle::default()).insert((
                     cuboids,
                     aabb,
@@ -235,12 +238,74 @@ pub fn setup_light_and_camera(commands: &mut Commands) {
     ));
 }
 
-fn set_heart_voxel_colors(
-    mut query: Query<(&mut Cuboids, &VoxelData)>,
-    selected_scenario: Res<SelectedSenario>,
-    scenario_list: Res<ScenarioList>,
+#[allow(clippy::needless_pass_by_value)]
+fn set_heart_voxel_colors_to_types(
+    cuboids: &Cuboids,
+    voxel_data: &mut VoxelData,
+    scenario: &Scenario,
 ) {
-    todo!()
+    let voxels_types = scenario
+        .data
+        .as_ref()
+        .expect("Data to be some")
+        .get_voxel_types();
+
+    for index in 0..cuboids.instances.len() {
+        for sample in 0..voxel_data.colors.shape()[1] {
+            let x = voxel_data.positions[(index, 0)];
+            let y = voxel_data.positions[(index, 1)];
+            let z = voxel_data.positions[(index, 2)];
+            voxel_data.colors[(index, sample)] = type_to_color(voxels_types.values[(x, y, z)]);
+        }
+    }
+}
+
+fn type_to_color(voxel_type: VoxelType) -> u32 {
+    let alpha = 1.0;
+    match voxel_type {
+        VoxelType::None => Color::as_rgba_u32(Color::Rgba {
+            red: 1.0,
+            green: 1.0,
+            blue: 1.0,
+            alpha: 0.0,
+        }),
+        VoxelType::Sinoatrial => Color::as_rgba_u32(Color::Rgba {
+            red: 1.0,
+            green: 0.776,
+            blue: 0.118,
+            alpha,
+        }),
+        VoxelType::Atrium => Color::as_rgba_u32(Color::Rgba {
+            red: 0.686,
+            green: 0.345,
+            blue: 0.541,
+            alpha,
+        }),
+        VoxelType::Atrioventricular => Color::as_rgba_u32(Color::Rgba {
+            red: 0.0,
+            green: 0.804,
+            blue: 0.424,
+            alpha,
+        }),
+        VoxelType::HPS => Color::as_rgba_u32(Color::Rgba {
+            red: 0.0,
+            green: 0.604,
+            blue: 0.871,
+            alpha,
+        }),
+        VoxelType::Ventricle => Color::as_rgba_u32(Color::Rgba {
+            red: 1.0,
+            green: 0.122,
+            blue: 0.357,
+            alpha,
+        }),
+        VoxelType::Pathological => Color::as_rgba_u32(Color::Rgba {
+            red: 0.651,
+            green: 0.463,
+            blue: 0.114,
+            alpha,
+        }),
+    }
 }
 
 #[allow(clippy::needless_pass_by_value)]
