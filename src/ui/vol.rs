@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
 use crate::{
-    vis::{setup_heart_voxels, SampleTracker, VisOptions},
+    vis::{setup_heart_voxels, SampleTracker, VisMode, VisOptions},
     ScenarioList, SelectedSenario,
 };
 
@@ -11,19 +11,13 @@ pub fn draw_ui_volumetric(
     mut contexts: EguiContexts,
     mut commands: Commands,
     mut sample_tracker: ResMut<SampleTracker>,
-    _vis_options: ResMut<VisOptions>,
+    mut vis_options: ResMut<VisOptions>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
 ) {
     egui::SidePanel::left("volumetric_left_panel").show(contexts.ctx_mut(), |ui| {
         ui.label("Volumetric");
-        if ui
-            .add_enabled(
-                selected_scenario.index.is_some(),
-                egui::Button::new("Init Voxels"),
-            )
-            .clicked()
-        {
+        if ui.button("Init Voxels").clicked() {
             setup_heart_voxels(
                 &mut commands,
                 &mut sample_tracker,
@@ -35,5 +29,33 @@ pub fn draw_ui_volumetric(
                     .scenario,
             );
         };
+        let mut vis_mode = vis_options.mode.clone();
+        egui::ComboBox::new("cb_vis_mode", "")
+            .selected_text(format!("{vis_mode:?}"))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(
+                    &mut vis_mode,
+                    VisMode::EstimationVoxelTypes,
+                    "Voxel types (estimation)",
+                );
+                ui.selectable_value(
+                    &mut vis_mode,
+                    VisMode::SimulationVoxelTypes,
+                    "Voxel types (simulation)",
+                );
+                ui.selectable_value(
+                    &mut vis_mode,
+                    VisMode::SimulatedCdeNorm,
+                    "Cde norm (simulation)",
+                );
+                ui.selectable_value(
+                    &mut vis_mode,
+                    VisMode::EstimatedCdeNorm,
+                    "Cde norm (estimation)",
+                );
+            });
+        if vis_mode != vis_options.mode {
+            vis_options.mode = vis_mode;
+        }
     });
 }

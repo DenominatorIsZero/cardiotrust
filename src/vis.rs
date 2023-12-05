@@ -33,6 +33,10 @@ impl Plugin for VisPlugin {
                 update_heart_voxel_colors
                     .run_if(in_state(UiState::Volumetric))
                     .after(update_sample_index),
+            )
+            .add_systems(
+                Update,
+                on_vis_mode_changed.run_if(in_state(UiState::Volumetric)),
             );
     }
 }
@@ -65,14 +69,16 @@ impl Default for VisOptions {
     fn default() -> Self {
         Self {
             playbackspeed: 1.0,
-            mode: VisMode::EstimatedCdeNorm,
+            mode: VisMode::SimulationVoxelTypes,
         }
     }
 }
 
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum VisMode {
+    EstimationVoxelTypes,
+    SimulationVoxelTypes,
     EstimatedCdeNorm,
     SimulatedCdeNorm,
 }
@@ -318,6 +324,13 @@ fn update_heart_voxel_colors(
                 }
             }
         });
+}
+
+#[allow(clippy::needless_pass_by_value)]
+fn on_vis_mode_changed(vis_options: Res<VisOptions>, mut query: Query<(&Cuboids, &mut VoxelData)>) {
+    if vis_options.is_changed() {
+        println!("Vis mode changing!!!");
+    }
 }
 
 // might want to add a accum delta time to sampletracker, so that I can also change
