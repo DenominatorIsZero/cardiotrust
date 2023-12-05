@@ -1,19 +1,12 @@
-use std::{default, ops::Index};
-
 use bevy::{math::vec3, prelude::*};
 use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids, VertexPullingRenderPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use ndarray::{arr1, arr3, s, Array1, Array2, Array4};
+use ndarray::{arr1, s, Array1, Array2};
 use num_traits::Pow;
 
 use crate::{
-    core::{
-        data,
-        model::spatial::voxels::VoxelType,
-        scenario::{self, Scenario},
-    },
+    core::{model::spatial::voxels::VoxelType, scenario::Scenario},
     ui::UiState,
-    ScenarioList, SelectedSenario,
 };
 
 mod body;
@@ -182,7 +175,7 @@ fn init_voxels(commands: &mut Commands, scenario: &Scenario, sample_tracker: &mu
                 }
                 let cuboids = Cuboids::new(instances);
                 let aabb = cuboids.aabb();
-                let mut colors = Array2::zeros((PATCH_SIZE.pow(2), sample_tracker.max_sample));
+                let colors = Array2::zeros((PATCH_SIZE.pow(2), sample_tracker.max_sample));
                 let mut voxel_data = VoxelData {
                     indices,
                     colors,

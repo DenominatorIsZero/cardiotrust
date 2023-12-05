@@ -11,7 +11,7 @@ pub fn draw_ui_volumetric(
     mut contexts: EguiContexts,
     mut commands: Commands,
     mut sample_tracker: ResMut<SampleTracker>,
-    mut vis_options: ResMut<VisOptions>,
+    _vis_options: ResMut<VisOptions>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
 ) {
