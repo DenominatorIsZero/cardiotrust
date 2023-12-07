@@ -7,6 +7,7 @@ use num_traits::Pow;
 use crate::{
     core::{model::spatial::voxels::VoxelType, scenario::Scenario},
     ui::UiState,
+    ScenarioList, SelectedSenario,
 };
 
 mod body;
@@ -68,7 +69,7 @@ pub struct VisOptions {
 impl Default for VisOptions {
     fn default() -> Self {
         Self {
-            playbackspeed: 1.0,
+            playbackspeed: 0.1,
             mode: VisMode::SimulationVoxelTypes,
         }
     }
@@ -187,7 +188,7 @@ fn init_voxels(commands: &mut Commands, scenario: &Scenario, sample_tracker: &mu
                     colors,
                     positions: positions_in_grid,
                 };
-                set_heart_voxel_colors_to_types(&cuboids, &mut voxel_data, scenario);
+                set_heart_voxel_colors_to_types(&cuboids, &mut voxel_data, scenario, true);
                 commands.spawn(SpatialBundle::default()).insert((
                     cuboids,
                     aabb,
@@ -241,19 +242,33 @@ fn set_heart_voxel_colors_to_types(
     cuboids: &Cuboids,
     voxel_data: &mut VoxelData,
     scenario: &Scenario,
+    simulation_not_model: bool,
 ) {
-    let voxels_types = scenario
-        .data
-        .as_ref()
-        .expect("Data to be some")
-        .get_voxel_types();
+    let voxel_types = if simulation_not_model {
+        scenario
+            .data
+            .as_ref()
+            .expect("Data to be some")
+            .get_voxel_types()
+    } else {
+        &scenario
+            .results
+            .as_ref()
+            .expect("Results to be some.")
+            .model
+            .as_ref()
+            .expect("Model to be some.")
+            .spatial_description
+            .voxels
+            .types
+    };
 
     for index in 0..cuboids.instances.len() {
         for sample in 0..voxel_data.colors.shape()[1] {
             let x = voxel_data.positions[(index, 0)];
             let y = voxel_data.positions[(index, 1)];
             let z = voxel_data.positions[(index, 2)];
-            voxel_data.colors[(index, sample)] = type_to_color(voxels_types.values[(x, y, z)]);
+            voxel_data.colors[(index, sample)] = type_to_color(voxel_types.values[(x, y, z)]);
         }
     }
 }
@@ -327,9 +342,69 @@ fn update_heart_voxel_colors(
 }
 
 #[allow(clippy::needless_pass_by_value)]
-fn on_vis_mode_changed(vis_options: Res<VisOptions>, mut query: Query<(&Cuboids, &mut VoxelData)>) {
-    if vis_options.is_changed() {
-        println!("Vis mode changing!!!");
+fn on_vis_mode_changed(
+    vis_options: Res<VisOptions>,
+    mut query: Query<(&Cuboids, &mut VoxelData)>,
+    scenario_list: Res<ScenarioList>,
+    selected_scenario: Res<SelectedSenario>,
+) {
+    if selected_scenario.index.is_none() {
+        return;
+    }
+    let scenario =
+        &scenario_list.entries[selected_scenario.index.expect("index to be some.")].scenario;
+    query
+        .iter_mut()
+        .for_each(|(cuboids, mut voxel_data)| match vis_options.mode {
+            VisMode::EstimationVoxelTypes => {
+                set_heart_voxel_colors_to_types(cuboids, voxel_data.as_mut(), scenario, false);
+            }
+            VisMode::SimulationVoxelTypes => {
+                set_heart_voxel_colors_to_types(cuboids, voxel_data.as_mut(), scenario, true);
+            }
+            VisMode::EstimatedCdeNorm => {
+                set_heart_voxel_colors_to_norm(cuboids, voxel_data.as_mut(), scenario, false);
+            }
+            VisMode::SimulatedCdeNorm => {
+                set_heart_voxel_colors_to_norm(cuboids, voxel_data.as_mut(), scenario, true);
+            }
+        });
+}
+
+fn set_heart_voxel_colors_to_norm(
+    cuboids: &Cuboids,
+    voxel_data: &mut VoxelData,
+    scenario: &Scenario,
+    simulation_not_model: bool,
+) {
+    let system_states = if simulation_not_model {
+        scenario
+            .data
+            .as_ref()
+            .expect("Data to be some")
+            .get_system_states()
+    } else {
+        &scenario
+            .results
+            .as_ref()
+            .expect("Results to be some.")
+            .estimations
+            .system_states
+    };
+
+    for index in 0..cuboids.instances.len() {
+        let state_index = voxel_data.indices[index];
+        for sample in 0..voxel_data.colors.shape()[1] {
+            let norm = system_states.values[[sample, state_index]].abs()
+                + system_states.values[[sample, state_index + 1]].abs()
+                + system_states.values[[sample, state_index + 2]].abs();
+            voxel_data.colors[[index, sample]] = Color::as_rgba_u32(Color::Rgba {
+                red: norm,
+                green: norm,
+                blue: norm,
+                alpha: norm,
+            });
+        }
     }
 }
 
