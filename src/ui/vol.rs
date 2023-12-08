@@ -45,13 +45,23 @@ pub fn draw_ui_volumetric(
                 );
                 ui.selectable_value(
                     &mut vis_mode,
+                    VisMode::EstimatedCdeNorm,
+                    "Cde norm (estimation)",
+                );
+                ui.selectable_value(
+                    &mut vis_mode,
                     VisMode::SimulatedCdeNorm,
                     "Cde norm (simulation)",
                 );
                 ui.selectable_value(
                     &mut vis_mode,
-                    VisMode::EstimatedCdeNorm,
-                    "Cde norm (estimation)",
+                    VisMode::EstimatedCdeMax,
+                    "Cde max (estimation)",
+                );
+                ui.selectable_value(
+                    &mut vis_mode,
+                    VisMode::SimulatedCdeMax,
+                    "Cde max (simulation)",
                 );
             });
         if vis_mode != vis_options.mode {

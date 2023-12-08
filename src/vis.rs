@@ -2,7 +2,7 @@ use bevy::{math::vec3, prelude::*};
 use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids, VertexPullingRenderPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use ndarray::{arr1, s, Array1, Array2};
-use num_traits::Pow;
+use ndarray_stats::QuantileExt;
 
 use crate::{
     core::{model::spatial::voxels::VoxelType, scenario::Scenario},
@@ -82,6 +82,8 @@ pub enum VisMode {
     SimulationVoxelTypes,
     EstimatedCdeNorm,
     SimulatedCdeNorm,
+    EstimatedCdeMax,
+    SimulatedCdeMax,
 }
 
 #[derive(Component)]
@@ -351,6 +353,10 @@ fn on_vis_mode_changed(
     if selected_scenario.index.is_none() {
         return;
     }
+    if !vis_options.is_changed() {
+        return;
+    }
+    print!("Hello?");
     let scenario =
         &scenario_list.entries[selected_scenario.index.expect("index to be some.")].scenario;
     query
@@ -367,6 +373,12 @@ fn on_vis_mode_changed(
             }
             VisMode::SimulatedCdeNorm => {
                 set_heart_voxel_colors_to_norm(cuboids, voxel_data.as_mut(), scenario, true);
+            }
+            VisMode::EstimatedCdeMax => {
+                set_heart_voxel_colors_to_max(cuboids, voxel_data.as_mut(), scenario, false);
+            }
+            VisMode::SimulatedCdeMax => {
+                set_heart_voxel_colors_to_max(cuboids, voxel_data.as_mut(), scenario, true);
             }
         });
 }
@@ -402,7 +414,48 @@ fn set_heart_voxel_colors_to_norm(
                 red: norm,
                 green: norm,
                 blue: norm,
-                alpha: norm,
+                alpha: 1.0,
+            });
+        }
+    }
+}
+
+fn set_heart_voxel_colors_to_max(
+    cuboids: &Cuboids,
+    voxel_data: &mut VoxelData,
+    scenario: &Scenario,
+    simulation_not_model: bool,
+) {
+    let system_states = if simulation_not_model {
+        scenario
+            .data
+            .as_ref()
+            .expect("Data to be some")
+            .get_system_states()
+    } else {
+        &scenario
+            .results
+            .as_ref()
+            .expect("Results to be some.")
+            .estimations
+            .system_states
+    };
+    let mut norm = Array1::zeros(voxel_data.colors.shape()[1]);
+    let mut max = 0.0;
+    for index in 0..cuboids.instances.len() {
+        let state_index = voxel_data.indices[index];
+        for sample in 0..voxel_data.colors.shape()[1] {
+            norm[sample] = system_states.values[[sample, state_index]].abs()
+                + system_states.values[[sample, state_index + 1]].abs()
+                + system_states.values[[sample, state_index + 2]].abs();
+            max = *norm.max_skipnan();
+        }
+        for sample in 0..voxel_data.colors.shape()[1] {
+            voxel_data.colors[[index, sample]] = Color::as_rgba_u32(Color::Rgba {
+                red: max,
+                green: max,
+                blue: max,
+                alpha: 1.0,
             });
         }
     }
