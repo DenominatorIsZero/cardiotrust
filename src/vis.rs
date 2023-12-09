@@ -3,6 +3,10 @@ use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids, VertexPullingRende
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use ndarray::{arr1, s, Array1, Array2};
 use ndarray_stats::QuantileExt;
+use scarlet::{
+    color::RGBColor,
+    colormap::{ColorMap, ListedColorMap},
+};
 
 use crate::{
     core::{model::spatial::voxels::VoxelType, scenario::Scenario},
@@ -356,7 +360,6 @@ fn on_vis_mode_changed(
     if !vis_options.is_changed() {
         return;
     }
-    print!("Hello?");
     let scenario =
         &scenario_list.entries[selected_scenario.index.expect("index to be some.")].scenario;
     query
@@ -383,6 +386,7 @@ fn on_vis_mode_changed(
         });
 }
 
+#[allow(clippy::cast_possible_truncation)]
 fn set_heart_voxel_colors_to_norm(
     cuboids: &Cuboids,
     voxel_data: &mut VoxelData,
@@ -403,6 +407,7 @@ fn set_heart_voxel_colors_to_norm(
             .estimations
             .system_states
     };
+    let color_map = ListedColorMap::viridis();
 
     for index in 0..cuboids.instances.len() {
         let state_index = voxel_data.indices[index];
@@ -410,16 +415,18 @@ fn set_heart_voxel_colors_to_norm(
             let norm = system_states.values[[sample, state_index]].abs()
                 + system_states.values[[sample, state_index + 1]].abs()
                 + system_states.values[[sample, state_index + 2]].abs();
+            let color: RGBColor = color_map.transform_single(f64::from(norm));
             voxel_data.colors[[index, sample]] = Color::as_rgba_u32(Color::Rgba {
-                red: norm,
-                green: norm,
-                blue: norm,
+                red: color.r as f32,
+                green: color.g as f32,
+                blue: color.b as f32,
                 alpha: 1.0,
             });
         }
     }
 }
 
+#[allow(clippy::cast_possible_truncation)]
 fn set_heart_voxel_colors_to_max(
     cuboids: &Cuboids,
     voxel_data: &mut VoxelData,
@@ -440,6 +447,7 @@ fn set_heart_voxel_colors_to_max(
             .estimations
             .system_states
     };
+    let color_map = ListedColorMap::viridis();
     let mut norm = Array1::zeros(voxel_data.colors.shape()[1]);
     let mut max = 0.0;
     for index in 0..cuboids.instances.len() {
@@ -450,13 +458,15 @@ fn set_heart_voxel_colors_to_max(
                 + system_states.values[[sample, state_index + 2]].abs();
             max = *norm.max_skipnan();
         }
+        let color: RGBColor = color_map.transform_single(f64::from(max));
+        let color = Color::as_rgba_u32(Color::Rgba {
+            red: color.r as f32,
+            green: color.g as f32,
+            blue: color.b as f32,
+            alpha: 1.0,
+        });
         for sample in 0..voxel_data.colors.shape()[1] {
-            voxel_data.colors[[index, sample]] = Color::as_rgba_u32(Color::Rgba {
-                red: max,
-                green: max,
-                blue: max,
-                alpha: 1.0,
-            });
+            voxel_data.colors[[index, sample]] = color;
         }
     }
 }
