@@ -129,6 +129,69 @@ fn init_voxels(commands: &mut Commands, scenario: &Scenario, sample_tracker: &mu
 }
 
 #[allow(clippy::needless_pass_by_value)]
+pub fn update_heart_voxel_colors(
+    sample_tracker: Res<SampleTracker>,
+    mut query: Query<(&mut Cuboids, &VoxelData)>,
+) {
+    // read out current sample in color vector and set that to cube
+    // maybe use emissive for activation time?
+    query
+        .par_iter_mut()
+        .for_each_mut(|(mut cuboids, voxel_data)| {
+            for index in 0..cuboids.instances.len() {
+                unsafe {
+                    cuboids.instances.get_unchecked_mut(index).color = *voxel_data
+                        .colors
+                        .uget((index, sample_tracker.current_sample));
+                }
+            }
+        });
+}
+
+/// .
+///
+/// # Panics
+///
+/// Panics if selected scenario is corrupted.
+#[allow(clippy::needless_pass_by_value)]
+pub fn on_vis_mode_changed(
+    vis_options: Res<VisOptions>,
+    mut query: Query<(&Cuboids, &mut VoxelData)>,
+    scenario_list: Res<ScenarioList>,
+    selected_scenario: Res<SelectedSenario>,
+) {
+    if selected_scenario.index.is_none() {
+        return;
+    }
+    if !vis_options.is_changed() {
+        return;
+    }
+    let scenario =
+        &scenario_list.entries[selected_scenario.index.expect("index to be some.")].scenario;
+    query
+        .iter_mut()
+        .for_each(|(cuboids, mut voxel_data)| match vis_options.mode {
+            VisMode::EstimationVoxelTypes => {
+                set_heart_voxel_colors_to_types(cuboids, voxel_data.as_mut(), scenario, false);
+            }
+            VisMode::SimulationVoxelTypes => {
+                set_heart_voxel_colors_to_types(cuboids, voxel_data.as_mut(), scenario, true);
+            }
+            VisMode::EstimatedCdeNorm => {
+                set_heart_voxel_colors_to_norm(cuboids, voxel_data.as_mut(), scenario, false);
+            }
+            VisMode::SimulatedCdeNorm => {
+                set_heart_voxel_colors_to_norm(cuboids, voxel_data.as_mut(), scenario, true);
+            }
+            VisMode::EstimatedCdeMax => {
+                set_heart_voxel_colors_to_max(cuboids, voxel_data.as_mut(), scenario, false);
+            }
+            VisMode::SimulatedCdeMax => {
+                set_heart_voxel_colors_to_max(cuboids, voxel_data.as_mut(), scenario, true);
+            }
+        });
+}
+#[allow(clippy::needless_pass_by_value)]
 fn set_heart_voxel_colors_to_types(
     cuboids: &Cuboids,
     voxel_data: &mut VoxelData,
@@ -213,25 +276,6 @@ pub fn type_to_color(voxel_type: VoxelType) -> u32 {
     }
 }
 
-#[allow(clippy::needless_pass_by_value)]
-pub fn update_heart_voxel_colors(
-    sample_tracker: Res<SampleTracker>,
-    mut query: Query<(&mut Cuboids, &VoxelData)>,
-) {
-    // read out current sample in color vector and set that to cube
-    // maybe use emissive for activation time?
-    query
-        .par_iter_mut()
-        .for_each_mut(|(mut cuboids, voxel_data)| {
-            for index in 0..cuboids.instances.len() {
-                unsafe {
-                    cuboids.instances.get_unchecked_mut(index).color = *voxel_data
-                        .colors
-                        .uget((index, sample_tracker.current_sample));
-                }
-            }
-        });
-}
 #[allow(clippy::cast_possible_truncation)]
 fn set_heart_voxel_colors_to_norm(
     cuboids: &Cuboids,
@@ -315,48 +359,4 @@ fn set_heart_voxel_colors_to_max(
             voxel_data.colors[[index, sample]] = color;
         }
     }
-}
-
-/// .
-///
-/// # Panics
-///
-/// Panics if selected scenario is corrupted.
-#[allow(clippy::needless_pass_by_value)]
-pub fn on_vis_mode_changed(
-    vis_options: Res<VisOptions>,
-    mut query: Query<(&Cuboids, &mut VoxelData)>,
-    scenario_list: Res<ScenarioList>,
-    selected_scenario: Res<SelectedSenario>,
-) {
-    if selected_scenario.index.is_none() {
-        return;
-    }
-    if !vis_options.is_changed() {
-        return;
-    }
-    let scenario =
-        &scenario_list.entries[selected_scenario.index.expect("index to be some.")].scenario;
-    query
-        .iter_mut()
-        .for_each(|(cuboids, mut voxel_data)| match vis_options.mode {
-            VisMode::EstimationVoxelTypes => {
-                set_heart_voxel_colors_to_types(cuboids, voxel_data.as_mut(), scenario, false);
-            }
-            VisMode::SimulationVoxelTypes => {
-                set_heart_voxel_colors_to_types(cuboids, voxel_data.as_mut(), scenario, true);
-            }
-            VisMode::EstimatedCdeNorm => {
-                set_heart_voxel_colors_to_norm(cuboids, voxel_data.as_mut(), scenario, false);
-            }
-            VisMode::SimulatedCdeNorm => {
-                set_heart_voxel_colors_to_norm(cuboids, voxel_data.as_mut(), scenario, true);
-            }
-            VisMode::EstimatedCdeMax => {
-                set_heart_voxel_colors_to_max(cuboids, voxel_data.as_mut(), scenario, false);
-            }
-            VisMode::SimulatedCdeMax => {
-                set_heart_voxel_colors_to_max(cuboids, voxel_data.as_mut(), scenario, true);
-            }
-        });
 }
