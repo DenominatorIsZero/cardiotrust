@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
+use egui_plot::{Line, Plot, PlotPoints};
 
 use crate::{
     vis::{
@@ -72,4 +73,16 @@ pub fn draw_ui_volumetric(
             vis_options.mode = vis_mode;
         }
     });
+    egui::TopBottomPanel::bottom("Volumetric bottom panel")
+        .exact_height(400.0)
+        .show(contexts.ctx_mut(), |ui| {
+            let sin: PlotPoints = (0..1000)
+                .map(|i| {
+                    let x = i as f64 * 0.01;
+                    [x, x.sin()]
+                })
+                .collect();
+            let line = Line::new(sin);
+            Plot::new("my_plot")..show(ui, |plot_ui| plot_ui.line(line));
+        });
 }
