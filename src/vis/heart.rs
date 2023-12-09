@@ -164,6 +164,7 @@ fn set_heart_voxel_colors_to_types(
     }
 }
 
+#[must_use]
 pub fn type_to_color(voxel_type: VoxelType) -> u32 {
     let alpha = 1.0;
     match voxel_type {
@@ -316,6 +317,11 @@ fn set_heart_voxel_colors_to_max(
     }
 }
 
+/// .
+///
+/// # Panics
+///
+/// Panics if selected scenario is corrupted.
 #[allow(clippy::needless_pass_by_value)]
 pub fn on_vis_mode_changed(
     vis_options: Res<VisOptions>,

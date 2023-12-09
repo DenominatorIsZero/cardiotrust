@@ -5,16 +5,11 @@ pub mod plotting;
 pub mod sample_tracker;
 pub mod sensors;
 
-use bevy::{prelude::*};
-use bevy_aabb_instancing::{VertexPullingRenderPlugin};
+use bevy::prelude::*;
+use bevy_aabb_instancing::VertexPullingRenderPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
-
-
-
-use crate::{
-    ui::UiState,
-};
+use crate::ui::UiState;
 
 use self::{
     heart::on_vis_mode_changed,

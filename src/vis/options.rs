@@ -1,10 +1,4 @@
-use bevy::{prelude::*};
-
-
-
-
-
-
+use bevy::prelude::*;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Resource, Debug)]

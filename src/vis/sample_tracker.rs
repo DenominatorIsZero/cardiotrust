@@ -1,13 +1,6 @@
-use bevy::{prelude::*};
+use bevy::prelude::*;
 
-
-
-
-
-
-use crate::{
-    core::{scenario::Scenario},
-};
+use crate::core::scenario::Scenario;
 
 use super::options::VisOptions;
 #[derive(Resource, Debug)]
@@ -27,13 +20,17 @@ impl Default for SampleTracker {
     }
 }
 
-// might want to add a accum delta time to sampletracker, so that I can also change
-// the current sample manually.
+/// .
+///
+/// # Panics
+///
+/// Panics if Simulation or data is none.
 #[allow(
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
-    clippy::needless_pass_by_value
+    clippy::needless_pass_by_value,
+    clippy::module_name_repetitions
 )]
 pub fn init_sample_tracker(sample_tracker: &mut SampleTracker, scenario: &Scenario) {
     sample_tracker.current_sample = 0;
@@ -52,6 +49,11 @@ pub fn init_sample_tracker(sample_tracker: &mut SampleTracker, scenario: &Scenar
         .sample_rate_hz;
 }
 
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::needless_pass_by_value
+)]
 pub fn update_sample_index(
     mut sample_tracker: ResMut<SampleTracker>,
     time: Res<Time>,
