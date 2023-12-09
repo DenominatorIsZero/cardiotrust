@@ -83,6 +83,6 @@ pub fn draw_ui_volumetric(
                 })
                 .collect();
             let line = Line::new(sin);
-            Plot::new("my_plot")..show(ui, |plot_ui| plot_ui.line(line));
+            Plot::new("my_plot").show(ui, |plot_ui| plot_ui.line(line));
         });
 }
