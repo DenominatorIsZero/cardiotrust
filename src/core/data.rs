@@ -4,7 +4,6 @@ pub mod simulation;
 
 use std::error::Error;
 
-use nalgebra::Dyn;
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
 
