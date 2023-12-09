@@ -101,7 +101,10 @@ pub fn check_scenarios(
         .for_each(|entry| {
             match &entry.epoch_rx {
                 Some(epoch_rx) => {
-                    let epoch = epoch_rx.lock().unwrap().try_recv();
+                    let epoch = epoch_rx
+                        .lock()
+                        .expect("Lock to not already be held")
+                        .try_recv();
                     if let Ok(epoch) = epoch {
                         entry.scenario.set_running(epoch);
                     }
@@ -110,7 +113,10 @@ pub fn check_scenarios(
             }
             match &entry.summary_rx {
                 Some(summary_rx) => {
-                    let summary = summary_rx.lock().unwrap().try_recv();
+                    let summary = summary_rx
+                        .lock()
+                        .expect("Lock to not already be held")
+                        .try_recv();
                     if let Ok(summary) = summary {
                         entry.scenario.summary = Some(summary);
                     }
@@ -125,10 +131,10 @@ pub fn check_scenarios(
                         entry.join_handle = None;
                         entry.epoch_rx = None;
                         entry.summary_rx = None;
-                        entry.scenario.save().unwrap();
+                        entry.scenario.save().expect("Scenarion to be parseable.");
                     }
                 }
-                None => panic!("Running scenario does not a join handle."),
+                None => panic!("Running scenario does not have a join handle."),
             }
         });
 

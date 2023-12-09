@@ -6,7 +6,7 @@ pub mod vis;
 
 use crate::core::scenario::summary::Summary;
 use std::{
-    fs,
+    fs::{self, create_dir_all},
     path::Path,
     sync::{mpsc::Receiver, Mutex},
     thread::JoinHandle,
@@ -40,9 +40,8 @@ impl Default for ScenarioList {
             entries: Vec::<ScenarioBundle>::new(),
         };
         let dir = Path::new("./results");
-        for entry in fs::read_dir(dir)
-            .unwrap_or_else(|_| panic!("No such directory {}", dir.to_string_lossy()))
-        {
+        create_dir_all(dir).expect("Permission to cearte directory.");
+        for entry in fs::read_dir(dir).expect("Directory to exist") {
             let entry = entry.expect("Invalid path found");
             let path = entry.path();
             if path.is_dir() {

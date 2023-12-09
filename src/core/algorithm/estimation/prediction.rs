@@ -249,7 +249,8 @@ mod tests {
     fn innovate_system_states_v2_equality() {
         let config = Config::default();
         let simulation_config = config.simulation.as_ref().unwrap();
-        let data = Data::from_simulation_config(simulation_config);
+        let data =
+            Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
         let model = Model::from_model_config(
             &config.algorithm.model,
             simulation_config.sample_rate_hz,
@@ -297,7 +298,8 @@ mod tests {
     fn innovate_system_states_v3_equality() {
         let config = Config::default();
         let simulation_config = config.simulation.as_ref().unwrap();
-        let data = Data::from_simulation_config(simulation_config);
+        let data =
+            Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
         let model = Model::from_model_config(
             &config.algorithm.model,
             simulation_config.sample_rate_hz,

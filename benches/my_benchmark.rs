@@ -29,7 +29,8 @@ fn system_prediction_bench(c: &mut Criterion) {
         config.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
         config.algorithm.model.voxel_size_mm = *voxel_size;
         let simulation_config = config.simulation.as_ref().unwrap();
-        let data = Data::from_simulation_config(simulation_config);
+        let data =
+            Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
         let model = Model::from_model_config(
             &config.algorithm.model,
             simulation_config.sample_rate_hz,
@@ -141,7 +142,8 @@ fn system_prediction_epoch_bench(c: &mut Criterion) {
         config.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
         config.algorithm.model.voxel_size_mm = *voxel_size;
         let simulation_config = config.simulation.as_ref().unwrap();
-        let data = Data::from_simulation_config(simulation_config);
+        let data =
+            Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
         let model = Model::from_model_config(
             &config.algorithm.model,
             simulation_config.sample_rate_hz,
@@ -264,7 +266,8 @@ fn run_epoch_bench(c: &mut Criterion) {
         config.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
         config.algorithm.model.voxel_size_mm = *voxel_size;
         let simulation_config = config.simulation.as_ref().unwrap();
-        let data = Data::from_simulation_config(simulation_config);
+        let data =
+            Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
         let mut model = Model::from_model_config(
             &config.algorithm.model,
             simulation_config.sample_rate_hz,

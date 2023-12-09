@@ -299,7 +299,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         panic!("Non-simulation case not yet implemented.")
     };
 
-    let data = Data::from_simulation_config(simulation);
+    let data = Data::from_simulation_config(simulation).expect("Model parametrs to be valid.");
     let mut model = Model::from_model_config(
         &scenario.config.algorithm.model,
         simulation.sample_rate_hz,

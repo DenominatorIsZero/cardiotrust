@@ -34,7 +34,7 @@ pub fn calculate_pseudo_inverse(
             .measurement_matrix
             .values
             .as_slice()
-            .unwrap(),
+            .expect("Slice to be some"),
     );
 
     let decomposition = SVD::new_unordered(measurement_matrix, true, true);
@@ -48,10 +48,12 @@ pub fn calculate_pseudo_inverse(
                 .values
                 .slice(s![time_index, ..])
                 .as_slice()
-                .unwrap(),
+                .expect("Slice to be some."),
         );
 
-        let system_states = decomposition.solve(&measurements, 1e-5).unwrap();
+        let system_states = decomposition
+            .solve(&measurements, 1e-5)
+            .expect("SVD to be computed.");
 
         let system_states = Array1::from_iter(system_states.as_slice().iter().copied());
 
@@ -196,7 +198,7 @@ pub fn run_epoch(
             &functional_description
                 .ap_params_normal
                 .as_ref()
-                .unwrap()
+                .expect("AP Params to be some.")
                 .gains,
             data.get_gains(),
         );
@@ -205,13 +207,13 @@ pub fn run_epoch(
             &functional_description
                 .ap_params_normal
                 .as_ref()
-                .unwrap()
+                .expect("Ap parms to be some.")
                 .delays,
             data.get_delays(),
             &functional_description
                 .ap_params_normal
                 .as_ref()
-                .unwrap()
+                .expect("Ap params to be some.")
                 .coefs,
             data.get_coefs(),
         );
@@ -227,7 +229,7 @@ pub fn run_epoch(
                 functional_description
                     .ap_params_normal
                     .as_mut()
-                    .unwrap()
+                    .expect("AP params to be some.")
                     .update(
                         &results.derivatives,
                         config,
@@ -243,7 +245,7 @@ pub fn run_epoch(
         functional_description
             .ap_params_normal
             .as_mut()
-            .unwrap()
+            .expect("AP params to be some.")
             .update(
                 &results.derivatives,
                 config,
@@ -384,7 +386,8 @@ mod test {
     fn loss_decreases() {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config);
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
 
@@ -393,7 +396,7 @@ mod test {
             simulation_config.sample_rate_hz,
             simulation_config.duration_s,
         )
-        .unwrap();
+        .expect("Model parameters to be valid.");
         algorithm_config.epochs = 3;
         algorithm_config.model.apply_system_update = true;
 
@@ -427,7 +430,8 @@ mod test {
     fn loss_decreases_and_plot() {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config);
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
 
@@ -436,7 +440,7 @@ mod test {
             simulation_config.sample_rate_hz,
             simulation_config.duration_s,
         )
-        .unwrap();
+        .expect("Model paramters to be valid");
         algorithm_config.epochs = 10;
         algorithm_config.model.apply_system_update = true;
 
@@ -504,7 +508,8 @@ mod test {
     fn loss_decreases_kalman() {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config);
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm {
             calculate_kalman_gain: true,
@@ -516,7 +521,7 @@ mod test {
             simulation_config.sample_rate_hz,
             simulation_config.duration_s,
         )
-        .unwrap();
+        .expect("Model parameters to be valid.");
         algorithm_config.epochs = 3;
         algorithm_config.model.apply_system_update = true;
 
@@ -549,7 +554,8 @@ mod test {
     fn loss_decreases_no_update() {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config);
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
 
@@ -558,7 +564,7 @@ mod test {
             simulation_config.sample_rate_hz,
             simulation_config.duration_s,
         )
-        .unwrap();
+        .expect("Model parameters to be valid.");
         algorithm_config.epochs = 3;
         algorithm_config.model.apply_system_update = false;
 
@@ -593,7 +599,8 @@ mod test {
     fn loss_decreases_no_update_and_plot() {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config);
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
 
@@ -602,7 +609,7 @@ mod test {
             simulation_config.sample_rate_hz,
             simulation_config.duration_s,
         )
-        .unwrap();
+        .expect("Model parameters to be valid.");
         algorithm_config.epochs = 5;
         algorithm_config.model.apply_system_update = false;
 
@@ -669,7 +676,8 @@ mod test {
     #[test]
     fn current_density_constrained() {
         let simulation_config = SimulationConfig::default();
-        let data = Data::from_simulation_config(&simulation_config);
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
 
@@ -678,12 +686,12 @@ mod test {
             simulation_config.sample_rate_hz,
             simulation_config.duration_s,
         )
-        .unwrap();
+        .expect("Model parameters to be valid.");
         model
             .functional_description
             .ap_params_normal
             .as_mut()
-            .unwrap()
+            .expect("Ap parmas to be some.")
             .gains
             .values *= 2.0;
         algorithm_config.epochs = 1;
@@ -717,7 +725,8 @@ mod test {
     #[test]
     fn current_density_not_constrained() {
         let simulation_config = SimulationConfig::default();
-        let data = Data::from_simulation_config(&simulation_config);
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
 
@@ -726,12 +735,12 @@ mod test {
             simulation_config.sample_rate_hz,
             simulation_config.duration_s,
         )
-        .unwrap();
+        .expect("Model params to be valid.");
         model
             .functional_description
             .ap_params_normal
             .as_mut()
-            .unwrap()
+            .expect("AP params to be some.")
             .gains
             .values *= 2.0;
         algorithm_config.epochs = 1;
@@ -756,13 +765,14 @@ mod test {
             &algorithm_config,
         );
 
-        assert!(*results.estimations.system_states.values.max().unwrap() > 2.0);
+        assert!(*results.estimations.system_states.values.max_skipnan() > 2.0);
     }
 
     #[test]
     fn pseudo_inverse_success() {
         let simulation_config = SimulationConfig::default();
-        let data = Data::from_simulation_config(&simulation_config);
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
 
         let algorithm_config = Algorithm::default();
 
@@ -771,7 +781,7 @@ mod test {
             simulation_config.sample_rate_hz,
             simulation_config.duration_s,
         )
-        .unwrap();
+        .expect("Model parameters to be valid.");
 
         let mut results = Results::new(
             algorithm_config.epochs,

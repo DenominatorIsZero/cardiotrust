@@ -2,6 +2,9 @@ pub mod measurement;
 pub mod shapes;
 pub mod simulation;
 
+use std::error::Error;
+
+use nalgebra::Dyn;
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
 
@@ -50,17 +53,16 @@ impl Data {
 
     /// .
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if model parameters to not result in valid delays.
-    #[must_use]
-    pub fn from_simulation_config(config: &SimulationConfig) -> Self {
-        let mut simulation = Simulation::from_config(config).unwrap();
+    /// Errors if model parameters to not result in valid delays.
+    pub fn from_simulation_config(config: &SimulationConfig) -> Result<Self, Box<dyn Error>> {
+        let mut simulation = Simulation::from_config(config)?;
         simulation.run();
-        Self {
+        Ok(Self {
             simulation: Some(simulation),
             measurement: None,
-        }
+        })
     }
 
     /// Returns a reference to the get measurements of this [`Data`].
@@ -71,7 +73,13 @@ impl Data {
     #[must_use]
     pub fn get_measurements(&self) -> &ArrayMeasurements {
         self.simulation.as_ref().map_or_else(
-            || &(self.measurement.as_ref().unwrap().measurements),
+            || {
+                &(self
+                    .measurement
+                    .as_ref()
+                    .expect("Measurement to be some")
+                    .measurements)
+            },
             |simulation| &(simulation.measurements),
         )
     }
@@ -116,7 +124,7 @@ impl Data {
                     .functional_description
                     .ap_params_normal
                     .as_ref()
-                    .unwrap()
+                    .expect("AP params to be some.")
                     .gains
             },
         )
@@ -135,7 +143,7 @@ impl Data {
                     .functional_description
                     .ap_params_normal
                     .as_ref()
-                    .unwrap()
+                    .expect("AP params to be some.")
                     .coefs
             },
         )
@@ -176,7 +184,7 @@ impl Data {
                     .functional_description
                     .ap_params_normal
                     .as_ref()
-                    .unwrap()
+                    .expect("AP params to be some.")
                     .activation_time_ms
             },
         )
@@ -197,7 +205,7 @@ impl Data {
                     .functional_description
                     .ap_params_normal
                     .as_ref()
-                    .unwrap()
+                    .expect("AP params to be some.")
                     .delays
             },
         )
@@ -211,7 +219,7 @@ impl Data {
     pub fn save_npy(&self, path: &std::path::Path) {
         self.simulation
             .as_ref()
-            .unwrap()
+            .expect("Simulation to be some.")
             .save_npy(&path.join("simulation"));
     }
 }
