@@ -2,7 +2,11 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 
 use crate::{
-    vis::{setup_heart_voxels, SampleTracker, VisMode, VisOptions},
+    vis::{
+        heart::setup_heart_voxels,
+        options::{VisMode, VisOptions},
+        sample_tracker::SampleTracker,
+    },
     ScenarioList, SelectedSenario,
 };
 
