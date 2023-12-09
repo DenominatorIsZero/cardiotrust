@@ -5,20 +5,15 @@ pub mod plotting;
 pub mod sample_tracker;
 pub mod sensors;
 
-use bevy::{math::vec3, prelude::*};
-use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids, VertexPullingRenderPlugin};
+use bevy::{prelude::*};
+use bevy_aabb_instancing::{VertexPullingRenderPlugin};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use ndarray::{arr1, s, Array1, Array2};
-use ndarray_stats::QuantileExt;
-use scarlet::{
-    color::RGBColor,
-    colormap::{ColorMap, ListedColorMap},
-};
+
+
+
 
 use crate::{
-    core::{model::spatial::voxels::VoxelType, scenario::Scenario},
     ui::UiState,
-    ScenarioList, SelectedSenario,
 };
 
 use self::{

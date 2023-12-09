@@ -1,6 +1,6 @@
 use bevy::{math::vec3, prelude::*};
-use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids, VertexPullingRenderPlugin};
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids};
+
 use ndarray::{arr1, s, Array1, Array2};
 use ndarray_stats::QuantileExt;
 use scarlet::{
@@ -10,7 +10,6 @@ use scarlet::{
 
 use crate::{
     core::{model::spatial::voxels::VoxelType, scenario::Scenario},
-    ui::UiState,
     ScenarioList, SelectedSenario,
 };
 
