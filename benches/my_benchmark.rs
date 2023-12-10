@@ -11,11 +11,11 @@ use std::time::Duration;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use rusty_cde::core::algorithm::estimation::prediction::{
-    add_control_function, calculate_system_prediction, innovate_system_states_v1,
+    add_control_function, calculate_system_prediction_normal, innovate_system_states_v1,
     innovate_system_states_v2, innovate_system_states_v3, predict_measurements,
 };
 use rusty_cde::core::{
-    algorithm::estimation::Estimations, config::Config, data::Data, model::Model,
+    algorithm::estimation::EstimationsNormal, config::Config, data::Data, model::Model,
 };
 
 const VOXEL_SIZES: [f32; 1] = [2.5];
@@ -37,7 +37,7 @@ fn system_prediction_bench(c: &mut Criterion) {
             simulation_config.duration_s,
         )
         .unwrap();
-        let mut estimations = Estimations::empty(
+        let mut estimations = EstimationsNormal::empty(
             model.spatial_description.voxels.count_states(),
             model.spatial_description.sensors.count(),
             data.get_measurements().values.shape()[0],
@@ -49,7 +49,7 @@ fn system_prediction_bench(c: &mut Criterion) {
             BenchmarkId::new("calculate_system_perdiction", voxel_size),
             |b| {
                 b.iter(|| {
-                    calculate_system_prediction(
+                    calculate_system_prediction_normal(
                         &mut estimations.ap_outputs,
                         &mut estimations.system_states,
                         &mut estimations.measurements,
@@ -150,7 +150,7 @@ fn system_prediction_epoch_bench(c: &mut Criterion) {
             simulation_config.duration_s,
         )
         .unwrap();
-        let mut estimations = Estimations::empty(
+        let mut estimations = EstimationsNormal::empty(
             model.spatial_description.voxels.count_states(),
             model.spatial_description.sensors.count(),
             data.get_measurements().values.shape()[0],
@@ -162,7 +162,7 @@ fn system_prediction_epoch_bench(c: &mut Criterion) {
             |b| {
                 b.iter(|| {
                     for time_index in 0..estimations.measurements.values.shape()[0] {
-                        calculate_system_prediction(
+                        calculate_system_prediction_normal(
                             &mut estimations.ap_outputs,
                             &mut estimations.system_states,
                             &mut estimations.measurements,

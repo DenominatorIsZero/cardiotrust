@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
 
-use super::{estimation::Estimations, refinement::derivation::Derivatives};
+use super::{estimation::EstimationsNormal, refinement::derivation::Derivatives};
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -100,7 +100,7 @@ impl Metrics {
     #[allow(clippy::cast_precision_loss)]
     pub fn calculate_step(
         &mut self,
-        estimations: &Estimations,
+        estimations: &EstimationsNormal,
         derivatives: &Derivatives,
         regularization_strength: f32,
         time_index: usize,
@@ -167,7 +167,7 @@ impl Metrics {
     #[allow(clippy::cast_precision_loss)]
     pub fn calculate_final(
         &mut self,
-        estimations: &Estimations,
+        estimations: &EstimationsNormal,
         ground_truth: &VoxelTypes,
         voxel_numbers: &VoxelNumbers,
     ) {
@@ -242,7 +242,7 @@ impl Metrics {
 }
 
 fn calculate_for_threshold(
-    estimations: &Estimations,
+    estimations: &EstimationsNormal,
     ground_truth: &VoxelTypes,
     voxel_numbers: &VoxelNumbers,
     threshold: f32,
@@ -371,7 +371,7 @@ fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
 pub fn predict_voxeltype(
-    estimations: &Estimations,
+    estimations: &EstimationsNormal,
     ground_truth: &VoxelTypes,
     voxel_numbers: &VoxelNumbers,
     threshold: f32,

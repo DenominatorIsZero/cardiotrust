@@ -2,7 +2,7 @@ use ndarray::{s, Array1};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
-    algorithm::estimation::Estimations,
+    algorithm::estimation::EstimationsNormal,
     config::algorithm::Algorithm,
     model::functional::{
         allpass::{
@@ -75,7 +75,7 @@ impl Derivatives {
     pub fn calculate(
         &mut self,
         functional_description: &FunctionalDescription,
-        estimations: &Estimations,
+        estimations: &EstimationsNormal,
         config: &Algorithm,
         time_index: usize,
     ) {
@@ -338,7 +338,8 @@ mod tests {
             number_of_steps,
             voxels_in_dims,
         );
-        let estimations = Estimations::empty(number_of_states, number_of_sensors, number_of_steps);
+        let estimations =
+            EstimationsNormal::empty(number_of_states, number_of_sensors, number_of_steps);
 
         derivates.calculate(&functional_description, &estimations, &config, time_index);
     }

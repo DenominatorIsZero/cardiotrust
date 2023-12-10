@@ -13,7 +13,7 @@ use crate::core::{
 };
 
 use super::{
-    delay::{self, calculate_delay_samples_array},
+    delay::{self, calculate_delay_samples_array_normal},
     direction, find_candidate_voxels, from_samples_to_coef, from_samples_to_usize, gain,
     shapes::{
         normal::{ArrayDelaysNormal, ArrayGainsNormal, ArrayIndicesGainsNormal},
@@ -60,7 +60,7 @@ impl APParametersNormal {
 
         connect_voxels(spatial_description, config, &mut ap_params);
 
-        let delays_samples = calculate_delay_samples_array(
+        let delays_samples = calculate_delay_samples_array_normal(
             spatial_description,
             &config.propagation_velocities_m_per_s,
             sample_rate_hz,

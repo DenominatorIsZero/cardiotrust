@@ -12,22 +12,28 @@ use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
 use self::{
-    allpass::{normal::APParametersNormal, shapes::normal::ArrayGainsNormal},
+    allpass::{
+        flat::APParametersFlat,
+        normal::APParametersNormal,
+        shapes::{flat::ArrayGainsFlat, normal::ArrayGainsNormal},
+    },
     control::{ControlFunction, ControlMatrix},
     kalman::Gain,
     measurement::{MeasurementCovariance, MeasurementMatrix},
 };
 
 use super::spatial::SpatialDescription;
-use crate::core::config::model::Model;
+use crate::core::config::model::{self, Model};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
 pub struct FunctionalDescription {
     pub ap_params_normal: Option<APParametersNormal>,
+    pub ap_params_flat: Option<APParametersFlat>,
     pub measurement_matrix: MeasurementMatrix,
     pub control_matrix: ControlMatrix,
-    pub process_covariance: ArrayGainsNormal<f32>,
+    pub process_covariance_normal: Option<ArrayGainsNormal<f32>>,
+    pub process_covariance_flat: Option<ArrayGainsFlat<f32>>,
     pub measurement_covariance: MeasurementCovariance,
     pub kalman_gain: Gain,
     pub control_function_values: ControlFunction,
@@ -43,9 +49,11 @@ impl FunctionalDescription {
     ) -> Self {
         Self {
             ap_params_normal: Some(APParametersNormal::empty(number_of_states, voxels_in_dims)),
+            ap_params_flat: Some(APParametersFlat::empty(number_of_states, voxels_in_dims)),
             measurement_matrix: MeasurementMatrix::empty(number_of_states, number_of_sensors),
             control_matrix: ControlMatrix::empty(number_of_states),
-            process_covariance: ArrayGainsNormal::empty(number_of_states),
+            process_covariance_normal: Some(ArrayGainsNormal::empty(number_of_states)),
+            process_covariance_flat: Some(ArrayGainsFlat::empty(number_of_states)),
             measurement_covariance: MeasurementCovariance::empty(number_of_sensors),
             kalman_gain: Gain::empty(number_of_states, number_of_sensors),
             control_function_values: ControlFunction::empty(number_of_steps),
@@ -63,12 +71,41 @@ impl FunctionalDescription {
         sample_rate_hz: f32,
         duration_s: f32,
     ) -> Result<Self, Box<dyn Error>> {
-        let ap_params =
-            APParametersNormal::from_model_config(config, spatial_description, sample_rate_hz)?;
+        let mut ap_params_normal = None;
+        let mut ap_params_flat = None;
+        let mut process_covariance_normal = None;
+        let mut process_covariance_flat = None;
+
+        match config.use_flat_arrays {
+            true => {
+                ap_params_flat = Some(APParametersFlat::from_model_config(
+                    config,
+                    spatial_description,
+                    sample_rate_hz,
+                )?);
+                process_covariance_flat = Some(process_covariance_flat_from_model_config(
+                    config,
+                    spatial_description,
+                    ap_params_flat.as_ref().expect("Ap params flat to be some."),
+                ));
+            }
+            false => {
+                ap_params_normal = Some(APParametersNormal::from_model_config(
+                    config,
+                    spatial_description,
+                    sample_rate_hz,
+                )?);
+                process_covariance_normal = Some(process_covariance_normal_from_model_config(
+                    config,
+                    spatial_description,
+                    ap_params_normal
+                        .as_ref()
+                        .expect("Ap params normal to be some."),
+                ));
+            }
+        }
         let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);
         let control_matrix = ControlMatrix::from_model_config(config, spatial_description);
-        let process_covariance =
-            process_covariance_from_model_config(config, spatial_description, &ap_params);
         let measurement_covariance =
             MeasurementCovariance::from_model_config(config, spatial_description);
         let kalman_gain = Gain::from_model_config(config, &measurement_matrix);
@@ -76,10 +113,12 @@ impl FunctionalDescription {
             ControlFunction::from_model_config(config, sample_rate_hz, duration_s);
 
         Ok(Self {
-            ap_params_normal: Some(ap_params),
+            ap_params_normal,
+            ap_params_flat,
             measurement_matrix,
             control_matrix,
-            process_covariance,
+            process_covariance_normal,
+            process_covariance_flat,
             measurement_covariance,
             kalman_gain,
             control_function_values,
@@ -93,18 +132,34 @@ impl FunctionalDescription {
     /// Panics if `ap_params_normal` is none.
     pub fn save_npy(&self, path: &std::path::Path) {
         let path = &path.join("functional_description");
-        self.ap_params_normal.as_ref().unwrap().save_npy(path);
+        if self.ap_params_normal.is_some() {
+            self.ap_params_normal
+                .as_ref()
+                .expect("Ap params normal to be some.")
+                .save_npy(path);
+            self.process_covariance_normal
+                .as_ref()
+                .expect("Process covariance normal to be some.")
+                .save_npy(path, "process_covariance_normal.npy");
+        } else {
+            self.ap_params_flat
+                .as_ref()
+                .expect("Ap params flat to be some.")
+                .save_npy(path);
+            self.process_covariance_normal
+                .as_ref()
+                .expect("Process covariance flat to be some.")
+                .save_npy(path, "process_covariance_flat.npy");
+        }
         self.measurement_matrix.save_npy(path);
         self.control_matrix.save_npy(path);
-        self.process_covariance
-            .save_npy(path, "process_covariance.npy");
         self.measurement_covariance.save_npy(path);
         self.kalman_gain.save_npy(path);
         self.control_function_values.save_npy(path);
     }
 }
 
-fn process_covariance_from_model_config(
+fn process_covariance_normal_from_model_config(
     config: &Model,
     spatial_description: &SpatialDescription,
     ap_params: &APParametersNormal,
@@ -121,6 +176,38 @@ fn process_covariance_from_model_config(
         )
     };
     let mut process_covariance = ArrayGainsNormal::empty(spatial_description.voxels.count_states());
+    process_covariance
+        .values
+        .indexed_iter_mut()
+        .zip(ap_params.output_state_indices.values.iter())
+        .filter(|((index, _), output_state_index)| {
+            output_state_index.is_some() && index.0 == output_state_index.unwrap_or(0)
+        })
+        .for_each(|((_, variance), _)| {
+            *variance = normal.map_or(config.process_covariance_mean, |dist| {
+                dist.sample(&mut rand::thread_rng())
+            });
+        });
+    process_covariance
+}
+
+fn process_covariance_flat_from_model_config(
+    config: &Model,
+    spatial_description: &SpatialDescription,
+    ap_params: &APParametersFlat,
+) -> ArrayGainsFlat<f32> {
+    let normal = if relative_eq!(config.process_covariance_std, 0.0) {
+        None
+    } else {
+        Some(
+            Normal::<f32>::new(
+                config.process_covariance_mean,
+                config.process_covariance_std,
+            )
+            .unwrap(),
+        )
+    };
+    let mut process_covariance = ArrayGainsFlat::empty(spatial_description.voxels.count_states());
     process_covariance
         .values
         .indexed_iter_mut()

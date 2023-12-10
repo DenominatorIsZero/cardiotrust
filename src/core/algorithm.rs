@@ -4,7 +4,7 @@ use ndarray::{s, Array1};
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
     calculate_residuals, calculate_system_states_delta, calculate_system_update,
-    prediction::calculate_system_prediction,
+    prediction::calculate_system_prediction_normal,
 };
 
 use super::{
@@ -141,7 +141,7 @@ pub fn run_epoch(
     };
 
     for time_index in 0..results.estimations.system_states.values.shape()[0] {
-        calculate_system_prediction(
+        calculate_system_prediction_normal(
             &mut results.estimations.ap_outputs,
             &mut results.estimations.system_states,
             &mut results.estimations.measurements,

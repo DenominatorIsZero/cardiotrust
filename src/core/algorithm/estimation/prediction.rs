@@ -1,6 +1,8 @@
 use ndarray::s;
 
+use crate::core::model::functional::allpass::flat::APParametersFlat;
 use crate::core::model::functional::allpass::normal::APParametersNormal;
+use crate::core::model::functional::allpass::shapes::flat::ArrayGainsFlat;
 use crate::core::model::functional::measurement::MeasurementMatrix;
 use crate::core::model::{
     functional::allpass::shapes::normal::ArrayGainsNormal, functional::FunctionalDescription,
@@ -15,7 +17,7 @@ use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
 /// Panics if `ap_params_normal` is not set.
 #[allow(clippy::module_name_repetitions)]
 #[inline]
-pub fn calculate_system_prediction(
+pub fn calculate_system_prediction_normal(
     ap_outputs: &mut ArrayGainsNormal<f32>,
     system_states: &mut ArraySystemStates,
     measurements: &mut ArrayMeasurements,
@@ -24,7 +26,34 @@ pub fn calculate_system_prediction(
 ) {
     innovate_system_states_v3(
         ap_outputs,
-        functional_description.ap_params_normal.as_ref().unwrap(),
+        functional_description
+            .ap_params_normal
+            .as_ref()
+            .expect("Ap params normal to be some."),
+        time_index,
+        system_states,
+    );
+    add_control_function(functional_description, time_index, system_states);
+    predict_measurements(
+        measurements,
+        time_index,
+        &functional_description.measurement_matrix,
+        system_states,
+    );
+}
+pub fn calculate_system_prediction_flat(
+    ap_outputs: &mut ArrayGainsFlat<f32>,
+    system_states: &mut ArraySystemStates,
+    measurements: &mut ArrayMeasurements,
+    functional_description: &FunctionalDescription,
+    time_index: usize,
+) {
+    innovate_system_states_flat(
+        ap_outputs,
+        functional_description
+            .ap_params_flat
+            .as_ref()
+            .expect("Ap params flat to be some."),
         time_index,
         system_states,
     );
@@ -201,6 +230,60 @@ pub fn innovate_system_states_v3(
     }
 }
 
+/// Uses unsafe get operations.
+///
+/// # Panics
+///
+/// Panics if output state indices are not initialized corrrectly.
+#[inline]
+pub fn innovate_system_states_flat(
+    ap_outputs: &mut ArrayGainsFlat<f32>,
+    ap_params: &APParametersFlat,
+    time_index: usize,
+    system_states: &mut ArraySystemStates,
+) {
+    // Calculate ap outputs and system states
+    let output_state_indices = &ap_params.output_state_indices.values;
+    for index_state in 0..ap_outputs.values.shape()[0] {
+        for index_offset in 0..ap_outputs.values.shape()[1] {
+            let output_state_index =
+                unsafe { output_state_indices.uget((index_state, index_offset)) };
+            if output_state_index.is_none() {
+                continue;
+            }
+            let output_state_index = output_state_index.expect("Output state index to be some");
+            let coef_index = (index_state / 3, index_offset / 3);
+            let coef = unsafe { *ap_params.coefs.values.uget(coef_index) };
+            let delay = unsafe { *ap_params.delays.values.uget(coef_index) };
+            let input = if delay <= time_index {
+                unsafe {
+                    *system_states
+                        .values
+                        .uget((time_index - delay, output_state_index))
+                }
+            } else {
+                0.0
+            };
+            let input_delayed = if delay < time_index {
+                *unsafe {
+                    system_states
+                        .values
+                        .uget((time_index - delay - 1, output_state_index))
+                }
+            } else {
+                0.0
+            };
+            let ap_output = unsafe { ap_outputs.values.uget_mut((index_state, index_offset)) };
+            *ap_output = coef.mul_add(input - *ap_output, input_delayed);
+            let gain = unsafe { *ap_params.gains.values.uget((index_state, index_offset)) };
+            unsafe {
+                *system_states.values.uget_mut((time_index, index_state)) +=
+                    gain * ap_outputs.values.uget((index_state, index_offset));
+            };
+        }
+    }
+}
+
 #[inline]
 pub fn add_control_function(
     functional_description: &FunctionalDescription,
@@ -237,7 +320,10 @@ pub fn predict_measurements(
 #[cfg(test)]
 mod tests {
     use crate::core::{
-        algorithm::estimation::{prediction::innovate_system_states_v3, Estimations},
+        algorithm::estimation::{
+            prediction::{innovate_system_states_flat, innovate_system_states_v3},
+            EstimationsFlat, EstimationsNormal,
+        },
         config::Config,
         data::Data,
         model::Model,
@@ -257,12 +343,12 @@ mod tests {
             simulation_config.duration_s,
         )
         .unwrap();
-        let mut estimations_v1 = Estimations::empty(
+        let mut estimations_v1 = EstimationsNormal::empty(
             model.spatial_description.voxels.count_states(),
             model.spatial_description.sensors.count(),
             data.get_measurements().values.shape()[0],
         );
-        let mut estimations_v2 = Estimations::empty(
+        let mut estimations_v2 = EstimationsNormal::empty(
             model.spatial_description.voxels.count_states(),
             model.spatial_description.sensors.count(),
             data.get_measurements().values.shape()[0],
@@ -306,12 +392,12 @@ mod tests {
             simulation_config.duration_s,
         )
         .unwrap();
-        let mut estimations_v1 = Estimations::empty(
+        let mut estimations_v1 = EstimationsNormal::empty(
             model.spatial_description.voxels.count_states(),
             model.spatial_description.sensors.count(),
             data.get_measurements().values.shape()[0],
         );
-        let mut estimations_v3 = Estimations::empty(
+        let mut estimations_v3 = EstimationsNormal::empty(
             model.spatial_description.voxels.count_states(),
             model.spatial_description.sensors.count(),
             data.get_measurements().values.shape()[0],
@@ -341,6 +427,75 @@ mod tests {
         assert_eq!(
             estimations_v1.system_states.values,
             estimations_v3.system_states.values
+        );
+    }
+
+    #[test]
+    fn innovate_system_states_flat_v1_equality() {
+        // normal ap params
+        let config_normal = Config::default();
+        let simulation_config_normal = config_normal.simulation.as_ref().unwrap();
+        let data_normal = Data::from_simulation_config(simulation_config_normal)
+            .expect("Model parameters to be valid.");
+        let model_normal = Model::from_model_config(
+            &config_normal.algorithm.model,
+            simulation_config_normal.sample_rate_hz,
+            simulation_config_normal.duration_s,
+        )
+        .unwrap();
+        let mut estimations_normal = EstimationsNormal::empty(
+            model_normal.spatial_description.voxels.count_states(),
+            model_normal.spatial_description.sensors.count(),
+            data_normal.get_measurements().values.shape()[0],
+        );
+        // flat ap params
+        let mut config_flat = Config::default();
+        config_flat
+            .simulation
+            .as_mut()
+            .expect("Simulation config to exist")
+            .model
+            .use_flat_arrays = true;
+        config_flat.algorithm.model.use_flat_arrays = true;
+        let simulation_config_flat = config_flat.simulation.as_ref().unwrap();
+        let data_flat = Data::from_simulation_config(simulation_config_flat)
+            .expect("Model parameters to be valid.");
+        let model_flat = Model::from_model_config(
+            &config_flat.algorithm.model,
+            simulation_config_flat.sample_rate_hz,
+            simulation_config_flat.duration_s,
+        )
+        .unwrap();
+        let mut estimations_flat = EstimationsFlat::empty(
+            model_flat.spatial_description.voxels.count_states(),
+            model_flat.spatial_description.sensors.count(),
+            data_flat.get_measurements().values.shape()[0],
+        );
+        for time_index in 0..estimations_flat.measurements.values.shape()[0] {
+            innovate_system_states_flat(
+                &mut estimations_flat.ap_outputs,
+                model_flat
+                    .functional_description
+                    .ap_params_flat
+                    .as_ref()
+                    .unwrap(),
+                time_index,
+                &mut estimations_flat.system_states,
+            );
+            innovate_system_states_v1(
+                &mut estimations_normal.ap_outputs,
+                model_normal
+                    .functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .unwrap(),
+                time_index,
+                &mut estimations_flat.system_states,
+            );
+        }
+        assert_eq!(
+            estimations_flat.system_states.values,
+            estimations_normal.system_states.values
         );
     }
 }

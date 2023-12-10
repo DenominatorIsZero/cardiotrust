@@ -3,12 +3,12 @@ use serde::{Deserialize, Serialize};
 use crate::core::model::{functional::FunctionalDescription, Model};
 
 use super::algorithm::{
-    estimation::Estimations, metrics::Metrics, refinement::derivation::Derivatives,
+    estimation::EstimationsNormal, metrics::Metrics, refinement::derivation::Derivatives,
 };
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Results {
     pub metrics: Metrics,
-    pub estimations: Estimations,
+    pub estimations: EstimationsNormal,
     pub derivatives: Derivatives,
     pub model: Option<Model>,
     pub snapshots: Vec<Snapshot>,
@@ -24,7 +24,11 @@ impl Results {
     ) -> Self {
         Self {
             metrics: Metrics::new(number_of_epochs, number_of_steps),
-            estimations: Estimations::empty(number_of_states, number_of_sensors, number_of_steps),
+            estimations: EstimationsNormal::empty(
+                number_of_states,
+                number_of_sensors,
+                number_of_steps,
+            ),
             derivatives: Derivatives::new(number_of_states),
             model: None,
             snapshots: Vec::new(),
@@ -40,13 +44,16 @@ impl Results {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Snapshot {
-    pub estimations: Estimations,
+    pub estimations: EstimationsNormal,
     pub functional_description: FunctionalDescription,
 }
 
 impl Snapshot {
     #[must_use]
-    pub fn new(estimations: &Estimations, functional_description: &FunctionalDescription) -> Self {
+    pub fn new(
+        estimations: &EstimationsNormal,
+        functional_description: &FunctionalDescription,
+    ) -> Self {
         Self {
             estimations: estimations.clone(),
             functional_description: functional_description.clone(),

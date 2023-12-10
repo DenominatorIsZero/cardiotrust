@@ -12,7 +12,10 @@ use crate::core::{
     model::functional::{
         allpass::{
             from_coef_to_samples,
-            shapes::normal::{ArrayDelaysNormal, ArrayGainsNormal},
+            shapes::{
+                flat::{ArrayDelaysFlat, ArrayGainsFlat},
+                normal::{ArrayDelaysNormal, ArrayGainsNormal},
+            },
         },
         measurement::MeasurementMatrix,
         FunctionalDescription,
@@ -20,7 +23,7 @@ use crate::core::{
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct Estimations {
+pub struct EstimationsNormal {
     pub ap_outputs: ArrayGainsNormal<f32>,
     pub system_states: ArraySystemStates,
     pub state_covariance_pred: ArrayGainsNormal<f32>,
@@ -36,7 +39,7 @@ pub struct Estimations {
     pub kalman_gain_converged: bool,
 }
 
-impl Estimations {
+impl EstimationsNormal {
     #[must_use]
     pub fn empty(
         number_of_states: usize,
@@ -54,6 +57,66 @@ impl Estimations {
             system_states_delta: ArraySystemStates::empty(1, number_of_states),
             gains_delta: ArrayGainsNormal::empty(number_of_states),
             delays_delta: ArrayDelaysNormal::empty(number_of_states),
+            s: Array2::zeros([number_of_sensors, number_of_sensors]),
+            s_inv: Array2::zeros([number_of_sensors, number_of_sensors]),
+            kalman_gain_converged: false,
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.ap_outputs.values.fill(0.0);
+        self.system_states.values.fill(0.0);
+        self.state_covariance_pred.values.fill(0.0);
+        self.state_covariance_est.values.fill(0.0);
+        self.measurements.values.fill(0.0);
+        self.residuals.values.fill(0.0);
+        self.post_update_residuals.values.fill(0.0);
+        self.system_states_delta.values.fill(0.0);
+        self.gains_delta.values.fill(0.0);
+        self.delays_delta.values.fill(0.0);
+        self.kalman_gain_converged = false;
+    }
+
+    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        self.system_states.save_npy(path);
+        self.measurements.save_npy(path);
+    }
+}
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct EstimationsFlat {
+    pub ap_outputs: ArrayGainsFlat<f32>,
+    pub system_states: ArraySystemStates,
+    pub state_covariance_pred: ArrayGainsFlat<f32>,
+    pub state_covariance_est: ArrayGainsFlat<f32>,
+    pub measurements: ArrayMeasurements,
+    pub residuals: ArrayMeasurements,
+    pub post_update_residuals: ArrayMeasurements,
+    pub system_states_delta: ArraySystemStates,
+    pub gains_delta: ArrayGainsFlat<f32>,
+    pub delays_delta: ArrayDelaysFlat<f32>,
+    pub s: Array2<f32>,
+    pub s_inv: Array2<f32>,
+    pub kalman_gain_converged: bool,
+}
+
+impl EstimationsFlat {
+    #[must_use]
+    pub fn empty(
+        number_of_states: usize,
+        number_of_sensors: usize,
+        number_of_steps: usize,
+    ) -> Self {
+        Self {
+            ap_outputs: ArrayGainsFlat::empty(number_of_states),
+            system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
+            state_covariance_pred: ArrayGainsFlat::empty(number_of_states),
+            state_covariance_est: ArrayGainsFlat::empty(number_of_states),
+            measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
+            residuals: ArrayMeasurements::empty(1, number_of_sensors),
+            post_update_residuals: ArrayMeasurements::empty(1, number_of_sensors),
+            system_states_delta: ArraySystemStates::empty(1, number_of_states),
+            gains_delta: ArrayGainsFlat::empty(number_of_states),
+            delays_delta: ArrayDelaysFlat::empty(number_of_states),
             s: Array2::zeros([number_of_sensors, number_of_sensors]),
             s_inv: Array2::zeros([number_of_sensors, number_of_sensors]),
             kalman_gain_converged: false,
@@ -155,7 +218,7 @@ pub fn calculate_delays_delta(
 
 #[inline]
 pub fn calculate_system_update(
-    estimations: &mut Estimations,
+    estimations: &mut EstimationsNormal,
     time_index: usize,
     functional_description: &mut FunctionalDescription,
     config: &Algorithm,
@@ -185,7 +248,7 @@ pub fn calculate_system_update(
 
 #[inline]
 fn calculate_kalman_gain(
-    estimations: &mut Estimations,
+    estimations: &mut EstimationsNormal,
     functional_description: &mut FunctionalDescription,
 ) {
     predict_state_covariance(estimations, functional_description);
@@ -196,7 +259,7 @@ fn calculate_kalman_gain(
 
 #[inline]
 fn estimate_state_covariance(
-    estimations: &mut Estimations,
+    estimations: &mut EstimationsNormal,
     functional_description: &mut FunctionalDescription,
 ) {
     estimations
@@ -247,7 +310,10 @@ fn estimate_state_covariance(
 }
 
 #[inline]
-fn calculate_k(functional_description: &mut FunctionalDescription, estimations: &mut Estimations) {
+fn calculate_k(
+    functional_description: &mut FunctionalDescription,
+    estimations: &mut EstimationsNormal,
+) {
     functional_description
         .kalman_gain
         .values
@@ -279,7 +345,10 @@ fn calculate_k(functional_description: &mut FunctionalDescription, estimations: 
 }
 
 #[inline]
-fn calculate_s_inv(estimations: &mut Estimations, functional_description: &FunctionalDescription) {
+fn calculate_s_inv(
+    estimations: &mut EstimationsNormal,
+    functional_description: &FunctionalDescription,
+) {
     estimations.s.indexed_iter_mut().for_each(|(index, value)| {
         *value = functional_description.measurement_covariance.values[index];
         for k in 0..functional_description
@@ -316,37 +385,33 @@ fn calculate_s_inv(estimations: &mut Estimations, functional_description: &Funct
 #[allow(clippy::cast_sign_loss)]
 #[inline]
 fn predict_state_covariance(
-    estimations: &mut Estimations,
+    estimations: &mut EstimationsNormal,
     functional_description: &FunctionalDescription,
 ) {
+    let ap_params_normal = functional_description
+        .ap_params_normal
+        .as_ref()
+        .expect("Ap params normal to be some");
+    let process_covariace_normal = functional_description
+        .process_covariance_normal
+        .as_ref()
+        .expect("Process covariance normal to be some");
     estimations
         .state_covariance_pred
         .values
         .indexed_iter_mut()
-        .zip(
-            functional_description
-                .ap_params_normal
-                .as_ref()
-                .unwrap()
-                .output_state_indices
-                .values
-                .iter(),
-        )
+        .zip(ap_params_normal.output_state_indices.values.iter())
         .filter(|(_, output_state_index)| output_state_index.is_some())
         .for_each(|((index, variance), output_state_index)| {
-            *variance = functional_description.process_covariance.values[index];
+            *variance = process_covariace_normal.values[index];
             for (((k_x, k_y), k_z), k_d) in (0..=2) // over neighbors of output voxel
                 .cartesian_product(0..=2)
                 .cartesian_product(0..=2)
                 .cartesian_product(0..=2)
             {
                 // skip if neighbor doesn't exist
-                let k = functional_description
-                    .ap_params_normal
-                    .as_ref()
-                    .unwrap()
-                    .output_state_indices
-                    .values[[output_state_index.unwrap(), k_x, k_y, k_z, k_d]];
+                let k = ap_params_normal.output_state_indices.values
+                    [[output_state_index.unwrap(), k_x, k_y, k_z, k_d]];
 
                 if k.is_none() {
                     continue;
@@ -358,12 +423,8 @@ fn predict_state_covariance(
                     .cartesian_product(0..=2)
                 {
                     // skip if neighbor doesn't exist
-                    let m = functional_description
-                        .ap_params_normal
-                        .as_ref()
-                        .unwrap()
-                        .output_state_indices
-                        .values[[index.0, m_x, m_y, m_z, m_d]];
+                    let m =
+                        ap_params_normal.output_state_indices.values[[index.0, m_x, m_y, m_z, m_d]];
 
                     if m.is_none() {
                         continue;
@@ -384,12 +445,7 @@ fn predict_state_covariance(
                         continue;
                     }
 
-                    sum += functional_description
-                        .ap_params_normal
-                        .as_ref()
-                        .unwrap()
-                        .gains
-                        .values[[index.0, m_x, m_y, m_z, m_d]]
+                    sum += ap_params_normal.gains.values[[index.0, m_x, m_y, m_z, m_d]]
                         * estimations.state_covariance_est.values[[
                             m.unwrap(),
                             (m_to_k_x + 1) as usize,
@@ -398,12 +454,8 @@ fn predict_state_covariance(
                             m_d,
                         ]];
                 }
-                *variance += functional_description
-                    .ap_params_normal
-                    .as_ref()
-                    .unwrap()
-                    .gains
-                    .values[[output_state_index.unwrap(), k_x, k_y, k_z, k_d]]
+                *variance += ap_params_normal.gains.values
+                    [[output_state_index.unwrap(), k_x, k_y, k_z, k_d]]
                     * sum;
             }
         });
@@ -433,7 +485,7 @@ fn flip(x: usize) -> usize {
 mod tests {
     use ndarray::Dim;
 
-    use super::{prediction::calculate_system_prediction, *};
+    use super::{prediction::calculate_system_prediction_normal, *};
     #[test]
     fn prediction_no_crash() {
         let number_of_states = 3000;
@@ -452,7 +504,7 @@ mod tests {
             voxels_in_dims,
         );
 
-        calculate_system_prediction(
+        calculate_system_prediction_normal(
             &mut ap_outputs,
             &mut system_states,
             &mut measurements,
@@ -470,7 +522,7 @@ mod tests {
         let config = Algorithm::default();
 
         let mut estimations =
-            Estimations::empty(number_of_states, number_of_sensors, number_of_steps);
+            EstimationsNormal::empty(number_of_states, number_of_sensors, number_of_steps);
         let mut functional_desrciption = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,
