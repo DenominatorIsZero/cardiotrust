@@ -17,6 +17,7 @@ use crate::core::data::shapes::ArrayMeasurements;
 use super::model::{
     functional::{
         allpass::shapes::{
+            flat::{ArrayDelaysFlat, ArrayGainsFlat},
             normal::{ArrayDelaysNormal, ArrayGainsNormal},
             ArrayActivationTime,
         },
@@ -114,7 +115,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
-    pub fn get_gains(&self) -> &ArrayGainsNormal<f32> {
+    pub fn get_gains_normal(&self) -> &ArrayGainsNormal<f32> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
             |simulation| {
@@ -123,7 +124,7 @@ impl Data {
                     .functional_description
                     .ap_params_normal
                     .as_ref()
-                    .expect("AP params to be some.")
+                    .expect("AP params normal to be some.")
                     .gains
             },
         )
@@ -133,7 +134,26 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
-    pub fn get_coefs(&self) -> &ArrayDelaysNormal<f32> {
+    pub fn get_gains_flat(&self) -> &ArrayGainsFlat<f32> {
+        self.simulation.as_ref().map_or_else(
+            || todo!("Non simulation case not implemented yet."),
+            |simulation| {
+                &simulation
+                    .model
+                    .functional_description
+                    .ap_params_flat
+                    .as_ref()
+                    .expect("AP params flat to be some.")
+                    .gains
+            },
+        )
+    }
+
+    /// # Panics
+    ///
+    /// Panics if simulation is None
+    #[must_use]
+    pub fn get_coefs_normal(&self) -> &ArrayDelaysNormal<f32> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
             |simulation| {
@@ -143,6 +163,25 @@ impl Data {
                     .ap_params_normal
                     .as_ref()
                     .expect("AP params to be some.")
+                    .coefs
+            },
+        )
+    }
+
+    /// # Panics
+    ///
+    /// Panics if simulation is None
+    #[must_use]
+    pub fn get_coefs_flat(&self) -> &ArrayDelaysFlat<f32> {
+        self.simulation.as_ref().map_or_else(
+            || todo!("Non simulation case not implemented yet."),
+            |simulation| {
+                &simulation
+                    .model
+                    .functional_description
+                    .ap_params_flat
+                    .as_ref()
+                    .expect("AP params flat to be some.")
                     .coefs
             },
         )
@@ -195,7 +234,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
-    pub fn get_delays(&self) -> &ArrayDelaysNormal<usize> {
+    pub fn get_delays_normal(&self) -> &ArrayDelaysNormal<usize> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
             |simulation| {
@@ -204,7 +243,28 @@ impl Data {
                     .functional_description
                     .ap_params_normal
                     .as_ref()
-                    .expect("AP params to be some.")
+                    .expect("AP params normal to be some.")
+                    .delays
+            },
+        )
+    }
+
+    /// Returns a reference to the get delays of this [`Data`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if simulation is None
+    #[must_use]
+    pub fn get_delays_flat(&self) -> &ArrayDelaysFlat<usize> {
+        self.simulation.as_ref().map_or_else(
+            || todo!("Non simulation case not implemented yet."),
+            |simulation| {
+                &simulation
+                    .model
+                    .functional_description
+                    .ap_params_flat
+                    .as_ref()
+                    .expect("AP params flat to be some.")
                     .delays
             },
         )

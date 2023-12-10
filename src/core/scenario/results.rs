@@ -1,17 +1,23 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::model::{functional::FunctionalDescription, Model};
+use crate::core::{
+    algorithm::{estimation::EstimationsFlat, refinement::derivation::DerivativesFlat},
+    model::{functional::FunctionalDescription, Model},
+};
 
 use super::algorithm::{
-    estimation::EstimationsNormal, metrics::Metrics, refinement::derivation::Derivatives,
+    estimation::EstimationsNormal, metrics::Metrics, refinement::derivation::DerivativesNormal,
 };
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Results {
     pub metrics: Metrics,
-    pub estimations: EstimationsNormal,
-    pub derivatives: Derivatives,
+    pub estimations_normal: Option<EstimationsNormal>,
+    pub derivatives_normal: Option<DerivativesNormal>,
+    pub snapshots_normal: Option<Vec<SnapshotNormal>>,
+    pub estimations_flat: Option<EstimationsFlat>,
+    pub derivatives_flat: Option<DerivativesFlat>,
+    pub snapshots_flat: Option<Vec<SnapshotFlat>>,
     pub model: Option<Model>,
-    pub snapshots: Vec<Snapshot>,
 }
 
 impl Results {
@@ -21,37 +27,91 @@ impl Results {
         number_of_steps: usize,
         number_of_sensors: usize,
         number_of_states: usize,
+        use_flat_arrays: bool,
     ) -> Self {
-        Self {
-            metrics: Metrics::new(number_of_epochs, number_of_steps),
-            estimations: EstimationsNormal::empty(
+        let mut estimations_normal = None;
+        let mut derivatives_normal = None;
+        let mut snapshots_normal = None;
+        let mut estimations_flat = None;
+        let mut derivatives_flat = None;
+        let mut snapshots_flat = None;
+
+        if use_flat_arrays {
+            estimations_flat = Some(EstimationsFlat::empty(
                 number_of_states,
                 number_of_sensors,
                 number_of_steps,
-            ),
-            derivatives: Derivatives::new(number_of_states),
+            ));
+            derivatives_flat = Some(DerivativesFlat::new(number_of_states));
+            snapshots_flat = Some(Vec::new());
+        } else {
+            estimations_normal = Some(EstimationsNormal::empty(
+                number_of_states,
+                number_of_sensors,
+                number_of_steps,
+            ));
+            derivatives_normal = Some(DerivativesNormal::new(number_of_states));
+            snapshots_normal = Some(Vec::new());
+        }
+
+        Self {
+            metrics: Metrics::new(number_of_epochs, number_of_steps),
+            estimations_normal,
+            derivatives_normal,
+            estimations_flat,
+            derivatives_flat,
             model: None,
-            snapshots: Vec::new(),
+            snapshots_normal,
+            snapshots_flat,
         }
     }
 
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         self.metrics.save_npy(&path.join("metrics"));
-        self.estimations.save_npy(&path.join("estimations"));
+        if self.estimations_normal.is_some() {
+            self.estimations_normal
+                .as_ref()
+                .expect("Estimations normal to be some.")
+                .save_npy(&path.join("estimations_normal"));
+        } else {
+            self.estimations_flat
+                .as_ref()
+                .expect("Estimations flat to be some.")
+                .save_npy(&path.join("estimations_flat"));
+        }
         self.model.as_ref().unwrap().save_npy(&path.join("model"));
     }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct Snapshot {
+pub struct SnapshotNormal {
     pub estimations: EstimationsNormal,
     pub functional_description: FunctionalDescription,
 }
 
-impl Snapshot {
+impl SnapshotNormal {
     #[must_use]
     pub fn new(
         estimations: &EstimationsNormal,
+        functional_description: &FunctionalDescription,
+    ) -> Self {
+        Self {
+            estimations: estimations.clone(),
+            functional_description: functional_description.clone(),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct SnapshotFlat {
+    pub estimations: EstimationsFlat,
+    pub functional_description: FunctionalDescription,
+}
+
+impl SnapshotFlat {
+    #[must_use]
+    pub fn new(
+        estimations: &EstimationsFlat,
         functional_description: &FunctionalDescription,
     ) -> Self {
         Self {

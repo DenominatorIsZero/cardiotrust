@@ -15,11 +15,11 @@ use bevy_egui::{egui, EguiContexts};
 use std::collections::HashMap;
 
 use crate::{
-    core::{algorithm::metrics::predict_voxeltype, scenario::Scenario},
+    core::{algorithm::metrics::predict_voxeltype_normal, scenario::Scenario},
     vis::plotting::{
         matrix::{
-            plot_activation_time, plot_activation_time_delta, plot_states_max,
-            plot_states_max_delta, plot_states_over_time, plot_voxel_types,
+            plot_activation_time, plot_activation_time_delta, plot_states_max_delta,
+            plot_states_max_normal, plot_states_over_time, plot_voxel_types,
         },
         time::{standard_time_plot, standard_y_plot},
     },
@@ -241,30 +241,68 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         return;
     }
     let file_name = path.with_extension("");
-    let estimations = &scenario.results.as_ref().unwrap().estimations;
+    let mut estimations_normal = None;
+    let mut estimations_flat = None;
+    if scenario.config.algorithm.model.use_flat_arrays {
+        estimations_flat = Some(
+            scenario
+                .results
+                .as_ref()
+                .unwrap()
+                .estimations_flat
+                .as_ref()
+                .expect("Estimations flat to be some."),
+        );
+    } else {
+        estimations_normal = Some(
+            scenario
+                .results
+                .as_ref()
+                .unwrap()
+                .estimations_normal
+                .as_ref()
+                .expect("Estimations normal to be some."),
+        );
+    }
     let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
     let data = scenario.data.as_ref().unwrap();
     let metrics = &scenario.results.as_ref().unwrap().metrics;
     match image_type {
-        ImageType::StatesMaxAlgorithm => plot_states_max(
-            &estimations.system_states,
-            &model.spatial_description.voxels,
-            path.with_extension("").to_str().unwrap(),
-            "Maximum Estimated Current Densities",
-        ),
-        ImageType::StatesMaxSimulation => plot_states_max(
+        ImageType::StatesMaxAlgorithm => {
+            if scenario.config.algorithm.model.use_flat_arrays {
+                todo!()
+            } else {
+                plot_states_max_normal(
+                    &estimations_normal
+                        .expect("Estimations normal to be some")
+                        .system_states,
+                    &model.spatial_description.voxels,
+                    path.with_extension("").to_str().unwrap(),
+                    "Maximum Estimated Current Densities",
+                )
+            }
+        }
+        ImageType::StatesMaxSimulation => plot_states_max_normal(
             data.get_system_states(),
             &model.spatial_description.voxels,
             path.with_extension("").to_str().unwrap(),
             "Maximum Simulated Current Densities",
         ),
-        ImageType::StatesMaxDelta => plot_states_max_delta(
-            &estimations.system_states,
-            data.get_system_states(),
-            &model.spatial_description.voxels,
-            file_name.to_str().unwrap(),
-            "Maximum Current Densities Delta",
-        ),
+        ImageType::StatesMaxDelta => {
+            if scenario.config.algorithm.model.use_flat_arrays {
+                todo!()
+            } else {
+                plot_states_max_delta(
+                    &estimations_normal
+                        .expect("Estimations normal to be some.")
+                        .system_states,
+                    data.get_system_states(),
+                    &model.spatial_description.voxels,
+                    file_name.to_str().unwrap(),
+                    "Maximum Current Densities Delta",
+                )
+            }
+        }
         ImageType::ActivationTimeAlgorithm => plot_activation_time(
             &model
                 .functional_description
@@ -301,17 +339,23 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             file_name.to_str().unwrap(),
             "Voxel Types Simulation",
         ),
-        ImageType::VoxelTypesPrediction => plot_voxel_types(
-            &predict_voxeltype(
-                estimations,
-                data.get_voxel_types(),
-                &model.spatial_description.voxels.numbers,
-                scenario.summary.unwrap().threshold,
-            )
-            .values,
-            file_name.to_str().unwrap(),
-            "Voxel Types Predictions",
-        ),
+        ImageType::VoxelTypesPrediction => {
+            if scenario.config.algorithm.model.use_flat_arrays {
+                todo!()
+            } else {
+                plot_voxel_types(
+                    &predict_voxeltype_normal(
+                        estimations_normal.expect("Estimations normal to be some."),
+                        data.get_voxel_types(),
+                        &model.spatial_description.voxels.numbers,
+                        scenario.summary.unwrap().threshold,
+                    )
+                    .values,
+                    file_name.to_str().unwrap(),
+                    "Voxel Types Predictions",
+                )
+            }
+        }
         ImageType::LossEpoch => standard_y_plot(
             &metrics.loss_epoch.values,
             file_name.to_str().unwrap(),
@@ -531,18 +575,29 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             "Control Function Delta",
             "u [A/mm^2]",
         ),
-        ImageType::StateAlgorithm => standard_time_plot(
-            &estimations.system_states.values.slice(s![.., 0]).to_owned(),
-            scenario
-                .get_config()
-                .simulation
-                .as_ref()
-                .unwrap()
-                .sample_rate_hz,
-            file_name.to_str().unwrap(),
-            "System State 0 Algorithm",
-            "j [A/mm^2]",
-        ),
+        ImageType::StateAlgorithm => {
+            if scenario.config.algorithm.model.use_flat_arrays {
+                todo!()
+            } else {
+                standard_time_plot(
+                    &estimations_normal
+                        .expect("Estimations normal to be some.")
+                        .system_states
+                        .values
+                        .slice(s![.., 0])
+                        .to_owned(),
+                    scenario
+                        .get_config()
+                        .simulation
+                        .as_ref()
+                        .unwrap()
+                        .sample_rate_hz,
+                    file_name.to_str().unwrap(),
+                    "System State 0 Algorithm",
+                    "j [A/mm^2]",
+                )
+            }
+        }
         ImageType::StateSimulation => standard_time_plot(
             &data.get_system_states().values.slice(s![.., 0]).to_owned(),
             scenario
@@ -555,31 +610,53 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             "System State 0 Simulation",
             "j [A/mm^2]",
         ),
-        ImageType::StateDelta => standard_time_plot(
-            &(&estimations.system_states.values.slice(s![.., 0]).to_owned()
-                - &data.get_system_states().values.slice(s![.., 0]).to_owned()),
-            scenario
-                .get_config()
-                .simulation
-                .as_ref()
-                .unwrap()
-                .sample_rate_hz,
-            file_name.to_str().unwrap(),
-            "System State 0 Delta",
-            "j [A/mm^2]",
-        ),
-        ImageType::MeasurementAlgorithm => standard_time_plot(
-            &estimations.measurements.values.slice(s![.., 0]).to_owned(),
-            scenario
-                .get_config()
-                .simulation
-                .as_ref()
-                .unwrap()
-                .sample_rate_hz,
-            file_name.to_str().unwrap(),
-            "Measurement 0 Algorithm",
-            "z [pT]",
-        ),
+        ImageType::StateDelta => {
+            if scenario.config.algorithm.model.use_flat_arrays {
+                todo!()
+            } else {
+                standard_time_plot(
+                    &(&estimations_normal
+                        .expect("Estimations normal to be some.")
+                        .system_states
+                        .values
+                        .slice(s![.., 0])
+                        .to_owned()
+                        - &data.get_system_states().values.slice(s![.., 0]).to_owned()),
+                    scenario
+                        .get_config()
+                        .simulation
+                        .as_ref()
+                        .unwrap()
+                        .sample_rate_hz,
+                    file_name.to_str().unwrap(),
+                    "System State 0 Delta",
+                    "j [A/mm^2]",
+                )
+            }
+        }
+        ImageType::MeasurementAlgorithm => {
+            if scenario.config.algorithm.model.use_flat_arrays {
+                todo!()
+            } else {
+                standard_time_plot(
+                    &estimations_normal
+                        .expect("Estimations normal to be some")
+                        .measurements
+                        .values
+                        .slice(s![.., 0])
+                        .to_owned(),
+                    scenario
+                        .get_config()
+                        .simulation
+                        .as_ref()
+                        .unwrap()
+                        .sample_rate_hz,
+                    file_name.to_str().unwrap(),
+                    "Measurement 0 Algorithm",
+                    "z [pT]",
+                )
+            }
+        }
         ImageType::MeasurementSimulation => standard_time_plot(
             &data.get_measurements().values.slice(s![.., 0]).to_owned(),
             scenario
@@ -592,19 +669,30 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             "Measurement 0 Simulation",
             "z [pT]",
         ),
-        ImageType::MeasurementDelta => standard_time_plot(
-            &(&estimations.measurements.values.slice(s![.., 0]).to_owned()
-                - &data.get_measurements().values.slice(s![.., 0]).to_owned()),
-            scenario
-                .get_config()
-                .simulation
-                .as_ref()
-                .unwrap()
-                .sample_rate_hz,
-            file_name.to_str().unwrap(),
-            "Measurement 0 Delta",
-            "z [pT]",
-        ),
+        ImageType::MeasurementDelta => {
+            if scenario.config.algorithm.model.use_flat_arrays {
+                todo!()
+            } else {
+                standard_time_plot(
+                    &(&estimations_normal
+                        .expect("Estimations normal to be some.")
+                        .measurements
+                        .values
+                        .slice(s![.., 0])
+                        .to_owned()
+                        - &data.get_measurements().values.slice(s![.., 0]).to_owned()),
+                    scenario
+                        .get_config()
+                        .simulation
+                        .as_ref()
+                        .unwrap()
+                        .sample_rate_hz,
+                    file_name.to_str().unwrap(),
+                    "Measurement 0 Delta",
+                    "z [pT]",
+                )
+            }
+        }
     };
 }
 
@@ -617,18 +705,27 @@ fn generate_gifs(scenario: Scenario, gif_type: GifType, playback_speed: f32) {
         return;
     }
     let file_name = path.with_extension("");
-    let estimations = &scenario.results.as_ref().unwrap().estimations;
+    let estimations = &scenario.results.as_ref().unwrap().estimations_normal;
     let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
     let data = scenario.data.as_ref().unwrap();
     match gif_type {
-        GifType::StatesAlgorithm => plot_states_over_time(
-            &estimations.system_states,
-            &model.spatial_description.voxels,
-            20,
-            playback_speed,
-            file_name.to_str().unwrap(),
-            "Estimated Current Densities",
-        ),
+        GifType::StatesAlgorithm => {
+            if scenario.config.algorithm.model.use_flat_arrays {
+                todo!()
+            } else {
+                plot_states_over_time(
+                    &estimations
+                        .as_ref()
+                        .expect("Estimations_normal to be some")
+                        .system_states,
+                    &model.spatial_description.voxels,
+                    20,
+                    playback_speed,
+                    file_name.to_str().unwrap(),
+                    "Estimated Current Densities",
+                )
+            }
+        }
         GifType::StatesSimulation => plot_states_over_time(
             data.get_system_states(),
             &model.spatial_description.voxels,

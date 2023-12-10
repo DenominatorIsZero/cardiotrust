@@ -10,7 +10,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
 
-use super::{estimation::EstimationsNormal, refinement::derivation::Derivatives};
+use super::{
+    estimation::{EstimationsFlat, EstimationsNormal},
+    refinement::derivation::{DerivativesFlat, DerivativesNormal},
+};
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -98,10 +101,50 @@ impl Metrics {
     ///
     /// Panics if any array is None.
     #[allow(clippy::cast_precision_loss)]
-    pub fn calculate_step(
+    pub fn calculate_step_normal(
         &mut self,
         estimations: &EstimationsNormal,
-        derivatives: &Derivatives,
+        derivatives: &DerivativesNormal,
+        regularization_strength: f32,
+        time_index: usize,
+    ) {
+        let index = time_index;
+
+        self.loss_mse.values[index] = estimations.residuals.values.mapv(|v| v.powi(2)).sum()
+            / estimations.residuals.values.raw_dim()[0] as f32;
+        self.loss_maximum_regularization.values[index] = derivatives.maximum_regularization_sum;
+        self.loss.values[index] = regularization_strength.mul_add(
+            self.loss_maximum_regularization.values[index],
+            self.loss_mse.values[index],
+        );
+
+        let states_delta_abs = estimations.system_states_delta.values.mapv(f32::abs);
+        self.delta_states_mean.values[index] = states_delta_abs.mean().unwrap();
+        self.delta_states_max.values[index] = *states_delta_abs.max_skipnan();
+
+        let measurements_delta_abs = estimations.post_update_residuals.values.mapv(f32::abs);
+        self.delta_measurements_mean.values[index] = measurements_delta_abs.mean().unwrap();
+        self.delta_measurements_max.values[index] = *measurements_delta_abs.max_skipnan();
+
+        let gains_delta_abs = estimations.gains_delta.values.mapv(f32::abs);
+        self.delta_gains_mean.values[index] = gains_delta_abs.mean().unwrap();
+        self.delta_gains_max.values[index] = *gains_delta_abs.max_skipnan();
+
+        let delays_delta_abs = estimations.delays_delta.values.mapv(f32::abs);
+        self.delta_delays_mean.values[index] = delays_delta_abs.mean().unwrap();
+        self.delta_delays_max.values[index] = *delays_delta_abs.max_skipnan();
+    }
+
+    /// .
+    ///
+    /// # Panics
+    ///
+    /// Panics if any array is None.
+    #[allow(clippy::cast_precision_loss)]
+    pub fn calculate_step_flat(
+        &mut self,
+        estimations: &EstimationsFlat,
+        derivatives: &DerivativesFlat,
         regularization_strength: f32,
         time_index: usize,
     ) {
@@ -165,7 +208,7 @@ impl Metrics {
     }
 
     #[allow(clippy::cast_precision_loss)]
-    pub fn calculate_final(
+    pub fn calculate_final_normal(
         &mut self,
         estimations: &EstimationsNormal,
         ground_truth: &VoxelTypes,
@@ -174,7 +217,24 @@ impl Metrics {
         for i in 0..=100 {
             let threshold = i as f32 / 100.0;
             let (dice, iou, precision, recall) =
-                calculate_for_threshold(estimations, ground_truth, voxel_numbers, threshold);
+                calculate_for_threshold_normal(estimations, ground_truth, voxel_numbers, threshold);
+            self.dice_score_over_threshold[i] = dice;
+            self.iou_over_threshold[i] = iou;
+            self.precision_over_threshold[i] = precision;
+            self.recall_over_threshold[i] = recall;
+        }
+    }
+    #[allow(clippy::cast_precision_loss)]
+    pub fn calculate_final_flat(
+        &mut self,
+        estimations: &EstimationsFlat,
+        ground_truth: &VoxelTypes,
+        voxel_numbers: &VoxelNumbers,
+    ) {
+        for i in 0..=100 {
+            let threshold = i as f32 / 100.0;
+            let (dice, iou, precision, recall) =
+                calculate_for_threshold_flat(estimations, ground_truth, voxel_numbers, threshold);
             self.dice_score_over_threshold[i] = dice;
             self.iou_over_threshold[i] = iou;
             self.precision_over_threshold[i] = precision;
@@ -241,13 +301,28 @@ impl Metrics {
     }
 }
 
-fn calculate_for_threshold(
+fn calculate_for_threshold_normal(
     estimations: &EstimationsNormal,
     ground_truth: &VoxelTypes,
     voxel_numbers: &VoxelNumbers,
     threshold: f32,
 ) -> (f32, f32, f32, f32) {
-    let predictions = predict_voxeltype(estimations, ground_truth, voxel_numbers, threshold);
+    let predictions = predict_voxeltype_normal(estimations, ground_truth, voxel_numbers, threshold);
+
+    let dice = calculate_dice(&predictions, ground_truth);
+    let iou = calcultae_iou(&predictions, ground_truth);
+    let precision = calculate_precision(&predictions, ground_truth);
+    let recall = calculate_recall(&predictions, ground_truth);
+
+    (dice, iou, precision, recall)
+}
+fn calculate_for_threshold_flat(
+    estimations: &EstimationsFlat,
+    ground_truth: &VoxelTypes,
+    voxel_numbers: &VoxelNumbers,
+    threshold: f32,
+) -> (f32, f32, f32, f32) {
+    let predictions = predict_voxeltype_flat(estimations, ground_truth, voxel_numbers, threshold);
 
     let dice = calculate_dice(&predictions, ground_truth);
     let iou = calcultae_iou(&predictions, ground_truth);
@@ -370,8 +445,50 @@ fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
 
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
-pub fn predict_voxeltype(
+pub fn predict_voxeltype_normal(
     estimations: &EstimationsNormal,
+    ground_truth: &VoxelTypes,
+    voxel_numbers: &VoxelNumbers,
+    threshold: f32,
+) -> VoxelTypes {
+    let mut predictions = VoxelTypes::empty([
+        ground_truth.values.shape()[0],
+        ground_truth.values.shape()[1],
+        ground_truth.values.shape()[2],
+    ]);
+
+    let mut abs = Array1::zeros(estimations.system_states.values.shape()[0]);
+    let system_states = &estimations.system_states.values;
+
+    predictions
+        .values
+        .iter_mut()
+        .zip(voxel_numbers.values.iter())
+        .filter(|(_, number)| number.is_some())
+        .for_each(|(prediction, number)| {
+            let voxel_index = number.unwrap();
+            abs.indexed_iter_mut().for_each(|(time_index, entry)| {
+                *entry = system_states[[time_index, voxel_index]].abs()
+                    + system_states[[time_index, voxel_index + 1]].abs()
+                    + system_states[[time_index, voxel_index + 2]].abs();
+            });
+            if *abs.max_skipnan() <= threshold {
+                *prediction = VoxelType::Pathological;
+            } else {
+                // just using ventricle here to differentiate the prediction
+                // from pathological and none.
+                // Might make more sense to introduce a 'healthy' type...
+                *prediction = VoxelType::Ventricle;
+            }
+        });
+
+    predictions
+}
+
+#[must_use]
+#[allow(clippy::missing_panics_doc)]
+pub fn predict_voxeltype_flat(
+    estimations: &EstimationsFlat,
     ground_truth: &VoxelTypes,
     voxel_numbers: &VoxelNumbers,
     threshold: f32,

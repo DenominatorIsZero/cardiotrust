@@ -2,9 +2,10 @@ use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
 
 use self::estimation::{
-    calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
-    calculate_residuals, calculate_system_states_delta, calculate_system_update,
-    prediction::calculate_system_prediction_normal,
+    calculate_delays_delta_flat, calculate_delays_delta_normal, calculate_gains_delta_flat,
+    calculate_gains_delta_normal, calculate_post_update_residuals, calculate_residuals,
+    calculate_system_states_delta, calculate_system_update_flat, calculate_system_update_normal,
+    prediction::{calculate_system_prediction_flat, calculate_system_prediction_normal},
 };
 
 use super::{
@@ -39,7 +40,16 @@ pub fn calculate_pseudo_inverse(
 
     let decomposition = SVD::new_unordered(measurement_matrix, true, true);
 
-    for time_index in 0..results.estimations.system_states.values.shape()[0] {
+    let estimations_normal = results
+        .estimations_normal
+        .as_mut()
+        .expect("Estimations normal to be some.");
+    let derivatives_normal = results
+        .derivatives_normal
+        .as_mut()
+        .expect("Derivatives normal to be some.");
+
+    for time_index in 0..estimations_normal.system_states.values.shape()[0] {
         let rows = data.get_measurements().values.shape()[1];
         let measurements = DMatrix::from_row_slice(
             rows,
@@ -57,22 +67,19 @@ pub fn calculate_pseudo_inverse(
 
         let system_states = Array1::from_iter(system_states.as_slice().iter().copied());
 
-        results
-            .estimations
+        estimations_normal
             .system_states
             .values
             .slice_mut(s![time_index, ..])
             .assign(&system_states);
 
-        results
-            .estimations
+        estimations_normal
             .measurements
             .values
             .slice_mut(s![time_index, ..])
             .assign(
                 &functional_description.measurement_matrix.values.dot(
-                    &results
-                        .estimations
+                    &estimations_normal
                         .system_states
                         .values
                         .slice(s![time_index, ..]),
@@ -80,35 +87,35 @@ pub fn calculate_pseudo_inverse(
             );
 
         calculate_residuals(
-            &mut results.estimations.residuals,
-            &results.estimations.measurements,
+            &mut estimations_normal.residuals,
+            &estimations_normal.measurements,
             data.get_measurements(),
             time_index,
         );
 
-        results.derivatives.calculate(
+        derivatives_normal.calculate(
             functional_description,
-            &results.estimations,
+            &estimations_normal,
             config,
             time_index,
         );
 
         calculate_post_update_residuals(
-            &mut results.estimations.post_update_residuals,
+            &mut estimations_normal.post_update_residuals,
             &functional_description.measurement_matrix,
-            &results.estimations.system_states,
+            &estimations_normal.system_states,
             data.get_measurements(),
             time_index,
         );
         calculate_system_states_delta(
-            &mut results.estimations.system_states_delta,
-            &results.estimations.system_states,
+            &mut estimations_normal.system_states_delta,
+            &estimations_normal.system_states,
             data.get_system_states(),
             time_index,
         );
-        results.metrics.calculate_step(
-            &results.estimations,
-            &results.derivatives,
+        results.metrics.calculate_step_normal(
+            &estimations_normal,
+            &derivatives_normal,
             config.regularization_strength,
             time_index,
         );
@@ -131,126 +138,304 @@ pub fn run_epoch(
     config: &Algorithm,
     epoch_index: usize,
 ) {
-    results.estimations.reset();
-    results.derivatives.reset();
+    let num_steps;
+    if functional_description.ap_params_normal.is_some() {
+        results
+            .estimations_normal
+            .as_mut()
+            .expect("Estimation normal to be some.")
+            .reset();
+        results
+            .derivatives_normal
+            .as_mut()
+            .expect("Derivatives normal to be some.")
+            .reset();
+        num_steps = results
+            .estimations_normal
+            .as_mut()
+            .expect("Estimations normal to be some.")
+            .system_states
+            .values
+            .shape()[0];
+    } else {
+        results
+            .estimations_flat
+            .as_mut()
+            .expect("Estimation flat to be some.")
+            .reset();
+        results
+            .derivatives_flat
+            .as_mut()
+            .expect("Derivatives flat to be some.")
+            .reset();
+        num_steps = results
+            .estimations_flat
+            .as_ref()
+            .expect("Estimations flat to be some.")
+            .system_states
+            .values
+            .shape()[0];
+    }
     let mut batch = match config.batch_size {
         0 => None,
-        _ => Some(
-            (epoch_index * results.estimations.system_states.values.shape()[0]) % config.batch_size,
-        ),
+        _ => Some((epoch_index * num_steps) % config.batch_size),
     };
 
-    for time_index in 0..results.estimations.system_states.values.shape()[0] {
-        calculate_system_prediction_normal(
-            &mut results.estimations.ap_outputs,
-            &mut results.estimations.system_states,
-            &mut results.estimations.measurements,
-            functional_description,
-            time_index,
-        );
-
-        calculate_residuals(
-            &mut results.estimations.residuals,
-            &results.estimations.measurements,
-            data.get_measurements(),
-            time_index,
-        );
-
-        if config.constrain_system_states {
-            constrain_system_states(
-                &mut results.estimations.system_states,
-                time_index,
-                config.state_clamping_threshold,
-            );
-        }
-
-        results.derivatives.calculate(
-            functional_description,
-            &results.estimations,
-            config,
-            time_index,
-        );
-
-        if config.model.apply_system_update {
-            calculate_system_update(
-                &mut results.estimations,
-                time_index,
+    for time_index in 0..num_steps {
+        if functional_description.ap_params_normal.is_some() {
+            let mut estimations_normal = results
+                .estimations_normal
+                .as_mut()
+                .expect("Estimations normal to be some");
+            let derivatives_normal = results
+                .derivatives_normal
+                .as_mut()
+                .expect("Derivatives normal to be some");
+            calculate_system_prediction_normal(
+                &mut estimations_normal.ap_outputs,
+                &mut estimations_normal.system_states,
+                &mut estimations_normal.measurements,
                 functional_description,
-                config,
+                time_index,
             );
-        }
+            calculate_residuals(
+                &mut estimations_normal.residuals,
+                &estimations_normal.measurements,
+                data.get_measurements(),
+                time_index,
+            );
+            if config.constrain_system_states {
+                constrain_system_states(
+                    &mut estimations_normal.system_states,
+                    time_index,
+                    config.state_clamping_threshold,
+                );
+            }
 
-        calculate_post_update_residuals(
-            &mut results.estimations.post_update_residuals,
-            &functional_description.measurement_matrix,
-            &results.estimations.system_states,
-            data.get_measurements(),
-            time_index,
-        );
-        calculate_system_states_delta(
-            &mut results.estimations.system_states_delta,
-            &results.estimations.system_states,
-            data.get_system_states(),
-            time_index,
-        );
-        calculate_gains_delta(
-            &mut results.estimations.gains_delta,
-            &functional_description
-                .ap_params_normal
-                .as_ref()
-                .expect("AP Params to be some.")
-                .gains,
-            data.get_gains(),
-        );
-        calculate_delays_delta(
-            &mut results.estimations.delays_delta,
-            &functional_description
-                .ap_params_normal
-                .as_ref()
-                .expect("Ap parms to be some.")
-                .delays,
-            data.get_delays(),
-            &functional_description
-                .ap_params_normal
-                .as_ref()
-                .expect("Ap params to be some.")
-                .coefs,
-            data.get_coefs(),
-        );
-        results.metrics.calculate_step(
-            &results.estimations,
-            &results.derivatives,
-            config.regularization_strength,
-            time_index,
-        );
-        if let Some(n) = batch.as_mut() {
-            *n += 1;
-            if *n == config.batch_size {
-                functional_description
+            derivatives_normal.calculate(
+                functional_description,
+                &estimations_normal,
+                config,
+                time_index,
+            );
+
+            if config.model.apply_system_update {
+                calculate_system_update_normal(
+                    &mut estimations_normal,
+                    time_index,
+                    functional_description,
+                    config,
+                );
+            }
+
+            calculate_post_update_residuals(
+                &mut estimations_normal.post_update_residuals,
+                &functional_description.measurement_matrix,
+                &estimations_normal.system_states,
+                data.get_measurements(),
+                time_index,
+            );
+            calculate_system_states_delta(
+                &mut estimations_normal.system_states_delta,
+                &estimations_normal.system_states,
+                data.get_system_states(),
+                time_index,
+            );
+            calculate_gains_delta_normal(
+                &mut estimations_normal.gains_delta,
+                &functional_description
                     .ap_params_normal
-                    .as_mut()
-                    .expect("AP params to be some.")
-                    .update(
-                        &results.derivatives,
-                        config,
-                        results.estimations.system_states.values.shape()[0],
-                    );
-                results.derivatives.reset();
-                results.estimations.kalman_gain_converged = false;
-                *n = 0;
+                    .as_ref()
+                    .expect("AP Params to be some.")
+                    .gains,
+                data.get_gains_normal(),
+            );
+            calculate_delays_delta_normal(
+                &mut estimations_normal.delays_delta,
+                &functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .expect("Ap parms to be some.")
+                    .delays,
+                data.get_delays_normal(),
+                &functional_description
+                    .ap_params_normal
+                    .as_ref()
+                    .expect("Ap params to be some.")
+                    .coefs,
+                data.get_coefs_normal(),
+            );
+            results.metrics.calculate_step_normal(
+                &estimations_normal,
+                &derivatives_normal,
+                config.regularization_strength,
+                time_index,
+            );
+            if let Some(n) = batch.as_mut() {
+                *n += 1;
+                if *n == config.batch_size {
+                    functional_description
+                        .ap_params_normal
+                        .as_mut()
+                        .expect("AP params normal to be some.")
+                        .update(
+                            &derivatives_normal,
+                            config,
+                            estimations_normal.system_states.values.shape()[0],
+                        );
+                    derivatives_normal.reset();
+                    estimations_normal.kalman_gain_converged = false;
+                    *n = 0;
+                }
+            }
+        } else {
+            let estimations_flat = results
+                .estimations_flat
+                .as_mut()
+                .expect("Estimations flat to be some");
+            let derivatives_flat = results
+                .derivatives_flat
+                .as_mut()
+                .expect("Derivatives flat to be some");
+            calculate_system_prediction_flat(
+                &mut estimations_flat.ap_outputs,
+                &mut estimations_flat.system_states,
+                &mut estimations_flat.measurements,
+                functional_description,
+                time_index,
+            );
+            calculate_residuals(
+                &mut estimations_flat.residuals,
+                &estimations_flat.measurements,
+                data.get_measurements(),
+                time_index,
+            );
+            if config.constrain_system_states {
+                constrain_system_states(
+                    &mut estimations_flat.system_states,
+                    time_index,
+                    config.state_clamping_threshold,
+                );
+            }
+
+            derivatives_flat.calculate(
+                functional_description,
+                estimations_flat,
+                config,
+                time_index,
+            );
+
+            if config.model.apply_system_update {
+                calculate_system_update_flat(
+                    estimations_flat,
+                    time_index,
+                    functional_description,
+                    config,
+                );
+            }
+
+            calculate_post_update_residuals(
+                &mut estimations_flat.post_update_residuals,
+                &functional_description.measurement_matrix,
+                &estimations_flat.system_states,
+                data.get_measurements(),
+                time_index,
+            );
+            calculate_system_states_delta(
+                &mut estimations_flat.system_states_delta,
+                &estimations_flat.system_states,
+                data.get_system_states(),
+                time_index,
+            );
+            calculate_gains_delta_flat(
+                &mut estimations_flat.gains_delta,
+                &functional_description
+                    .ap_params_flat
+                    .as_ref()
+                    .expect("AP Params to be some.")
+                    .gains,
+                data.get_gains_flat(),
+            );
+            calculate_delays_delta_flat(
+                &mut estimations_flat.delays_delta,
+                &functional_description
+                    .ap_params_flat
+                    .as_ref()
+                    .expect("Ap parms flat to be some.")
+                    .delays,
+                data.get_delays_flat(),
+                &functional_description
+                    .ap_params_flat
+                    .as_ref()
+                    .expect("Ap params flat to be some.")
+                    .coefs,
+                data.get_coefs_flat(),
+            );
+            results.metrics.calculate_step_flat(
+                &estimations_flat,
+                &derivatives_flat,
+                config.regularization_strength,
+                time_index,
+            );
+            if let Some(n) = batch.as_mut() {
+                *n += 1;
+                if *n == config.batch_size {
+                    functional_description
+                        .ap_params_flat
+                        .as_mut()
+                        .expect("AP params flat to be some.")
+                        .update(
+                            &derivatives_flat,
+                            config,
+                            estimations_flat.system_states.values.shape()[0],
+                        );
+                    derivatives_flat.reset();
+                    estimations_flat.kalman_gain_converged = false;
+                    *n = 0;
+                }
             }
         }
     }
     if batch.is_none() {
-        functional_description
-            .ap_params_normal
-            .as_mut()
-            .expect("AP params to be some.")
-            .update(
-                &results.derivatives,
-                config,
-                results.estimations.system_states.values.shape()[0],
-            );
+        if functional_description.ap_params_normal.is_some() {
+            functional_description
+                .ap_params_normal
+                .as_mut()
+                .expect("AP params normal to be some.")
+                .update(
+                    &results
+                        .derivatives_normal
+                        .as_ref()
+                        .expect("Derivatives normal to be some"),
+                    config,
+                    results
+                        .estimations_normal
+                        .as_ref()
+                        .expect("Estimations normal to be some.")
+                        .system_states
+                        .values
+                        .shape()[0],
+                );
+        } else {
+            functional_description
+                .ap_params_flat
+                .as_mut()
+                .expect("AP params flat to be some.")
+                .update(
+                    &results
+                        .derivatives_flat
+                        .as_ref()
+                        .expect("Derivatives flat to be some"),
+                    config,
+                    results
+                        .estimations_flat
+                        .as_ref()
+                        .expect("Estimations flat to be some.")
+                        .system_states
+                        .values
+                        .shape()[0],
+                );
+        }
     }
     results.metrics.calculate_epoch(epoch_index);
 }
@@ -294,6 +479,8 @@ fn run(
 #[cfg(test)]
 mod test {
 
+    use bevy::tasks::ParallelIterator;
+    use bevy::utils::petgraph::algo;
     use ndarray::Dim;
     use ndarray_stats::QuantileExt;
 
@@ -301,7 +488,7 @@ mod test {
     use crate::core::config::simulation::Simulation as SimulationConfig;
     use crate::core::model::Model;
 
-    use crate::vis::plotting::matrix::{plot_states_max, plot_states_over_time};
+    use crate::vis::plotting::matrix::{plot_states_max_normal, plot_states_over_time};
     use crate::vis::plotting::time::standard_y_plot;
 
     use super::*;
@@ -312,7 +499,8 @@ mod test {
         let number_of_sensors = 300;
         let number_of_steps = 3;
         let number_of_epochs = 10;
-        let config = AlgorithmConfig::default();
+        let mut config = AlgorithmConfig::default();
+        config.model.use_flat_arrays = false;
         let epoch_index = 3;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
@@ -327,6 +515,7 @@ mod test {
             number_of_steps,
             number_of_sensors,
             number_of_states,
+            config.model.use_flat_arrays,
         );
         let data = Data::empty(
             number_of_sensors,
@@ -351,10 +540,11 @@ mod test {
         let number_of_steps = 3;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let algorithm_config = AlgorithmConfig {
+        let mut algorithm_config = AlgorithmConfig {
             epochs: 3,
             ..Default::default()
         };
+        algorithm_config.model.use_flat_arrays = false;
         let mut functional_description = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,
@@ -366,6 +556,7 @@ mod test {
             number_of_steps,
             number_of_sensors,
             number_of_states,
+            algorithm_config.model.use_flat_arrays,
         );
         let data = Data::empty(
             number_of_sensors,
@@ -390,6 +581,7 @@ mod test {
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.use_flat_arrays = false;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -409,6 +601,7 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            algorithm_config.model.use_flat_arrays,
         );
 
         run(
@@ -434,6 +627,7 @@ mod test {
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.use_flat_arrays = false;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -453,6 +647,7 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            algorithm_config.model.use_flat_arrays,
         );
 
         run(
@@ -477,8 +672,12 @@ mod test {
             "Epoch",
         );
 
-        plot_states_max(
-            &results.estimations.system_states,
+        plot_states_max_normal(
+            &results
+                .estimations_normal
+                .as_ref()
+                .expect("Estimations normal to be some.")
+                .system_states,
             &model.spatial_description.voxels,
             "tests/algorith_states_max",
             "Maximum Estimated Current Densities",
@@ -488,7 +687,11 @@ mod test {
         let playback_speed = 0.1;
 
         plot_states_over_time(
-            &results.estimations.system_states,
+            &results
+                .estimations_normal
+                .as_ref()
+                .expect("Estimations normal to be some.")
+                .system_states,
             &model.spatial_description.voxels,
             fps,
             playback_speed,
@@ -515,6 +718,7 @@ mod test {
             calculate_kalman_gain: true,
             ..Default::default()
         };
+        algorithm_config.model.use_flat_arrays = false;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -534,6 +738,7 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            algorithm_config.model.use_flat_arrays,
         );
 
         run(
@@ -558,6 +763,7 @@ mod test {
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.use_flat_arrays = false;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -577,6 +783,7 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            algorithm_config.model.use_flat_arrays,
         );
 
         run(
@@ -603,6 +810,7 @@ mod test {
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.use_flat_arrays = false;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -622,6 +830,7 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            algorithm_config.model.use_flat_arrays,
         );
 
         run(
@@ -646,8 +855,12 @@ mod test {
             "Epoch",
         );
 
-        plot_states_max(
-            &results.estimations.system_states,
+        plot_states_max_normal(
+            &results
+                .estimations_normal
+                .as_ref()
+                .expect("Estimations normal to be some.")
+                .system_states,
             &model.spatial_description.voxels,
             "tests/algorith_no_update_states_max",
             "Maximum Estimated Current Densities",
@@ -657,7 +870,11 @@ mod test {
         let playback_speed = 0.1;
 
         plot_states_over_time(
-            &results.estimations.system_states,
+            &results
+                .estimations_normal
+                .as_ref()
+                .expect("Estimations normal to be some.")
+                .system_states,
             &model.spatial_description.voxels,
             fps,
             playback_speed,
@@ -680,6 +897,7 @@ mod test {
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.use_flat_arrays = false;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -706,6 +924,7 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            algorithm_config.model.use_flat_arrays,
         );
 
         run(
@@ -716,7 +935,8 @@ mod test {
         );
 
         results
-            .estimations
+            .estimations_normal
+            .expect("Estimations normal to be some.")
             .system_states
             .values
             .for_each(|v| assert!(*v <= 2.0, "{v} was greater than 2."));
@@ -729,6 +949,7 @@ mod test {
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.use_flat_arrays = false;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -756,6 +977,7 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            algorithm_config.model.use_flat_arrays,
         );
 
         run(
@@ -765,7 +987,15 @@ mod test {
             &algorithm_config,
         );
 
-        assert!(*results.estimations.system_states.values.max_skipnan() > 2.0);
+        assert!(
+            *results
+                .estimations_normal
+                .expect("Estimations normal to be some.")
+                .system_states
+                .values
+                .max_skipnan()
+                > 2.0
+        );
     }
 
     #[test]
@@ -774,7 +1004,8 @@ mod test {
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
-        let algorithm_config = Algorithm::default();
+        let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.use_flat_arrays = false;
 
         let model = Model::from_model_config(
             &algorithm_config.model,
@@ -792,6 +1023,7 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            algorithm_config.model.use_flat_arrays,
         );
 
         calculate_pseudo_inverse(
@@ -800,5 +1032,55 @@ mod test {
             &data,
             &algorithm_config,
         );
+    }
+
+    #[test]
+    fn loss_decreases_kalman_flat() {
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.use_flat_arrays = true;
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        let mut algorithm_config = Algorithm {
+            calculate_kalman_gain: true,
+            ..Default::default()
+        };
+        algorithm_config.model.use_flat_arrays = true;
+
+        let mut model = Model::from_model_config(
+            &algorithm_config.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .expect("Model parameters to be valid.");
+        algorithm_config.epochs = 3;
+        algorithm_config.model.apply_system_update = true;
+        algorithm_config.calculate_kalman_gain = true;
+
+        let mut results = Results::new(
+            algorithm_config.epochs,
+            model
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+            algorithm_config.model.use_flat_arrays,
+        );
+
+        run(
+            &mut model.functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
+
+        (0..algorithm_config.epochs - 1).for_each(|i| {
+            assert!(
+                results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
+            );
+        });
     }
 }

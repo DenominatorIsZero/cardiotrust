@@ -186,7 +186,7 @@ pub fn calculate_system_states_delta(
 }
 
 #[inline]
-pub fn calculate_gains_delta(
+pub fn calculate_gains_delta_normal(
     gains_delta: &mut ArrayGainsNormal<f32>,
     estimated_gains: &ArrayGainsNormal<f32>,
     actual_gains: &ArrayGainsNormal<f32>,
@@ -196,8 +196,18 @@ pub fn calculate_gains_delta(
         .assign(&(&estimated_gains.values - &actual_gains.values));
 }
 
+pub fn calculate_gains_delta_flat(
+    gains_delta: &mut ArrayGainsFlat<f32>,
+    estimated_gains: &ArrayGainsFlat<f32>,
+    actual_gains: &ArrayGainsFlat<f32>,
+) {
+    gains_delta
+        .values
+        .assign(&(&estimated_gains.values - &actual_gains.values));
+}
+
 #[inline]
-pub fn calculate_delays_delta(
+pub fn calculate_delays_delta_normal(
     delays_delta: &mut ArrayDelaysNormal<f32>,
     estimated_delays: &ArrayDelaysNormal<usize>,
     actual_delays: &ArrayDelaysNormal<usize>,
@@ -217,7 +227,27 @@ pub fn calculate_delays_delta(
 }
 
 #[inline]
-pub fn calculate_system_update(
+pub fn calculate_delays_delta_flat(
+    delays_delta: &mut ArrayDelaysFlat<f32>,
+    estimated_delays: &ArrayDelaysFlat<usize>,
+    actual_delays: &ArrayDelaysFlat<usize>,
+    estimated_coefs: &ArrayDelaysFlat<f32>,
+    actual_coefs: &ArrayDelaysFlat<f32>,
+) {
+    #[allow(clippy::cast_precision_loss)]
+    delays_delta
+        .values
+        .indexed_iter_mut()
+        .for_each(|(index, delay_delta)| {
+            *delay_delta = (estimated_delays.values[index] as f32
+                - actual_delays.values[index] as f32)
+                + (from_coef_to_samples(estimated_coefs.values[index])
+                    - from_coef_to_samples(actual_coefs.values[index]));
+        });
+}
+
+#[inline]
+pub fn calculate_system_update_normal(
     estimations: &mut EstimationsNormal,
     time_index: usize,
     functional_description: &mut FunctionalDescription,
@@ -225,7 +255,7 @@ pub fn calculate_system_update(
 ) {
     if config.calculate_kalman_gain && !estimations.kalman_gain_converged {
         let kalman_gain_old = functional_description.kalman_gain.values.clone();
-        calculate_kalman_gain(estimations, functional_description);
+        calculate_kalman_gain_normal(estimations, functional_description);
         let difference = (kalman_gain_old - &functional_description.kalman_gain.values)
             .mapv(|v| v.powi(2))
             .sum();
@@ -246,19 +276,35 @@ pub fn calculate_system_update(
     );
 }
 
-#[inline]
-fn calculate_kalman_gain(
-    estimations: &mut EstimationsNormal,
+pub fn calculate_system_update_flat(
+    estimations: &mut EstimationsFlat,
+    time_index: usize,
     functional_description: &mut FunctionalDescription,
+    config: &Algorithm,
 ) {
-    predict_state_covariance(estimations, functional_description);
-    calculate_s_inv(estimations, functional_description);
-    calculate_k(functional_description, estimations);
-    estimate_state_covariance(estimations, functional_description);
+    todo!()
 }
 
 #[inline]
-fn estimate_state_covariance(
+fn calculate_kalman_gain_normal(
+    estimations: &mut EstimationsNormal,
+    functional_description: &mut FunctionalDescription,
+) {
+    predict_state_covariance_normal(estimations, functional_description);
+    calculate_s_inv_normal(estimations, functional_description);
+    calculate_k_normal(functional_description, estimations);
+    estimate_state_covariance_normal(estimations, functional_description);
+}
+
+#[inline]
+fn calculate_kalman_gain_flat(
+    estimations: &mut EstimationsFlat,
+    functional_description: &mut FunctionalDescription,
+) {
+}
+
+#[inline]
+fn estimate_state_covariance_normal(
     estimations: &mut EstimationsNormal,
     functional_description: &mut FunctionalDescription,
 ) {
@@ -310,7 +356,15 @@ fn estimate_state_covariance(
 }
 
 #[inline]
-fn calculate_k(
+fn estimate_state_covariance_flat(
+    estimations: &mut EstimationsFlat,
+    functional_description: &mut FunctionalDescription,
+) {
+    todo!()
+}
+
+#[inline]
+fn calculate_k_normal(
     functional_description: &mut FunctionalDescription,
     estimations: &mut EstimationsNormal,
 ) {
@@ -345,7 +399,15 @@ fn calculate_k(
 }
 
 #[inline]
-fn calculate_s_inv(
+fn calculate_k_flat(
+    functional_description: &mut FunctionalDescription,
+    estimations: &mut EstimationsFlat,
+) {
+    todo!()
+}
+
+#[inline]
+fn calculate_s_inv_normal(
     estimations: &mut EstimationsNormal,
     functional_description: &FunctionalDescription,
 ) {
@@ -382,9 +444,17 @@ fn calculate_s_inv(
     estimations.s_inv = estimations.s.inv().unwrap();
 }
 
+#[inline]
+fn calculate_s_inv_flat(
+    estimations: &mut EstimationsFlat,
+    functional_description: &FunctionalDescription,
+) {
+    todo!()
+}
+
 #[allow(clippy::cast_sign_loss)]
 #[inline]
-fn predict_state_covariance(
+fn predict_state_covariance_normal(
     estimations: &mut EstimationsNormal,
     functional_description: &FunctionalDescription,
 ) {
@@ -461,6 +531,15 @@ fn predict_state_covariance(
         });
 }
 
+#[allow(clippy::cast_sign_loss)]
+#[inline]
+fn predict_state_covariance_flat(
+    estimations: &mut EstimationsFlat,
+    functional_description: &FunctionalDescription,
+) {
+    todo!()
+}
+
 #[inline]
 fn flip(x: usize) -> usize {
     // Output state indicies:
@@ -530,7 +609,7 @@ mod tests {
             Dim([number_of_states / 3, 1, 1]),
         );
 
-        calculate_system_update(
+        calculate_system_update_normal(
             &mut estimations,
             time_index,
             &mut functional_desrciption,

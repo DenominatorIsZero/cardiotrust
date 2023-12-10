@@ -551,7 +551,7 @@ fn build_plot_states_max_layout(
 ///     - in y direction
 ///     - in z direction
 ///     - absolute value
-pub fn plot_states_max(
+pub fn plot_states_max_normal(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
     file_name: &str,
@@ -631,7 +631,7 @@ pub fn plot_states_max_delta(
     let mut delta_system_states = estimated_system_states.clone();
     delta_system_states.values -= &actual_system_states.values;
 
-    plot_states_max(&delta_system_states, voxels, file_name, title);
+    plot_states_max_normal(&delta_system_states, voxels, file_name, title);
 }
 
 /// .

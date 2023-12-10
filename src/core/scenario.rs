@@ -14,7 +14,7 @@ use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 use toml;
 
-use self::results::{Results, Snapshot};
+use self::results::{Results, SnapshotFlat, SnapshotNormal};
 use self::summary::Summary;
 
 use super::algorithm::{self, calculate_pseudo_inverse};
@@ -316,6 +316,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
             .shape()[0],
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
+        scenario.config.algorithm.model.use_flat_arrays,
     );
 
     let mut summary = Summary::default();
@@ -338,11 +339,25 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         AlgorithmType::Loreta => panic!("Algorithm type not implemented"),
     }
 
-    results.metrics.calculate_final(
-        &results.estimations,
-        data.get_voxel_types(),
-        &model.spatial_description.voxels.numbers,
-    );
+    if scenario.config.algorithm.model.use_flat_arrays {
+        results.metrics.calculate_final_flat(
+            &results
+                .estimations_flat
+                .as_ref()
+                .expect("Estimations flat to be some."),
+            data.get_voxel_types(),
+            &model.spatial_description.voxels.numbers,
+        );
+    } else {
+        results.metrics.calculate_final_normal(
+            &results
+                .estimations_normal
+                .as_ref()
+                .expect("Estimations normal to be some"),
+            data.get_voxel_types(),
+            &model.spatial_description.voxels.numbers,
+        );
+    }
 
     let optimal_threshold = results
         .metrics
@@ -437,10 +452,31 @@ fn run_model_based(
         if scenario.config.algorithm.snapshots_interval != 0
             && epoch_index % scenario.config.algorithm.snapshots_interval == 0
         {
-            results.snapshots.push(Snapshot::new(
-                &results.estimations,
-                &model.functional_description,
-            ));
+            if scenario.config.algorithm.model.use_flat_arrays {
+                results
+                    .snapshots_flat
+                    .as_mut()
+                    .expect("Snapshots flat to be some.")
+                    .push(SnapshotFlat::new(
+                        &results
+                            .estimations_flat
+                            .as_ref()
+                            .expect("Estimations flat to be some."),
+                        &model.functional_description,
+                    ));
+            } else {
+                results
+                    .snapshots_normal
+                    .as_mut()
+                    .expect("Snapshots normal to be some.")
+                    .push(SnapshotNormal::new(
+                        &results
+                            .estimations_normal
+                            .as_ref()
+                            .expect("Estimations normal to be some."),
+                        &model.functional_description,
+                    ));
+            }
         }
 
         epoch_tx.send(epoch_index).unwrap();
