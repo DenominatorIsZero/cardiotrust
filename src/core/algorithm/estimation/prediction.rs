@@ -24,7 +24,7 @@ pub fn calculate_system_prediction_normal(
     functional_description: &FunctionalDescription,
     time_index: usize,
 ) {
-    innovate_system_states_v3(
+    innovate_system_states_normal_v3(
         ap_outputs,
         functional_description
             .ap_params_normal
@@ -48,7 +48,7 @@ pub fn calculate_system_prediction_flat(
     functional_description: &FunctionalDescription,
     time_index: usize,
 ) {
-    innovate_system_states_flat(
+    innovate_system_states_flat_v1(
         ap_outputs,
         functional_description
             .ap_params_flat
@@ -69,7 +69,7 @@ pub fn calculate_system_prediction_flat(
 /// Naive version of state innovation. uses indexed iter.
 ///
 #[inline]
-pub fn innovate_system_states_v1(
+pub fn innovate_system_states_normal_v1(
     ap_outputs: &mut ArrayGainsNormal<f32>,
     ap_params: &APParametersNormal,
     time_index: usize,
@@ -113,7 +113,7 @@ pub fn innovate_system_states_v1(
 ///
 /// Panics if output state indices are not initialized corrrectly.
 #[inline]
-pub fn innovate_system_states_v2(
+pub fn innovate_system_states_normal_v2(
     ap_outputs: &mut ArrayGainsNormal<f32>,
     ap_params: &APParametersNormal,
     time_index: usize,
@@ -166,7 +166,7 @@ pub fn innovate_system_states_v2(
 ///
 /// Panics if output state indices are not initialized corrrectly.
 #[inline]
-pub fn innovate_system_states_v3(
+pub fn innovate_system_states_normal_v3(
     ap_outputs: &mut ArrayGainsNormal<f32>,
     ap_params: &APParametersNormal,
     time_index: usize,
@@ -236,7 +236,7 @@ pub fn innovate_system_states_v3(
 ///
 /// Panics if output state indices are not initialized corrrectly.
 #[inline]
-pub fn innovate_system_states_flat(
+pub fn innovate_system_states_flat_v1(
     ap_outputs: &mut ArrayGainsFlat<f32>,
     ap_params: &APParametersFlat,
     time_index: usize,
@@ -321,7 +321,7 @@ pub fn predict_measurements(
 mod tests {
     use crate::core::{
         algorithm::estimation::{
-            prediction::{innovate_system_states_flat, innovate_system_states_v3},
+            prediction::{innovate_system_states_flat_v1, innovate_system_states_normal_v3},
             EstimationsFlat, EstimationsNormal,
         },
         config::Config,
@@ -329,7 +329,7 @@ mod tests {
         model::Model,
     };
 
-    use super::{innovate_system_states_v1, innovate_system_states_v2};
+    use super::{innovate_system_states_normal_v1, innovate_system_states_normal_v2};
 
     #[test]
     fn innovate_system_states_v2_equality() {
@@ -354,7 +354,7 @@ mod tests {
             data.get_measurements().values.shape()[0],
         );
         for time_index in 0..estimations_v2.measurements.values.shape()[0] {
-            innovate_system_states_v2(
+            innovate_system_states_normal_v2(
                 &mut estimations_v2.ap_outputs,
                 model
                     .functional_description
@@ -364,7 +364,7 @@ mod tests {
                 time_index,
                 &mut estimations_v2.system_states,
             );
-            innovate_system_states_v1(
+            innovate_system_states_normal_v1(
                 &mut estimations_v1.ap_outputs,
                 model
                     .functional_description
@@ -403,7 +403,7 @@ mod tests {
             data.get_measurements().values.shape()[0],
         );
         for time_index in 0..estimations_v3.measurements.values.shape()[0] {
-            innovate_system_states_v3(
+            innovate_system_states_normal_v3(
                 &mut estimations_v3.ap_outputs,
                 model
                     .functional_description
@@ -413,7 +413,7 @@ mod tests {
                 time_index,
                 &mut estimations_v3.system_states,
             );
-            innovate_system_states_v1(
+            innovate_system_states_normal_v1(
                 &mut estimations_v1.ap_outputs,
                 model
                     .functional_description
@@ -472,7 +472,7 @@ mod tests {
             data_flat.get_measurements().values.shape()[0],
         );
         for time_index in 0..estimations_flat.measurements.values.shape()[0] {
-            innovate_system_states_flat(
+            innovate_system_states_flat_v1(
                 &mut estimations_flat.ap_outputs,
                 model_flat
                     .functional_description
@@ -482,7 +482,7 @@ mod tests {
                 time_index,
                 &mut estimations_flat.system_states,
             );
-            innovate_system_states_v1(
+            innovate_system_states_normal_v1(
                 &mut estimations_normal.ap_outputs,
                 model_normal
                     .functional_description
