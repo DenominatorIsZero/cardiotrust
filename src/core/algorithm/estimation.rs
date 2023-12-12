@@ -3,7 +3,7 @@ pub mod shapes;
 
 use itertools::Itertools;
 use ndarray::{s, Array2};
-use ndarray_linalg::Inverse;
+use ndarray_linalg::{Inverse, Norm};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
@@ -11,6 +11,7 @@ use crate::core::{
     data::shapes::{ArrayMeasurements, ArraySystemStates},
     model::functional::{
         allpass::{
+            flat::{gain_index_to_offset, offset_to_gain_index},
             from_coef_to_samples,
             shapes::{
                 flat::{ArrayDelaysFlat, ArrayGainsFlat},
@@ -259,7 +260,7 @@ pub fn calculate_system_update_normal(
         let difference = (kalman_gain_old - &functional_description.kalman_gain.values)
             .mapv(|v| v.powi(2))
             .sum();
-        if difference == 0.0 {
+        if difference < 1e-6 {
             estimations.kalman_gain_converged = true;
         }
     }
@@ -282,7 +283,27 @@ pub fn calculate_system_update_flat(
     functional_description: &mut FunctionalDescription,
     config: &Algorithm,
 ) {
-    todo!()
+    if config.calculate_kalman_gain && !estimations.kalman_gain_converged {
+        let kalman_gain_old = functional_description.kalman_gain.values.clone();
+        calculate_kalman_gain_flat(estimations, functional_description);
+        let difference = (kalman_gain_old - &functional_description.kalman_gain.values)
+            .mapv(|v| v.powi(2))
+            .sum();
+        if difference < 1e-6 {
+            estimations.kalman_gain_converged = true;
+        }
+    }
+    let mut states = estimations
+        .system_states
+        .values
+        .slice_mut(s![time_index, ..]);
+    states.assign(
+        &(&states
+            + functional_description
+                .kalman_gain
+                .values
+                .dot(&estimations.residuals.values.slice(s![0, ..]))),
+    );
 }
 
 #[inline]
@@ -301,6 +322,10 @@ fn calculate_kalman_gain_flat(
     estimations: &mut EstimationsFlat,
     functional_description: &mut FunctionalDescription,
 ) {
+    predict_state_covariance_flat(estimations, functional_description);
+    calculate_s_inv_flat(estimations, functional_description);
+    calculate_k_flat(estimations, functional_description);
+    estimate_state_covariance_flat(estimations, functional_description);
 }
 
 #[inline]
@@ -360,7 +385,55 @@ fn estimate_state_covariance_flat(
     estimations: &mut EstimationsFlat,
     functional_description: &mut FunctionalDescription,
 ) {
-    todo!()
+    estimations
+        .state_covariance_est
+        .values
+        .indexed_iter_mut()
+        .zip(
+            functional_description
+                .ap_params_normal
+                .as_ref()
+                .unwrap()
+                .output_state_indices
+                .values
+                .iter(),
+        )
+        .filter(|(_, output_state_index)| output_state_index.is_some())
+        .for_each(|((index, variance), output_state_index)| {
+            *variance = 0.0;
+            for (((k_x, k_y), k_z), k_d) in (-1..=1) // over neighors of input voxel
+                .cartesian_product(-1..=1)
+                .cartesian_product(-1..=1)
+                .cartesian_product(0..=2)
+            {
+                if k_x == 0 && k_y == 0 && k_z == 0 {
+                    continue;
+                }
+                let k = functional_description
+                    .ap_params_flat
+                    .as_ref()
+                    .expect("Ap params flat to be some.")
+                    .output_state_indices
+                    .values[[
+                    output_state_index.unwrap(),
+                    offset_to_gain_index(k_x, k_y, k_z, k_d).expect("Offsets to be valid."),
+                ]];
+                if k.is_none() {
+                    continue;
+                }
+                let mut sum = 0.0;
+                for m in 0..functional_description.measurement_matrix.values.raw_dim()[0] {
+                    sum += functional_description.kalman_gain.values[[index.0, m]]
+                        * functional_description.measurement_matrix.values[[m, k.unwrap()]];
+                }
+                let i = if index.0 == k.unwrap() { 1.0 } else { 0.0 };
+                *variance += estimations.state_covariance_pred.values[[
+                    k.unwrap(),
+                    offset_to_gain_index(-k_x, -k_y, -k_z, output_state_index.unwrap() % 3)
+                        .expect("Offsets to be valid."),
+                ]] * (i - sum);
+            }
+        });
 }
 
 #[inline]
@@ -400,10 +473,45 @@ fn calculate_k_normal(
 
 #[inline]
 fn calculate_k_flat(
-    functional_description: &mut FunctionalDescription,
     estimations: &mut EstimationsFlat,
+    functional_description: &mut FunctionalDescription,
 ) {
-    todo!()
+    functional_description
+        .kalman_gain
+        .values
+        .indexed_iter_mut()
+        .for_each(|(index, value)| {
+            *value = 0.0;
+            for k in 0..estimations.s.raw_dim()[0] {
+                let mut sum = 0.0;
+                for (((m_x, m_y), m_z), m_d) in (-1..=1) // over neighbors of output voxel
+                    .cartesian_product(-1..=1)
+                    .cartesian_product(-1..=1)
+                    .cartesian_product(0..=2)
+                {
+                    if m_x == 0 && m_y == 0 && m_z == 0 {
+                        continue;
+                    }
+                    let m = functional_description
+                        .ap_params_flat
+                        .as_ref()
+                        .expect("Ap params flat to be some.")
+                        .output_state_indices
+                        .values[[
+                        index.0,
+                        offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offsets to be valid."),
+                    ]];
+                    if m.is_none() {
+                        continue;
+                    }
+                    sum += estimations.state_covariance_pred.values[[
+                        index.0,
+                        offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid."),
+                    ]] * functional_description.measurement_matrix.values[[k, m.unwrap()]];
+                }
+                *value += estimations.s_inv[[k, index.1]] * sum;
+            }
+        });
 }
 
 #[inline]
@@ -449,7 +557,45 @@ fn calculate_s_inv_flat(
     estimations: &mut EstimationsFlat,
     functional_description: &FunctionalDescription,
 ) {
-    todo!()
+    estimations.s.indexed_iter_mut().for_each(|(index, value)| {
+        *value = functional_description.measurement_covariance.values[index];
+        for k in 0..functional_description
+            .measurement_covariance
+            .values
+            .raw_dim()[1]
+        {
+            let mut sum = 0.0;
+            for (((m_x, m_y), m_z), m_d) in (-1..=1) // over neighors of input voxel
+                .cartesian_product(-1..=1)
+                .cartesian_product(-1..=1)
+                .cartesian_product(0..=2)
+            {
+                if m_x == 0 && m_y == 0 && m_z == 0 {
+                    continue;
+                }
+                // check if voxel m exists.
+                let m = functional_description
+                    .ap_params_flat
+                    .as_ref()
+                    .expect("Ap params flat to be some.")
+                    .output_state_indices
+                    .values[[
+                    k,
+                    offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid."),
+                ]];
+                if m.is_none() {
+                    continue;
+                }
+                sum += functional_description.measurement_matrix.values[[index.0, m.unwrap()]]
+                    * estimations.state_covariance_pred.values[[
+                        m.unwrap(),
+                        offset_to_gain_index(-m_x, -m_y, -m_z, k % 3).expect("Offset to be valid"),
+                    ]];
+            }
+            *value += functional_description.measurement_matrix.values[[index.1, k]] * sum;
+        }
+    });
+    estimations.s_inv = estimations.s.inv().unwrap();
 }
 
 #[allow(clippy::cast_sign_loss)]
@@ -537,7 +683,92 @@ fn predict_state_covariance_flat(
     estimations: &mut EstimationsFlat,
     functional_description: &FunctionalDescription,
 ) {
-    todo!()
+    let ap_params_flat = functional_description
+        .ap_params_flat
+        .as_ref()
+        .expect("Ap params flat to be some");
+    let process_covariace_flat = functional_description
+        .process_covariance_flat
+        .as_ref()
+        .expect("Process covariance flat to be some");
+    estimations
+        .state_covariance_pred
+        .values
+        .indexed_iter_mut()
+        .zip(ap_params_flat.output_state_indices.values.iter())
+        .filter(|(_, output_state_index)| output_state_index.is_some())
+        .for_each(|((index, variance), output_state_index)| {
+            *variance = process_covariace_flat.values[index];
+            for (((k_x, k_y), k_z), k_d) in (-1..=1) // over neighbors of output voxel
+                .cartesian_product(-1..=1)
+                .cartesian_product(-1..=1)
+                .cartesian_product(0..=2)
+            {
+                if k_x == 0 && k_y == 0 && k_z == 0 {
+                    continue;
+                }
+
+                // skip if neighbor doesn't exist
+                let k = ap_params_flat.output_state_indices.values[[
+                    output_state_index.unwrap(),
+                    offset_to_gain_index(k_x, k_y, k_z, k_d).expect("Offset to be valid."),
+                ]];
+
+                if k.is_none() {
+                    continue;
+                }
+                let mut sum = 0.0;
+                for (((m_x, m_y), m_z), m_d) in (-1..=1) // over neighors of input voxel
+                    .cartesian_product(-1..=1)
+                    .cartesian_product(-1..=1)
+                    .cartesian_product(0..=2)
+                {
+                    if m_x == 0 && m_y == 0 && m_z == 0 {
+                        continue;
+                    }
+                    // skip if neighbor doesn't exist
+                    let m = ap_params_flat.output_state_indices.values[[
+                        index.0,
+                        offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid"),
+                    ]];
+
+                    if m.is_none() {
+                        continue;
+                    }
+
+                    // we have to check if m and k are adjacent to see if P_{m, k} exists
+                    let offset =
+                        gain_index_to_offset(index.1).expect("Gain index to be less than 78");
+                    #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
+                    let m_to_k_x = (m_x + k_x + offset[0]);
+                    #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
+                    let m_to_k_y = (m_y + k_y + offset[1]);
+                    #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
+                    let m_to_k_z = (m_z + k_z + offset[2]);
+
+                    if !(-1..=1).contains(&m_to_k_x)
+                        || !(-1..=1).contains(&m_to_k_y)
+                        || !(-1..=1).contains(&m_to_k_z)
+                        || (m_to_k_x == 0 && m_to_k_y == 0 && m_to_k_z == 0)
+                    {
+                        continue;
+                    }
+
+                    sum += ap_params_flat.gains.values[[
+                        index.0,
+                        offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid"),
+                    ]] * estimations.state_covariance_est.values[[
+                        m.unwrap(),
+                        offset_to_gain_index(m_to_k_x, m_to_k_y, m_to_k_z, m_d)
+                            .expect("Offset to be valid"),
+                    ]];
+                }
+                *variance += ap_params_flat.gains.values[[
+                    output_state_index.unwrap(),
+                    offset_to_gain_index(k_x, k_y, k_z, k_d).expect("Offset to be valid"),
+                ]] * sum;
+            }
+        });
 }
 
 #[inline]

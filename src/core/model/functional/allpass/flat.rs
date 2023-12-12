@@ -362,6 +362,26 @@ pub const fn offset_to_gain_index(
 
 #[allow(clippy::cast_sign_loss)]
 #[must_use]
+pub const fn gain_index_to_offset(gain_index: usize) -> Option<[i32; 4]> {
+    if gain_index > 77 {
+        return None;
+    }
+    let corrected_index = if gain_index >= 27 + 9 + 3 {
+        gain_index + 3
+    } else {
+        gain_index
+    };
+
+    let output_dimension = (corrected_index % 3) as i32;
+    let z_offset = ((corrected_index / 3) % 3) as i32 - 1;
+    let y_offset = ((corrected_index / 9) % 3) as i32 - 1;
+    let x_offset = ((corrected_index / 27) % 3) as i32 - 1;
+
+    return Some([x_offset, y_offset, z_offset, output_dimension]);
+}
+
+#[allow(clippy::cast_sign_loss)]
+#[must_use]
 pub const fn offset_to_delay_index(x_offset: i32, y_offset: i32, z_offset: i32) -> Option<usize> {
     if x_offset == 0 && y_offset == 0 && z_offset == 0 {
         return None;
