@@ -78,7 +78,7 @@ pub fn draw_ui_volumetric(
         .show(contexts.ctx_mut(), |ui| {
             let sin: PlotPoints = (0..1000)
                 .map(|i| {
-                    let x = i as f64 * 0.01;
+                    let x = f64::from(i) * 0.01;
                     [x, x.sin()]
                 })
                 .collect();

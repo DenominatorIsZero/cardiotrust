@@ -232,7 +232,13 @@ fn get_image_path(scenario: &Scenario, image_type: ImageType) -> String {
         .into_owned()
 }
 
-#[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
+#[allow(
+    clippy::needless_pass_by_value,
+    clippy::too_many_lines,
+    clippy::useless_let_if_seq,
+    clippy::no_effect_underscore_binding,
+    clippy::collection_is_never_read
+)]
 fn generate_image(scenario: Scenario, image_type: ImageType) {
     let mut path = Path::new("results").join(scenario.get_id()).join("img");
     fs::create_dir_all(&path).unwrap();
@@ -242,9 +248,9 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
     }
     let file_name = path.with_extension("");
     let mut estimations_normal = None;
-    let mut estimations_flat = None;
+    let mut _estimations_flat = None;
     if scenario.config.algorithm.model.use_flat_arrays {
-        estimations_flat = Some(
+        _estimations_flat = Some(
             scenario
                 .results
                 .as_ref()
@@ -279,7 +285,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
                     &model.spatial_description.voxels,
                     path.with_extension("").to_str().unwrap(),
                     "Maximum Estimated Current Densities",
-                )
+                );
             }
         }
         ImageType::StatesMaxSimulation => plot_states_max_normal(
@@ -300,7 +306,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
                     &model.spatial_description.voxels,
                     file_name.to_str().unwrap(),
                     "Maximum Current Densities Delta",
-                )
+                );
             }
         }
         ImageType::ActivationTimeAlgorithm => plot_activation_time(
@@ -353,7 +359,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
                     .values,
                     file_name.to_str().unwrap(),
                     "Voxel Types Predictions",
-                )
+                );
             }
         }
         ImageType::LossEpoch => standard_y_plot(
@@ -595,7 +601,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
                     file_name.to_str().unwrap(),
                     "System State 0 Algorithm",
                     "j [A/mm^2]",
-                )
+                );
             }
         }
         ImageType::StateSimulation => standard_time_plot(
@@ -631,7 +637,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
                     file_name.to_str().unwrap(),
                     "System State 0 Delta",
                     "j [A/mm^2]",
-                )
+                );
             }
         }
         ImageType::MeasurementAlgorithm => {
@@ -654,7 +660,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
                     file_name.to_str().unwrap(),
                     "Measurement 0 Algorithm",
                     "z [pT]",
-                )
+                );
             }
         }
         ImageType::MeasurementSimulation => standard_time_plot(
@@ -690,7 +696,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
                     file_name.to_str().unwrap(),
                     "Measurement 0 Delta",
                     "z [pT]",
-                )
+                );
             }
         }
     };
@@ -723,7 +729,7 @@ fn generate_gifs(scenario: Scenario, gif_type: GifType, playback_speed: f32) {
                     playback_speed,
                     file_name.to_str().unwrap(),
                     "Estimated Current Densities",
-                )
+                );
             }
         }
         GifType::StatesSimulation => plot_states_over_time(

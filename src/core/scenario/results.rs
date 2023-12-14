@@ -20,6 +20,7 @@ pub struct Results {
     pub model: Option<Model>,
 }
 
+#[allow(clippy::useless_let_if_seq)]
 impl Results {
     #[must_use]
     pub fn new(

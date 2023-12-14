@@ -95,7 +95,7 @@ pub fn calculate_pseudo_inverse(
 
         derivatives_normal.calculate(
             functional_description,
-            &estimations_normal,
+            estimations_normal,
             config,
             time_index,
         );
@@ -114,8 +114,8 @@ pub fn calculate_pseudo_inverse(
             time_index,
         );
         results.metrics.calculate_step_normal(
-            &estimations_normal,
-            &derivatives_normal,
+            estimations_normal,
+            derivatives_normal,
             config.regularization_strength,
             time_index,
         );
@@ -138,8 +138,7 @@ pub fn run_epoch(
     config: &Algorithm,
     epoch_index: usize,
 ) {
-    let num_steps;
-    if functional_description.ap_params_normal.is_some() {
+    let num_steps = if functional_description.ap_params_normal.is_some() {
         results
             .estimations_normal
             .as_mut()
@@ -150,13 +149,13 @@ pub fn run_epoch(
             .as_mut()
             .expect("Derivatives normal to be some.")
             .reset();
-        num_steps = results
+        results
             .estimations_normal
             .as_mut()
             .expect("Estimations normal to be some.")
             .system_states
             .values
-            .shape()[0];
+            .shape()[0]
     } else {
         results
             .estimations_flat
@@ -168,14 +167,14 @@ pub fn run_epoch(
             .as_mut()
             .expect("Derivatives flat to be some.")
             .reset();
-        num_steps = results
+        results
             .estimations_flat
             .as_ref()
             .expect("Estimations flat to be some.")
             .system_states
             .values
-            .shape()[0];
-    }
+            .shape()[0]
+    };
     let mut batch = match config.batch_size {
         0 => None,
         _ => Some((epoch_index * num_steps) % config.batch_size),
@@ -183,7 +182,7 @@ pub fn run_epoch(
 
     for time_index in 0..num_steps {
         if functional_description.ap_params_normal.is_some() {
-            let mut estimations_normal = results
+            let estimations_normal = results
                 .estimations_normal
                 .as_mut()
                 .expect("Estimations normal to be some");
@@ -214,14 +213,14 @@ pub fn run_epoch(
 
             derivatives_normal.calculate(
                 functional_description,
-                &estimations_normal,
+                estimations_normal,
                 config,
                 time_index,
             );
 
             if config.model.apply_system_update {
                 calculate_system_update_normal(
-                    &mut estimations_normal,
+                    estimations_normal,
                     time_index,
                     functional_description,
                     config,
@@ -266,8 +265,8 @@ pub fn run_epoch(
                 data.get_coefs_normal(),
             );
             results.metrics.calculate_step_normal(
-                &estimations_normal,
-                &derivatives_normal,
+                estimations_normal,
+                derivatives_normal,
                 config.regularization_strength,
                 time_index,
             );
@@ -279,7 +278,7 @@ pub fn run_epoch(
                         .as_mut()
                         .expect("AP params normal to be some.")
                         .update(
-                            &derivatives_normal,
+                            derivatives_normal,
                             config,
                             estimations_normal.system_states.values.shape()[0],
                         );
@@ -372,8 +371,8 @@ pub fn run_epoch(
                 data.get_coefs_flat(),
             );
             results.metrics.calculate_step_flat(
-                &estimations_flat,
-                &derivatives_flat,
+                estimations_flat,
+                derivatives_flat,
                 config.regularization_strength,
                 time_index,
             );
@@ -385,7 +384,7 @@ pub fn run_epoch(
                         .as_mut()
                         .expect("AP params flat to be some.")
                         .update(
-                            &derivatives_flat,
+                            derivatives_flat,
                             config,
                             estimations_flat.system_states.values.shape()[0],
                         );
@@ -403,7 +402,7 @@ pub fn run_epoch(
                 .as_mut()
                 .expect("AP params normal to be some.")
                 .update(
-                    &results
+                    results
                         .derivatives_normal
                         .as_ref()
                         .expect("Derivatives normal to be some"),
@@ -422,7 +421,7 @@ pub fn run_epoch(
                 .as_mut()
                 .expect("AP params flat to be some.")
                 .update(
-                    &results
+                    results
                         .derivatives_flat
                         .as_ref()
                         .expect("Derivatives flat to be some"),
@@ -478,8 +477,6 @@ fn run(
 
 #[cfg(test)]
 mod test {
-
-    use bevy::tasks::ParallelIterator;
 
     use ndarray::Dim;
     use ndarray_stats::QuantileExt;

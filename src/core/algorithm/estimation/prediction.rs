@@ -41,6 +41,12 @@ pub fn calculate_system_prediction_normal(
         system_states,
     );
 }
+
+/// .
+///
+/// # Panics
+///
+/// Panics if `ap_params_flat` is not set.
 pub fn calculate_system_prediction_flat(
     ap_outputs: &mut ArrayGainsFlat<f32>,
     system_states: &mut ArraySystemStates,

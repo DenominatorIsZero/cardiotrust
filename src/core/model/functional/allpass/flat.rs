@@ -360,7 +360,11 @@ pub const fn offset_to_gain_index(
     )
 }
 
-#[allow(clippy::cast_sign_loss)]
+#[allow(
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap
+)]
 #[must_use]
 pub const fn gain_index_to_offset(gain_index: usize) -> Option<[i32; 4]> {
     if gain_index > 77 {
@@ -377,7 +381,7 @@ pub const fn gain_index_to_offset(gain_index: usize) -> Option<[i32; 4]> {
     let y_offset = ((corrected_index / 9) % 3) as i32 - 1;
     let x_offset = ((corrected_index / 27) % 3) as i32 - 1;
 
-    return Some([x_offset, y_offset, z_offset, output_dimension]);
+    Some([x_offset, y_offset, z_offset, output_dimension])
 }
 
 #[allow(clippy::cast_sign_loss)]

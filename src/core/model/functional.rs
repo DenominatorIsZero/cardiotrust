@@ -65,6 +65,10 @@ impl FunctionalDescription {
     ///
     /// This function will return an error if the config does not
     /// result in valid delay values.
+    ///
+    /// # Panics
+    /// If delay cant be configured with samplerate, voxelsize and propagation speed
+    #[allow(clippy::useless_let_if_seq)]
     pub fn from_model_config(
         config: &Model,
         spatial_description: &SpatialDescription,
@@ -76,33 +80,30 @@ impl FunctionalDescription {
         let mut process_covariance_normal = None;
         let mut process_covariance_flat = None;
 
-        match config.use_flat_arrays {
-            true => {
-                ap_params_flat = Some(APParametersFlat::from_model_config(
-                    config,
-                    spatial_description,
-                    sample_rate_hz,
-                )?);
-                process_covariance_flat = Some(process_covariance_flat_from_model_config(
-                    config,
-                    spatial_description,
-                    ap_params_flat.as_ref().expect("Ap params flat to be some."),
-                ));
-            }
-            false => {
-                ap_params_normal = Some(APParametersNormal::from_model_config(
-                    config,
-                    spatial_description,
-                    sample_rate_hz,
-                )?);
-                process_covariance_normal = Some(process_covariance_normal_from_model_config(
-                    config,
-                    spatial_description,
-                    ap_params_normal
-                        .as_ref()
-                        .expect("Ap params normal to be some."),
-                ));
-            }
+        if config.use_flat_arrays {
+            ap_params_flat = Some(APParametersFlat::from_model_config(
+                config,
+                spatial_description,
+                sample_rate_hz,
+            )?);
+            process_covariance_flat = Some(process_covariance_flat_from_model_config(
+                config,
+                spatial_description,
+                ap_params_flat.as_ref().expect("Ap params flat to be some."),
+            ));
+        } else {
+            ap_params_normal = Some(APParametersNormal::from_model_config(
+                config,
+                spatial_description,
+                sample_rate_hz,
+            )?);
+            process_covariance_normal = Some(process_covariance_normal_from_model_config(
+                config,
+                spatial_description,
+                ap_params_normal
+                    .as_ref()
+                    .expect("Ap params normal to be some."),
+            ));
         }
         let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);
         let control_matrix = ControlMatrix::from_model_config(config, spatial_description);

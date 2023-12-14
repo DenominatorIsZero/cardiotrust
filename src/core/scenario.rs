@@ -341,7 +341,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
 
     if scenario.config.algorithm.model.use_flat_arrays {
         results.metrics.calculate_final_flat(
-            &results
+            results
                 .estimations_flat
                 .as_ref()
                 .expect("Estimations flat to be some."),
@@ -350,7 +350,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         );
     } else {
         results.metrics.calculate_final_normal(
-            &results
+            results
                 .estimations_normal
                 .as_ref()
                 .expect("Estimations normal to be some"),
@@ -458,7 +458,7 @@ fn run_model_based(
                     .as_mut()
                     .expect("Snapshots flat to be some.")
                     .push(SnapshotFlat::new(
-                        &results
+                        results
                             .estimations_flat
                             .as_ref()
                             .expect("Estimations flat to be some."),
@@ -470,7 +470,7 @@ fn run_model_based(
                     .as_mut()
                     .expect("Snapshots normal to be some.")
                     .push(SnapshotNormal::new(
-                        &results
+                        results
                             .estimations_normal
                             .as_ref()
                             .expect("Estimations normal to be some."),
