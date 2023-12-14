@@ -384,7 +384,7 @@ impl DerivativesFlat {
             .filter(|(_, output_state_index)| output_state_index.is_some())
             .for_each(
                 |(((state_index, offset_index), derivative), output_state_index)| {
-                    let coef_index = (state_index / 3, offset_index);
+                    let coef_index = (state_index / 3, offset_index / 3);
                     if time_index >= ap_params.delays.values[coef_index] {
                         *derivative = ap_params.coefs.values[coef_index].mul_add(
                             *derivative,
@@ -401,7 +401,7 @@ impl DerivativesFlat {
             .indexed_iter_mut()
             .zip(ap_outputs.values.iter())
             .for_each(|(((state_index, offset_index), derivative), ap_output)| {
-                let coef_index = (state_index / 3, offset_index);
+                let coef_index = (state_index / 3, offset_index / 3);
                 *derivative = ap_params.coefs.values[coef_index].mul_add(*derivative, *ap_output);
             });
         #[allow(clippy::cast_precision_loss)]
@@ -413,7 +413,7 @@ impl DerivativesFlat {
             .zip(self.coefs_fir.values.iter())
             .zip(ap_params.gains.values.iter())
             .for_each(|((((state_index, offset_index), iir), fir), ap_gain)| {
-                let coef_index = (state_index / 3, offset_index);
+                let coef_index = (state_index / 3, offset_index / 3);
                 self.coefs.values[coef_index] +=
                     (fir + iir) * ap_gain * self.mapped_residuals.values[state_index] * scaling;
             });

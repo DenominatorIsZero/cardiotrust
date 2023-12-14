@@ -391,9 +391,9 @@ fn estimate_state_covariance_flat(
         .indexed_iter_mut()
         .zip(
             functional_description
-                .ap_params_normal
+                .ap_params_flat
                 .as_ref()
-                .unwrap()
+                .expect("Ap params flat to be some.")
                 .output_state_indices
                 .values
                 .iter(),
