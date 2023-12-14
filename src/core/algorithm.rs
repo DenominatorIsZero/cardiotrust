@@ -480,7 +480,7 @@ fn run(
 mod test {
 
     use bevy::tasks::ParallelIterator;
-    use bevy::utils::petgraph::algo;
+
     use ndarray::Dim;
     use ndarray_stats::QuantileExt;
 

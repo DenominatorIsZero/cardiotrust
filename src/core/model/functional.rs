@@ -23,7 +23,7 @@ use self::{
 };
 
 use super::spatial::SpatialDescription;
-use crate::core::config::model::{self, Model};
+use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]

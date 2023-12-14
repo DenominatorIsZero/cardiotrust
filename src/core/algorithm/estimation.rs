@@ -3,7 +3,7 @@ pub mod shapes;
 
 use itertools::Itertools;
 use ndarray::{s, Array2};
-use ndarray_linalg::{Inverse, Norm};
+use ndarray_linalg::Inverse;
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
@@ -740,11 +740,11 @@ fn predict_state_covariance_flat(
                     let offset =
                         gain_index_to_offset(index.1).expect("Gain index to be less than 78");
                     #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
-                    let m_to_k_x = (m_x + k_x + offset[0]);
+                    let m_to_k_x = m_x + k_x + offset[0];
                     #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
-                    let m_to_k_y = (m_y + k_y + offset[1]);
+                    let m_to_k_y = m_y + k_y + offset[1];
                     #[allow(clippy::cast_possible_wrap, clippy::cast_possible_truncation)]
-                    let m_to_k_z = (m_z + k_z + offset[2]);
+                    let m_to_k_z = m_z + k_z + offset[2];
 
                     if !(-1..=1).contains(&m_to_k_x)
                         || !(-1..=1).contains(&m_to_k_y)
