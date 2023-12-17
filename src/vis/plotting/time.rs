@@ -1,6 +1,9 @@
+use std::error::Error;
+
 use ndarray::{arr1, s, Array1};
 use ndarray_stats::QuantileExt;
 use plotly::{color::NamedColor, common::Mode, layout::Axis, Layout, Plot, Scatter};
+use plotters::prelude::*;
 
 use crate::core::data::shapes::ArraySystemStates;
 
@@ -168,4 +171,66 @@ pub fn plot_state_xyz(
     let height = 600;
     let scale = 1.0;
     save_plot(file_name, &plot, width, height, scale);
+}
+
+const CAPTION_STYLE: (&str, i32) = ("Arial", 30);
+const AXIS_STYLE: (&str, i32) = ("Arial", 20);
+
+/// # Errors
+/// Returns eventual plotter errors.
+pub fn xy_plot(
+    x: &Array1<f32>,
+    y: &Array1<f32>,
+    file_name: &str,
+    title: &str,
+    y_label: &str,
+    x_label: &str,
+) -> Result<(), Box<dyn Error>> {
+    let path = format!("{file_name}.png");
+    let root_drawing_area = BitMapBackend::new(&path, (800, 600)).into_drawing_area();
+
+    root_drawing_area.fill(&WHITE)?;
+
+    let mut chart = ChartBuilder::on(&root_drawing_area)
+        .caption(title, CAPTION_STYLE)
+        .set_left_and_bottom_label_area_size(60)
+        .build_cartesian_2d(
+            f64::from(*x.min_skipnan())..f64::from(*x.max_skipnan()),
+            f64::from(*y.min_skipnan())..f64::from(*y.max_skipnan()),
+        )?;
+
+    let color = Palette99::pick(0);
+    chart.draw_series(LineSeries::new(
+        x.iter()
+            .zip(y.iter())
+            .map(|(x, y)| (f64::from(*x), f64::from(*y))),
+        color.stroke_width(2),
+    ))?;
+
+    chart
+        .configure_mesh()
+        .label_style(AXIS_STYLE)
+        .x_desc(x_label)
+        .y_desc(y_label)
+        .draw()?;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use ndarray::Array1;
+
+    use super::xy_plot;
+
+    #[test]
+    fn time_plot_test() {
+        let x = Array1::range(-std::f32::consts::PI, std::f32::consts::PI, 0.01);
+        let y = x.mapv(f32::sin);
+        let file_name = "tests/xy";
+        let title = "XY Plot Test";
+        let x_label = "x [-]";
+        let y_label = "y [-]";
+        xy_plot(&x, &y, file_name, title, y_label, x_label).unwrap();
+    }
 }
