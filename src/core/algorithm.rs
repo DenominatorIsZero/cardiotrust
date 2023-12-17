@@ -478,6 +478,7 @@ fn run(
 #[cfg(test)]
 mod test {
 
+    use approx::assert_relative_eq;
     use ndarray::Dim;
     use ndarray_stats::QuantileExt;
 
@@ -1033,6 +1034,48 @@ mod test {
 
     #[test]
     fn loss_decreases_kalman_flat() {
+        let simulation_config = SimulationConfig::default();
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.use_flat_arrays = false;
+
+        let mut model = Model::from_model_config(
+            &algorithm_config.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .expect("Model params to be valid.");
+        model
+            .functional_description
+            .ap_params_normal
+            .as_mut()
+            .expect("AP params to be some.")
+            .gains
+            .values *= 2.0;
+        algorithm_config.epochs = 1;
+        algorithm_config.constrain_system_states = false;
+        algorithm_config.model.apply_system_update = false;
+
+        let mut results = Results::new(
+            algorithm_config.epochs,
+            model
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+            algorithm_config.model.use_flat_arrays,
+        );
+
+        run(
+            &mut model.functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.use_flat_arrays = true;
         simulation_config.model.pathological = true;
@@ -1077,6 +1120,110 @@ mod test {
         (0..algorithm_config.epochs - 1).for_each(|i| {
             assert!(
                 results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
+            );
+        });
+    }
+
+    #[test]
+    fn full_algo_equivalent() {
+        //normal
+        let mut simulation_config_normal = SimulationConfig::default();
+        simulation_config_normal.model.pathological = true;
+        let data_normal = Data::from_simulation_config(&simulation_config_normal)
+            .expect("Model parameters to be valid.");
+
+        let mut algorithm_config_normal = Algorithm {
+            calculate_kalman_gain: true,
+            ..Default::default()
+        };
+        algorithm_config_normal.model.use_flat_arrays = false;
+
+        let mut model_normal = Model::from_model_config(
+            &algorithm_config_normal.model,
+            simulation_config_normal.sample_rate_hz,
+            simulation_config_normal.duration_s,
+        )
+        .expect("Model parameters to be valid.");
+        algorithm_config_normal.epochs = 5;
+        algorithm_config_normal.model.apply_system_update = true;
+        algorithm_config_normal.learning_rate = 20.0;
+
+        let mut results_normal = Results::new(
+            algorithm_config_normal.epochs,
+            model_normal
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model_normal.spatial_description.sensors.count(),
+            model_normal.spatial_description.voxels.count_states(),
+            algorithm_config_normal.model.use_flat_arrays,
+        );
+
+        run(
+            &mut model_normal.functional_description,
+            &mut results_normal,
+            &data_normal,
+            &algorithm_config_normal,
+        );
+
+        (0..algorithm_config_normal.epochs - 1).for_each(|i| {
+            assert!(
+                results_normal.metrics.loss_epoch.values[i]
+                    > results_normal.metrics.loss_epoch.values[i + 1]
+            );
+        });
+
+        // flat
+        let mut simulation_config_flat = SimulationConfig::default();
+        simulation_config_flat.model.use_flat_arrays = true;
+        simulation_config_flat.model.pathological = true;
+        let data_flat = Data::from_simulation_config(&simulation_config_flat)
+            .expect("Model parameters to be valid.");
+
+        let mut algorithm_config_flat = Algorithm {
+            calculate_kalman_gain: true,
+            ..Default::default()
+        };
+        algorithm_config_flat.model.use_flat_arrays = true;
+
+        let mut model_flat = Model::from_model_config(
+            &algorithm_config_flat.model,
+            simulation_config_flat.sample_rate_hz,
+            simulation_config_flat.duration_s,
+        )
+        .expect("Model parameters to be valid.");
+        algorithm_config_flat.epochs = 5;
+        algorithm_config_flat.model.apply_system_update = true;
+        algorithm_config_flat.learning_rate = 20.0;
+
+        let mut results_flat = Results::new(
+            algorithm_config_flat.epochs,
+            model_flat
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model_flat.spatial_description.sensors.count(),
+            model_flat.spatial_description.voxels.count_states(),
+            algorithm_config_flat.model.use_flat_arrays,
+        );
+
+        run(
+            &mut model_flat.functional_description,
+            &mut results_flat,
+            &data_flat,
+            &algorithm_config_flat,
+        );
+        let loss_flat = &results_flat.metrics.loss_epoch.values;
+        let loss_normal = &results_normal.metrics.loss_epoch.values;
+        println!("flat: {loss_flat:?}");
+        println!("normal: {loss_normal:?}");
+
+        (0..algorithm_config_flat.epochs - 1).for_each(|i| {
+            assert_relative_eq!(
+                results_flat.metrics.loss_epoch.values[i],
+                results_normal.metrics.loss_epoch.values[i]
             );
         });
     }
