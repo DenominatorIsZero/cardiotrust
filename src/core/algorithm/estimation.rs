@@ -153,6 +153,7 @@ pub fn calculate_delays_delta(
         });
 }
 
+#[inline]
 pub fn calculate_system_update(
     estimations: &mut Estimations,
     time_index: usize,

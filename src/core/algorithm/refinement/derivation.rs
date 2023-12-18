@@ -55,6 +55,7 @@ impl Derivatives {
     /// Sets all arrays to zero.
     ///
     /// Usually used after updating the parameters.
+    #[inline]
     pub fn reset(&mut self) {
         self.gains.values.fill(0.0);
         self.coefs.values.fill(0.0);
@@ -71,6 +72,7 @@ impl Derivatives {
     ///
     /// # Panics
     /// Panics if `ap_params` is not set.
+    #[inline]
     pub fn calculate(
         &mut self,
         functional_description: &FunctionalDescription,
@@ -112,6 +114,7 @@ impl Derivatives {
         }
     }
 
+    #[inline]
     fn calculate_derivatives_gains(
         // This gets updated
         &mut self,
@@ -139,6 +142,7 @@ impl Derivatives {
             });
     }
 
+    #[inline]
     fn calculate_derivatives_coefs(
         // These get updated
         &mut self,
@@ -191,6 +195,7 @@ impl Derivatives {
             });
     }
 
+    #[inline]
     fn calculate_maximum_regularization(
         &mut self,
         system_states: &ArraySystemStates,

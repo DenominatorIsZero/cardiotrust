@@ -248,7 +248,7 @@ fn calculate_for_threshold(
     let predictions = predict_voxeltype(estimations, ground_truth, voxel_numbers, threshold);
 
     let dice = calculate_dice(&predictions, ground_truth);
-    let iou = calcultae_iou(&predictions, ground_truth);
+    let iou = calculate_iou(&predictions, ground_truth);
     let precision = calculate_precision(&predictions, ground_truth);
     let recall = calculate_recall(&predictions, ground_truth);
 
@@ -304,7 +304,7 @@ fn calculate_precision(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f
 }
 
 #[allow(clippy::cast_precision_loss)]
-fn calcultae_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
+fn calculate_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     let intersection = predictions
         .values
         .iter()

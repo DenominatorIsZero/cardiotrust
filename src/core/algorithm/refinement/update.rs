@@ -11,6 +11,7 @@ impl APParameters {
     /// Performs one gradient descent step on the all-pass parameters.
     ///
     /// Derivatives must be reset before the next update.
+    #[inline]
     pub fn update(
         &mut self,
         derivatives: &Derivatives,
@@ -45,6 +46,7 @@ impl APParameters {
 
 /// Performs one gradient descent step on the all-pass gains.
 #[allow(clippy::cast_precision_loss)]
+#[inline]
 fn update_gains(
     gains: &mut ArrayGains<f32>,
     derivatives: &ArrayGains<f32>,
@@ -64,6 +66,7 @@ fn update_gains(
 /// the integer delay parameter is adjusted to "roll" the
 /// coefficient.
 #[allow(clippy::cast_precision_loss)]
+#[inline]
 fn update_delays(
     ap_coefs: &mut ArrayDelays<f32>,
     delays: &mut ArrayDelays<usize>,
