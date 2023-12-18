@@ -254,7 +254,7 @@ fn run(
 #[cfg(test)]
 mod test {
 
-    use approx::assert_relative_eq;
+    
     use ndarray::Dim;
     use ndarray_stats::QuantileExt;
 
@@ -273,7 +273,7 @@ mod test {
         let number_of_sensors = 300;
         let number_of_steps = 3;
         let number_of_epochs = 10;
-        let mut config = AlgorithmConfig::default();
+        let config = AlgorithmConfig::default();
         let epoch_index = 3;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
@@ -312,7 +312,7 @@ mod test {
         let number_of_steps = 3;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let mut algorithm_config = AlgorithmConfig {
+        let algorithm_config = AlgorithmConfig {
             epochs: 3,
             ..Default::default()
         };
@@ -723,7 +723,7 @@ mod test {
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
-        let mut algorithm_config = Algorithm::default();
+        let algorithm_config = Algorithm::default();
 
         let model = Model::from_model_config(
             &algorithm_config.model,

@@ -178,7 +178,7 @@ fn run_epoch_bench(c: &mut Criterion) {
         let simulation_config = config.simulation.as_ref().unwrap();
         let data =
             Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
-        let mut model = Model::from_model_config(
+        let model = Model::from_model_config(
             &config.algorithm.model,
             simulation_config.sample_rate_hz,
             simulation_config.duration_s,
