@@ -14,6 +14,7 @@ use crate::core::{
 /// # Panics
 ///
 /// Panics if `ap_params_flat` is not set.
+#[allow(clippy::module_name_repetitions)]
 pub fn calculate_system_prediction(
     ap_outputs: &mut ArrayGains<f32>,
     system_states: &mut ArraySystemStates,

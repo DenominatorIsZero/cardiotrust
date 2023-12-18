@@ -301,7 +301,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         ImageType::VoxelTypesPrediction => {
             plot_voxel_types(
                 &predict_voxeltype(
-                    &estimations,
+                    estimations,
                     data.get_voxel_types(),
                     &model.spatial_description.voxels.numbers,
                     scenario.summary.unwrap().threshold,

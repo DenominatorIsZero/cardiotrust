@@ -403,26 +403,6 @@ fn predict_state_covariance(
         });
 }
 
-#[inline]
-fn flip(x: usize) -> usize {
-    // Output state indicies:
-    // 0 = -1
-    // 1 = 0
-    // 2 = 1
-    //
-    // Now if we need it the other way around,
-    // 0 needs to be 2
-    // 2 needs to be 0
-    // 1 needs to be 1
-    // Finally, getting d the other way around d needs to map to index.0 / 3
-    match x {
-        0 => 2,
-        1 => 1,
-        2 => 0,
-        _ => panic!("Please nothing greater than 2. Thanks."),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use ndarray::Dim;
