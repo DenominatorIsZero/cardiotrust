@@ -2,12 +2,12 @@ use ndarray::{s, Array1};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
-    algorithm::estimation::EstimationsFlat,
+    algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
     model::functional::{
         allpass::{
-            flat::APParametersFlat,
-            shapes::flat::{ArrayDelaysFlat, ArrayGainsFlat},
+            flat::APParameters,
+            shapes::flat::{ArrayDelays, ArrayGains},
         },
         FunctionalDescription,
     },
@@ -20,17 +20,17 @@ use crate::core::data::shapes::ArraySystemStates;
 /// Loss function.
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct DerivativesFlat {
+pub struct Derivatives {
     /// Derivatives of the All-pass gains
-    pub gains: ArrayGainsFlat<f32>,
+    pub gains: ArrayGains<f32>,
     /// Derivatives of the All-pass coeficients
-    pub coefs: ArrayDelaysFlat<f32>,
+    pub coefs: ArrayDelays<f32>,
     /// IIR component of the coeficients derivatives
     /// only used for internal computation
-    coefs_iir: ArrayGainsFlat<f32>,
+    coefs_iir: ArrayGains<f32>,
     /// FIR component of the coeficients derivatives
     /// only used for internal computation
-    coefs_fir: ArrayGainsFlat<f32>,
+    coefs_fir: ArrayGains<f32>,
     /// Residuals mapped onto the system states via
     /// the measurement matrix.
     /// Stored internally to avoid redundant computation
@@ -39,14 +39,14 @@ pub struct DerivativesFlat {
     pub maximum_regularization_sum: f32,
 }
 
-impl DerivativesFlat {
+impl Derivatives {
     #[must_use]
     pub fn new(number_of_states: usize) -> Self {
         Self {
-            gains: ArrayGainsFlat::empty(number_of_states),
-            coefs: ArrayDelaysFlat::empty(number_of_states),
-            coefs_iir: ArrayGainsFlat::empty(number_of_states),
-            coefs_fir: ArrayGainsFlat::empty(number_of_states),
+            gains: ArrayGains::empty(number_of_states),
+            coefs: ArrayDelays::empty(number_of_states),
+            coefs_iir: ArrayGains::empty(number_of_states),
+            coefs_fir: ArrayGains::empty(number_of_states),
             mapped_residuals: ArrayMappedResiduals::new(number_of_states),
             maximum_regularization: ArrayMaximumRegularization::new(number_of_states),
             maximum_regularization_sum: 0.0,
@@ -75,7 +75,7 @@ impl DerivativesFlat {
     pub fn calculate(
         &mut self,
         functional_description: &FunctionalDescription,
-        estimations: &EstimationsFlat,
+        estimations: &Estimations,
         config: &Algorithm,
         time_index: usize,
     ) {
@@ -103,7 +103,7 @@ impl DerivativesFlat {
             self.calculate_derivatives_coefs(
                 &estimations.ap_outputs,
                 &estimations.system_states,
-                &functional_description.ap_params_flat,
+                &functional_description.ap_params,
                 time_index,
                 functional_description
                     .measurement_covariance
@@ -117,7 +117,7 @@ impl DerivativesFlat {
         // This gets updated
         &mut self,
         // Based on these values
-        ap_outputs: &ArrayGainsFlat<f32>,
+        ap_outputs: &ArrayGains<f32>,
         // This needed for indexing
         regularization_strength: f32,
         number_of_sensors: usize,
@@ -144,9 +144,9 @@ impl DerivativesFlat {
         // These get updated
         &mut self,
         // Based on these values
-        ap_outputs: &ArrayGainsFlat<f32>,
+        ap_outputs: &ArrayGains<f32>,
         estimated_system_states: &ArraySystemStates,
-        ap_params: &APParametersFlat,
+        ap_params: &APParameters,
         time_index: usize,
         number_of_sensors: usize,
     ) {
@@ -278,23 +278,23 @@ impl ArrayMaximumRegularization {
 mod tests {
     use ndarray::Dim;
 
-    use crate::core::model::functional::allpass::shapes::flat::ArrayIndicesGainsFlat;
+    use crate::core::model::functional::allpass::shapes::flat::ArrayIndicesGains;
 
     use super::*;
     #[test]
     fn coef_no_crash() {
         let number_of_steps = 2000;
         let number_of_states = 3000;
-        let ap_outputs = ArrayGainsFlat::empty(number_of_states);
+        let ap_outputs = ArrayGains::empty(number_of_states);
         let estimated_system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
-        let ap_params = APParametersFlat::empty(number_of_states, Dim([1000, 1, 1]));
-        let mut delays = ArrayDelaysFlat::empty(number_of_states);
+        let ap_params = APParameters::empty(number_of_states, Dim([1000, 1, 1]));
+        let mut delays = ArrayDelays::empty(number_of_states);
         delays.values.fill(30);
-        let mut output_state_indices = ArrayIndicesGainsFlat::empty(number_of_states);
+        let mut output_state_indices = ArrayIndicesGains::empty(number_of_states);
         output_state_indices.values.fill(Some(3));
         let time_index = 10;
 
-        let mut derivatives = DerivativesFlat::new(number_of_states);
+        let mut derivatives = Derivatives::new(number_of_states);
 
         derivatives.calculate_derivatives_coefs(
             &ap_outputs,
@@ -317,32 +317,31 @@ mod tests {
             ..Default::default()
         };
 
-        let mut derivates = DerivativesFlat::new(number_of_states);
+        let mut derivates = Derivatives::new(number_of_states);
         let functional_description = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,
             number_of_steps,
             voxels_in_dims,
         );
-        let estimations =
-            EstimationsFlat::empty(number_of_states, number_of_sensors, number_of_steps);
+        let estimations = Estimations::empty(number_of_states, number_of_sensors, number_of_steps);
 
         derivates.calculate(&functional_description, &estimations, &config, time_index);
     }
     #[test]
-    fn coef_flat_no_crash() {
+    fn coef_no_crash() {
         let number_of_steps = 2000;
         let number_of_states = 3000;
-        let ap_outputs = ArrayGainsFlat::empty(number_of_states);
+        let ap_outputs = ArrayGains::empty(number_of_states);
         let estimated_system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
-        let ap_params = APParametersFlat::empty(number_of_states, Dim([1000, 1, 1]));
-        let mut delays = ArrayDelaysFlat::empty(number_of_states);
+        let ap_params = APParameters::empty(number_of_states, Dim([1000, 1, 1]));
+        let mut delays = ArrayDelays::empty(number_of_states);
         delays.values.fill(30);
-        let mut output_state_indices = ArrayIndicesGainsFlat::empty(number_of_states);
+        let mut output_state_indices = ArrayIndicesGains::empty(number_of_states);
         output_state_indices.values.fill(Some(3));
         let time_index = 10;
 
-        let mut derivatives = DerivativesFlat::new(number_of_states);
+        let mut derivatives = Derivatives::new(number_of_states);
 
         derivatives.calculate_derivatives_coefs(
             &ap_outputs,
@@ -354,7 +353,7 @@ mod tests {
     }
 
     #[test]
-    fn calculate_flat_no_crash() {
+    fn calculate_no_crash() {
         let number_of_states = 1500;
         let number_of_sensors = 300;
         let number_of_steps = 2000;
@@ -365,15 +364,14 @@ mod tests {
             ..Default::default()
         };
 
-        let mut derivates = DerivativesFlat::new(number_of_states);
+        let mut derivates = Derivatives::new(number_of_states);
         let functional_description = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,
             number_of_steps,
             voxels_in_dims,
         );
-        let estimations =
-            EstimationsFlat::empty(number_of_states, number_of_sensors, number_of_steps);
+        let estimations = Estimations::empty(number_of_states, number_of_sensors, number_of_steps);
 
         derivates.calculate(&functional_description, &estimations, &config, time_index);
     }

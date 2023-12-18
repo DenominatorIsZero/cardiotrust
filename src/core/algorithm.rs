@@ -2,9 +2,9 @@ use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
 
 use self::estimation::{
-    calculate_delays_delta_flat, calculate_gains_delta_flat, calculate_post_update_residuals,
-    calculate_residuals, calculate_system_states_delta, calculate_system_update_flat,
-    prediction::calculate_system_prediction_flat,
+    calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
+    calculate_residuals, calculate_system_states_delta, calculate_system_update,
+    prediction::calculate_system_prediction,
 };
 
 use super::{
@@ -39,10 +39,10 @@ pub fn calculate_pseudo_inverse(
 
     let decomposition = SVD::new_unordered(measurement_matrix, true, true);
 
-    let estimations_flat = &mut results.estimations_flat;
-    let derivatives_flat = &mut results.derivatives_flat;
+    let estimations = &mut results.estimations;
+    let derivatives = &mut results.derivatives;
 
-    for time_index in 0..estimations_flat.system_states.values.shape()[0] {
+    for time_index in 0..estimations.system_states.values.shape()[0] {
         let rows = data.get_measurements().values.shape()[1];
         let measurements = DMatrix::from_row_slice(
             rows,
@@ -60,50 +60,48 @@ pub fn calculate_pseudo_inverse(
 
         let system_states = Array1::from_iter(system_states.as_slice().iter().copied());
 
-        estimations_flat
+        estimations
             .system_states
             .values
             .slice_mut(s![time_index, ..])
             .assign(&system_states);
 
-        estimations_flat
+        estimations
             .measurements
             .values
             .slice_mut(s![time_index, ..])
             .assign(
-                &functional_description.measurement_matrix.values.dot(
-                    &estimations_flat
-                        .system_states
-                        .values
-                        .slice(s![time_index, ..]),
-                ),
+                &functional_description
+                    .measurement_matrix
+                    .values
+                    .dot(&estimations.system_states.values.slice(s![time_index, ..])),
             );
 
         calculate_residuals(
-            &mut estimations_flat.residuals,
-            &estimations_flat.measurements,
+            &mut estimations.residuals,
+            &estimations.measurements,
             data.get_measurements(),
             time_index,
         );
 
-        derivatives_flat.calculate(functional_description, estimations_flat, config, time_index);
+        derivatives.calculate(functional_description, estimations, config, time_index);
 
         calculate_post_update_residuals(
-            &mut estimations_flat.post_update_residuals,
+            &mut estimations.post_update_residuals,
             &functional_description.measurement_matrix,
-            &estimations_flat.system_states,
+            &estimations.system_states,
             data.get_measurements(),
             time_index,
         );
         calculate_system_states_delta(
-            &mut estimations_flat.system_states_delta,
-            &estimations_flat.system_states,
+            &mut estimations.system_states_delta,
+            &estimations.system_states,
             data.get_system_states(),
             time_index,
         );
-        results.metrics.calculate_step_flat(
-            estimations_flat,
-            derivatives_flat,
+        results.metrics.calculate_step(
+            estimations,
+            derivatives,
             config.regularization_strength,
             time_index,
         );
@@ -125,99 +123,94 @@ pub fn run_epoch(
     config: &Algorithm,
     epoch_index: usize,
 ) {
-    results.estimations_flat.reset();
-    results.derivatives_flat.reset();
-    let num_steps = results.estimations_flat.system_states.values.shape()[0];
+    results.estimations.reset();
+    results.derivatives.reset();
+    let num_steps = results.estimations.system_states.values.shape()[0];
     let mut batch = match config.batch_size {
         0 => None,
         _ => Some((epoch_index * num_steps) % config.batch_size),
     };
 
     for time_index in 0..num_steps {
-        let estimations_flat = &mut results.estimations_flat;
-        let derivatives_flat = &mut results.derivatives_flat;
-        calculate_system_prediction_flat(
-            &mut estimations_flat.ap_outputs,
-            &mut estimations_flat.system_states,
-            &mut estimations_flat.measurements,
+        let estimations = &mut results.estimations;
+        let derivatives = &mut results.derivatives;
+        calculate_system_prediction(
+            &mut estimations.ap_outputs,
+            &mut estimations.system_states,
+            &mut estimations.measurements,
             functional_description,
             time_index,
         );
         calculate_residuals(
-            &mut estimations_flat.residuals,
-            &estimations_flat.measurements,
+            &mut estimations.residuals,
+            &estimations.measurements,
             data.get_measurements(),
             time_index,
         );
         if config.constrain_system_states {
             constrain_system_states(
-                &mut estimations_flat.system_states,
+                &mut estimations.system_states,
                 time_index,
                 config.state_clamping_threshold,
             );
         }
 
-        derivatives_flat.calculate(functional_description, estimations_flat, config, time_index);
+        derivatives.calculate(functional_description, estimations, config, time_index);
 
         if config.model.apply_system_update {
-            calculate_system_update_flat(
-                estimations_flat,
-                time_index,
-                functional_description,
-                config,
-            );
+            calculate_system_update(estimations, time_index, functional_description, config);
         }
 
         calculate_post_update_residuals(
-            &mut estimations_flat.post_update_residuals,
+            &mut estimations.post_update_residuals,
             &functional_description.measurement_matrix,
-            &estimations_flat.system_states,
+            &estimations.system_states,
             data.get_measurements(),
             time_index,
         );
         calculate_system_states_delta(
-            &mut estimations_flat.system_states_delta,
-            &estimations_flat.system_states,
+            &mut estimations.system_states_delta,
+            &estimations.system_states,
             data.get_system_states(),
             time_index,
         );
-        calculate_gains_delta_flat(
-            &mut estimations_flat.gains_delta,
-            &functional_description.ap_params_flat.gains,
-            data.get_gains_flat(),
+        calculate_gains_delta(
+            &mut estimations.gains_delta,
+            &functional_description.ap_params.gains,
+            data.get_gains(),
         );
-        calculate_delays_delta_flat(
-            &mut estimations_flat.delays_delta,
-            &functional_description.ap_params_flat.delays,
-            data.get_delays_flat(),
-            &functional_description.ap_params_flat.coefs,
-            data.get_coefs_flat(),
+        calculate_delays_delta(
+            &mut estimations.delays_delta,
+            &functional_description.ap_params.delays,
+            data.get_delays(),
+            &functional_description.ap_params.coefs,
+            data.get_coefs(),
         );
-        results.metrics.calculate_step_flat(
-            estimations_flat,
-            derivatives_flat,
+        results.metrics.calculate_step(
+            estimations,
+            derivatives,
             config.regularization_strength,
             time_index,
         );
         if let Some(n) = batch.as_mut() {
             *n += 1;
             if *n == config.batch_size {
-                functional_description.ap_params_flat.update(
-                    derivatives_flat,
+                functional_description.ap_params.update(
+                    derivatives,
                     config,
-                    estimations_flat.system_states.values.shape()[0],
+                    estimations.system_states.values.shape()[0],
                 );
-                derivatives_flat.reset();
-                estimations_flat.kalman_gain_converged = false;
+                derivatives.reset();
+                estimations.kalman_gain_converged = false;
                 *n = 0;
             }
         }
     }
     if batch.is_none() {
-        functional_description.ap_params_flat.update(
-            &results.derivatives_flat,
+        functional_description.ap_params.update(
+            &results.derivatives,
             config,
-            results.estimations_flat.system_states.values.shape()[0],
+            results.estimations.system_states.values.shape()[0],
         );
     }
     results.metrics.calculate_epoch(epoch_index);
@@ -447,7 +440,7 @@ mod test {
         );
 
         plot_states_max(
-            &results.estimations_flat.system_states,
+            &results.estimations.system_states,
             &model.spatial_description.voxels,
             "tests/algorith_states_max",
             "Maximum Estimated Current Densities",
@@ -457,7 +450,7 @@ mod test {
         let playback_speed = 0.1;
 
         plot_states_over_time(
-            &results.estimations_flat.system_states,
+            &results.estimations.system_states,
             &model.spatial_description.voxels,
             fps,
             playback_speed,
@@ -616,7 +609,7 @@ mod test {
         );
 
         plot_states_max(
-            &results.estimations_flat.system_states,
+            &results.estimations.system_states,
             &model.spatial_description.voxels,
             "tests/algorith_no_update_states_max",
             "Maximum Estimated Current Densities",
@@ -626,7 +619,7 @@ mod test {
         let playback_speed = 0.1;
 
         plot_states_over_time(
-            &results.estimations_flat.system_states,
+            &results.estimations.system_states,
             &model.spatial_description.voxels,
             fps,
             playback_speed,
@@ -656,7 +649,7 @@ mod test {
             simulation_config.duration_s,
         )
         .expect("Model parameters to be valid.");
-        model.functional_description.ap_params_flat.gains.values *= 2.0;
+        model.functional_description.ap_params.gains.values *= 2.0;
         algorithm_config.epochs = 1;
         algorithm_config.model.apply_system_update = false;
 
@@ -679,7 +672,7 @@ mod test {
         );
 
         results
-            .estimations_flat
+            .estimations
             .system_states
             .values
             .for_each(|v| assert!(*v <= 2.0, "{v} was greater than 2."));
@@ -699,7 +692,7 @@ mod test {
             simulation_config.duration_s,
         )
         .expect("Model params to be valid.");
-        model.functional_description.ap_params_flat.gains.values *= 2.0;
+        model.functional_description.ap_params.gains.values *= 2.0;
         algorithm_config.epochs = 1;
         algorithm_config.constrain_system_states = false;
         algorithm_config.model.apply_system_update = false;
@@ -722,7 +715,7 @@ mod test {
             &algorithm_config,
         );
 
-        assert!(*results.estimations_flat.system_states.values.max_skipnan() > 2.0);
+        assert!(*results.estimations.system_states.values.max_skipnan() > 2.0);
     }
 
     #[test]
@@ -760,7 +753,7 @@ mod test {
     }
 
     #[test]
-    fn loss_decreases_kalman_flat() {
+    fn loss_decreases_kalman() {
         let simulation_config = SimulationConfig::default();
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
@@ -773,7 +766,7 @@ mod test {
             simulation_config.duration_s,
         )
         .expect("Model params to be valid.");
-        model.functional_description.ap_params_flat.gains.values *= 2.0;
+        model.functional_description.ap_params.gains.values *= 2.0;
         algorithm_config.epochs = 1;
         algorithm_config.constrain_system_states = false;
         algorithm_config.model.apply_system_update = false;

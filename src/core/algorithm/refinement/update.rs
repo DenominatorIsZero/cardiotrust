@@ -1,20 +1,20 @@
 use crate::core::{
     config::algorithm::Algorithm,
     model::functional::allpass::{
-        flat::APParametersFlat,
-        shapes::flat::{ArrayDelaysFlat, ArrayGainsFlat},
+        flat::APParameters,
+        shapes::flat::{ArrayDelays, ArrayGains},
     },
 };
 
-use super::derivation::DerivativesFlat;
+use super::derivation::Derivatives;
 
-impl APParametersFlat {
+impl APParameters {
     /// Performs one gradient descent step on the all-pass parameters.
     ///
     /// Derivatives must be reset before the next update.
     pub fn update(
         &mut self,
-        derivatives: &DerivativesFlat,
+        derivatives: &Derivatives,
         config: &Algorithm,
         number_of_steps: usize,
     ) {
@@ -23,7 +23,7 @@ impl APParametersFlat {
             _ => config.batch_size,
         };
         if !config.freeze_gains {
-            update_gains_flat(
+            update_gains(
                 &mut self.gains,
                 &derivatives.gains,
                 config.learning_rate,
@@ -32,7 +32,7 @@ impl APParametersFlat {
             );
         }
         if !config.freeze_delays {
-            update_delays_flat(
+            update_delays(
                 &mut self.coefs,
                 &mut self.delays,
                 &derivatives.coefs,
@@ -46,9 +46,9 @@ impl APParametersFlat {
 
 /// Performs one gradient descent step on the all-pass gains.
 #[allow(clippy::cast_precision_loss)]
-fn update_gains_flat(
-    gains: &mut ArrayGainsFlat<f32>,
-    derivatives: &ArrayGainsFlat<f32>,
+fn update_gains(
+    gains: &mut ArrayGains<f32>,
+    derivatives: &ArrayGains<f32>,
     learning_rate: f32,
     batch_size: usize,
     clamping_threshold: f32,
@@ -65,10 +65,10 @@ fn update_gains_flat(
 /// the integer delay parameter is adjusted to "roll" the
 /// coefficient.
 #[allow(clippy::cast_precision_loss)]
-fn update_delays_flat(
-    ap_coefs: &mut ArrayDelaysFlat<f32>,
-    delays: &mut ArrayDelaysFlat<usize>,
-    derivatives: &ArrayDelaysFlat<f32>,
+fn update_delays(
+    ap_coefs: &mut ArrayDelays<f32>,
+    delays: &mut ArrayDelays<usize>,
+    derivatives: &ArrayDelays<f32>,
     learning_rate: f32,
     batch_size: usize,
     clamping_threshold: f32,
@@ -105,12 +105,12 @@ mod tests {
     #[test]
     fn update_gains_success() {
         let number_of_states = 10;
-        let mut gains = ArrayGainsFlat::empty(number_of_states);
-        let mut derivatives = ArrayGainsFlat::empty(number_of_states);
+        let mut gains = ArrayGains::empty(number_of_states);
+        let mut derivatives = ArrayGains::empty(number_of_states);
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
-        update_gains_flat(&mut gains, &derivatives, learning_rate, 1, 1.0);
+        update_gains(&mut gains, &derivatives, learning_rate, 1, 1.0);
 
         assert_eq!(-derivatives.values, gains.values);
     }
@@ -118,13 +118,13 @@ mod tests {
     #[test]
     fn update_delays_success() {
         let number_of_states = 12;
-        let mut ap_coefs = ArrayDelaysFlat::empty(number_of_states);
-        let mut delays = ArrayDelaysFlat::empty(number_of_states);
-        let mut derivatives = ArrayDelaysFlat::empty(number_of_states);
+        let mut ap_coefs = ArrayDelays::empty(number_of_states);
+        let mut delays = ArrayDelays::empty(number_of_states);
+        let mut derivatives = ArrayDelays::empty(number_of_states);
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
-        update_delays_flat(
+        update_delays(
             &mut ap_coefs,
             &mut delays,
             &derivatives,

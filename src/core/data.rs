@@ -17,7 +17,7 @@ use crate::core::data::shapes::ArrayMeasurements;
 use super::model::{
     functional::{
         allpass::shapes::{
-            flat::{ArrayDelaysFlat, ArrayGainsFlat},
+            flat::{ArrayDelays, ArrayGains},
             ArrayActivationTime,
         },
         control::ControlFunction,
@@ -114,10 +114,10 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
-    pub fn get_gains_flat(&self) -> &ArrayGainsFlat<f32> {
+    pub fn get_gains(&self) -> &ArrayGains<f32> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.model.functional_description.ap_params_flat.gains,
+            |simulation| &simulation.model.functional_description.ap_params.gains,
         )
     }
 
@@ -125,10 +125,10 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
-    pub fn get_coefs_flat(&self) -> &ArrayDelaysFlat<f32> {
+    pub fn get_coefs(&self) -> &ArrayDelays<f32> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.model.functional_description.ap_params_flat.coefs,
+            |simulation| &simulation.model.functional_description.ap_params.coefs,
         )
     }
 
@@ -165,7 +165,7 @@ impl Data {
                 &simulation
                     .model
                     .functional_description
-                    .ap_params_flat
+                    .ap_params
                     .activation_time_ms
             },
         )
@@ -177,16 +177,10 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
-    pub fn get_delays_flat(&self) -> &ArrayDelaysFlat<usize> {
+    pub fn get_delays(&self) -> &ArrayDelays<usize> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
-            |simulation| {
-                &simulation
-                    .model
-                    .functional_description
-                    .ap_params_flat
-                    .delays
-            },
+            |simulation| &simulation.model.functional_description.ap_params.delays,
         )
     }
 

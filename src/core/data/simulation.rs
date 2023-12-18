@@ -7,10 +7,10 @@ use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
-    algorithm::estimation::prediction::calculate_system_prediction_flat,
+    algorithm::estimation::prediction::calculate_system_prediction,
     config::simulation::Simulation as SimulationConfig,
     data::ArrayMeasurements,
-    model::{functional::allpass::shapes::flat::ArrayGainsFlat, Model},
+    model::{functional::allpass::shapes::flat::ArrayGains, Model},
 };
 
 use super::shapes::ArraySystemStates;
@@ -72,10 +72,9 @@ impl Simulation {
         let system_states = &mut self.system_states;
         let model = &self.model;
 
-        let mut ap_outputs: ArrayGainsFlat<f32> =
-            ArrayGainsFlat::empty(system_states.values.shape()[1]);
+        let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(system_states.values.shape()[1]);
         for time_index in 0..system_states.values.shape()[0] {
-            calculate_system_prediction_flat(
+            calculate_system_prediction(
                 &mut ap_outputs,
                 system_states,
                 measurements,

@@ -5,7 +5,7 @@ use ndarray::{s, ArrayBase, Dim, ViewRepr};
 
 use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
 
-use super::{flat::offset_to_delay_index, shapes::flat::ArrayDelaysFlat};
+use super::{flat::offset_to_delay_index, shapes::flat::ArrayDelays};
 
 pub fn calculate_delay_s(
     input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
@@ -16,13 +16,13 @@ pub fn calculate_delay_s(
     let distance_norm_m = distance_m.mapv(|v| v.powi(2)).sum().sqrt();
     distance_norm_m / propagation_velocity_m_per_s
 }
-pub fn calculate_delay_samples_array_flat(
+pub fn calculate_delay_samples_array(
     spatial_description: &SpatialDescription,
     propagation_velocities_m_per_s: &HashMap<VoxelType, f32>,
     sample_rate_hz: f32,
-) -> Result<ArrayDelaysFlat<f32>, Box<dyn Error>> {
+) -> Result<ArrayDelays<f32>, Box<dyn Error>> {
     let mut delay_samples_array =
-        ArrayDelaysFlat::<f32>::empty(spatial_description.voxels.count_states());
+        ArrayDelays::<f32>::empty(spatial_description.voxels.count_states());
 
     let v_types = &spatial_description.voxels.types.values;
     let v_position_mm = &spatial_description.voxels.positions_mm.values;
@@ -93,7 +93,7 @@ mod test {
         model::spatial::{voxels::VoxelType, SpatialDescription},
     };
 
-    use super::{calculate_delay_s, calculate_delay_samples_array_flat};
+    use super::{calculate_delay_s, calculate_delay_samples_array};
 
     #[test]
     fn calculate_delay_s_1() {
@@ -131,7 +131,7 @@ mod test {
         let spatial_description = &SpatialDescription::from_model_config(config);
         let sample_rate_hz = 2000.0;
 
-        let delay_samples = calculate_delay_samples_array_flat(
+        let delay_samples = calculate_delay_samples_array(
             spatial_description,
             &config.propagation_velocities_m_per_s,
             sample_rate_hz,

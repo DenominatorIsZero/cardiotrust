@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
 
-use super::{estimation::EstimationsFlat, refinement::derivation::DerivativesFlat};
+use super::{estimation::Estimations, refinement::derivation::Derivatives};
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -98,10 +98,10 @@ impl Metrics {
     ///
     /// Panics if any array is None.
     #[allow(clippy::cast_precision_loss)]
-    pub fn calculate_step_flat(
+    pub fn calculate_step(
         &mut self,
-        estimations: &EstimationsFlat,
-        derivatives: &DerivativesFlat,
+        estimations: &Estimations,
+        derivatives: &Derivatives,
         regularization_strength: f32,
         time_index: usize,
     ) {
@@ -165,16 +165,16 @@ impl Metrics {
     }
 
     #[allow(clippy::cast_precision_loss)]
-    pub fn calculate_final_flat(
+    pub fn calculate_final(
         &mut self,
-        estimations: &EstimationsFlat,
+        estimations: &Estimations,
         ground_truth: &VoxelTypes,
         voxel_numbers: &VoxelNumbers,
     ) {
         for i in 0..=100 {
             let threshold = i as f32 / 100.0;
             let (dice, iou, precision, recall) =
-                calculate_for_threshold_flat(estimations, ground_truth, voxel_numbers, threshold);
+                calculate_for_threshold(estimations, ground_truth, voxel_numbers, threshold);
             self.dice_score_over_threshold[i] = dice;
             self.iou_over_threshold[i] = iou;
             self.precision_over_threshold[i] = precision;
@@ -241,13 +241,13 @@ impl Metrics {
     }
 }
 
-fn calculate_for_threshold_flat(
-    estimations: &EstimationsFlat,
+fn calculate_for_threshold(
+    estimations: &Estimations,
     ground_truth: &VoxelTypes,
     voxel_numbers: &VoxelNumbers,
     threshold: f32,
 ) -> (f32, f32, f32, f32) {
-    let predictions = predict_voxeltype_flat(estimations, ground_truth, voxel_numbers, threshold);
+    let predictions = predict_voxeltype(estimations, ground_truth, voxel_numbers, threshold);
 
     let dice = calculate_dice(&predictions, ground_truth);
     let iou = calcultae_iou(&predictions, ground_truth);
@@ -370,8 +370,8 @@ fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
 
 #[must_use]
 #[allow(clippy::missing_panics_doc)]
-pub fn predict_voxeltype_flat(
-    estimations: &EstimationsFlat,
+pub fn predict_voxeltype(
+    estimations: &Estimations,
     ground_truth: &VoxelTypes,
     voxel_numbers: &VoxelNumbers,
     threshold: f32,

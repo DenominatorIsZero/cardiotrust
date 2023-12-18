@@ -16,31 +16,31 @@ use crate::core::{
 };
 
 use super::{
-    delay::{self, calculate_delay_samples_array_flat},
+    delay::{self, calculate_delay_samples_array},
     direction, find_candidate_voxels, from_samples_to_coef, from_samples_to_usize, gain,
     shapes::{
-        flat::{ArrayDelaysFlat, ArrayGainsFlat, ArrayIndicesGainsFlat},
+        flat::{ArrayDelays, ArrayGains, ArrayIndicesGains},
         ArrayActivationTime,
     },
 };
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct APParametersFlat {
-    pub gains: ArrayGainsFlat<f32>,
-    pub output_state_indices: ArrayIndicesGainsFlat,
-    pub coefs: ArrayDelaysFlat<f32>,
-    pub delays: ArrayDelaysFlat<usize>,
+pub struct APParameters {
+    pub gains: ArrayGains<f32>,
+    pub output_state_indices: ArrayIndicesGains,
+    pub coefs: ArrayDelays<f32>,
+    pub delays: ArrayDelays<usize>,
     pub activation_time_ms: ArrayActivationTime,
 }
 
-impl APParametersFlat {
+impl APParameters {
     #[must_use]
     pub fn empty(number_of_states: usize, voxels_in_dims: Dim<[usize; 3]>) -> Self {
         Self {
-            gains: ArrayGainsFlat::empty(number_of_states),
-            output_state_indices: ArrayIndicesGainsFlat::empty(number_of_states),
-            coefs: ArrayDelaysFlat::empty(number_of_states),
-            delays: ArrayDelaysFlat::empty(number_of_states),
+            gains: ArrayGains::empty(number_of_states),
+            output_state_indices: ArrayIndicesGains::empty(number_of_states),
+            coefs: ArrayDelays::empty(number_of_states),
+            delays: ArrayDelays::empty(number_of_states),
             activation_time_ms: ArrayActivationTime::empty(voxels_in_dims),
         }
     }
@@ -63,7 +63,7 @@ impl APParametersFlat {
 
         connect_voxels(spatial_description, config, &mut ap_params);
 
-        let delays_samples = calculate_delay_samples_array_flat(
+        let delays_samples = calculate_delay_samples_array(
             spatial_description,
             &config.propagation_velocities_m_per_s,
             sample_rate_hz,
@@ -98,9 +98,9 @@ impl APParametersFlat {
     }
 }
 
-fn init_output_state_indicies(spatial_description: &SpatialDescription) -> ArrayIndicesGainsFlat {
+fn init_output_state_indicies(spatial_description: &SpatialDescription) -> ArrayIndicesGains {
     let mut output_state_indices =
-        ArrayIndicesGainsFlat::empty(spatial_description.voxels.count_states());
+        ArrayIndicesGains::empty(spatial_description.voxels.count_states());
     let v_types = &spatial_description.voxels.types.values;
     let v_numbers = &spatial_description.voxels.numbers.values;
     // TODO: write tests
@@ -152,7 +152,7 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Array
 fn connect_voxels(
     spatial_description: &SpatialDescription,
     config: &Model,
-    ap_params: &mut APParametersFlat,
+    ap_params: &mut APParameters,
 ) {
     let mut activation_time_s =
         Array3::<Option<f32>>::from_elem(spatial_description.voxels.types.values.raw_dim(), None);
@@ -230,7 +230,7 @@ fn try_to_connect(
     activation_time_s: &mut ndarray::ArrayBase<ndarray::OwnedRepr<Option<f32>>, Dim<[usize; 3]>>,
     config: &Model,
     current_directions: &mut ndarray::ArrayBase<ndarray::OwnedRepr<f32>, Dim<[usize; 4]>>,
-    ap_params: &mut APParametersFlat,
+    ap_params: &mut APParameters,
 ) -> bool {
     let v_types = &spatial_description.voxels.types.values;
     let v_position_mm = &spatial_description.voxels.positions_mm.values;
@@ -317,7 +317,7 @@ fn try_to_connect(
 }
 
 fn assign_gain(
-    ap_params: &mut APParametersFlat,
+    ap_params: &mut APParameters,
     input_state_number: usize,
     x_offset: i32,
     y_offset: i32,

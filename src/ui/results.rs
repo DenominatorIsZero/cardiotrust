@@ -15,7 +15,7 @@ use bevy_egui::{egui, EguiContexts};
 use std::collections::HashMap;
 
 use crate::{
-    core::{algorithm::metrics::predict_voxeltype_flat, scenario::Scenario},
+    core::{algorithm::metrics::predict_voxeltype, scenario::Scenario},
     vis::plotting::{
         matrix::{
             plot_activation_time, plot_activation_time_delta, plot_states_max,
@@ -247,14 +247,14 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         return;
     }
     let file_name = path.with_extension("");
-    let estimations_flat = &scenario.results.as_ref().unwrap().estimations_flat;
+    let estimations = &scenario.results.as_ref().unwrap().estimations;
     let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
     let data = scenario.data.as_ref().unwrap();
     let metrics = &scenario.results.as_ref().unwrap().metrics;
     match image_type {
         ImageType::StatesMaxAlgorithm => {
             plot_states_max(
-                &estimations_flat.system_states,
+                &estimations.system_states,
                 &model.spatial_description.voxels,
                 path.with_extension("").to_str().unwrap(),
                 "Maximum Estimated Current Densities",
@@ -268,7 +268,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         ),
         ImageType::StatesMaxDelta => {
             plot_states_max_delta(
-                &estimations_flat.system_states,
+                &estimations.system_states,
                 data.get_system_states(),
                 &model.spatial_description.voxels,
                 file_name.to_str().unwrap(),
@@ -276,10 +276,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             );
         }
         ImageType::ActivationTimeAlgorithm => plot_activation_time(
-            &model
-                .functional_description
-                .ap_params_flat
-                .activation_time_ms,
+            &model.functional_description.ap_params.activation_time_ms,
             file_name.to_str().unwrap(),
             "Activation Times Algorithm (Start) [ms]",
         ),
@@ -289,10 +286,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             "Activation Times Simulation [ms]",
         ),
         ImageType::ActivationTimeDelta => plot_activation_time_delta(
-            &model
-                .functional_description
-                .ap_params_flat
-                .activation_time_ms,
+            &model.functional_description.ap_params.activation_time_ms,
             data.get_activation_time_ms(),
             file_name.to_str().unwrap(),
             "Activation Times Simulation [ms]",
@@ -309,8 +303,8 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         ),
         ImageType::VoxelTypesPrediction => {
             plot_voxel_types(
-                &predict_voxeltype_flat(
-                    &estimations_flat,
+                &predict_voxeltype(
+                    &estimations,
                     data.get_voxel_types(),
                     &model.spatial_description.voxels.numbers,
                     scenario.summary.unwrap().threshold,
@@ -541,11 +535,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         ),
         ImageType::StateAlgorithm => {
             standard_time_plot(
-                &estimations_flat
-                    .system_states
-                    .values
-                    .slice(s![.., 0])
-                    .to_owned(),
+                &estimations.system_states.values.slice(s![.., 0]).to_owned(),
                 scenario
                     .get_config()
                     .simulation
@@ -571,11 +561,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         ),
         ImageType::StateDelta => {
             standard_time_plot(
-                &(&estimations_flat
-                    .system_states
-                    .values
-                    .slice(s![.., 0])
-                    .to_owned()
+                &(&estimations.system_states.values.slice(s![.., 0]).to_owned()
                     - &data.get_system_states().values.slice(s![.., 0]).to_owned()),
                 scenario
                     .get_config()
@@ -590,11 +576,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         }
         ImageType::MeasurementAlgorithm => {
             standard_time_plot(
-                &estimations_flat
-                    .measurements
-                    .values
-                    .slice(s![.., 0])
-                    .to_owned(),
+                &estimations.measurements.values.slice(s![.., 0]).to_owned(),
                 scenario
                     .get_config()
                     .simulation
@@ -620,11 +602,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         ),
         ImageType::MeasurementDelta => {
             standard_time_plot(
-                &(&estimations_flat
-                    .measurements
-                    .values
-                    .slice(s![.., 0])
-                    .to_owned()
+                &(&estimations.measurements.values.slice(s![.., 0]).to_owned()
                     - &data.get_measurements().values.slice(s![.., 0]).to_owned()),
                 scenario
                     .get_config()
@@ -655,11 +633,11 @@ fn generate_gifs(scenario: Scenario, gif_type: GifType, playback_speed: f32) {
     let file_name = path.with_extension("");
     let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
     let data = scenario.data.as_ref().unwrap();
-    let estimations_flat = &scenario.results.as_ref().unwrap().estimations_flat;
+    let estimations = &scenario.results.as_ref().unwrap().estimations;
     match gif_type {
         GifType::StatesAlgorithm => {
             plot_states_over_time(
-                &estimations_flat.system_states,
+                &estimations.system_states,
                 &model.spatial_description.voxels,
                 20,
                 playback_speed,

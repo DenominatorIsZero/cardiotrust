@@ -294,7 +294,7 @@ fn set_heart_voxel_colors_to_norm(
             .results
             .as_ref()
             .expect("Results to be some.")
-            .estimations_flat
+            .estimations
             .system_states
     };
     let color_map = ListedColorMap::viridis();
@@ -334,7 +334,7 @@ fn set_heart_voxel_colors_to_max(
             .results
             .as_ref()
             .expect("Results to be some.")
-            .estimations_flat
+            .estimations
             .system_states
     };
     let color_map = ListedColorMap::viridis();

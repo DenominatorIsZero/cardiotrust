@@ -1,7 +1,7 @@
 use ndarray::s;
 
-use crate::core::model::functional::allpass::flat::APParametersFlat;
-use crate::core::model::functional::allpass::shapes::flat::ArrayGainsFlat;
+use crate::core::model::functional::allpass::flat::APParameters;
+use crate::core::model::functional::allpass::shapes::flat::ArrayGains;
 use crate::core::model::functional::measurement::MeasurementMatrix;
 use crate::core::model::functional::FunctionalDescription;
 
@@ -12,16 +12,16 @@ use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
 /// # Panics
 ///
 /// Panics if `ap_params_flat` is not set.
-pub fn calculate_system_prediction_flat(
-    ap_outputs: &mut ArrayGainsFlat<f32>,
+pub fn calculate_system_prediction(
+    ap_outputs: &mut ArrayGains<f32>,
     system_states: &mut ArraySystemStates,
     measurements: &mut ArrayMeasurements,
     functional_description: &FunctionalDescription,
     time_index: usize,
 ) {
-    innovate_system_states_flat_v1(
+    innovate_system_states_v1(
         ap_outputs,
-        &functional_description.ap_params_flat,
+        &functional_description.ap_params,
         time_index,
         system_states,
     );
@@ -40,9 +40,9 @@ pub fn calculate_system_prediction_flat(
 ///
 /// Panics if output state indices are not initialized corrrectly.
 #[inline]
-pub fn innovate_system_states_flat_v1(
-    ap_outputs: &mut ArrayGainsFlat<f32>,
-    ap_params: &APParametersFlat,
+pub fn innovate_system_states_v1(
+    ap_outputs: &mut ArrayGains<f32>,
+    ap_params: &APParameters,
     time_index: usize,
     system_states: &mut ArraySystemStates,
 ) {

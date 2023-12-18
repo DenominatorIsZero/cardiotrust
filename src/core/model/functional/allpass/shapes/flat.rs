@@ -11,14 +11,14 @@ use serde::Serialize;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct ArrayGainsFlat<T>
+pub struct ArrayGains<T>
 where
     T: Clone + Zero + PartialEq,
 {
     pub values: Array2<T>,
 }
 
-impl<T> ArrayGainsFlat<T>
+impl<T> ArrayGains<T>
 where
     T: Clone + Zero + PartialEq,
 {
@@ -29,7 +29,7 @@ where
         }
     }
 }
-impl ArrayGainsFlat<f32> {
+impl ArrayGains<f32> {
     #[allow(dead_code)]
     pub(crate) fn save_npy(&self, path: &std::path::Path, name: &str) {
         fs::create_dir_all(path).unwrap();
@@ -40,11 +40,11 @@ impl ArrayGainsFlat<f32> {
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct ArrayIndicesGainsFlat {
+pub struct ArrayIndicesGains {
     pub values: Array2<Option<usize>>,
 }
 
-impl ArrayIndicesGainsFlat {
+impl ArrayIndicesGains {
     #[must_use]
     pub fn empty(number_of_states: usize) -> Self {
         Self {
@@ -71,14 +71,14 @@ impl ArrayIndicesGainsFlat {
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct ArrayDelaysFlat<T>
+pub struct ArrayDelays<T>
 where
     T: Clone + Zero + PartialEq,
 {
     pub values: Array2<T>,
 }
 
-impl<T> ArrayDelaysFlat<T>
+impl<T> ArrayDelays<T>
 where
     T: Clone + Zero + PartialEq,
 {
@@ -92,7 +92,7 @@ where
     }
 }
 
-impl ArrayDelaysFlat<f32> {
+impl ArrayDelays<f32> {
     ///
     /// # Panics
     ///
@@ -104,7 +104,7 @@ impl ArrayDelaysFlat<f32> {
     }
 }
 
-impl ArrayDelaysFlat<usize> {
+impl ArrayDelays<usize> {
     ///
     /// # Panics
     ///
