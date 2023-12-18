@@ -133,7 +133,7 @@ mod test {
     use crate::{
         core::model::spatial::voxels::VoxelType,
         vis::plotting::{
-            matrix::{plot_states_at_time, plot_states_max_normal, plot_states_over_time},
+            matrix::{plot_states_at_time, plot_states_max, plot_states_over_time},
             time::{plot_state_xyz, standard_time_plot},
         },
     };
@@ -235,7 +235,7 @@ mod test {
             &format!("Simulated Current Densities at Time Index {time_index}"),
         );
 
-        plot_states_max_normal(
+        plot_states_max(
             &simulation.system_states,
             &simulation.model.spatial_description.voxels,
             "tests/simulation_states_max",
@@ -352,7 +352,7 @@ mod test {
             &format!("Simulated Current Densities at Time Index {time_index}"),
         );
 
-        plot_states_max_normal(
+        plot_states_max(
             &simulation.system_states,
             &simulation.model.spatial_description.voxels,
             "tests/simulation_states_max_pathological",

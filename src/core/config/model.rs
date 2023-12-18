@@ -55,10 +55,10 @@ impl Default for Model {
         propagation_velocities_m_per_s.insert(VoxelType::Pathological, 0.1);
 
         Self {
-            use_flat_arrays: false,
+            use_flat_arrays: true,
             control_function: ControlFunction::Ohara,
             pathological: false,
-            sensors_per_axis: [4, 4, 2],
+            sensors_per_axis: [4, 4, 3],
             sensor_array_size_mm: [250.0, 250.0, 100.0],
             sensor_array_origin_mm: [-125.0, -125.0, 200.0],
             voxel_size_mm: 2.5,
@@ -68,9 +68,9 @@ impl Default for Model {
             measurement_covariance_std: 0.0,
             process_covariance_mean: 1e-5,
             process_covariance_std: 0.0,
-            apply_system_update: true,
+            apply_system_update: false,
             propagation_velocities_m_per_s,
-            current_factor_in_pathology: 0.01,
+            current_factor_in_pathology: 0.00,
             sa_x_center_percentage: 0.2,
             sa_y_center_percentage: 0.15,
             atrium_y_stop_percentage: 0.3,
@@ -79,10 +79,10 @@ impl Default for Model {
             hps_x_start_percentage: 0.2,
             hps_x_stop_percentage: 0.8,
             hps_y_up_percentage: 0.5,
-            pathology_x_start_percentage: 0.1,
-            pathology_x_stop_percentage: 0.3,
-            pathology_y_start_percentage: 0.7,
-            pathology_y_stop_percentage: 0.8,
+            pathology_x_start_percentage: 0.0,
+            pathology_x_stop_percentage: 0.2,
+            pathology_y_start_percentage: 0.3,
+            pathology_y_stop_percentage: 0.5,
         }
     }
 }
