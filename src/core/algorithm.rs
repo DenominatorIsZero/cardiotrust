@@ -486,7 +486,7 @@ mod test {
     use crate::core::config::simulation::Simulation as SimulationConfig;
     use crate::core::model::Model;
 
-    use crate::vis::plotting::matrix::{plot_states_max_normal, plot_states_over_time};
+    use crate::vis::plotting::matrix::{plot_states_max, plot_states_over_time};
     use crate::vis::plotting::time::standard_y_plot;
 
     use super::*;
@@ -670,7 +670,7 @@ mod test {
             "Epoch",
         );
 
-        plot_states_max_normal(
+        plot_states_max(
             &results
                 .estimations_normal
                 .as_ref()
@@ -853,7 +853,7 @@ mod test {
             "Epoch",
         );
 
-        plot_states_max_normal(
+        plot_states_max(
             &results
                 .estimations_normal
                 .as_ref()
@@ -1120,6 +1120,110 @@ mod test {
         (0..algorithm_config.epochs - 1).for_each(|i| {
             assert!(
                 results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
+            );
+        });
+    }
+
+    #[test]
+    fn no_kalman_equivalent() {
+        //normal
+        let mut simulation_config_normal = SimulationConfig::default();
+        simulation_config_normal.model.pathological = true;
+        let data_normal = Data::from_simulation_config(&simulation_config_normal)
+            .expect("Model parameters to be valid.");
+
+        let mut algorithm_config_normal = Algorithm {
+            calculate_kalman_gain: true,
+            ..Default::default()
+        };
+        algorithm_config_normal.model.use_flat_arrays = false;
+
+        let mut model_normal = Model::from_model_config(
+            &algorithm_config_normal.model,
+            simulation_config_normal.sample_rate_hz,
+            simulation_config_normal.duration_s,
+        )
+        .expect("Model parameters to be valid.");
+        algorithm_config_normal.epochs = 20;
+        algorithm_config_normal.model.apply_system_update = true;
+        algorithm_config_normal.learning_rate = 100.0;
+
+        let mut results_normal = Results::new(
+            algorithm_config_normal.epochs,
+            model_normal
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model_normal.spatial_description.sensors.count(),
+            model_normal.spatial_description.voxels.count_states(),
+            algorithm_config_normal.model.use_flat_arrays,
+        );
+
+        run(
+            &mut model_normal.functional_description,
+            &mut results_normal,
+            &data_normal,
+            &algorithm_config_normal,
+        );
+
+        (0..algorithm_config_normal.epochs - 1).for_each(|i| {
+            assert!(
+                results_normal.metrics.loss_epoch.values[i]
+                    > results_normal.metrics.loss_epoch.values[i + 1]
+            );
+        });
+
+        // flat
+        let mut simulation_config_flat = SimulationConfig::default();
+        simulation_config_flat.model.use_flat_arrays = true;
+        simulation_config_flat.model.pathological = true;
+        let data_flat = Data::from_simulation_config(&simulation_config_flat)
+            .expect("Model parameters to be valid.");
+
+        let mut algorithm_config_flat = Algorithm {
+            calculate_kalman_gain: true,
+            ..Default::default()
+        };
+        algorithm_config_flat.model.use_flat_arrays = true;
+
+        let mut model_flat = Model::from_model_config(
+            &algorithm_config_flat.model,
+            simulation_config_flat.sample_rate_hz,
+            simulation_config_flat.duration_s,
+        )
+        .expect("Model parameters to be valid.");
+        algorithm_config_flat.epochs = 20;
+        algorithm_config_flat.model.apply_system_update = true;
+        algorithm_config_flat.learning_rate = 100.0;
+
+        let mut results_flat = Results::new(
+            algorithm_config_flat.epochs,
+            model_flat
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model_flat.spatial_description.sensors.count(),
+            model_flat.spatial_description.voxels.count_states(),
+            algorithm_config_flat.model.use_flat_arrays,
+        );
+
+        run(
+            &mut model_flat.functional_description,
+            &mut results_flat,
+            &data_flat,
+            &algorithm_config_flat,
+        );
+        let loss_flat = &results_flat.metrics.loss_epoch.values;
+        let loss_normal = &results_normal.metrics.loss_epoch.values;
+        println!("flat: {loss_flat:?}");
+        println!("normal: {loss_normal:?}");
+
+        (0..algorithm_config_flat.epochs - 1).for_each(|i| {
+            assert_relative_eq!(
+                results_flat.metrics.loss_epoch.values[i],
+                results_normal.metrics.loss_epoch.values[i]
             );
         });
     }
