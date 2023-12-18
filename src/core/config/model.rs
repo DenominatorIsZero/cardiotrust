@@ -6,7 +6,6 @@ use crate::core::model::spatial::voxels::VoxelType;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Model {
-    pub use_flat_arrays: bool,
     pub control_function: ControlFunction,
     pub pathological: bool,
     pub sensors_per_axis: [usize; 3],
@@ -55,7 +54,6 @@ impl Default for Model {
         propagation_velocities_m_per_s.insert(VoxelType::Pathological, 0.1);
 
         Self {
-            use_flat_arrays: true,
             control_function: ControlFunction::Ohara,
             pathological: false,
             sensors_per_axis: [4, 4, 3],

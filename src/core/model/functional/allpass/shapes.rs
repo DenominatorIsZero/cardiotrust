@@ -8,7 +8,6 @@ use ndarray_npy::WriteNpyExt;
 use serde::{Deserialize, Serialize};
 
 pub mod flat;
-pub mod normal;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ArrayActivationTime {

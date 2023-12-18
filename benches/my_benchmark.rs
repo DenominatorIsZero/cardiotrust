@@ -12,13 +12,10 @@ use std::time::Duration;
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use rusty_cde::core::algorithm::estimation::prediction::{
-    add_control_function, calculate_system_prediction_flat, calculate_system_prediction_normal,
-    innovate_system_states_flat_v1, innovate_system_states_normal_v1,
-    innovate_system_states_normal_v2, innovate_system_states_normal_v3, predict_measurements,
+    add_control_function, calculate_system_prediction_flat, innovate_system_states_flat_v1,
+    predict_measurements,
 };
-use rusty_cde::core::{
-    algorithm::estimation::EstimationsNormal, config::Config, data::Data, model::Model,
-};
+use rusty_cde::core::{config::Config, data::Data, model::Model};
 
 const VOXEL_SIZES: [f32; 1] = [2.5];
 
@@ -26,46 +23,8 @@ fn system_prediction_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("System Prediction");
     for voxel_size in VOXEL_SIZES.iter() {
         let samplerate_hz = 2000.0 * 2.5 / voxel_size;
-        // normal
-        let mut config_normal = Config::default();
-        config_normal.algorithm.model.use_flat_arrays = false;
-        config_normal
-            .simulation
-            .as_mut()
-            .unwrap()
-            .model
-            .use_flat_arrays = false;
-        config_normal
-            .simulation
-            .as_mut()
-            .unwrap()
-            .model
-            .voxel_size_mm = *voxel_size;
-        config_normal.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
-        config_normal.algorithm.model.voxel_size_mm = *voxel_size;
-        let simulation_config_normal = config_normal.simulation.as_ref().unwrap();
-        let data_normal = Data::from_simulation_config(simulation_config_normal)
-            .expect("Model parameters to be valid.");
-        let model_normal = Model::from_model_config(
-            &config_normal.algorithm.model,
-            simulation_config_normal.sample_rate_hz,
-            simulation_config_normal.duration_s,
-        )
-        .unwrap();
-        let mut estimations_normal = EstimationsNormal::empty(
-            model_normal.spatial_description.voxels.count_states(),
-            model_normal.spatial_description.sensors.count(),
-            data_normal.get_measurements().values.shape()[0],
-        );
         // flat
         let mut config_flat = Config::default();
-        config_flat.algorithm.model.use_flat_arrays = true;
-        config_flat
-            .simulation
-            .as_mut()
-            .unwrap()
-            .model
-            .use_flat_arrays = true;
         config_flat.simulation.as_mut().unwrap().model.voxel_size_mm = *voxel_size;
         config_flat.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
         config_flat.algorithm.model.voxel_size_mm = *voxel_size;
@@ -84,22 +43,8 @@ fn system_prediction_bench(c: &mut Criterion) {
             data_flat.get_measurements().values.shape()[0],
         );
         let time_index = 200;
-        let number_of_voxels = model_normal.spatial_description.voxels.count();
+        let number_of_voxels = model_flat.spatial_description.voxels.count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        group.bench_function(
-            BenchmarkId::new("calculate_system_perdiction_normal", voxel_size),
-            |b| {
-                b.iter(|| {
-                    calculate_system_prediction_normal(
-                        &mut estimations_normal.ap_outputs,
-                        &mut estimations_normal.system_states,
-                        &mut estimations_normal.measurements,
-                        &model_normal.functional_description,
-                        time_index,
-                    )
-                })
-            },
-        );
         group.bench_function(
             BenchmarkId::new("calculate_system_perdiction_flat", voxel_size),
             |b| {
@@ -115,67 +60,12 @@ fn system_prediction_bench(c: &mut Criterion) {
             },
         );
         group.bench_function(
-            BenchmarkId::new("innovate_system_states_normal_v1", voxel_size),
-            |b| {
-                b.iter(|| {
-                    innovate_system_states_normal_v1(
-                        &mut estimations_normal.ap_outputs,
-                        model_normal
-                            .functional_description
-                            .ap_params_normal
-                            .as_ref()
-                            .unwrap(),
-                        time_index,
-                        &mut estimations_normal.system_states,
-                    )
-                })
-            },
-        );
-        group.bench_function(
-            BenchmarkId::new("innovate_system_states_normal_v2", voxel_size),
-            |b| {
-                b.iter(|| {
-                    innovate_system_states_normal_v2(
-                        &mut estimations_normal.ap_outputs,
-                        model_normal
-                            .functional_description
-                            .ap_params_normal
-                            .as_ref()
-                            .unwrap(),
-                        time_index,
-                        &mut estimations_normal.system_states,
-                    )
-                })
-            },
-        );
-        group.bench_function(
-            BenchmarkId::new("innovate_system_states_normal_v3", voxel_size),
-            |b| {
-                b.iter(|| {
-                    innovate_system_states_normal_v3(
-                        &mut estimations_normal.ap_outputs,
-                        model_normal
-                            .functional_description
-                            .ap_params_normal
-                            .as_ref()
-                            .unwrap(),
-                        time_index,
-                        &mut estimations_normal.system_states,
-                    )
-                })
-            },
-        );
-        group.bench_function(
             BenchmarkId::new("innovate_system_states_flat_v1", voxel_size),
             |b| {
                 b.iter(|| {
                     innovate_system_states_flat_v1(
                         &mut estimations_flat.ap_outputs,
-                        model_flat
-                            .functional_description
-                            .ap_params_flat
-                            .as_ref()
-                            .unwrap(),
+                        &model_flat.functional_description.ap_params_flat,
                         time_index,
                         &mut estimations_flat.system_states,
                     )
@@ -185,19 +75,19 @@ fn system_prediction_bench(c: &mut Criterion) {
         group.bench_function(BenchmarkId::new("add_control_function", voxel_size), |b| {
             b.iter(|| {
                 add_control_function(
-                    &model_normal.functional_description,
+                    &model_flat.functional_description,
                     time_index,
-                    &mut estimations_normal.system_states,
+                    &mut estimations_flat.system_states,
                 )
             })
         });
         group.bench_function(BenchmarkId::new("predict_measurements", voxel_size), |b| {
             b.iter(|| {
                 predict_measurements(
-                    &mut estimations_normal.measurements,
+                    &mut estimations_flat.measurements,
                     time_index,
-                    &model_normal.functional_description.measurement_matrix,
-                    &mut estimations_normal.system_states,
+                    &model_flat.functional_description.measurement_matrix,
+                    &mut estimations_flat.system_states,
                 )
             })
         });
@@ -209,46 +99,7 @@ fn system_prediction_epoch_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("System Prediction Epoch");
     for voxel_size in VOXEL_SIZES.iter() {
         let samplerate_hz = 2000.0 * 2.5 / voxel_size;
-        // normal
-        let mut config_normal = Config::default();
-        config_normal
-            .simulation
-            .as_mut()
-            .unwrap()
-            .model
-            .use_flat_arrays = false;
-        config_normal.algorithm.model.use_flat_arrays = false;
-        config_normal
-            .simulation
-            .as_mut()
-            .unwrap()
-            .model
-            .voxel_size_mm = *voxel_size;
-        config_normal.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
-        config_normal.algorithm.model.voxel_size_mm = *voxel_size;
-        let simulation_config_normal = config_normal.simulation.as_ref().unwrap();
-        let data_normal = Data::from_simulation_config(simulation_config_normal)
-            .expect("Model parameters to be valid.");
-        let model_normal = Model::from_model_config(
-            &config_normal.algorithm.model,
-            simulation_config_normal.sample_rate_hz,
-            simulation_config_normal.duration_s,
-        )
-        .unwrap();
-        let mut estimations_normal = EstimationsNormal::empty(
-            model_normal.spatial_description.voxels.count_states(),
-            model_normal.spatial_description.sensors.count(),
-            data_normal.get_measurements().values.shape()[0],
-        );
-        // flat
         let mut config_flat = Config::default();
-        config_flat
-            .simulation
-            .as_mut()
-            .unwrap()
-            .model
-            .use_flat_arrays = true;
-        config_flat.algorithm.model.use_flat_arrays = true;
         config_flat.simulation.as_mut().unwrap().model.voxel_size_mm = *voxel_size;
         config_flat.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
         config_flat.algorithm.model.voxel_size_mm = *voxel_size;
@@ -269,90 +120,13 @@ fn system_prediction_epoch_bench(c: &mut Criterion) {
         let number_of_voxels = model_flat.spatial_description.voxels.count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(
-            BenchmarkId::new("calculate_system_perdiction", voxel_size),
-            |b| {
-                b.iter(|| {
-                    for time_index in 0..estimations_flat.measurements.values.shape()[0] {
-                        calculate_system_prediction_normal(
-                            &mut estimations_normal.ap_outputs,
-                            &mut estimations_normal.system_states,
-                            &mut estimations_normal.measurements,
-                            &model_normal.functional_description,
-                            time_index,
-                        )
-                    }
-                })
-            },
-        );
-        group.bench_function(
-            BenchmarkId::new("innovate_system_states_normal_v1", voxel_size),
-            |b| {
-                b.iter(|| {
-                    for time_index in 0..estimations_normal.measurements.values.shape()[0] {
-                        innovate_system_states_normal_v1(
-                            &mut estimations_normal.ap_outputs,
-                            model_normal
-                                .functional_description
-                                .ap_params_normal
-                                .as_ref()
-                                .expect("Ap params normal to be some."),
-                            time_index,
-                            &mut estimations_normal.system_states,
-                        )
-                    }
-                })
-            },
-        );
-        group.bench_function(
-            BenchmarkId::new("innovate_system_states_normal_v2", voxel_size),
-            |b| {
-                b.iter(|| {
-                    for time_index in 0..estimations_normal.measurements.values.shape()[0] {
-                        innovate_system_states_normal_v2(
-                            &mut estimations_normal.ap_outputs,
-                            model_normal
-                                .functional_description
-                                .ap_params_normal
-                                .as_ref()
-                                .unwrap(),
-                            time_index,
-                            &mut estimations_normal.system_states,
-                        )
-                    }
-                })
-            },
-        );
-        group.bench_function(
-            BenchmarkId::new("innovate_system_states_normal_v3", voxel_size),
-            |b| {
-                b.iter(|| {
-                    for time_index in 0..estimations_normal.measurements.values.shape()[0] {
-                        innovate_system_states_normal_v3(
-                            &mut estimations_normal.ap_outputs,
-                            model_normal
-                                .functional_description
-                                .ap_params_normal
-                                .as_ref()
-                                .unwrap(),
-                            time_index,
-                            &mut estimations_normal.system_states,
-                        )
-                    }
-                })
-            },
-        );
-        group.bench_function(
             BenchmarkId::new("innovate_system_states_flat_v1", voxel_size),
             |b| {
                 b.iter(|| {
                     for time_index in 0..estimations_flat.measurements.values.shape()[0] {
                         innovate_system_states_flat_v1(
                             &mut estimations_flat.ap_outputs,
-                            model_flat
-                                .functional_description
-                                .ap_params_flat
-                                .as_ref()
-                                .unwrap(),
+                            &model_flat.functional_description.ap_params_flat,
                             time_index,
                             &mut estimations_flat.system_states,
                         )
@@ -393,13 +167,6 @@ fn run_epoch_bench(c: &mut Criterion) {
         let samplerate_hz = 2000.0 * 2.5 / voxel_size;
         // normal
         let mut config_normal = Config::default();
-        config_normal.algorithm.model.use_flat_arrays = false;
-        config_normal
-            .simulation
-            .as_mut()
-            .unwrap()
-            .model
-            .use_flat_arrays = false;
         config_normal
             .simulation
             .as_mut()
@@ -422,16 +189,8 @@ fn run_epoch_bench(c: &mut Criterion) {
             data_normal.get_measurements().values.shape()[0],
             model_normal.spatial_description.sensors.count(),
             model_normal.spatial_description.voxels.count_states(),
-            false,
         );
         let mut config_flat = Config::default();
-        config_flat.algorithm.model.use_flat_arrays = true;
-        config_flat
-            .simulation
-            .as_mut()
-            .unwrap()
-            .model
-            .use_flat_arrays = true;
         config_flat.simulation.as_mut().unwrap().model.voxel_size_mm = *voxel_size;
         config_flat.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
         config_flat.algorithm.model.voxel_size_mm = *voxel_size;
@@ -449,7 +208,6 @@ fn run_epoch_bench(c: &mut Criterion) {
             data_flat.get_measurements().values.shape()[0],
             model_flat.spatial_description.sensors.count(),
             model_flat.spatial_description.voxels.count_states(),
-            true,
         );
         // flat
         let number_of_voxels = model_normal.spatial_description.voxels.count();

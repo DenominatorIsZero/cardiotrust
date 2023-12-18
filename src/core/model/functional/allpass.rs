@@ -6,7 +6,6 @@ mod delay;
 mod direction;
 pub mod flat;
 mod gain;
-pub mod normal;
 pub mod shapes;
 
 fn find_candidate_voxels(
