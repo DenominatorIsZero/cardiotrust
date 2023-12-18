@@ -1,14 +1,14 @@
-use std::mem::discriminant;
-
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 use egui::ProgressBar;
 use egui_extras::{Column, TableBuilder};
-
-use crate::core::scenario::{Scenario, Status};
-use crate::{ScenarioBundle, ScenarioList, SelectedSenario};
+use std::mem::discriminant;
 
 use super::UiState;
+use crate::{
+    core::scenario::{Scenario, Status},
+    ScenarioBundle, ScenarioList, SelectedSenario,
+};
 
 #[allow(clippy::module_name_repetitions, clippy::too_many_lines)]
 pub fn draw_ui_explorer(

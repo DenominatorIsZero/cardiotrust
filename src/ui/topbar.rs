@@ -2,13 +2,12 @@ use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 use egui::Separator;
 
+use super::UiState;
 use crate::{
     core::scenario::Status,
     scheduler::{NumberOfJobs, SchedulerState},
     ScenarioList, SelectedSenario,
 };
-
-use super::UiState;
 
 #[allow(clippy::module_name_repetitions, clippy::needless_pass_by_value)]
 pub fn draw_ui_topbar(

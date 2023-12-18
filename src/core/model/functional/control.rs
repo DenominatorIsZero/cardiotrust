@@ -1,13 +1,11 @@
+use ndarray::Array1;
+use ndarray_npy::{read_npy, WriteNpyExt};
+use samplerate::{self, ConverterType};
+use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
 };
-
-use ndarray::Array1;
-use ndarray_npy::{read_npy, WriteNpyExt};
-
-use samplerate::{self, ConverterType};
-use serde::{Deserialize, Serialize};
 
 use crate::core::{
     config::model::Model,

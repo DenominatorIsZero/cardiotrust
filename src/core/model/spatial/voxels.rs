@@ -1,11 +1,10 @@
+use ndarray::{arr1, s, Array3, Array4};
+use ndarray_npy::WriteNpyExt;
+use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
 };
-
-use ndarray::{arr1, s, Array3, Array4};
-use ndarray_npy::WriteNpyExt;
-use serde::{Deserialize, Serialize};
 
 use crate::core::config::model::Model;
 

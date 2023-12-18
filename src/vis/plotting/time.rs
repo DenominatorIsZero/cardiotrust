@@ -1,13 +1,11 @@
-use std::error::Error;
-
 use ndarray::{arr1, s, Array1};
 use ndarray_stats::QuantileExt;
 use plotly::{color::NamedColor, common::Mode, layout::Axis, Layout, Plot, Scatter};
 use plotters::prelude::*;
-
-use crate::core::data::shapes::ArraySystemStates;
+use std::error::Error;
 
 use super::save_plot;
+use crate::core::data::shapes::ArraySystemStates;
 
 pub fn standard_time_plot(
     y: &Array1<f32>,

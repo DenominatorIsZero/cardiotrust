@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::{
     algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
+    data::shapes::ArraySystemStates,
     model::functional::{
         allpass::{
             shapes::{ArrayDelays, ArrayGains},
@@ -12,8 +13,6 @@ use crate::core::{
         FunctionalDescription,
     },
 };
-
-use crate::core::data::shapes::ArraySystemStates;
 
 /// Stuct to calculate and store the derivatives
 /// of the model parameters with regards to the

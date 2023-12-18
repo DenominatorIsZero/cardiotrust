@@ -2,11 +2,10 @@ pub mod heart;
 pub mod sensors;
 pub mod voxels;
 
-use crate::core::config::model::Model;
+use serde::{Deserialize, Serialize};
 
 use self::{heart::Heart, sensors::Sensors, voxels::Voxels};
-
-use serde::{Deserialize, Serialize};
+use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]

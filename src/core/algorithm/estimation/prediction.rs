@@ -1,11 +1,13 @@
 use ndarray::s;
 
-use crate::core::model::functional::allpass::shapes::ArrayGains;
-use crate::core::model::functional::allpass::APParameters;
-use crate::core::model::functional::measurement::MeasurementMatrix;
-use crate::core::model::functional::FunctionalDescription;
-
-use crate::core::data::shapes::{ArrayMeasurements, ArraySystemStates};
+use crate::core::{
+    data::shapes::{ArrayMeasurements, ArraySystemStates},
+    model::functional::{
+        allpass::{shapes::ArrayGains, APParameters},
+        measurement::MeasurementMatrix,
+        FunctionalDescription,
+    },
+};
 
 /// .
 ///

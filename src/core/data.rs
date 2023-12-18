@@ -2,18 +2,11 @@ pub mod measurement;
 pub mod shapes;
 pub mod simulation;
 
-use std::error::Error;
-
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 
-use self::measurement::Measurement;
-use self::shapes::ArraySystemStates;
-use self::simulation::Simulation;
-
-use crate::core::config::simulation::Simulation as SimulationConfig;
-use crate::core::data::shapes::ArrayMeasurements;
-
+use self::{measurement::Measurement, shapes::ArraySystemStates, simulation::Simulation};
 use super::model::{
     functional::{
         allpass::shapes::{
@@ -23,6 +16,9 @@ use super::model::{
     },
     spatial::voxels::VoxelTypes,
     Model,
+};
+use crate::core::{
+    config::simulation::Simulation as SimulationConfig, data::shapes::ArrayMeasurements,
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

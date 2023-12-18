@@ -1,3 +1,7 @@
+pub mod estimation;
+pub mod metrics;
+pub mod refinement;
+
 use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
 
@@ -6,17 +10,12 @@ use self::estimation::{
     calculate_residuals, calculate_system_states_delta, calculate_system_update,
     prediction::calculate_system_prediction,
 };
-
 use super::{
     config::algorithm::Algorithm,
     data::{shapes::ArraySystemStates, Data},
     model::functional::FunctionalDescription,
     scenario::results::Results,
 };
-
-pub mod estimation;
-pub mod metrics;
-pub mod refinement;
 
 #[allow(clippy::missing_panics_doc)]
 pub fn calculate_pseudo_inverse(

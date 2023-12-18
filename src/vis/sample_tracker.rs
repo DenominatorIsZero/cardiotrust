@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
+use super::options::VisOptions;
 use crate::core::scenario::Scenario;
 
-use super::options::VisOptions;
 #[derive(Resource, Debug)]
 pub struct SampleTracker {
     pub current_sample: usize,

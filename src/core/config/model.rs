@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::core::model::spatial::voxels::VoxelType;
 

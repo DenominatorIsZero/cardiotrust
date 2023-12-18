@@ -1,16 +1,14 @@
-use std::f32::consts::PI;
-use std::fs;
-use std::fs::File;
-use std::io::BufWriter;
-
 use approx::relative_eq;
 use ndarray::{s, Array2};
 use ndarray_npy::WriteNpyExt;
 use physical_constants::VACUUM_MAG_PERMEABILITY;
-use rand_distr::Distribution;
-use rand_distr::Normal;
-use serde::Deserialize;
-use serde::Serialize;
+use rand_distr::{Distribution, Normal};
+use serde::{Deserialize, Serialize};
+use std::{
+    f32::consts::PI,
+    fs::{self, File},
+    io::BufWriter,
+};
 
 use crate::core::{
     config::model::Model,

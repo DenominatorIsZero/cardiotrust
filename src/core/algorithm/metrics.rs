@@ -1,16 +1,14 @@
+use ndarray::Array1;
+use ndarray_npy::WriteNpyExt;
+use ndarray_stats::QuantileExt;
+use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
 };
 
-use ndarray::Array1;
-use ndarray_npy::WriteNpyExt;
-use ndarray_stats::QuantileExt;
-use serde::{Deserialize, Serialize};
-
-use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
-
 use super::{estimation::Estimations, refinement::derivation::Derivatives};
+use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

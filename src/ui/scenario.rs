@@ -3,7 +3,6 @@ pub mod common;
 mod data;
 
 use bevy::prelude::*;
-
 use bevy_egui::{egui, EguiContexts};
 use egui::Align;
 

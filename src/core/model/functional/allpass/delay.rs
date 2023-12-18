@@ -1,11 +1,9 @@
-use std::{collections::HashMap, error::Error};
-
 use itertools::Itertools;
 use ndarray::{s, ArrayBase, Dim, ViewRepr};
-
-use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
+use std::{collections::HashMap, error::Error};
 
 use super::{offset_to_delay_index, shapes::ArrayDelays};
+use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
 
 pub fn calculate_delay_s(
     input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
@@ -16,6 +14,7 @@ pub fn calculate_delay_s(
     let distance_norm_m = distance_m.mapv(|v| v.powi(2)).sum().sqrt();
     distance_norm_m / propagation_velocity_m_per_s
 }
+
 pub fn calculate_delay_samples_array(
     spatial_description: &SpatialDescription,
     propagation_velocities_m_per_s: &HashMap<VoxelType, f32>,

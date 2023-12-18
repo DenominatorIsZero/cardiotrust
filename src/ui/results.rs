@@ -1,18 +1,15 @@
+use bevy::prelude::*;
+use bevy_egui::{egui, EguiContexts};
+use egui::{Slider, Spinner};
+use ndarray::s;
 use std::{
+    collections::HashMap,
     fs,
     path::Path,
     thread::{self, JoinHandle},
 };
-
-use bevy::prelude::*;
-use egui::{Slider, Spinner};
-
-use ndarray::s;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
-
-use bevy_egui::{egui, EguiContexts};
-use std::collections::HashMap;
 
 use crate::{
     core::{algorithm::metrics::predict_voxeltype, scenario::Scenario},

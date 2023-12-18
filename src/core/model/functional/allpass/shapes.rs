@@ -1,15 +1,12 @@
+use approx::assert_relative_eq;
+use ndarray::{Array2, Array3, Dim};
+use ndarray_npy::WriteNpyExt;
+use num_traits::Zero;
+use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
 };
-
-use ndarray::{Array3, Dim};
-use ndarray_npy::WriteNpyExt;
-use serde::{Deserialize, Serialize};
-
-use approx::assert_relative_eq;
-use ndarray::Array2;
-use num_traits::Zero;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ArrayActivationTime {

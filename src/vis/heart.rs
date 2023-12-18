@@ -1,6 +1,5 @@
 use bevy::{math::vec3, prelude::*};
 use bevy_aabb_instancing::{Cuboid, CuboidMaterialId, Cuboids};
-
 use ndarray::{arr1, s, Array1, Array2};
 use ndarray_stats::QuantileExt;
 use scarlet::{
@@ -8,15 +7,15 @@ use scarlet::{
     colormap::{ColorMap, ListedColorMap},
 };
 
+use super::{
+    options::{VisMode, VisOptions},
+    sample_tracker::{init_sample_tracker, SampleTracker},
+};
 use crate::{
     core::{model::spatial::voxels::VoxelType, scenario::Scenario},
     ScenarioList, SelectedSenario,
 };
 
-use super::{
-    options::{VisMode, VisOptions},
-    sample_tracker::{init_sample_tracker, SampleTracker},
-};
 #[derive(Component)]
 pub struct VoxelData {
     indices: Array1<usize>,

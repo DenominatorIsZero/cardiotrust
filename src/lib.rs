@@ -4,17 +4,15 @@ pub mod scheduler;
 pub mod ui;
 pub mod vis;
 
-use crate::core::scenario::summary::Summary;
+use bevy::prelude::*;
+
+use crate::core::scenario::{summary::Summary, Scenario};
 use std::{
     fs::{self, create_dir_all},
     path::Path,
     sync::{mpsc::Receiver, Mutex},
     thread::JoinHandle,
 };
-
-use bevy::prelude::*;
-
-use crate::core::scenario::Scenario;
 
 #[derive(Resource, Debug, Default)]
 pub struct SelectedSenario {

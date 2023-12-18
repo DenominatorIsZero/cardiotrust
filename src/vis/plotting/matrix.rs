@@ -1,8 +1,3 @@
-use std::{
-    fs::{self, File},
-    path::Path,
-};
-
 use itertools::Itertools;
 use ndarray::{s, Array1, Array2, Array3};
 use ndarray_stats::QuantileExt;
@@ -11,7 +6,12 @@ use plotly::{
     layout::{Axis, GridPattern, LayoutGrid},
     HeatMap, Layout, Plot,
 };
+use std::{
+    fs::{self, File},
+    path::Path,
+};
 
+use super::{engiffen, save_plot};
 use crate::core::{
     data::shapes::ArraySystemStates,
     model::{
@@ -19,8 +19,6 @@ use crate::core::{
         spatial::voxels::{VoxelType, Voxels},
     },
 };
-
-use super::{engiffen, save_plot};
 
 pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str) {
     let mut z: Vec<Vec<i32>> = Vec::new();

@@ -1,11 +1,10 @@
 use egui_extras::{Column, TableBuilder};
 
+use super::common::draw_ui_scenario_common;
 use crate::core::{
     config::algorithm::AlgorithmType,
     scenario::{Scenario, Status},
 };
-
-use super::common::draw_ui_scenario_common;
 
 #[allow(clippy::too_many_lines)]
 pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenario) {

@@ -1,13 +1,9 @@
 use color_quant::NeuQuant;
 use fnv::FnvHashMap;
 use gif::{Encoder, Frame, Repeat};
-
 use lab::Lab;
 use rayon::prelude::*;
-use std::borrow::Cow;
-use std::io;
-use std::path::Path;
-use std::{error, f32, fmt};
+use std::{borrow::Cow, error, f32, fmt, io, path::Path};
 
 type Rgba = [u8; 4];
 

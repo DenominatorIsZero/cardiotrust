@@ -1,8 +1,8 @@
-use plotly::Plot;
-
 pub mod engiffen;
 pub mod matrix;
 pub mod time;
+
+use plotly::Plot;
 
 fn save_plot(file_name: &str, plot: &Plot, width: usize, height: usize, scale: f64) {
     // plot.write_html(format!("{file_name}.html"));

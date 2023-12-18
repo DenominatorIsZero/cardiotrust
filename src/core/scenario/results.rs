@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
+use super::algorithm::metrics::Metrics;
 use crate::core::{
     algorithm::{estimation::Estimations, refinement::derivation::Derivatives},
     model::{functional::FunctionalDescription, Model},
 };
 
-use super::algorithm::metrics::Metrics;
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Results {
     pub metrics: Metrics,

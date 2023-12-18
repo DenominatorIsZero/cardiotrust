@@ -3,6 +3,13 @@ mod direction;
 mod gain;
 pub mod shapes;
 
+use approx::relative_eq;
+use itertools::Itertools;
+use ndarray::{arr1, s, Array1, Array3, Array4, Dim};
+use ndarray_stats::QuantileExt;
+use serde::{Deserialize, Serialize};
+use std::error::Error;
+
 use self::{
     delay::calculate_delay_samples_array,
     shapes::{
@@ -16,12 +23,7 @@ use crate::core::{
         SpatialDescription,
     },
 };
-use approx::relative_eq;
-use itertools::Itertools;
-use ndarray::{arr1, s, Array1, Array3, Array4, Dim};
-use ndarray_stats::QuantileExt;
-use serde::{Deserialize, Serialize};
-use std::error::Error;
+
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct APParameters {

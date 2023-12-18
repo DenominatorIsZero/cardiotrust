@@ -1,19 +1,17 @@
-use std::error::Error;
-
 use ndarray::Dim;
 use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 
+use super::shapes::ArraySystemStates;
 use crate::core::{
     algorithm::estimation::prediction::calculate_system_prediction,
     config::simulation::Simulation as SimulationConfig,
     data::ArrayMeasurements,
     model::{functional::allpass::shapes::ArrayGains, Model},
 };
-
-use super::shapes::ArraySystemStates;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Simulation {

@@ -9,14 +9,12 @@ use bevy::prelude::*;
 use bevy_aabb_instancing::VertexPullingRenderPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
-use crate::ui::UiState;
-
 use self::{
-    heart::on_vis_mode_changed,
+    heart::{on_vis_mode_changed, update_heart_voxel_colors},
     options::VisOptions,
     sample_tracker::{update_sample_index, SampleTracker},
 };
-use heart::update_heart_voxel_colors;
+use crate::ui::UiState;
 
 #[allow(clippy::module_name_repetitions)]
 pub struct VisPlugin;

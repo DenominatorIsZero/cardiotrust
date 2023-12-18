@@ -1,11 +1,10 @@
+use ndarray::Array2;
+use ndarray_npy::WriteNpyExt;
+use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
 };
-
-use ndarray::Array2;
-use ndarray_npy::WriteNpyExt;
-use serde::{Deserialize, Serialize};
 
 /// Shape for the simulated/estimated system states
 ///

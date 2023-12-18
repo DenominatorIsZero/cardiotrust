@@ -1,21 +1,28 @@
-use rusty_cde::core::algorithm::estimation::Estimations;
-use rusty_cde::core::algorithm::run_epoch;
-use rusty_cde::core::scenario::results::Results;
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
-
 #[cfg(not(target_env = "msvc"))]
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::time::Duration;
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use rusty_cde::core::algorithm::estimation::prediction::{
-    add_control_function, calculate_system_prediction, innovate_system_states_v1,
-    predict_measurements,
+use rusty_cde::core::{
+    algorithm::{
+        estimation::{
+            prediction::{
+                add_control_function, calculate_system_prediction, innovate_system_states_v1,
+                predict_measurements,
+            },
+            Estimations,
+        },
+        run_epoch,
+    },
+    config::Config,
+    data::Data,
+    model::Model,
+    scenario::results::Results,
 };
-use rusty_cde::core::{config::Config, data::Data, model::Model};
 
 const VOXEL_SIZES: [f32; 1] = [2.5];
 

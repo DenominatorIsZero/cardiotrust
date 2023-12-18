@@ -3,13 +3,11 @@ pub mod control;
 pub mod kalman;
 pub mod measurement;
 
-use std::error::Error;
-
 use approx::relative_eq;
 use ndarray::Dim;
-
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 
 use self::{
     allpass::{shapes::ArrayGains, APParameters},
@@ -17,7 +15,6 @@ use self::{
     kalman::Gain,
     measurement::{MeasurementCovariance, MeasurementMatrix},
 };
-
 use super::spatial::SpatialDescription;
 use crate::core::config::model::Model;
 

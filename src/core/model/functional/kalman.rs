@@ -1,18 +1,16 @@
-use std::{
-    fs::{self, File},
-    io::BufWriter,
-};
-
 use approx::relative_eq;
 use ndarray::Array2;
 use ndarray_linalg::Inverse;
 use ndarray_npy::WriteNpyExt;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
-
-use crate::core::config::model::Model;
+use std::{
+    fs::{self, File},
+    io::BufWriter,
+};
 
 use super::measurement::MeasurementMatrix;
+use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Gain {

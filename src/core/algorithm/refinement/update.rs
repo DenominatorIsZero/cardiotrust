@@ -1,3 +1,4 @@
+use super::derivation::Derivatives;
 use crate::core::{
     config::algorithm::Algorithm,
     model::functional::allpass::{
@@ -5,8 +6,6 @@ use crate::core::{
         APParameters,
     },
 };
-
-use super::derivation::Derivatives;
 
 impl APParameters {
     /// Performs one gradient descent step on the all-pass parameters.

@@ -1,5 +1,4 @@
 pub mod prediction;
-pub mod shapes;
 
 use itertools::Itertools;
 use ndarray::{s, Array2};

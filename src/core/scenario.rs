@@ -1,26 +1,28 @@
 pub mod results;
 pub mod summary;
 
-use std::path::Path;
-use std::sync::mpsc::Sender;
-
-use std::{fs, fs::File, io::Write};
-
 use chrono;
-
 use ciborium::{from_reader, into_writer};
-
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
+use std::{
+    fs::{self, File},
+    io::Write,
+    path::Path,
+    sync::mpsc::Sender,
+};
 use toml;
 
-use self::results::{Results, Snapshot};
-use self::summary::Summary;
-
-use super::algorithm::{self, calculate_pseudo_inverse};
-use super::config::algorithm::AlgorithmType;
-use super::model::Model;
-use super::{config::Config, data::Data};
+use self::{
+    results::{Results, Snapshot},
+    summary::Summary,
+};
+use super::{
+    algorithm::{self, calculate_pseudo_inverse},
+    config::{algorithm::AlgorithmType, Config},
+    data::Data,
+    model::Model,
+};
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct Scenario {
