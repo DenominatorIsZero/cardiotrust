@@ -5,7 +5,7 @@ use ndarray::{s, ArrayBase, Dim, ViewRepr};
 
 use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
 
-use super::{flat::offset_to_delay_index, shapes::flat::ArrayDelays};
+use super::{offset_to_delay_index, shapes::ArrayDelays};
 
 pub fn calculate_delay_s(
     input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,

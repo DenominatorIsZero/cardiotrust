@@ -6,8 +6,8 @@ use crate::core::{
     config::algorithm::Algorithm,
     model::functional::{
         allpass::{
-            flat::APParameters,
-            shapes::flat::{ArrayDelays, ArrayGains},
+            shapes::{ArrayDelays, ArrayGains},
+            APParameters,
         },
         FunctionalDescription,
     },
@@ -278,7 +278,7 @@ impl ArrayMaximumRegularization {
 mod tests {
     use ndarray::Dim;
 
-    use crate::core::model::functional::allpass::shapes::flat::ArrayIndicesGains;
+    use crate::core::model::functional::allpass::shapes::ArrayIndicesGains;
 
     use super::*;
     #[test]

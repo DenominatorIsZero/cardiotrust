@@ -1,7 +1,7 @@
 use ndarray::s;
 
-use crate::core::model::functional::allpass::flat::APParameters;
-use crate::core::model::functional::allpass::shapes::flat::ArrayGains;
+use crate::core::model::functional::allpass::shapes::ArrayGains;
+use crate::core::model::functional::allpass::APParameters;
 use crate::core::model::functional::measurement::MeasurementMatrix;
 use crate::core::model::functional::FunctionalDescription;
 

@@ -1,8 +1,8 @@
 use crate::core::{
     config::algorithm::Algorithm,
     model::functional::allpass::{
-        flat::APParameters,
-        shapes::flat::{ArrayDelays, ArrayGains},
+        shapes::{ArrayDelays, ArrayGains},
+        APParameters,
     },
 };
 

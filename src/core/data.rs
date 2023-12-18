@@ -17,8 +17,7 @@ use crate::core::data::shapes::ArrayMeasurements;
 use super::model::{
     functional::{
         allpass::shapes::{
-            flat::{ArrayDelays, ArrayGains},
-            ArrayActivationTime,
+            ArrayActivationTime, {ArrayDelays, ArrayGains},
         },
         control::ControlFunction,
     },

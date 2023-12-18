@@ -11,9 +11,9 @@ use crate::core::{
     data::shapes::{ArrayMeasurements, ArraySystemStates},
     model::functional::{
         allpass::{
-            flat::{gain_index_to_offset, offset_to_gain_index},
             from_coef_to_samples,
-            shapes::flat::{ArrayDelays, ArrayGains},
+            shapes::{ArrayDelays, ArrayGains},
+            {gain_index_to_offset, offset_to_gain_index},
         },
         measurement::MeasurementMatrix,
         FunctionalDescription,
@@ -431,7 +431,7 @@ mod tests {
     use crate::core::{
         config::algorithm::Algorithm,
         data::shapes::{ArrayMeasurements, ArraySystemStates},
-        model::functional::{allpass::shapes::flat::ArrayGains, FunctionalDescription},
+        model::functional::{allpass::shapes::ArrayGains, FunctionalDescription},
     };
 
     use super::{

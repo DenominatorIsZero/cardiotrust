@@ -10,7 +10,7 @@ use crate::core::{
     algorithm::estimation::prediction::calculate_system_prediction,
     config::simulation::Simulation as SimulationConfig,
     data::ArrayMeasurements,
-    model::{functional::allpass::shapes::flat::ArrayGains, Model},
+    model::{functional::allpass::shapes::ArrayGains, Model},
 };
 
 use super::shapes::ArraySystemStates;
