@@ -97,7 +97,6 @@ fn update_delays(
 
 #[cfg(test)]
 mod tests {
-    
 
     use super::*;
 

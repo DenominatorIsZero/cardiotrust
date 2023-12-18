@@ -254,7 +254,6 @@ fn run(
 #[cfg(test)]
 mod test {
 
-    
     use ndarray::Dim;
     use ndarray_stats::QuantileExt;
 
