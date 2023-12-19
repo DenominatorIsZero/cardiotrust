@@ -33,7 +33,7 @@ mod test {
         let output_direction = arr1(&[1.0, 0.0, 0.0]);
         let input_direction = arr1(&[1.0, 0.0, 0.0]);
 
-        let gain = calculate(&input_direction, output_direction.view());
+        let _gain = calculate(&input_direction, output_direction.view());
 
         let mut expected_gain = Array2::<f32>::zeros((3, 3));
         expected_gain[(0, 0)] = 1.0;
@@ -47,7 +47,7 @@ mod test {
         let output_direction = arr1(&[1.0, 0.0, 0.0]);
         let input_direction = arr1(&[-1.0, 0.0, 0.0]);
 
-        let gain = calculate(&input_direction, output_direction.view());
+        let _gain = calculate(&input_direction, output_direction.view());
 
         let mut expected_gain = Array2::<f32>::zeros((3, 3));
         expected_gain[(0, 0)] = -1.0;
@@ -60,7 +60,7 @@ mod test {
         let output_direction = arr1(&[0.5, -0.5, 0.0]);
         let input_direction = arr1(&[-0.5, 0.0, 0.5]);
 
-        let gain = calculate(&input_direction, output_direction.view());
+        let _gain = calculate(&input_direction, output_direction.view());
 
         let mut expected_gain = Array2::<f32>::zeros((3, 3));
         expected_gain[(0, 0)] = -0.5;
@@ -76,7 +76,7 @@ mod test {
         let output_direction = arr1(&[0.2, -0.5, 0.3]);
         let input_direction = arr1(&[1.0, 0.0, 0.0]);
 
-        let gain = calculate(&input_direction, output_direction.view());
+        let _gain = calculate(&input_direction, output_direction.view());
 
         let mut expected_gain = Array2::<f32>::zeros((3, 3));
         expected_gain[(0, 0)] = 1.0;

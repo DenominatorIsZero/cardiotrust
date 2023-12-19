@@ -28,9 +28,9 @@ mod test {
     fn calculate_direction_simple() {
         let output_position_mm: Array1<f32> = arr1(&[1.0, 1.0, 1.0]);
         let input_position_mm: Array1<f32> = arr1(&[2.0, 1.0, 1.0]);
-        let expected: Array1<f32> = arr1(&[1.0, 0.0, 0.0]);
+        let _expected: Array1<f32> = arr1(&[1.0, 0.0, 0.0]);
 
-        let direction = calculate(&input_position_mm.view(), &output_position_mm.view());
+        let _direction = calculate(&input_position_mm.view(), &output_position_mm.view());
 
         //TODO: readd test
         //assert_close_l1!(&expected, &direction, 0.001);
@@ -40,9 +40,9 @@ mod test {
     fn calculate_direction_diag() {
         let output_position_mm: Array1<f32> = arr1(&[1.0, 1.0, 1.0]);
         let input_position_mm: Array1<f32> = arr1(&[2.0, 0.0, 2.0]);
-        let expected: Array1<f32> = arr1(&[1.0 / 3.0, -1.0 / 3.0, 1.0 / 3.0]);
+        let _expected: Array1<f32> = arr1(&[1.0 / 3.0, -1.0 / 3.0, 1.0 / 3.0]);
 
-        let direction = calculate(&input_position_mm.view(), &output_position_mm.view());
+        let _direction = calculate(&input_position_mm.view(), &output_position_mm.view());
 
         //TODO: readd test
         //assert_close_l1!(&expected, &direction, 0.001);

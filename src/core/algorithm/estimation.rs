@@ -1,8 +1,8 @@
 pub mod prediction;
 
 use itertools::Itertools;
-use nalgebra::{DMatrix, OMatrix, SimdValue, SVD};
-use ndarray::{s, Array2};
+use nalgebra::{DMatrix};
+use ndarray::{s};
 use serde::{Deserialize, Serialize};
 
 use crate::core::{

@@ -8,9 +8,9 @@ use crate::core::data::shapes::ArraySystemStates;
 pub fn standard_time_plot(
     y: &Array1<f32>,
     sample_rate_hz: f32,
-    file_name: &str,
-    title: &str,
-    y_label: &str,
+    _file_name: &str,
+    _title: &str,
+    _y_label: &str,
 ) {
     #[allow(clippy::cast_precision_loss)]
     let t = Array1::from_vec(
@@ -18,8 +18,8 @@ pub fn standard_time_plot(
             .map(|i| i as f32 / sample_rate_hz)
             .collect(),
     );
-    let t_min = *t.min_skipnan();
-    let t_max = *t.max_skipnan();
+    let _t_min = *t.min_skipnan();
+    let _t_max = *t.max_skipnan();
     let mut y_min = *y.min_skipnan();
     let mut y_max = *y.max_skipnan();
     let y_range = y_max - y_min;
@@ -55,14 +55,14 @@ pub fn standard_time_plot(
 /// Panics if min or max of array couldn't be computed.
 pub fn standard_y_plot(
     y: &Array1<f32>,
-    file_name: &str,
-    title: &str,
-    y_label: &str,
-    x_label: &str,
+    _file_name: &str,
+    _title: &str,
+    _y_label: &str,
+    _x_label: &str,
 ) {
     let x = Array1::from_vec((0..y.shape()[0]).collect());
-    let x_min = *x.min().expect("Could not calculate min of X-array");
-    let x_max = *x.max().expect("Could not calculate max of X-array");
+    let _x_min = *x.min().expect("Could not calculate min of X-array");
+    let _x_max = *x.max().expect("Could not calculate max of X-array");
     let mut y_min = *y.min_skipnan();
     let mut y_max = *y.max_skipnan();
     let y_range = y_max - y_min;
@@ -96,8 +96,8 @@ pub fn plot_state_xyz(
     system_states: &ArraySystemStates,
     state_index: usize,
     sample_rate_hz: f32,
-    file_name: &str,
-    title: &str,
+    _file_name: &str,
+    _title: &str,
 ) {
     let x = system_states.values.slice(s![.., state_index]).to_owned();
     let y = system_states
@@ -122,8 +122,8 @@ pub fn plot_state_xyz(
     xyz_min = xyz_margin.mul_add(-xyz_range, xyz_min);
     xyz_max = xyz_margin.mul_add(xyz_range, xyz_max);
 
-    let t_min = *t.min_skipnan();
-    let t_max = *t.max_skipnan();
+    let _t_min = *t.min_skipnan();
+    let _t_max = *t.max_skipnan();
 
     todo!()
 
@@ -180,14 +180,14 @@ const AXIS_STYLE: (&str, i32) = ("Arial", 20);
 /// # Errors
 /// Returns eventual plotter errors.
 pub fn xy_plot(
-    x: &Array1<f32>,
-    y: &Array1<f32>,
+    _x: &Array1<f32>,
+    _y: &Array1<f32>,
     file_name: &str,
-    title: &str,
-    y_label: &str,
-    x_label: &str,
+    _title: &str,
+    _y_label: &str,
+    _x_label: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let path = format!("{file_name}.png");
+    let _path = format!("{file_name}.png");
     todo!()
     // let root_drawing_area = Bitmap::new(&path, (800, 600)).into_drawing_area();
 

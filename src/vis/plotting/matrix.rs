@@ -2,7 +2,7 @@ use itertools::Itertools;
 use ndarray::{s, Array1, Array2, Array3};
 use ndarray_stats::QuantileExt;
 use std::{
-    fs::{self, File},
+    fs::{self},
     path::Path,
 };
 
@@ -14,7 +14,7 @@ use crate::core::{
     },
 };
 
-pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str) {
+pub fn plot_voxel_types(types: &Array3<VoxelType>, _file_name: &str, _title: &str) {
     let mut z: Vec<Vec<i32>> = Vec::new();
     for y in 0..types.shape()[1] {
         let mut row: Vec<i32> = Vec::new();
@@ -74,7 +74,7 @@ pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str)
     // save_plot(file_name, &plot, width, height, 1.0);
 }
 
-pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &str, title: &str) {
+pub fn plot_activation_time(activation_times: &ArrayActivationTime, _file_name: &str, _title: &str) {
     let times = &activation_times.values;
     let mut z: Vec<Vec<f32>> = Vec::new();
     for y in 0..times.shape()[1] {
@@ -155,8 +155,8 @@ pub fn plot_states_at_time(
     min_j_init: f32,
     max_j_init: f32,
     time_index: usize,
-    file_name: &str,
-    title: &str,
+    _file_name: &str,
+    _title: &str,
 ) {
     let system_states = &system_states.values;
     let z_index = 0;
@@ -551,8 +551,8 @@ fn calculate_states_max(
 pub fn plot_states_max(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
-    file_name: &str,
-    title: &str,
+    _file_name: &str,
+    _title: &str,
 ) {
     let mut in_x: Vec<Vec<f32>> = Vec::new();
     let mut in_y: Vec<Vec<f32>> = Vec::new();
@@ -693,7 +693,7 @@ pub fn plot_states_over_time(
     // fs::remove_dir_all(dir_path).expect("Could not remove temporary folders.");
 }
 
-pub fn plot_matrix_as_heatmap(matrix: &Array2<f32>, file_name: &str, title: &str) {
+pub fn plot_matrix_as_heatmap(matrix: &Array2<f32>, _file_name: &str, _title: &str) {
     let mut z: Vec<Vec<f32>> = Vec::new();
     for y in 0..matrix.shape()[1] {
         let mut row: Vec<f32> = Vec::new();

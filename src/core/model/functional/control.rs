@@ -75,7 +75,7 @@ impl ControlFunction {
     /// Panics if the control function input file is missing.
     #[must_use]
     pub fn from_model_config(_config: &Model, sample_rate_hz: f32, duration_s: f32) -> Self {
-        let sample_rate_hz_in = 2000.0;
+        let _sample_rate_hz_in = 2000.0;
         let control_function_raw: Array1<f32> =
             read_npy("assets/control_function_ohara.npy").unwrap();
 
