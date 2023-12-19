@@ -1,6 +1,6 @@
 use approx::relative_eq;
+use nalgebra::DMatrix;
 use ndarray::Array2;
-use ndarray_linalg::Inverse;
 use ndarray_npy::WriteNpyExt;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
@@ -74,7 +74,16 @@ impl Gain {
         let h = &measurement_matrix.values;
 
         let s = h.dot(&process_covariance).dot(&h.t()) + measurement_covariance;
-        let s_inv = s.inv().unwrap();
+        let mut s = DMatrix::from_row_slice(
+            s.shape()[0],
+            s.shape()[1],
+            s.as_slice().expect("Slice to be some."),
+        );
+        s.try_inverse_mut();
+        let mut s_inv = Array2::<f32>::zeros(s.shape());
+        s.iter()
+            .zip(s_inv.iter_mut())
+            .for_each(|(s, s_inv)| *s_inv = *s);
         let k = process_covariance.dot(&h.t()).dot(&s_inv);
 
         Self { values: k }

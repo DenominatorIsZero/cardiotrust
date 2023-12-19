@@ -1,17 +1,11 @@
 use itertools::Itertools;
 use ndarray::{s, Array1, Array2, Array3};
 use ndarray_stats::QuantileExt;
-use plotly::{
-    common::ColorScale,
-    layout::{Axis, GridPattern, LayoutGrid},
-    HeatMap, Layout, Plot,
-};
 use std::{
     fs::{self, File},
     path::Path,
 };
 
-use super::{engiffen, save_plot};
 use crate::core::{
     data::shapes::ArraySystemStates,
     model::{
@@ -39,44 +33,45 @@ pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str)
     }
     z.push(row);
 
-    let trace = HeatMap::new_z(z).color_scale(ColorScale::Palette(
-        plotly::common::ColorScalePalette::Earth,
-    ));
-    let mut plot = Plot::new();
+    todo!()
+    // let trace = HeatMap::new_z(z).color_scale(ColorScale::Palette(
+    //     plotly::common::ColorScalePalette::Earth,
+    // ));
+    // let mut plot = Plot::new();
 
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        clippy::cast_precision_loss
-    )]
-    let width = (500.0 * types.shape()[0] as f32 / types.shape()[1] as f32) as usize + 175;
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        clippy::cast_precision_loss
-    )]
-    let height = (500.0 * types.shape()[1] as f32 / types.shape()[0] as f32) as usize;
+    // #[allow(
+    //     clippy::cast_possible_truncation,
+    //     clippy::cast_sign_loss,
+    //     clippy::cast_precision_loss
+    // )]
+    // let width = (500.0 * types.shape()[0] as f32 / types.shape()[1] as f32) as usize + 175;
+    // #[allow(
+    //     clippy::cast_possible_truncation,
+    //     clippy::cast_sign_loss,
+    //     clippy::cast_precision_loss
+    // )]
+    // let height = (500.0 * types.shape()[1] as f32 / types.shape()[0] as f32) as usize;
 
-    let layout = Layout::new()
-        .title(title.into())
-        .x_axis(
-            Axis::new()
-                .title("x".into())
-                .range(vec![0, types.shape()[0] - 1]),
-        )
-        .y_axis(
-            Axis::new()
-                .title("y".into())
-                .range(vec![types.shape()[1] - 1, 0])
-                .anchor("x"),
-        )
-        .height(height)
-        .width(width);
+    // let layout = Layout::new()
+    //     .title(title.into())
+    //     .x_axis(
+    //         Axis::new()
+    //             .title("x".into())
+    //             .range(vec![0, types.shape()[0] - 1]),
+    //     )
+    //     .y_axis(
+    //         Axis::new()
+    //             .title("y".into())
+    //             .range(vec![types.shape()[1] - 1, 0])
+    //             .anchor("x"),
+    //     )
+    //     .height(height)
+    //     .width(width);
 
-    plot.add_trace(trace);
-    plot.set_layout(layout);
+    // plot.add_trace(trace);
+    // plot.set_layout(layout);
 
-    save_plot(file_name, &plot, width, height, 1.0);
+    // save_plot(file_name, &plot, width, height, 1.0);
 }
 
 pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &str, title: &str) {
@@ -90,43 +85,45 @@ pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &
         z.push(row);
     }
 
-    let trace =
-        HeatMap::new_z(z).color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
-    let mut plot = Plot::new();
+    todo!()
 
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        clippy::cast_precision_loss
-    )]
-    let width = (500.0 * times.shape()[0] as f32 / times.shape()[1] as f32) as usize + 175;
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        clippy::cast_precision_loss
-    )]
-    let height = (500.0 * times.shape()[1] as f32 / times.shape()[0] as f32) as usize;
+    // let trace =
+    //     HeatMap::new_z(z).color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    // let mut plot = Plot::new();
 
-    let layout = Layout::new()
-        .title(title.into())
-        .x_axis(
-            Axis::new()
-                .title("x".into())
-                .range(vec![0, times.shape()[0] - 1]),
-        )
-        .y_axis(
-            Axis::new()
-                .title("y".into())
-                .range(vec![times.shape()[1] - 1, 0])
-                .anchor("x"),
-        )
-        .height(height)
-        .width(width);
+    // #[allow(
+    //     clippy::cast_possible_truncation,
+    //     clippy::cast_sign_loss,
+    //     clippy::cast_precision_loss
+    // )]
+    // let width = (500.0 * times.shape()[0] as f32 / times.shape()[1] as f32) as usize + 175;
+    // #[allow(
+    //     clippy::cast_possible_truncation,
+    //     clippy::cast_sign_loss,
+    //     clippy::cast_precision_loss
+    // )]
+    // let height = (500.0 * times.shape()[1] as f32 / times.shape()[0] as f32) as usize;
 
-    plot.add_trace(trace);
-    plot.set_layout(layout);
+    // let layout = Layout::new()
+    //     .title(title.into())
+    //     .x_axis(
+    //         Axis::new()
+    //             .title("x".into())
+    //             .range(vec![0, times.shape()[0] - 1]),
+    //     )
+    //     .y_axis(
+    //         Axis::new()
+    //             .title("y".into())
+    //             .range(vec![times.shape()[1] - 1, 0])
+    //             .anchor("x"),
+    //     )
+    //     .height(height)
+    //     .width(width);
 
-    save_plot(file_name, &plot, width, height, 1.0);
+    // plot.add_trace(trace);
+    // plot.set_layout(layout);
+
+    // save_plot(file_name, &plot, width, height, 1.0);
 }
 
 pub fn plot_activation_time_delta(
@@ -250,105 +247,107 @@ pub fn plot_states_at_time(
     in_z.push(row_z);
     abs.push(row_abs);
 
-    let trace_x = HeatMap::new_z(in_x)
-        .name("x")
-        .x_axis("x1")
-        .y_axis("y1")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
-    let trace_y = HeatMap::new_z(in_y)
-        .name("y")
-        .x_axis("x2")
-        .y_axis("y2")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
-    let trace_z = HeatMap::new_z(in_z)
-        .name("z")
-        .x_axis("x3")
-        .y_axis("y3")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
-    let trace_abs = HeatMap::new_z(abs)
-        .name("abs")
-        .x_axis("x4")
-        .y_axis("y4")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    todo!()
 
-    let mut plot = Plot::new();
-    plot.add_trace(trace_x);
-    plot.add_trace(trace_y);
-    plot.add_trace(trace_z);
-    plot.add_trace(trace_abs);
+    // let trace_x = HeatMap::new_z(in_x)
+    //     .name("x")
+    //     .x_axis("x1")
+    //     .y_axis("y1")
+    //     .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    // let trace_y = HeatMap::new_z(in_y)
+    //     .name("y")
+    //     .x_axis("x2")
+    //     .y_axis("y2")
+    //     .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    // let trace_z = HeatMap::new_z(in_z)
+    //     .name("z")
+    //     .x_axis("x3")
+    //     .y_axis("y3")
+    //     .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    // let trace_abs = HeatMap::new_z(abs)
+    //     .name("abs")
+    //     .x_axis("x4")
+    //     .y_axis("y4")
+    //     .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
 
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        clippy::cast_precision_loss
-    )]
-    let width =
-        (1000.0 * voxels.count_xyz()[0] as f32 / voxels.count_xyz()[1] as f32) as usize + 175;
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        clippy::cast_precision_loss
-    )]
-    let height = (1000.0 * voxels.count_xyz()[1] as f32 / voxels.count_xyz()[0] as f32) as usize;
+    // let mut plot = Plot::new();
+    // plot.add_trace(trace_x);
+    // plot.add_trace(trace_y);
+    // plot.add_trace(trace_z);
+    // plot.add_trace(trace_abs);
 
-    let layout = Layout::new()
-        .grid(
-            LayoutGrid::new()
-                .rows(2)
-                .columns(2)
-                .pattern(GridPattern::Independent),
-        )
-        .title(title.into())
-        .x_axis(
-            Axis::new()
-                .title("x".into())
-                .range(vec![0, voxels.count_xyz()[0] - 1]),
-        )
-        .y_axis(
-            Axis::new()
-                .title("y".into())
-                .range(vec![voxels.count_xyz()[1] - 1, 0])
-                .anchor("x"),
-        )
-        .x_axis2(
-            Axis::new()
-                .title("x".into())
-                .range(vec![0, voxels.count_xyz()[0] - 1]),
-        )
-        .y_axis2(
-            Axis::new()
-                .title("y".into())
-                .range(vec![voxels.count_xyz()[1] - 1, 0])
-                .anchor("x"),
-        )
-        .x_axis3(
-            Axis::new()
-                .title("x".into())
-                .range(vec![0, voxels.count_xyz()[0] - 1]),
-        )
-        .y_axis3(
-            Axis::new()
-                .title("y".into())
-                .range(vec![voxels.count_xyz()[1] - 1, 0])
-                .anchor("x"),
-        )
-        .x_axis4(
-            Axis::new()
-                .title("x".into())
-                .range(vec![0, voxels.count_xyz()[0] - 1]),
-        )
-        .y_axis4(
-            Axis::new()
-                .title("y".into())
-                .range(vec![voxels.count_xyz()[1] - 1, 0])
-                .anchor("x"),
-        )
-        .height(height)
-        .width(width);
+    // #[allow(
+    //     clippy::cast_possible_truncation,
+    //     clippy::cast_sign_loss,
+    //     clippy::cast_precision_loss
+    // )]
+    // let width =
+    //     (1000.0 * voxels.count_xyz()[0] as f32 / voxels.count_xyz()[1] as f32) as usize + 175;
+    // #[allow(
+    //     clippy::cast_possible_truncation,
+    //     clippy::cast_sign_loss,
+    //     clippy::cast_precision_loss
+    // )]
+    // let height = (1000.0 * voxels.count_xyz()[1] as f32 / voxels.count_xyz()[0] as f32) as usize;
 
-    plot.set_layout(layout);
+    // let layout = Layout::new()
+    //     .grid(
+    //         LayoutGrid::new()
+    //             .rows(2)
+    //             .columns(2)
+    //             .pattern(GridPattern::Independent),
+    //     )
+    //     .title(title.into())
+    //     .x_axis(
+    //         Axis::new()
+    //             .title("x".into())
+    //             .range(vec![0, voxels.count_xyz()[0] - 1]),
+    //     )
+    //     .y_axis(
+    //         Axis::new()
+    //             .title("y".into())
+    //             .range(vec![voxels.count_xyz()[1] - 1, 0])
+    //             .anchor("x"),
+    //     )
+    //     .x_axis2(
+    //         Axis::new()
+    //             .title("x".into())
+    //             .range(vec![0, voxels.count_xyz()[0] - 1]),
+    //     )
+    //     .y_axis2(
+    //         Axis::new()
+    //             .title("y".into())
+    //             .range(vec![voxels.count_xyz()[1] - 1, 0])
+    //             .anchor("x"),
+    //     )
+    //     .x_axis3(
+    //         Axis::new()
+    //             .title("x".into())
+    //             .range(vec![0, voxels.count_xyz()[0] - 1]),
+    //     )
+    //     .y_axis3(
+    //         Axis::new()
+    //             .title("y".into())
+    //             .range(vec![voxels.count_xyz()[1] - 1, 0])
+    //             .anchor("x"),
+    //     )
+    //     .x_axis4(
+    //         Axis::new()
+    //             .title("x".into())
+    //             .range(vec![0, voxels.count_xyz()[0] - 1]),
+    //     )
+    //     .y_axis4(
+    //         Axis::new()
+    //             .title("y".into())
+    //             .range(vec![voxels.count_xyz()[1] - 1, 0])
+    //             .anchor("x"),
+    //     )
+    //     .height(height)
+    //     .width(width);
 
-    save_plot(file_name, &plot, width, height, 1.0);
+    // plot.set_layout(layout);
+
+    // save_plot(file_name, &plot, width, height, 1.0);
 }
 
 fn get_max_for_state(system_states: &ArraySystemStates, state_index: usize) -> f32 {
@@ -481,67 +480,67 @@ fn calculate_states_max(
     abs.push(row_abs);
 }
 
-fn build_plot_states_max_layout(
-    voxels: &Voxels,
-    title: &str,
-    width: usize,
-    height: usize,
-) -> Layout {
-    Layout::new()
-        .grid(
-            LayoutGrid::new()
-                .rows(2)
-                .columns(2)
-                .pattern(GridPattern::Independent),
-        )
-        .title(title.into())
-        .x_axis(
-            Axis::new()
-                .title("x".into())
-                .range(vec![0, voxels.count_xyz()[0] - 1]),
-        )
-        .y_axis(
-            Axis::new()
-                .title("y".into())
-                .range(vec![voxels.count_xyz()[1] - 1, 0])
-                .anchor("x"),
-        )
-        .x_axis2(
-            Axis::new()
-                .title("x".into())
-                .range(vec![0, voxels.count_xyz()[0] - 1]),
-        )
-        .y_axis2(
-            Axis::new()
-                .title("y".into())
-                .range(vec![voxels.count_xyz()[1] - 1, 0])
-                .anchor("x"),
-        )
-        .x_axis3(
-            Axis::new()
-                .title("x".into())
-                .range(vec![0, voxels.count_xyz()[0] - 1]),
-        )
-        .y_axis3(
-            Axis::new()
-                .title("y".into())
-                .range(vec![voxels.count_xyz()[1] - 1, 0])
-                .anchor("x"),
-        )
-        .x_axis4(
-            Axis::new()
-                .title("x".into())
-                .range(vec![0, voxels.count_xyz()[0] - 1]),
-        )
-        .y_axis4(
-            Axis::new()
-                .title("y".into())
-                .range(vec![voxels.count_xyz()[1] - 1, 0])
-                .anchor("x"),
-        )
-        .height(height)
-        .width(width)
-}
+// fn build_plot_states_max_layout(
+//     voxels: &Voxels,
+//     title: &str,
+//     width: usize,
+//     height: usize,
+// ) -> Layout {
+//     Layout::new()
+//         .grid(
+//             LayoutGrid::new()
+//                 .rows(2)
+//                 .columns(2)
+//                 .pattern(GridPattern::Independent),
+//         )
+//         .title(title.into())
+//         .x_axis(
+//             Axis::new()
+//                 .title("x".into())
+//                 .range(vec![0, voxels.count_xyz()[0] - 1]),
+//         )
+//         .y_axis(
+//             Axis::new()
+//                 .title("y".into())
+//                 .range(vec![voxels.count_xyz()[1] - 1, 0])
+//                 .anchor("x"),
+//         )
+//         .x_axis2(
+//             Axis::new()
+//                 .title("x".into())
+//                 .range(vec![0, voxels.count_xyz()[0] - 1]),
+//         )
+//         .y_axis2(
+//             Axis::new()
+//                 .title("y".into())
+//                 .range(vec![voxels.count_xyz()[1] - 1, 0])
+//                 .anchor("x"),
+//         )
+//         .x_axis3(
+//             Axis::new()
+//                 .title("x".into())
+//                 .range(vec![0, voxels.count_xyz()[0] - 1]),
+//         )
+//         .y_axis3(
+//             Axis::new()
+//                 .title("y".into())
+//                 .range(vec![voxels.count_xyz()[1] - 1, 0])
+//                 .anchor("x"),
+//         )
+//         .x_axis4(
+//             Axis::new()
+//                 .title("x".into())
+//                 .range(vec![0, voxels.count_xyz()[0] - 1]),
+//         )
+//         .y_axis4(
+//             Axis::new()
+//                 .title("y".into())
+//                 .range(vec![voxels.count_xyz()[1] - 1, 0])
+//                 .anchor("x"),
+//         )
+//         .height(height)
+//         .width(width)
+// }
 
 /// Plots maximum current densities for x-y plane at z=0
 /// Creates four subplots:
@@ -569,52 +568,54 @@ pub fn plot_states_max(
         &mut abs,
     );
 
-    let trace_x = HeatMap::new_z(in_x)
-        .name("x")
-        .x_axis("x1")
-        .y_axis("y1")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
-    let trace_y = HeatMap::new_z(in_y)
-        .name("y")
-        .x_axis("x2")
-        .y_axis("y2")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
-    let trace_z = HeatMap::new_z(in_z)
-        .name("z")
-        .x_axis("x3")
-        .y_axis("y3")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
-    let trace_abs = HeatMap::new_z(abs)
-        .name("abs")
-        .x_axis("x4")
-        .y_axis("y4")
-        .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    todo!()
 
-    let mut plot = Plot::new();
-    plot.add_trace(trace_x);
-    plot.add_trace(trace_y);
-    plot.add_trace(trace_z);
-    plot.add_trace(trace_abs);
+    // let trace_x = HeatMap::new_z(in_x)
+    //     .name("x")
+    //     .x_axis("x1")
+    //     .y_axis("y1")
+    //     .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    // let trace_y = HeatMap::new_z(in_y)
+    //     .name("y")
+    //     .x_axis("x2")
+    //     .y_axis("y2")
+    //     .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    // let trace_z = HeatMap::new_z(in_z)
+    //     .name("z")
+    //     .x_axis("x3")
+    //     .y_axis("y3")
+    //     .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
+    // let trace_abs = HeatMap::new_z(abs)
+    //     .name("abs")
+    //     .x_axis("x4")
+    //     .y_axis("y4")
+    //     .color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::Jet));
 
-    #[allow(
-        clippy::cast_precision_loss,
-        clippy::cast_sign_loss,
-        clippy::cast_possible_truncation
-    )]
-    let width =
-        (1000.0 * voxels.count_xyz()[0] as f32 / voxels.count_xyz()[1] as f32) as usize + 175;
-    #[allow(
-        clippy::cast_precision_loss,
-        clippy::cast_sign_loss,
-        clippy::cast_possible_truncation
-    )]
-    let height = (1000.0 * voxels.count_xyz()[1] as f32 / voxels.count_xyz()[0] as f32) as usize;
+    // let mut plot = Plot::new();
+    // plot.add_trace(trace_x);
+    // plot.add_trace(trace_y);
+    // plot.add_trace(trace_z);
+    // plot.add_trace(trace_abs);
 
-    let layout = build_plot_states_max_layout(voxels, title, width, height);
+    // #[allow(
+    //     clippy::cast_precision_loss,
+    //     clippy::cast_sign_loss,
+    //     clippy::cast_possible_truncation
+    // )]
+    // let width =
+    //     (1000.0 * voxels.count_xyz()[0] as f32 / voxels.count_xyz()[1] as f32) as usize + 175;
+    // #[allow(
+    //     clippy::cast_precision_loss,
+    //     clippy::cast_sign_loss,
+    //     clippy::cast_possible_truncation
+    // )]
+    // let height = (1000.0 * voxels.count_xyz()[1] as f32 / voxels.count_xyz()[0] as f32) as usize;
 
-    plot.set_layout(layout);
+    // let layout = build_plot_states_max_layout(voxels, title, width, height);
 
-    save_plot(file_name, &plot, width, height, 1.0);
+    // plot.set_layout(layout);
+
+    // save_plot(file_name, &plot, width, height, 1.0);
 }
 
 pub fn plot_states_max_delta(
@@ -680,14 +681,16 @@ pub fn plot_states_over_time(
         );
         image_names.push(format!("{image_name}.png"));
     }
-    let images = engiffen::load_images(image_names.as_slice());
-    let gif = engiffen::engiffen(&images, fps as usize, engiffen::Quantizer::Naive)
-        .expect("Could not create gif from images.");
-    let mut output_file =
-        File::create(format!("{file_name}.gif")).expect("Could not create gif file.");
-    gif.write(&mut output_file)
-        .expect("Could not write gif file.");
-    fs::remove_dir_all(dir_path).expect("Could not remove temporary folders.");
+
+    todo!()
+    // let images = engiffen::load_images(image_names.as_slice());
+    // let gif = engiffen::engiffen(&images, fps as usize, engiffen::Quantizer::Naive)
+    //     .expect("Could not create gif from images.");
+    // let mut output_file =
+    //     File::create(format!("{file_name}.gif")).expect("Could not create gif file.");
+    // gif.write(&mut output_file)
+    //     .expect("Could not write gif file.");
+    // fs::remove_dir_all(dir_path).expect("Could not remove temporary folders.");
 }
 
 pub fn plot_matrix_as_heatmap(matrix: &Array2<f32>, file_name: &str, title: &str) {
@@ -700,41 +703,43 @@ pub fn plot_matrix_as_heatmap(matrix: &Array2<f32>, file_name: &str, title: &str
         z.push(row);
     }
 
-    let trace =
-        HeatMap::new_z(z).color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::RdBu));
-    let mut plot = Plot::new();
+    todo!()
 
-    #[allow(
-        clippy::cast_precision_loss,
-        clippy::cast_sign_loss,
-        clippy::cast_possible_truncation
-    )]
-    let width = (500.0 * matrix.shape()[0] as f32 / matrix.shape()[1] as f32) as usize + 175;
-    #[allow(
-        clippy::cast_precision_loss,
-        clippy::cast_sign_loss,
-        clippy::cast_possible_truncation
-    )]
-    let height = (500.0 * matrix.shape()[1] as f32 / matrix.shape()[0] as f32) as usize;
+    // let trace =
+    //     HeatMap::new_z(z).color_scale(ColorScale::Palette(plotly::common::ColorScalePalette::RdBu));
+    // let mut plot = Plot::new();
 
-    #[allow(clippy::cast_precision_loss)]
-    let layout = Layout::new()
-        .title(title.into())
-        .x_axis(
-            Axis::new()
-                .title("Axis 1".into())
-                .range(vec![-0.5, matrix.shape()[0] as f32 - 0.5]),
-        )
-        .y_axis(
-            Axis::new()
-                .title("Axis 2".into())
-                .range(vec![-0.5, matrix.shape()[1] as f32 - 0.5]),
-        )
-        .height(height)
-        .width(width);
+    // #[allow(
+    //     clippy::cast_precision_loss,
+    //     clippy::cast_sign_loss,
+    //     clippy::cast_possible_truncation
+    // )]
+    // let width = (500.0 * matrix.shape()[0] as f32 / matrix.shape()[1] as f32) as usize + 175;
+    // #[allow(
+    //     clippy::cast_precision_loss,
+    //     clippy::cast_sign_loss,
+    //     clippy::cast_possible_truncation
+    // )]
+    // let height = (500.0 * matrix.shape()[1] as f32 / matrix.shape()[0] as f32) as usize;
 
-    plot.add_trace(trace);
-    plot.set_layout(layout);
+    // #[allow(clippy::cast_precision_loss)]
+    // let layout = Layout::new()
+    //     .title(title.into())
+    //     .x_axis(
+    //         Axis::new()
+    //             .title("Axis 1".into())
+    //             .range(vec![-0.5, matrix.shape()[0] as f32 - 0.5]),
+    //     )
+    //     .y_axis(
+    //         Axis::new()
+    //             .title("Axis 2".into())
+    //             .range(vec![-0.5, matrix.shape()[1] as f32 - 0.5]),
+    //     )
+    //     .height(height)
+    //     .width(width);
 
-    save_plot(file_name, &plot, width, height, 1.0);
+    // plot.add_trace(trace);
+    // plot.set_layout(layout);
+
+    // save_plot(file_name, &plot, width, height, 1.0);
 }

@@ -1,8 +1,8 @@
 pub mod prediction;
 
 use itertools::Itertools;
+use nalgebra::{DMatrix, OMatrix, SimdValue, SVD};
 use ndarray::{s, Array2};
-use ndarray_linalg::Inverse;
 use serde::{Deserialize, Serialize};
 
 use crate::core::{
@@ -31,8 +31,7 @@ pub struct Estimations {
     pub system_states_delta: ArraySystemStates,
     pub gains_delta: ArrayGains<f32>,
     pub delays_delta: ArrayDelays<f32>,
-    pub s: Array2<f32>,
-    pub s_inv: Array2<f32>,
+    pub s: DMatrix<f32>,
     pub kalman_gain_converged: bool,
 }
 
@@ -54,8 +53,7 @@ impl Estimations {
             system_states_delta: ArraySystemStates::empty(1, number_of_states),
             gains_delta: ArrayGains::empty(number_of_states),
             delays_delta: ArrayDelays::empty(number_of_states),
-            s: Array2::zeros([number_of_sensors, number_of_sensors]),
-            s_inv: Array2::zeros([number_of_sensors, number_of_sensors]),
+            s: DMatrix::zeros(number_of_sensors, number_of_sensors),
             kalman_gain_converged: false,
         }
     }
@@ -251,7 +249,7 @@ fn calculate_k(estimations: &mut Estimations, functional_description: &mut Funct
         .indexed_iter_mut()
         .for_each(|(index, value)| {
             *value = 0.0;
-            for k in 0..estimations.s.raw_dim()[0] {
+            for k in 0..estimations.s.shape().0 {
                 let mut sum = 0.0;
                 for (((m_x, m_y), m_z), m_d) in (-1..=1) // over neighbors of output voxel
                     .cartesian_product(-1..=1)
@@ -273,47 +271,56 @@ fn calculate_k(estimations: &mut Estimations, functional_description: &mut Funct
                         offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid."),
                     ]] * functional_description.measurement_matrix.values[[k, m.unwrap()]];
                 }
-                *value += estimations.s_inv[[k, index.1]] * sum;
+                *value += unsafe { estimations.s.get_unchecked((k, index.1)) } * sum;
             }
         });
 }
 
 #[inline]
 fn calculate_s_inv(estimations: &mut Estimations, functional_description: &FunctionalDescription) {
-    estimations.s.indexed_iter_mut().for_each(|(index, value)| {
-        *value = functional_description.measurement_covariance.values[index];
-        for k in 0..functional_description
-            .measurement_covariance
-            .values
-            .raw_dim()[1]
-        {
-            let mut sum = 0.0;
-            for (((m_x, m_y), m_z), m_d) in (-1..=1) // over neighors of input voxel
-                .cartesian_product(-1..=1)
-                .cartesian_product(-1..=1)
-                .cartesian_product(0..=2)
+    for i in 0..estimations.s.shape().0 {
+        for j in 0..estimations.s.shape().1 {
+            unsafe {
+                *estimations.s.get_unchecked_mut((i, j)) =
+                    functional_description.measurement_covariance.values[(i, j)]
+            };
+            for k in 0..functional_description
+                .measurement_covariance
+                .values
+                .raw_dim()[1]
             {
-                if m_x == 0 && m_y == 0 && m_z == 0 {
-                    continue;
-                }
-                // check if voxel m exists.
-                let m = functional_description.ap_params.output_state_indices.values[[
-                    k,
-                    offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid."),
-                ]];
-                if m.is_none() {
-                    continue;
-                }
-                sum += functional_description.measurement_matrix.values[[index.0, m.unwrap()]]
-                    * estimations.state_covariance_pred.values[[
-                        m.unwrap(),
-                        offset_to_gain_index(-m_x, -m_y, -m_z, k % 3).expect("Offset to be valid"),
+                let mut sum = 0.0;
+                for (((m_x, m_y), m_z), m_d) in (-1..=1) // over neighors of input voxel
+                    .cartesian_product(-1..=1)
+                    .cartesian_product(-1..=1)
+                    .cartesian_product(0..=2)
+                {
+                    if m_x == 0 && m_y == 0 && m_z == 0 {
+                        continue;
+                    }
+                    // check if voxel m exists.
+                    let m = functional_description.ap_params.output_state_indices.values[[
+                        k,
+                        offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid."),
                     ]];
+                    if m.is_none() {
+                        continue;
+                    }
+                    sum += functional_description.measurement_matrix.values[[i, m.unwrap()]]
+                        * estimations.state_covariance_pred.values[[
+                            m.unwrap(),
+                            offset_to_gain_index(-m_x, -m_y, -m_z, k % 3)
+                                .expect("Offset to be valid"),
+                        ]];
+                }
+                unsafe {
+                    *estimations.s.get_unchecked_mut((i, j)) +=
+                        functional_description.measurement_matrix.values[[j, k]] * sum
+                };
             }
-            *value += functional_description.measurement_matrix.values[[index.1, k]] * sum;
         }
-    });
-    estimations.s_inv = estimations.s.inv().unwrap();
+    }
+    estimations.s.try_inverse_mut();
 }
 
 #[allow(clippy::cast_sign_loss)]

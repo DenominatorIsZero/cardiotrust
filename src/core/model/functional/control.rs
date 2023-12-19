@@ -1,6 +1,5 @@
 use ndarray::Array1;
 use ndarray_npy::{read_npy, WriteNpyExt};
-use samplerate::{self, ConverterType};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
@@ -92,19 +91,10 @@ impl ControlFunction {
             clippy::cast_precision_loss,
             clippy::cast_sign_loss
         )]
-        let control_function_converted = samplerate::convert(
-            sample_rate_hz_in as u32,
-            sample_rate_hz as u32,
-            1,
-            ConverterType::SincBestQuality,
-            &control_function_raw.to_vec(),
-        )
-        .unwrap();
-
         let control_function_values: Vec<f32> = (0..desired_length_samples)
             .map(|i| {
-                let index = i % control_function_converted.len();
-                control_function_converted[index]
+                let index = i % control_function_raw.len();
+                control_function_raw[index]
             })
             .collect();
 

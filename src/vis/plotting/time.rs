@@ -1,10 +1,8 @@
 use ndarray::{arr1, s, Array1};
 use ndarray_stats::QuantileExt;
-use plotly::{color::NamedColor, common::Mode, layout::Axis, Layout, Plot, Scatter};
 use plotters::prelude::*;
 use std::error::Error;
 
-use super::save_plot;
 use crate::core::data::shapes::ArraySystemStates;
 
 pub fn standard_time_plot(
@@ -29,24 +27,25 @@ pub fn standard_time_plot(
     y_min = y_margin.mul_add(-y_range, y_min);
     y_max = y_margin.mul_add(y_range, y_max);
 
-    let mut plot = Plot::new();
-    let trace = Scatter::from_array(t, y.clone()).mode(Mode::Lines);
-    plot.add_trace(trace);
-    let layout = Layout::new()
-        .title(title.into())
-        .x_axis(
-            Axis::new()
-                .title("t [s]".into())
-                .range(vec![t_min, t_max])
-                .show_spikes(true),
-        )
-        .y_axis(Axis::new().title(y_label.into()).range(vec![y_min, y_max]));
-    plot.set_layout(layout);
+    todo!()
+    // let mut plot = Plot::new();
+    // let trace = Scatter::from_array(t, y.clone()).mode(Mode::Lines);
+    // plot.add_trace(trace);
+    // let layout = Layout::new()
+    //     .title(title.into())
+    //     .x_axis(
+    //         Axis::new()
+    //             .title("t [s]".into())
+    //             .range(vec![t_min, t_max])
+    //             .show_spikes(true),
+    //     )
+    //     .y_axis(Axis::new().title(y_label.into()).range(vec![y_min, y_max]));
+    // plot.set_layout(layout);
 
-    let width = 800;
-    let height = 600;
-    let scale = 1.0;
-    save_plot(file_name, &plot, width, height, scale);
+    // let width = 800;
+    // let height = 600;
+    // let scale = 1.0;
+    // save_plot(file_name, &plot, width, height, scale);
 }
 
 /// .
@@ -71,24 +70,26 @@ pub fn standard_y_plot(
     y_min = y_margin.mul_add(-y_range, y_min);
     y_max = y_margin.mul_add(y_range, y_max);
 
-    let mut plot = Plot::new();
-    let trace = Scatter::from_array(x, y.clone()).mode(Mode::Lines);
-    plot.add_trace(trace);
-    let layout = Layout::new()
-        .title(title.into())
-        .x_axis(
-            Axis::new()
-                .title(x_label.into())
-                .range(vec![x_min, x_max])
-                .show_spikes(true),
-        )
-        .y_axis(Axis::new().title(y_label.into()).range(vec![y_min, y_max]));
-    plot.set_layout(layout);
+    todo!()
 
-    let width = 800;
-    let height = 600;
-    let scale = 1.0;
-    save_plot(file_name, &plot, width, height, scale);
+    // let mut plot = Plot::new();
+    // let trace = Scatter::from_array(x, y.clone()).mode(Mode::Lines);
+    // plot.add_trace(trace);
+    // let layout = Layout::new()
+    //     .title(title.into())
+    //     .x_axis(
+    //         Axis::new()
+    //             .title(x_label.into())
+    //             .range(vec![x_min, x_max])
+    //             .show_spikes(true),
+    //     )
+    //     .y_axis(Axis::new().title(y_label.into()).range(vec![y_min, y_max]));
+    // plot.set_layout(layout);
+
+    // let width = 800;
+    // let height = 600;
+    // let scale = 1.0;
+    // save_plot(file_name, &plot, width, height, scale);
 }
 
 pub fn plot_state_xyz(
@@ -124,51 +125,53 @@ pub fn plot_state_xyz(
     let t_min = *t.min_skipnan();
     let t_max = *t.max_skipnan();
 
-    let mut plot = Plot::new();
-    let trace_x = Scatter::from_array(t.clone(), x)
-        .mode(Mode::Lines)
-        .line(
-            plotly::common::Line::new()
-                .color(NamedColor::SkyBlue)
-                .width(2.0)
-                .dash(plotly::common::DashType::Solid),
-        )
-        .name("x");
-    let trace_y = Scatter::from_array(t.clone(), y)
-        .mode(Mode::Lines)
-        .line(
-            plotly::common::Line::new()
-                .color(NamedColor::Orange)
-                .width(2.0)
-                .dash(plotly::common::DashType::Dot),
-        )
-        .name("y");
-    let trace_z = Scatter::from_array(t, z)
-        .mode(Mode::Lines)
-        .line(
-            plotly::common::Line::new()
-                .color(NamedColor::SeaGreen)
-                .width(2.0)
-                .dash(plotly::common::DashType::Dash),
-        )
-        .name("z");
-    plot.add_trace(trace_x);
-    plot.add_trace(trace_y);
-    plot.add_trace(trace_z);
-    let layout = Layout::new()
-        .title(title.into())
-        .x_axis(Axis::new().title("t [s]".into()).range(vec![t_min, t_max]))
-        .y_axis(
-            Axis::new()
-                .title("j [A/mm^2]".into())
-                .range(vec![xyz_min, xyz_max]),
-        );
-    plot.set_layout(layout);
+    todo!()
 
-    let width = 800;
-    let height = 600;
-    let scale = 1.0;
-    save_plot(file_name, &plot, width, height, scale);
+    // let mut plot = Plot::new();
+    // let trace_x = Scatter::from_array(t.clone(), x)
+    //     .mode(Mode::Lines)
+    //     .line(
+    //         plotly::common::Line::new()
+    //             .color(NamedColor::SkyBlue)
+    //             .width(2.0)
+    //             .dash(plotly::common::DashType::Solid),
+    //     )
+    //     .name("x");
+    // let trace_y = Scatter::from_array(t.clone(), y)
+    //     .mode(Mode::Lines)
+    //     .line(
+    //         plotly::common::Line::new()
+    //             .color(NamedColor::Orange)
+    //             .width(2.0)
+    //             .dash(plotly::common::DashType::Dot),
+    //     )
+    //     .name("y");
+    // let trace_z = Scatter::from_array(t, z)
+    //     .mode(Mode::Lines)
+    //     .line(
+    //         plotly::common::Line::new()
+    //             .color(NamedColor::SeaGreen)
+    //             .width(2.0)
+    //             .dash(plotly::common::DashType::Dash),
+    //     )
+    //     .name("z");
+    // plot.add_trace(trace_x);
+    // plot.add_trace(trace_y);
+    // plot.add_trace(trace_z);
+    // let layout = Layout::new()
+    //     .title(title.into())
+    //     .x_axis(Axis::new().title("t [s]".into()).range(vec![t_min, t_max]))
+    //     .y_axis(
+    //         Axis::new()
+    //             .title("j [A/mm^2]".into())
+    //             .range(vec![xyz_min, xyz_max]),
+    //     );
+    // plot.set_layout(layout);
+
+    // let width = 800;
+    // let height = 600;
+    // let scale = 1.0;
+    // save_plot(file_name, &plot, width, height, scale);
 }
 
 const CAPTION_STYLE: (&str, i32) = ("Arial", 30);
@@ -185,34 +188,35 @@ pub fn xy_plot(
     x_label: &str,
 ) -> Result<(), Box<dyn Error>> {
     let path = format!("{file_name}.png");
-    let root_drawing_area = BitMapBackend::new(&path, (800, 600)).into_drawing_area();
+    todo!()
+    // let root_drawing_area = Canvas::new(&path, (800, 600)).into_drawing_area();
 
-    root_drawing_area.fill(&WHITE)?;
+    // root_drawing_area.fill(&WHITE)?;
 
-    let mut chart = ChartBuilder::on(&root_drawing_area)
-        .caption(title, CAPTION_STYLE)
-        .set_left_and_bottom_label_area_size(60)
-        .build_cartesian_2d(
-            f64::from(*x.min_skipnan())..f64::from(*x.max_skipnan()),
-            f64::from(*y.min_skipnan())..f64::from(*y.max_skipnan()),
-        )?;
+    // let mut chart = ChartBuilder::on(&root_drawing_area)
+    //     .caption(title, CAPTION_STYLE)
+    //     .set_left_and_bottom_label_area_size(60)
+    //     .build_cartesian_2d(
+    //         f64::from(*x.min_skipnan())..f64::from(*x.max_skipnan()),
+    //         f64::from(*y.min_skipnan())..f64::from(*y.max_skipnan()),
+    //     )?;
 
-    let color = Palette99::pick(0);
-    chart.draw_series(LineSeries::new(
-        x.iter()
-            .zip(y.iter())
-            .map(|(x, y)| (f64::from(*x), f64::from(*y))),
-        color.stroke_width(2),
-    ))?;
+    // let color = Palette99::pick(0);
+    // chart.draw_series(LineSeries::new(
+    //     x.iter()
+    //         .zip(y.iter())
+    //         .map(|(x, y)| (f64::from(*x), f64::from(*y))),
+    //     color.stroke_width(2),
+    // ))?;
 
-    chart
-        .configure_mesh()
-        .label_style(AXIS_STYLE)
-        .x_desc(x_label)
-        .y_desc(y_label)
-        .draw()?;
+    // chart
+    //     .configure_mesh()
+    //     .label_style(AXIS_STYLE)
+    //     .x_desc(x_label)
+    //     .y_desc(y_label)
+    //     .draw()?;
 
-    Ok(())
+    // Ok(())
 }
 
 #[cfg(test)]
