@@ -189,7 +189,7 @@ pub fn xy_plot(
 ) -> Result<(), Box<dyn Error>> {
     let path = format!("{file_name}.png");
     todo!()
-    // let root_drawing_area = Canvas::new(&path, (800, 600)).into_drawing_area();
+    // let root_drawing_area = Bitmap::new(&path, (800, 600)).into_drawing_area();
 
     // root_drawing_area.fill(&WHITE)?;
 

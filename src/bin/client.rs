@@ -87,25 +87,7 @@ fn init_websocket(
     let _cloned_ws = ws.clone();
     let cloned_message_buffer = message_buffer.messages.clone();
     let onmessage_callback = Closure::<dyn FnMut(_)>::new(move |e: MessageEvent| {
-        // Handle difference Text/Binary,...
-        if let Ok(abuf) = e.data().dyn_into::<js_sys::ArrayBuffer>() {
-            let array = js_sys::Uint8Array::new(&abuf);
-            let _len = array.byte_length() as usize;
-            todo!()
-        } else if let Ok(blob) = e.data().dyn_into::<web_sys::Blob>() {
-            // better alternative to juggling with FileReader is to use https://crates.io/crates/gloo-file
-            let fr = web_sys::FileReader::new().unwrap();
-            let fr_c = fr.clone();
-            // create onLoadEnd callback
-            let onloadend_cb = Closure::<dyn FnMut(_)>::new(move |_e: web_sys::ProgressEvent| {
-                let array = js_sys::Uint8Array::new(&fr_c.result().unwrap());
-                let _len = array.byte_length() as usize;
-                todo!()
-            });
-            fr.set_onloadend(Some(onloadend_cb.as_ref().unchecked_ref()));
-            fr.read_as_array_buffer(&blob).expect("blob not readable");
-            onloadend_cb.forget();
-        } else if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
+        if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
             cloned_message_buffer.lock().unwrap().push(txt.into());
         } else {
             error!("message event, received Unknown: {:?}", e.data());
