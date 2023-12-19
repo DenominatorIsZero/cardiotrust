@@ -74,7 +74,11 @@ pub fn plot_voxel_types(types: &Array3<VoxelType>, _file_name: &str, _title: &st
     // save_plot(file_name, &plot, width, height, 1.0);
 }
 
-pub fn plot_activation_time(activation_times: &ArrayActivationTime, _file_name: &str, _title: &str) {
+pub fn plot_activation_time(
+    activation_times: &ArrayActivationTime,
+    _file_name: &str,
+    _title: &str,
+) {
     let times = &activation_times.values;
     let mut z: Vec<Vec<f32>> = Vec::new();
     for y in 0..times.shape()[1] {

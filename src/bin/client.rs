@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 
-
 use serde_json::Value;
-use std::{
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 
