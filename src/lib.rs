@@ -3,6 +3,7 @@ pub mod core;
 pub mod scheduler;
 pub mod ui;
 pub mod vis;
+pub mod websocket;
 
 use bevy::prelude::*;
 
