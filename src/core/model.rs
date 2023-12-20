@@ -31,7 +31,7 @@ impl Model {
             ),
             spatial_description: SpatialDescription::empty(
                 number_of_sensors,
-                [number_of_states / 3_usize, 1, 1],
+                [voxels_in_dims[0], voxels_in_dims[1], voxels_in_dims[2]],
             ),
         }
     }

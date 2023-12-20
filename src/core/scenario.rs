@@ -39,6 +39,18 @@ pub struct Scenario {
 }
 
 impl Scenario {
+    pub fn empty() -> Self {
+        Self {
+            id: "EMPTY".into(),
+            status: Status::Scheduled,
+            config: Config::default(),
+            data: None,
+            results: None,
+            summary: None,
+            comment: "EMPTY".into(),
+        }
+    }
+
     /// .
     ///
     /// # Panics

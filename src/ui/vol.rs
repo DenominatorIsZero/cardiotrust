@@ -11,7 +11,7 @@ use crate::{
     ScenarioList, SelectedSenario,
 };
 
-#[allow(clippy::needless_pass_by_value)]
+#[allow(clippy::needless_pass_by_value, clippy::too_many_arguments)]
 pub fn draw_ui_volumetric(
     mut contexts: EguiContexts,
     mut commands: Commands,
@@ -77,16 +77,16 @@ pub fn draw_ui_volumetric(
             vis_options.mode = vis_mode;
         }
     });
-    egui::TopBottomPanel::bottom("Volumetric bottom panel")
-        .exact_height(400.0)
-        .show(contexts.ctx_mut(), |ui| {
-            let sin: PlotPoints = (0..1000)
-                .map(|i| {
-                    let x = f64::from(i) * 0.01;
-                    [x, x.sin()]
-                })
-                .collect();
-            let line = Line::new(sin);
-            Plot::new("my_plot").show(ui, |plot_ui| plot_ui.line(line));
-        });
+    // egui::TopBottomPanel::bottom("Volumetric bottom panel")
+    //     .exact_height(400.0)
+    //     .show(contexts.ctx_mut(), |ui| {
+    //         let sin: PlotPoints = (0..1000)
+    //             .map(|i| {
+    //                 let x = f64::from(i) * 0.01;
+    //                 [x, x.sin()]
+    //             })
+    //             .collect();
+    //         let line = Line::new(sin);
+    //         Plot::new("my_plot").show(ui, |plot_ui| plot_ui.line(line));
+    //     });
 }

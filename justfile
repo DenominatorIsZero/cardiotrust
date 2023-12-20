@@ -4,7 +4,4 @@ wasm-build:
 wasm-run: wasm-build
   wasm-server-runner '.\target\wasm32-unknown-unknown\debug\client.wasm'
 
-r:
-cargo run --bin main
-
 alias w := wasm-run
