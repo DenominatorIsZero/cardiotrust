@@ -1,7 +1,10 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, time::common_conditions::on_timer};
 
 use serde_json::Value;
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 use wasm_bindgen::prelude::*;
 use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 
@@ -16,8 +19,13 @@ fn main() {
         .init_resource::<MessageBuffer>()
         .init_resource::<WebSocketResource>()
         .add_systems(Startup, init_websocket)
-        .add_systems(Update, handle_websocket_messages)
-        .add_systems(FixedUpdate, send_heartbeat)
+        .add_systems(
+            Update,
+            (
+                handle_websocket_messages,
+                send_heartbeat.run_if(on_timer(Duration::from_secs(1))),
+            ),
+        )
         .run();
 }
 
