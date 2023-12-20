@@ -65,3 +65,20 @@ pub enum UiState {
     Results,
     Volumetric,
 }
+
+#[allow(clippy::module_name_repetitions)]
+pub struct ClientUiPlugin;
+
+impl Plugin for ClientUiPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_state::<UiState>()
+            .init_resource::<PlaybackSpeed>()
+            .add_plugins(EguiPlugin)
+            .add_systems(Update, draw_ui_volumetric)
+            .add_systems(Startup, set_state_to_vol);
+    }
+}
+
+fn set_state_to_vol(mut state: ResMut<NextState<UiState>>) {
+    state.set(UiState::Volumetric);
+}

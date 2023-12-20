@@ -15,6 +15,8 @@ use crate::{
 pub fn draw_ui_volumetric(
     mut contexts: EguiContexts,
     mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     mut sample_tracker: ResMut<SampleTracker>,
     mut vis_options: ResMut<VisOptions>,
     selected_scenario: Res<SelectedSenario>,
@@ -25,6 +27,8 @@ pub fn draw_ui_volumetric(
         if ui.button("Init Voxels").clicked() {
             setup_heart_voxels(
                 &mut commands,
+                &mut meshes,
+                &mut materials,
                 &mut sample_tracker,
                 &scenario_list
                     .entries

@@ -33,6 +33,14 @@ pub struct ScenarioList {
     pub entries: Vec<ScenarioBundle>,
 }
 
+impl ScenarioList {
+    pub fn empty() -> Self {
+        Self {
+            entries: Vec::new(),
+        }
+    }
+}
+
 impl Default for ScenarioList {
     fn default() -> Self {
         let mut scenario_list = Self {

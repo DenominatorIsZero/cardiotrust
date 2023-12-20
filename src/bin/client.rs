@@ -1,5 +1,10 @@
 use bevy::prelude::*;
-use rusty_cde::websocket::WebsocketPlugin;
+use rusty_cde::{
+    ui::ClientUiPlugin,
+    vis::{ClientVisPlugin, VisPlugin},
+    websocket::WebsocketPlugin,
+    ScenarioList, SelectedSenario,
+};
 
 fn main() {
     App::new()
@@ -9,6 +14,10 @@ fn main() {
             // filter: "wgpu=warn,bevy_ecs=info".to_string(),
             ..default()
         }))
+        .init_resource::<SelectedSenario>()
+        .insert_resource(ScenarioList::empty())
         .add_plugins(WebsocketPlugin)
+        .add_plugins(ClientUiPlugin)
+        .add_plugins(ClientVisPlugin)
         .run();
 }

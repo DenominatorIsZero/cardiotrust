@@ -48,7 +48,7 @@ impl ControlMatrix {
     }
 
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
-        fs::create_dir_all(path.clone()).unwrap();
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("control_matrix.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
     }
@@ -75,7 +75,7 @@ impl ControlFunction {
     /// Panics if the control function input file is missing.
     #[must_use]
     pub fn from_model_config(_config: &Model, sample_rate_hz: f32, duration_s: f32) -> Self {
-        let _sample_rate_hz_in = 2000.0;
+        //let _sample_rate_hz_in = 2000.0;
         let control_function_raw: Array1<f32> =
             read_npy("assets/control_function_ohara.npy").unwrap();
 
@@ -104,7 +104,7 @@ impl ControlFunction {
     }
 
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
-        fs::create_dir_all(path.clone()).unwrap();
+        fs::create_dir_all(path).unwrap();
         let writer =
             BufWriter::new(File::create(path.join("control_function_values.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
