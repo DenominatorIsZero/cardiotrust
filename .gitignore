@@ -3,4 +3,7 @@
 /results_backup
 /tests
 /tmp
+/wasm-client/client.js
+/wasm-client/client_bg.wasm
+
 .DS_STORE
