@@ -23,7 +23,7 @@ use crate::core::{
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Data {
-    simulation: Option<Simulation>,
+    pub simulation: Option<Simulation>,
     measurement: Option<Measurement>,
 }
 impl Data {

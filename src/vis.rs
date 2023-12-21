@@ -41,17 +41,6 @@ impl Plugin for VisPlugin {
     }
 }
 
-#[allow(clippy::module_name_repetitions)]
-pub struct ClientVisPlugin;
-
-impl Plugin for ClientVisPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(PanOrbitCameraPlugin)
-            .init_resource::<SampleTracker>()
-            .init_resource::<VisOptions>();
-    }
-}
-
 pub fn setup(mut commands: Commands) {
     setup_light_and_camera(&mut commands);
 }

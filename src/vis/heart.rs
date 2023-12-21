@@ -1,3 +1,5 @@
+use std::env::consts::DLL_SUFFIX;
+
 use bevy::{math::vec3, prelude::*};
 use ciborium::de;
 use ndarray::{arr1, s, Array1, Array2};
@@ -51,10 +53,14 @@ fn init_voxels(
     scenario: &Scenario,
     sample_tracker: &SampleTracker,
 ) {
+    info!("Initializing voxels!");
     let data = scenario.data.as_ref().expect("Data to be some");
     let model = data.get_model();
     let voxels = &model.spatial_description.voxels;
     let voxel_count = model.spatial_description.voxels.count_xyz();
+    info!("Voxel count: {voxel_count:?}");
+    let size = voxels.size_mm;
+    info!("Voxel size: {size:?}");
 
     let mesh = meshes.add(Mesh::from(shape::Cube {
         size: voxels.size_mm,

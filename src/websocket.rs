@@ -124,6 +124,27 @@ fn handle_init_sim_message(
     if selected_scenario.index.is_none() {
         init_scenario(payload, selected_scenario, scenario_list, sample_tracker);
     }
+    let scenario = &mut scenario_list.entries[selected_scenario
+        .index
+        .expect("Selected scenario to be some.")]
+    .scenario;
+    let model = &mut scenario
+        .data
+        .as_mut()
+        .expect("Data to be some")
+        .simulation
+        .as_mut()
+        .expect("Simulation to be some.")
+        .model;
+    model.spatial_description.voxels.size_mm = payload
+        .get("fVoxelSizeMm")
+        .expect("Key fVoxelSizeMm should exist.")
+        .as_f64()
+        .expect("fVoxelSizeMm should be a float")
+        as f32;
+    initialize_voxel_types(model, payload);
+    initialize_voxel_positions(model, payload);
+    initialize_voxel_numbers(model, payload);
 }
 
 #[allow(
@@ -143,27 +164,44 @@ fn handle_init_est_message(
     }
     let scenario = &mut scenario_list.entries[selected_scenario
         .index
-        .expect("Selected scenario to be some.")]
+        .expect("Selected scenario should be some.")]
     .scenario;
-    let pppc_voxel_types = payload
-        .get("pppcVoxelTypes")
-        .expect("Key to exist")
-        .as_array()
-        .expect("Value to be array.");
     let model = scenario
         .results
         .as_mut()
-        .expect("Results to be some.")
+        .expect("Results should be some.")
         .model
         .as_mut()
-        .expect("Model to be some");
+        .expect("Model should be some");
+    model.spatial_description.voxels.size_mm = payload
+        .get("fVoxelSizeMm")
+        .expect("Key fVoxelSizeMm should exist.")
+        .as_f64()
+        .expect("fVoxelSizeMm should be a float")
+        as f32;
+    initialize_voxel_types(model, payload);
+    initialize_voxel_positions(model, payload);
+    initialize_voxel_numbers(model, payload);
+}
+
+fn initialize_voxel_types(model: &mut Model, payload: &Value) {
     let types = &mut model.spatial_description.voxels.types.values;
+    let key = "pppcVoxelTypes";
+    let pppc_voxel_types = payload
+        .get(key)
+        .unwrap_or_else(|| panic!("Key {key} should exist"))
+        .as_array()
+        .unwrap_or_else(|| panic!("{key} to be array."));
     for x in 0..types.shape()[0] {
-        let ppc_voxel_types = pppc_voxel_types[x].as_array().expect("Value to be array");
+        let ppc_voxel_types = pppc_voxel_types[x]
+            .as_array()
+            .expect("ppc_voxel_types should be an array.");
         for y in 0..types.shape()[1] {
-            let pc_voxel_types = ppc_voxel_types[y].as_array().expect("Value to be array");
+            let pc_voxel_types = ppc_voxel_types[y]
+                .as_array()
+                .expect("pc_voxel_types should be an array.");
             for z in 0..types.shape()[2] {
-                let voxel_type = pc_voxel_types[z].as_i64().expect("Value to be int");
+                let voxel_type = pc_voxel_types[z].as_i64().expect("Voxeltype to be int");
                 types[(x, y, z)] = match voxel_type {
                     0 => VoxelType::None,
                     1 => VoxelType::Sinoatrial,
@@ -172,8 +210,66 @@ fn handle_init_est_message(
                     4 => VoxelType::HPS,
                     5 => VoxelType::Ventricle,
                     6 => VoxelType::Pathological,
-                    _ => panic!("Got unexpected voxel type."),
+                    _ => panic!("Voxel type should be in 0..=6"),
                 }
+            }
+        }
+    }
+}
+
+fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
+    let positions = &mut model.spatial_description.voxels.positions_mm.values;
+    let key = "ppppfVoxelPositionsMm";
+    let ppppf_voxel_positions = payload
+        .get(key)
+        .unwrap_or_else(|| panic!("Key {key} should exist"))
+        .as_array()
+        .unwrap_or_else(|| panic!("{key} to be array."));
+    for x in 0..positions.shape()[0] {
+        let pppf_voxel_positions = ppppf_voxel_positions[x]
+            .as_array()
+            .expect("pppf_voxel_positons to be array");
+        for y in 0..positions.shape()[1] {
+            let ppf_voxel_types = pppf_voxel_positions[y]
+                .as_array()
+                .expect("ppf_voxel_positions to be array");
+            for z in 0..positions.shape()[2] {
+                let pf_voxel_positions = ppf_voxel_types[z]
+                    .as_array()
+                    .expect("pf_voxel_positions to be array");
+                for d in 0..3 {
+                    let position = pf_voxel_positions[d]
+                        .as_f64()
+                        .expect("Voxel position to be float")
+                        as f32;
+                    positions[(x, y, z, d)] = position;
+                }
+            }
+        }
+    }
+}
+
+fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
+    let numbers = &mut model.spatial_description.voxels.numbers.values;
+    let key = "pppuVoxelNumbers";
+    let pppu_voxel_numbers = payload
+        .get(key)
+        .unwrap_or_else(|| panic!("Key {key} should exist"))
+        .as_array()
+        .unwrap_or_else(|| panic!("{key} should be an array."));
+    for x in 0..numbers.shape()[0] {
+        let ppu_voxel_numbers = pppu_voxel_numbers[x]
+            .as_array()
+            .expect("ppu_voxel_numbers should be an array");
+        for y in 0..numbers.shape()[1] {
+            let pu_voxel_numbers = ppu_voxel_numbers[y]
+                .as_array()
+                .expect("pu_voxel_numbers should be an array");
+            for z in 0..numbers.shape()[2] {
+                let number = pu_voxel_numbers[z]
+                    .as_i64()
+                    .expect("Voxel number should be an int") as usize;
+                numbers[(x, y, z)] = Some(number);
             }
         }
     }
@@ -193,35 +289,41 @@ fn init_scenario(
     let number_of_sensors = usize::try_from(
         payload
             .get("iNumberOfSensors")
-            .expect("Key to exist.")
+            .expect("Key iNumberOfSensors should exist.")
             .as_i64()
-            .expect("Value to be int."),
+            .expect("iNumberOfSensors should be an int."),
     )
     .unwrap();
     let number_of_states = usize::try_from(
         payload
             .get("iNumberOfStates")
-            .expect("Key to exist.")
+            .expect("Key iNumberOfStates to exist.")
             .as_i64()
-            .expect("Value to be int."),
+            .expect("iNumberOfStates should be an int."),
     )
     .unwrap();
     let samplerate = payload
         .get("fSampleRate")
-        .expect("Key to exist.")
+        .expect("Key fSampleRate should exist.")
         .as_f64()
-        .expect("Value to be float.") as f32;
+        .expect("fSampleRate should be a float.") as f32;
     let number_of_steps = (samplerate) as usize;
     let number_of_epochs = 1;
     let voxels_in_dims_json = payload
         .get("piVoxelsPerDim")
-        .expect("Key to exist.")
+        .expect("Key piVoxelsPerDim should exist.")
         .as_array()
-        .expect("Value to be int.");
+        .expect("piVoxelsPerDim should be an array.");
     let voxels_in_dims = Dim([
-        voxels_in_dims_json[0].as_i64().expect("Value to be int.") as usize,
-        voxels_in_dims_json[1].as_i64().expect("Value to be int.") as usize,
-        voxels_in_dims_json[2].as_i64().expect("Value to be int.") as usize,
+        voxels_in_dims_json[0]
+            .as_i64()
+            .expect("voxels in dim should be an int.") as usize,
+        voxels_in_dims_json[1]
+            .as_i64()
+            .expect("voxels in dim should be an int.") as usize,
+        voxels_in_dims_json[2]
+            .as_i64()
+            .expect("voxels in dim should be an int.") as usize,
     ]);
     selected_scenario.index = Some(0);
     let mut scenario = Scenario::empty();

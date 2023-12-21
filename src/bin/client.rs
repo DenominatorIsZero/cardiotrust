@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 use rusty_cde::{
-    ui::ClientUiPlugin,
-    vis::{ClientVisPlugin, VisPlugin},
-    websocket::WebsocketPlugin,
-    ScenarioList, SelectedSenario,
+    ui::ClientUiPlugin, vis::VisPlugin, websocket::WebsocketPlugin, ScenarioList, SelectedSenario,
 };
 
 fn main() {
@@ -18,6 +15,6 @@ fn main() {
         .insert_resource(ScenarioList::empty())
         .add_plugins(WebsocketPlugin)
         .add_plugins(ClientUiPlugin)
-        .add_plugins(ClientVisPlugin)
+        .add_plugins(VisPlugin)
         .run();
 }
