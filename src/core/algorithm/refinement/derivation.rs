@@ -63,6 +63,7 @@ impl Derivatives {
         self.coefs_fir.values.fill(0.0);
         self.mapped_residuals.values.fill(0.0);
         self.maximum_regularization.values.fill(0.0);
+        self.maximum_regularization_sum = 0.0;
     }
 
     /// Calculates the derivatives for the given time index.
@@ -202,7 +203,7 @@ impl Derivatives {
         time_index: usize,
         regularization_threshold: f32,
     ) {
-        self.maximum_regularization_sum = 0.0;
+        // self.maximum_regularization_sum = 0.0; // This is probably wrong, no?
         for state_index in (0..system_states.values.raw_dim()[1]).step_by(3) {
             let sum = system_states.values[[time_index, state_index]].abs()
                 + system_states.values[[time_index, state_index + 1]].abs()
