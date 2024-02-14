@@ -92,8 +92,6 @@ fn handle_websocket_messages(
                 let header = header.to_string();
                 info!("Processing message with header {header}");
                 let payload = message.get("p").unwrap();
-                let id = payload.get("id").unwrap();
-                info!("Message came with id {id}");
                 match header.as_str() {
                     r#""INIT_EST""# => handle_init_est_message(
                         payload,
@@ -104,6 +102,16 @@ fn handle_websocket_messages(
                     r#""INIT_SIM""# => handle_init_sim_message(
                         payload,
                         &mut sample_tracker,
+                        &mut selected_scenario,
+                        &mut scenario_list,
+                    ),
+                    r#""UPDATE_SIM""# => handle_update_sim_message(
+                        payload,
+                        &mut selected_scenario,
+                        &mut scenario_list,
+                    ),
+                    r#""UPDATE_EST""# => handle_update_est_message(
+                        payload,
                         &mut selected_scenario,
                         &mut scenario_list,
                     ),
@@ -182,6 +190,89 @@ fn handle_init_est_message(
     initialize_voxel_types(model, payload);
     initialize_voxel_positions(model, payload);
     initialize_voxel_numbers(model, payload);
+}
+
+fn handle_update_sim_message(
+    payload: &Value,
+    selected_scenario: &mut SelectedSenario,
+    scenario_list: &mut ScenarioList,
+) {
+    info!("Updateing simulation values.");
+    let scenario = &mut scenario_list.entries[selected_scenario
+        .index
+        .expect("Selected scenario to be some.")]
+    .scenario;
+    let simulation = scenario
+        .data
+        .as_mut()
+        .expect("Data should be some")
+        .simulation
+        .as_mut()
+        .expect("Simulation should be some");
+    let states = &mut simulation.system_states;
+    let measurements = &mut simulation.measurements;
+
+    update_values(payload, states, measurements);
+}
+
+fn handle_update_est_message(
+    payload: &Value,
+    selected_scenario: &mut SelectedSenario,
+    scenario_list: &mut ScenarioList,
+) {
+    info!("Updateing estimation values.");
+    let scenario = &mut scenario_list.entries[selected_scenario
+        .index
+        .expect("Selected scenario to be some.")]
+    .scenario;
+    let results = scenario.results.as_mut().expect("Results should be some.");
+    let states = &mut results.estimations.system_states;
+    let measurements = &mut results.estimations.measurements;
+
+    update_values(payload, states, measurements);
+}
+
+fn update_values(
+    payload: &Value,
+    states: &mut crate::core::data::shapes::ArraySystemStates,
+    measurements: &mut crate::core::data::shapes::ArrayMeasurements,
+) {
+    let states = &mut states.values;
+    let key = "ppfStatesToExoBuffer";
+    let ppfStateBuffer = payload
+        .get(key)
+        .unwrap_or_else(|| panic!("Key {key} should exist"))
+        .as_array()
+        .unwrap_or_else(|| panic!("{key} to be array."));
+    for index_sample in 0..states.shape()[0] {
+        let pfStateBuffer = ppfStateBuffer[index_sample]
+            .as_array()
+            .expect("pfStateBuffer should be an array.");
+        for index_state in 0..states.shape()[1] {
+            let state = pfStateBuffer[index_state]
+                .as_f64()
+                .expect("State should be a float");
+            states[(index_sample, index_state)] = state as f32;
+        }
+    }
+    let measurements = &mut measurements.values;
+    let key = "ppfMeasurementsToExoBuffer";
+    let ppfMeasurementBuffer = payload
+        .get(key)
+        .unwrap_or_else(|| panic!("Key {key} should exist"))
+        .as_array()
+        .unwrap_or_else(|| panic!("{key} to be array."));
+    for index_sample in 0..measurements.shape()[0] {
+        let pfMeasurementBuffer = ppfMeasurementBuffer[index_sample]
+            .as_array()
+            .expect("pfMeasurementBuffer should be an array.");
+        for index_state in 0..measurements.shape()[1] {
+            let state = pfMeasurementBuffer[index_state]
+                .as_f64()
+                .expect("Measurement should be a float");
+            measurements[(index_sample, index_state)] = state as f32;
+        }
+    }
 }
 
 fn initialize_voxel_types(model: &mut Model, payload: &Value) {
