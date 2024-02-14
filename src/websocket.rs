@@ -15,7 +15,10 @@ use crate::{
         model::{spatial::voxels::VoxelType, Model},
         scenario::{self, results::Results, Scenario},
     },
-    vis::sample_tracker::{self, SampleTracker},
+    vis::{
+        options::VisOptions,
+        sample_tracker::{self, SampleTracker},
+    },
     ScenarioBundle, ScenarioList, SelectedSenario,
 };
 
@@ -81,6 +84,7 @@ fn handle_websocket_messages(
     mut sample_tracker: ResMut<SampleTracker>,
     mut selected_scenario: ResMut<SelectedSenario>,
     mut scenario_list: ResMut<ScenarioList>,
+    mut vis_options: ResMut<VisOptions>,
 ) {
     if let Some(message) = message_buffer.messages.lock().unwrap().pop() {
         let message: Value = serde_json::from_str(&message).unwrap();
@@ -105,16 +109,22 @@ fn handle_websocket_messages(
                         &mut selected_scenario,
                         &mut scenario_list,
                     ),
-                    r#""UPDATE_SIM""# => handle_update_sim_message(
-                        payload,
-                        &mut selected_scenario,
-                        &mut scenario_list,
-                    ),
-                    r#""UPDATE_EST""# => handle_update_est_message(
-                        payload,
-                        &mut selected_scenario,
-                        &mut scenario_list,
-                    ),
+                    r#""UPDATE_SIM""# => {
+                        handle_update_sim_message(
+                            payload,
+                            &mut selected_scenario,
+                            &mut scenario_list,
+                        );
+                        vis_options.set_changed();
+                    }
+                    r#""UPDATE_EST""# => {
+                        handle_update_est_message(
+                            payload,
+                            &mut selected_scenario,
+                            &mut scenario_list,
+                        );
+                        vis_options.set_changed();
+                    }
                     _ => info!("Do not know header {header}"),
                 }
             },
