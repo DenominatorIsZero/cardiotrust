@@ -175,10 +175,10 @@ pub fn on_vis_mode_changed(
             set_heart_voxel_colors_to_norm(query, scenario, true);
         }
         VisMode::EstimatedCdeMax => {
-            set_heart_voxel_colors_to_max(query, scenario, false);
+            set_heart_voxel_colors_to_max(query, scenario, false, vis_options.relative_coloring);
         }
         VisMode::SimulatedCdeMax => {
-            set_heart_voxel_colors_to_max(query, scenario, true);
+            set_heart_voxel_colors_to_max(query, scenario, true, vis_options.relative_coloring);
         }
     }
 }
@@ -310,6 +310,7 @@ fn set_heart_voxel_colors_to_max(
     mut query: Query<(&mut VoxelData)>,
     scenario: &Scenario,
     simulation_not_model: bool,
+    relative_coloring: bool,
 ) {
     let system_states = if simulation_not_model {
         scenario
@@ -330,12 +331,10 @@ fn set_heart_voxel_colors_to_max(
     let mut offset = 0.0;
     let mut scaling = 1.0;
 
-    let relative_coloring = true;
-
     if relative_coloring {
         let mut norm = Array1::zeros(system_states.values.shape()[0]);
         let mut max: f32 = 0.0;
-        let mut min: f32 = 1.0;
+        let mut min: f32 = 10000.0;
         for state in (0..system_states.values.shape()[1]).step_by(3) {
             for sample in 0..system_states.values.shape()[0] {
                 norm[sample] = system_states.values[[sample, state]].abs()

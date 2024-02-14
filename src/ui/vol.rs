@@ -78,6 +78,11 @@ pub fn draw_ui_volumetric(
         if vis_mode != vis_options.mode {
             vis_options.mode = vis_mode;
         }
+        let mut relative_coloring = vis_options.relative_coloring;
+        ui.checkbox(&mut relative_coloring, "Relative coloring");
+        if relative_coloring != vis_options.relative_coloring {
+            vis_options.relative_coloring = relative_coloring;
+        }
     });
     // egui::TopBottomPanel::bottom("Volumetric bottom panel")
     //     .exact_height(400.0)

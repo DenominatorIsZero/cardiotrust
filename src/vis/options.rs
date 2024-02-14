@@ -5,6 +5,7 @@ use bevy::prelude::*;
 pub struct VisOptions {
     pub playbackspeed: f32,
     pub mode: VisMode,
+    pub relative_coloring: bool,
 }
 
 impl Default for VisOptions {
@@ -12,6 +13,7 @@ impl Default for VisOptions {
         Self {
             playbackspeed: 0.1,
             mode: VisMode::SimulationVoxelTypes,
+            relative_coloring: true,
         }
     }
 }
