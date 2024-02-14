@@ -20,6 +20,7 @@ pub fn draw_ui_volumetric(
     mut sample_tracker: ResMut<SampleTracker>,
     mut vis_options: ResMut<VisOptions>,
     mut cameras: Query<&mut Transform, With<Camera>>,
+    ass: Res<AssetServer>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
 ) {
@@ -38,6 +39,7 @@ pub fn draw_ui_volumetric(
                     .expect("Scenario to exist.")
                     .scenario,
                 &mut cameras.single_mut(),
+                ass,
             );
         };
         let mut vis_mode = vis_options.mode.clone();

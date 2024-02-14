@@ -26,7 +26,7 @@ impl Plugin for VisPlugin {
             .init_resource::<SampleTracker>()
             .init_resource::<VisOptions>()
             .add_systems(Startup, setup)
-            .add_systems(Startup, spawn_gltf)
+            .add_systems(Startup, spawn_torso)
             .add_systems(
                 Update,
                 update_sample_index.run_if(in_state(UiState::Volumetric)),
@@ -48,7 +48,7 @@ pub fn setup(mut commands: Commands) {
     setup_light_and_camera(&mut commands);
 }
 
-fn spawn_gltf(
+fn spawn_torso(
     mut commands: Commands,
     ass: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -57,7 +57,7 @@ fn spawn_gltf(
     let my_mesh: Handle<Mesh> = ass.load("torso.glb#Mesh0/Primitive0");
 
     // to position our 3d model, simply use the Transform
-    // in the SceneBundle
+    // in the SceneBundlex
     commands.spawn(PbrBundle {
         mesh: my_mesh,
         // Notice how there is no need to set the `alpha_mode` explicitly here.

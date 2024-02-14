@@ -163,6 +163,8 @@ fn handle_init_sim_message(
     initialize_voxel_types(model, payload);
     initialize_voxel_positions(model, payload);
     initialize_voxel_numbers(model, payload);
+    initialize_sensor_positions(model, payload);
+    initialize_sensor_orientations(model, payload);
 }
 
 #[allow(
@@ -200,6 +202,8 @@ fn handle_init_est_message(
     initialize_voxel_types(model, payload);
     initialize_voxel_positions(model, payload);
     initialize_voxel_numbers(model, payload);
+    initialize_sensor_positions(model, payload);
+    initialize_sensor_orientations(model, payload);
 }
 
 fn handle_update_sim_message(
@@ -372,6 +376,47 @@ fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
                     .expect("Voxel number should be an int") as usize;
                 numbers[(x, y, z)] = Some(number);
             }
+        }
+    }
+}
+
+fn initialize_sensor_positions(model: &mut Model, payload: &Value) {
+    let positions = &mut model.spatial_description.sensors.positions_mm;
+    let key = "ppfSensorPositionsMm";
+    let ppfSensorPositionsMm = payload
+        .get(key)
+        .unwrap_or_else(|| panic!("Key {key} should exist"))
+        .as_array()
+        .unwrap_or_else(|| panic!("{key} to be array."));
+    for i in 0..positions.shape()[0] {
+        let pfSensorPositionMm = ppfSensorPositionsMm[i]
+            .as_array()
+            .expect("ppf_sensor_positons to be array");
+        for d in 0..3 {
+            let position = pfSensorPositionMm[d]
+                .as_f64()
+                .expect("Sensor position to be float") as f32;
+            positions[(i, d)] = position;
+        }
+    }
+}
+fn initialize_sensor_orientations(model: &mut Model, payload: &Value) {
+    let orientations = &mut model.spatial_description.sensors.orientations_xyz;
+    let key = "ppfSensorOrientations";
+    let ppfSensorOrientations = payload
+        .get(key)
+        .unwrap_or_else(|| panic!("Key {key} should exist"))
+        .as_array()
+        .unwrap_or_else(|| panic!("{key} to be array."));
+    for i in 0..orientations.shape()[0] {
+        let pfSensorOrientation = ppfSensorOrientations[i]
+            .as_array()
+            .expect("ppf_sensor_orientations to be array");
+        for d in 0..3 {
+            let orientation = pfSensorOrientation[d]
+                .as_f64()
+                .expect("Sensor orientation to be float") as f32;
+            orientations[(i, d)] = orientation;
         }
     }
 }
