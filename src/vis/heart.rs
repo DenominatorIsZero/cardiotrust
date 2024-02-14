@@ -36,9 +36,17 @@ pub fn setup_heart_voxels(
     materials: &mut Assets<StandardMaterial>,
     sample_tracker: &mut SampleTracker,
     scenario: &Scenario,
+    camera: &mut Transform,
 ) {
     init_sample_tracker(sample_tracker, scenario);
-    init_voxels(commands, meshes, materials, scenario, sample_tracker);
+    init_voxels(
+        commands,
+        meshes,
+        materials,
+        scenario,
+        sample_tracker,
+        camera,
+    );
 }
 
 #[allow(
@@ -52,6 +60,7 @@ fn init_voxels(
     materials: &mut Assets<StandardMaterial>,
     scenario: &Scenario,
     sample_tracker: &SampleTracker,
+    camera: &mut Transform,
 ) {
     info!("Initializing voxels!");
     let data = scenario.data.as_ref().expect("Data to be some");
@@ -61,6 +70,26 @@ fn init_voxels(
     info!("Voxel count: {voxel_count:?}");
     let size = voxels.size_mm;
     info!("Voxel size: {size:?}");
+
+    let x = voxel_count[0] - 1;
+    let y = voxel_count[1] - 1;
+    let z = voxel_count[2] - 1;
+    let position = voxels.positions_mm.values.slice(s!(x, y, z, ..));
+    camera.translation.x = position[0]; //position[0] + 20.0;
+    camera.translation.z = position[2];
+    camera.translation.y = position[1] + 100.0;
+    let x = voxel_count[0] / 2;
+    let y = voxel_count[1] / 2;
+    let z = voxel_count[2] / 2;
+    let position = voxels.positions_mm.values.slice(s!(x, y, z, ..));
+    camera.look_at(
+        Vec3 {
+            x: position[0],
+            y: position[2],
+            z: position[1],
+        },
+        Vec3::Y,
+    );
 
     let mesh = meshes.add(Mesh::from(shape::Cube {
         size: voxels.size_mm,
