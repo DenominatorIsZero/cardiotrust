@@ -297,7 +297,7 @@ fn set_heart_voxel_colors_to_max(
     };
     let color_map = ListedColorMap::viridis();
     for mut data in &mut query {
-        let mut norm = Array1::zeros(data.colors.shape()[1]);
+        let mut norm = Array1::zeros(data.colors.shape()[0]);
         let mut max = 0.0;
         let state = data.index;
         for sample in 0..data.colors.shape()[0] {
@@ -313,7 +313,7 @@ fn set_heart_voxel_colors_to_max(
             blue: color.b as f32,
             alpha: 1.0,
         };
-        for sample in 0..data.colors.shape()[1] {
+        for sample in 0..data.colors.shape()[0] {
             data.colors[sample] = color;
         }
     }
