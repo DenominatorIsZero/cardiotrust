@@ -1,6 +1,7 @@
 use std::env::consts::DLL_SUFFIX;
 
-use bevy::{math::vec3, prelude::*};
+use approx::RelativeEq;
+use bevy::{math::vec3, prelude::*, utils::petgraph::algo::tred::dag_to_toposorted_adjacency_list};
 use ciborium::de;
 use ndarray::{arr1, s, Array1, Array2};
 use ndarray_stats::QuantileExt;
@@ -325,6 +326,31 @@ fn set_heart_voxel_colors_to_max(
             .system_states
     };
     let color_map = ListedColorMap::viridis();
+
+    let mut offset = 0.0;
+    let mut scaling = 1.0;
+
+    let relative_coloring = true;
+
+    if relative_coloring {
+        let mut norm = Array1::zeros(system_states.values.shape()[0]);
+        let mut max: f32 = 0.0;
+        let mut min: f32 = 1.0;
+        for state in (0..system_states.values.shape()[1]).step_by(3) {
+            for sample in 0..system_states.values.shape()[0] {
+                norm[sample] = system_states.values[[sample, state]].abs()
+                    + system_states.values[[sample, state + 1]].abs()
+                    + system_states.values[[sample, state + 2]].abs();
+            }
+            max = max.max(*norm.max_skipnan());
+            min = min.min(*norm.max_skipnan());
+        }
+        if min.relative_ne(&max, 0.0001, 0.0001) {
+            offset = -min;
+            scaling = 1.0 / (max - min);
+        }
+    }
+
     for mut data in &mut query {
         let mut norm = Array1::zeros(data.colors.shape()[0]);
         let mut max = 0.0;
@@ -335,6 +361,7 @@ fn set_heart_voxel_colors_to_max(
                 + system_states.values[[sample, state + 2]].abs();
         }
         max = *norm.max_skipnan();
+        max = (max + offset) * scaling;
         let color: RGBColor = color_map.transform_single(f64::from(max));
         let color = Color::Rgba {
             red: color.r as f32,
