@@ -75,12 +75,10 @@ fn spawn_sensors(
         let ori_y = sensors.orientations_xyz[(index_sensor, 2)];
         let ori_z = sensors.orientations_xyz[(index_sensor, 1)];
 
-        info!("x: {pos_x_mm}, y: {pos_y_mm}, z: {pos_z_mm}");
         let from = Vector3::new(0.0, 0.0, 1.0);
         let to = Vector3::new(ori_x, ori_y, ori_z);
         let rot = Rotation3::rotation_between(&to, &from).expect("Rotation matrix to exist");
         let (rot_x, rot_y, rot_z) = rot.euler_angles();
-        info!("to: {to}, rot: {rot}, euler: {rot_x}, {rot_y}, {rot_z}");
 
         commands.spawn(PbrBundle {
             mesh: shaft_mesh.clone(),
@@ -98,7 +96,7 @@ fn spawn_sensors(
             // Notice how there is no need to set the `alpha_mode` explicitly here.
             // When converting a color to a material using `into()`, the alpha mode is
             // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
-            material: materials.add(Color::rgba(ori_x, ori_y, ori_z, 1.0).into()),
+            material: materials.add(Color::rgba(ori_x, ori_z, ori_y, 1.0).into()),
             transform: Transform::from_xyz(pos_x_mm, pos_y_mm, pos_z_mm)
                 .with_scale(Vec3::ONE * 10.0)
                 .with_rotation(Quat::from_euler(EulerRot::XYZ, rot_x, rot_y, rot_z)),
@@ -229,10 +227,10 @@ pub fn on_vis_mode_changed(
             set_heart_voxel_colors_to_types(query, scenario, true);
         }
         VisMode::EstimatedCdeNorm => {
-            set_heart_voxel_colors_to_norm(query, scenario, false);
+            set_heart_voxel_colors_to_norm(query, scenario, false, vis_options.relative_coloring);
         }
         VisMode::SimulatedCdeNorm => {
-            set_heart_voxel_colors_to_norm(query, scenario, true);
+            set_heart_voxel_colors_to_norm(query, scenario, true, vis_options.relative_coloring);
         }
         VisMode::EstimatedCdeMax => {
             set_heart_voxel_colors_to_max(query, scenario, false, vis_options.relative_coloring);
@@ -331,6 +329,7 @@ fn set_heart_voxel_colors_to_norm(
     mut query: Query<(&mut VoxelData)>,
     scenario: &Scenario,
     simulation_not_model: bool,
+    relative_coloring: bool,
 ) {
     let system_states = if simulation_not_model {
         scenario
@@ -347,6 +346,28 @@ fn set_heart_voxel_colors_to_norm(
             .system_states
     };
     let color_map = ListedColorMap::viridis();
+
+    let mut offset = 0.0;
+    let mut scaling = 1.0;
+
+    if relative_coloring {
+        let mut norm = Array1::zeros(system_states.values.shape()[0]);
+        let mut max: f32 = 0.0;
+        let mut min: f32 = 10000.0;
+        for state in (0..system_states.values.shape()[1]).step_by(3) {
+            for sample in 0..system_states.values.shape()[0] {
+                norm[sample] = system_states.values[[sample, state]].abs()
+                    + system_states.values[[sample, state + 1]].abs()
+                    + system_states.values[[sample, state + 2]].abs();
+            }
+            max = max.max(*norm.max_skipnan());
+            min = min.min(*norm.max_skipnan());
+        }
+        if (max - min) > 0.01 {
+            offset = -min;
+            scaling = 1.0 / (max - min);
+        }
+    }
 
     for mut data in &mut query {
         let state = data.index;
@@ -404,7 +425,7 @@ fn set_heart_voxel_colors_to_max(
             max = max.max(*norm.max_skipnan());
             min = min.min(*norm.max_skipnan());
         }
-        if min.relative_ne(&max, 0.0001, 0.0001) {
+        if (max - min) > 0.01 {
             offset = -min;
             scaling = 1.0 / (max - min);
         }

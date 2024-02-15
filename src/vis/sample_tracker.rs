@@ -8,6 +8,8 @@ pub struct SampleTracker {
     pub current_sample: usize,
     pub max_sample: usize,
     pub sample_rate: f32,
+    pub manual: bool,
+    pub selected_sensor: usize,
 }
 
 impl Default for SampleTracker {
@@ -16,6 +18,8 @@ impl Default for SampleTracker {
             current_sample: 1,
             max_sample: 1,
             sample_rate: 1.0,
+            manual: false,
+            selected_sensor: 0,
         }
     }
 }
@@ -59,8 +63,10 @@ pub fn update_sample_index(
     time: Res<Time>,
     vis_options: Res<VisOptions>,
 ) {
-    sample_tracker.current_sample = ((time.elapsed_seconds()
-        * sample_tracker.sample_rate
-        * vis_options.playbackspeed) as usize)
-        % sample_tracker.max_sample;
+    if !sample_tracker.manual {
+        sample_tracker.current_sample = ((time.elapsed_seconds()
+            * sample_tracker.sample_rate
+            * vis_options.playbackspeed) as usize)
+            % sample_tracker.max_sample;
+    }
 }
