@@ -183,7 +183,7 @@ pub fn draw_ui_volumetric(
                     .auto_bounds_y()
                     .show(ui, |plot_ui| {
                         plot_ui.line(line);
-                        plot_ui.vline(vline).;
+                        plot_ui.vline(vline);
                     });
             });
     }
