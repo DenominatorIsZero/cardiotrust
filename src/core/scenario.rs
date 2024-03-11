@@ -1,8 +1,8 @@
 pub mod results;
 pub mod summary;
 
+use bincode;
 use chrono;
-use ciborium::{from_reader, into_writer};
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -251,7 +251,7 @@ impl Scenario {
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
         let f = File::create(path.join("data.bin"))?;
-        into_writer(self.data.as_ref().unwrap(), f).unwrap();
+        bincode::serialize_into(f, self.data.as_ref().unwrap()).unwrap();
         Ok(())
     }
 
@@ -259,7 +259,7 @@ impl Scenario {
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
         let f = File::create(path.join("results.bin"))?;
-        into_writer(self.results.as_ref().unwrap(), f).unwrap();
+        bincode::serialize_into(f, self.results.as_ref().unwrap()).unwrap();
         Ok(())
     }
 
@@ -272,7 +272,7 @@ impl Scenario {
         }
         let file_path = Path::new("./results").join(&self.id).join("data.bin");
         if file_path.is_file() {
-            self.data = Some(from_reader(File::open(file_path).unwrap()).unwrap());
+            self.data = Some(bincode::deserialize_from(File::open(file_path).unwrap()).unwrap());
         }
     }
 
@@ -285,7 +285,7 @@ impl Scenario {
         }
         let file_path = Path::new("./results").join(&self.id).join("results.bin");
         if file_path.is_file() {
-            self.results = Some(from_reader(File::open(file_path).unwrap()).unwrap());
+            self.results = Some(bincode::deserialize_from(File::open(file_path).unwrap()).unwrap());
         }
     }
 

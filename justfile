@@ -1,6 +1,9 @@
 r:
   cargo run --bin main
 
+release:
+  cargo run --release --bin main
+
 
 wasm-build:
   cargo build --target wasm32-unknown-unknown --bin client
