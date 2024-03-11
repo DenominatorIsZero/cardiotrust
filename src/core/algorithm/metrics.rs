@@ -181,7 +181,7 @@ impl Metrics {
     }
 
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
-        fs::create_dir_all(path.clone()).unwrap();
+        fs::create_dir_all(path).unwrap();
 
         self.loss.save_npy(path, "loss.npy");
         self.loss_epoch.save_npy(path, "loss_epoch.npy");
@@ -422,7 +422,7 @@ impl ArrayMetricsSample {
     }
 
     fn save_npy(&self, path: &std::path::Path, name: &str) {
-        fs::create_dir_all(path.clone()).unwrap();
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
         self.values.write_npy(writer).unwrap();
     }
@@ -442,7 +442,7 @@ impl ArrayMetricsEpoch {
     }
 
     fn save_npy(&self, path: &std::path::Path, name: &str) {
-        fs::create_dir_all(path.clone()).unwrap();
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
         self.values.write_npy(writer).unwrap();
     }

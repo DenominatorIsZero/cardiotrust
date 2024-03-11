@@ -34,7 +34,8 @@ pub struct ScenarioList {
 }
 
 impl ScenarioList {
-    pub fn empty() -> Self {
+    #[must_use]
+    pub const fn empty() -> Self {
         Self {
             entries: Vec::new(),
         }

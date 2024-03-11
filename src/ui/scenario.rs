@@ -28,7 +28,7 @@ pub fn draw_ui_scenario(
 }
 
 fn draw_ui_scenario_topbar(
-    context: &mut egui::Context,
+    context: &egui::Context,
     scenarios: &mut ResMut<ScenarioList>,
     selected_scenario: &mut ResMut<SelectedSenario>,
 ) {
@@ -84,7 +84,7 @@ fn draw_ui_scenario_topbar(
     });
 }
 
-fn draw_ui_scenario_central_panel(context: &mut egui::Context, scenario: &mut Scenario) {
+fn draw_ui_scenario_central_panel(context: &egui::Context, scenario: &mut Scenario) {
     egui::CentralPanel::default().show(context, |ui| {
         ui.columns(2, |columns| {
             draw_ui_scenario_data(&mut columns[0], scenario);

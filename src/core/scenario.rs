@@ -39,6 +39,7 @@ pub struct Scenario {
 }
 
 impl Scenario {
+    #[must_use]
     pub fn empty() -> Self {
         Self {
             id: "EMPTY".into(),
@@ -347,7 +348,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
             );
         }
         AlgorithmType::PseudoInverse => {
-            run_pseudo_inverse(&mut scenario, &mut model, &mut results, &data, &mut summary);
+            run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary);
         }
         AlgorithmType::Loreta => panic!("Algorithm type not implemented"),
     }
@@ -384,8 +385,8 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
 }
 
 fn run_pseudo_inverse(
-    scenario: &mut Scenario,
-    model: &mut Model,
+    scenario: &Scenario,
+    model: &Model,
     results: &mut Results,
     data: &Data,
     summary: &mut Summary,

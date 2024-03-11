@@ -195,7 +195,7 @@ fn calculate_kalman_gain(
 #[inline]
 fn estimate_state_covariance(
     estimations: &mut Estimations,
-    functional_description: &mut FunctionalDescription,
+    functional_description: &FunctionalDescription,
 ) {
     estimations
         .state_covariance_est
@@ -242,7 +242,7 @@ fn estimate_state_covariance(
 }
 
 #[inline]
-fn calculate_k(estimations: &mut Estimations, functional_description: &mut FunctionalDescription) {
+fn calculate_k(estimations: &Estimations, functional_description: &mut FunctionalDescription) {
     functional_description
         .kalman_gain
         .values
@@ -282,7 +282,7 @@ fn calculate_s_inv(estimations: &mut Estimations, functional_description: &Funct
         for j in 0..estimations.s.shape().1 {
             unsafe {
                 *estimations.s.get_unchecked_mut((i, j)) =
-                    functional_description.measurement_covariance.values[(i, j)]
+                    functional_description.measurement_covariance.values[(i, j)];
             };
             for k in 0..functional_description
                 .measurement_covariance
@@ -315,7 +315,7 @@ fn calculate_s_inv(estimations: &mut Estimations, functional_description: &Funct
                 }
                 unsafe {
                     *estimations.s.get_unchecked_mut((i, j)) +=
-                        functional_description.measurement_matrix.values[[j, k]] * sum
+                        functional_description.measurement_matrix.values[[j, k]] * sum;
                 };
             }
         }

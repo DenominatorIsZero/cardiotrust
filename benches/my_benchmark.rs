@@ -87,7 +87,7 @@ fn system_prediction_bench(c: &mut Criterion) {
                     &mut estimations.measurements,
                     time_index,
                     &model.functional_description.measurement_matrix,
-                    &mut estimations.system_states,
+                    &estimations.system_states,
                 )
             })
         });
@@ -152,7 +152,7 @@ fn system_prediction_epoch_bench(c: &mut Criterion) {
                         &mut estimations.measurements,
                         time_index,
                         &model.functional_description.measurement_matrix,
-                        &mut estimations.system_states,
+                        &estimations.system_states,
                     )
                 }
             })

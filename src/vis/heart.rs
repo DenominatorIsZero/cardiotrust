@@ -1,10 +1,6 @@
-use std::env::consts::DLL_SUFFIX;
-
-use approx::RelativeEq;
-use bevy::{math::vec3, prelude::*, utils::petgraph::algo::tred::dag_to_toposorted_adjacency_list};
-use ciborium::de;
+use bevy::prelude::*;
 use nalgebra::{Rotation3, Vector3};
-use ndarray::{arr1, s, Array1, Array2};
+use ndarray::{arr1, s, Array1};
 use ndarray_stats::QuantileExt;
 use scarlet::{
     color::RGBColor,
@@ -53,6 +49,7 @@ pub fn setup_heart_voxels(
     );
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn spawn_sensors(
     commands: &mut Commands,
     ass: Res<AssetServer>,
@@ -68,15 +65,15 @@ fn spawn_sensors(
     let point_mesh: Handle<Mesh> = ass.load("RoundArrow.glb#Mesh1/Primitive0");
 
     for index_sensor in 0..sensors.positions_mm.shape()[0] {
-        let pos_x_mm = sensors.positions_mm[(index_sensor, 0)];
-        let pos_y_mm = sensors.positions_mm[(index_sensor, 2)];
-        let pos_z_mm = sensors.positions_mm[(index_sensor, 1)];
-        let ori_x = sensors.orientations_xyz[(index_sensor, 0)];
-        let ori_y = sensors.orientations_xyz[(index_sensor, 2)];
-        let ori_z = sensors.orientations_xyz[(index_sensor, 1)];
+        let x_pos_mm = sensors.positions_mm[(index_sensor, 0)];
+        let y_pos_mm = sensors.positions_mm[(index_sensor, 2)];
+        let z_pos_mm = sensors.positions_mm[(index_sensor, 1)];
+        let x_ori = sensors.orientations_xyz[(index_sensor, 0)];
+        let y_ori = sensors.orientations_xyz[(index_sensor, 2)];
+        let z_ori = sensors.orientations_xyz[(index_sensor, 1)];
 
         let from = Vector3::new(0.0, 0.0, 1.0);
-        let to = Vector3::new(ori_x, ori_y, ori_z);
+        let to = Vector3::new(x_ori, y_ori, z_ori);
         let rot = Rotation3::rotation_between(&to, &from).expect("Rotation matrix to exist");
         let (rot_x, rot_y, rot_z) = rot.euler_angles();
 
@@ -85,8 +82,8 @@ fn spawn_sensors(
             // Notice how there is no need to set the `alpha_mode` explicitly here.
             // When converting a color to a material using `into()`, the alpha mode is
             // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
-            material: materials.add(Color::rgba(ori_x, ori_z, ori_y, 1.0).into()),
-            transform: Transform::from_xyz(pos_x_mm, pos_y_mm, pos_z_mm)
+            material: materials.add(Color::rgba(x_ori, z_ori, y_ori, 1.0).into()),
+            transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
                 .with_scale(Vec3::ONE * 10.0)
                 .with_rotation(Quat::from_euler(EulerRot::XYZ, rot_x, rot_y, rot_z)),
             ..default()
@@ -96,8 +93,8 @@ fn spawn_sensors(
             // Notice how there is no need to set the `alpha_mode` explicitly here.
             // When converting a color to a material using `into()`, the alpha mode is
             // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
-            material: materials.add(Color::rgba(ori_x, ori_z, ori_y, 1.0).into()),
-            transform: Transform::from_xyz(pos_x_mm, pos_y_mm, pos_z_mm)
+            material: materials.add(Color::rgba(x_ori, z_ori, y_ori, 1.0).into()),
+            transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
                 .with_scale(Vec3::ONE * 10.0)
                 .with_rotation(Quat::from_euler(EulerRot::XYZ, rot_x, rot_y, rot_z)),
             ..default()
@@ -203,7 +200,7 @@ pub fn update_heart_voxel_colors(
 #[allow(clippy::needless_pass_by_value)]
 pub fn on_vis_mode_changed(
     vis_options: Res<VisOptions>,
-    mut query: Query<(&mut VoxelData)>,
+    query: Query<&mut VoxelData>,
     scenario_list: Res<ScenarioList>,
     selected_scenario: Res<SelectedSenario>,
 ) {
@@ -227,10 +224,10 @@ pub fn on_vis_mode_changed(
             set_heart_voxel_colors_to_types(query, scenario, true);
         }
         VisMode::EstimatedCdeNorm => {
-            set_heart_voxel_colors_to_norm(query, scenario, false, vis_options.relative_coloring);
+            set_heart_voxel_colors_to_norm(query, scenario, false);
         }
         VisMode::SimulatedCdeNorm => {
-            set_heart_voxel_colors_to_norm(query, scenario, true, vis_options.relative_coloring);
+            set_heart_voxel_colors_to_norm(query, scenario, true);
         }
         VisMode::EstimatedCdeMax => {
             set_heart_voxel_colors_to_max(query, scenario, false, vis_options.relative_coloring);
@@ -242,7 +239,7 @@ pub fn on_vis_mode_changed(
 }
 #[allow(clippy::needless_pass_by_value)]
 fn set_heart_voxel_colors_to_types(
-    mut query: Query<(&mut VoxelData)>,
+    mut query: Query<&mut VoxelData>,
     scenario: &Scenario,
     simulation_not_model: bool,
 ) {
@@ -326,10 +323,9 @@ const fn type_to_color(voxel_type: VoxelType) -> Color {
 
 #[allow(clippy::cast_possible_truncation)]
 fn set_heart_voxel_colors_to_norm(
-    mut query: Query<(&mut VoxelData)>,
+    mut query: Query<&mut VoxelData>,
     scenario: &Scenario,
     simulation_not_model: bool,
-    relative_coloring: bool,
 ) {
     let system_states = if simulation_not_model {
         scenario
@@ -346,28 +342,6 @@ fn set_heart_voxel_colors_to_norm(
             .system_states
     };
     let color_map = ListedColorMap::viridis();
-
-    let mut offset = 0.0;
-    let mut scaling = 1.0;
-
-    if relative_coloring {
-        let mut norm = Array1::zeros(system_states.values.shape()[0]);
-        let mut max: f32 = 0.0;
-        let mut min: f32 = 10000.0;
-        for state in (0..system_states.values.shape()[1]).step_by(3) {
-            for sample in 0..system_states.values.shape()[0] {
-                norm[sample] = system_states.values[[sample, state]].abs()
-                    + system_states.values[[sample, state + 1]].abs()
-                    + system_states.values[[sample, state + 2]].abs();
-            }
-            max = max.max(*norm.max_skipnan());
-            min = min.min(*norm.max_skipnan());
-        }
-        if (max - min) > 0.01 {
-            offset = -min;
-            scaling = 1.0 / (max - min);
-        }
-    }
 
     for mut data in &mut query {
         let state = data.index;
@@ -388,7 +362,7 @@ fn set_heart_voxel_colors_to_norm(
 
 #[allow(clippy::cast_possible_truncation)]
 fn set_heart_voxel_colors_to_max(
-    mut query: Query<(&mut VoxelData)>,
+    mut query: Query<&mut VoxelData>,
     scenario: &Scenario,
     simulation_not_model: bool,
     relative_coloring: bool,
@@ -433,14 +407,13 @@ fn set_heart_voxel_colors_to_max(
 
     for mut data in &mut query {
         let mut norm = Array1::zeros(data.colors.shape()[0]);
-        let mut max = 0.0;
         let state = data.index;
         for sample in 0..data.colors.shape()[0] {
             norm[sample] = system_states.values[[sample, state]].abs()
                 + system_states.values[[sample, state + 1]].abs()
                 + system_states.values[[sample, state + 2]].abs();
         }
-        max = *norm.max_skipnan();
+        let mut max = *norm.max_skipnan();
         max = (max + offset) * scaling;
         let color: RGBColor = color_map.transform_single(f64::from(max));
         let color = Color::Rgba {

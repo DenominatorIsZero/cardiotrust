@@ -114,7 +114,7 @@ pub fn predict_measurements(
     measurements: &mut ArrayMeasurements,
     time_index: usize,
     measurement_matrix: &MeasurementMatrix,
-    system_states: &mut ArraySystemStates,
+    system_states: &ArraySystemStates,
 ) {
     // Prediction of measurements H * x
     measurements.values.slice_mut(s![time_index, ..]).assign(

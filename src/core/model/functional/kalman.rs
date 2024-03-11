@@ -90,7 +90,7 @@ impl Gain {
     }
 
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
-        fs::create_dir_all(path.clone()).unwrap();
+        fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("kalman_gain.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
     }

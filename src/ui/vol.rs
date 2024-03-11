@@ -4,15 +4,12 @@ use egui_plot::{Line, Plot, PlotPoints, VLine};
 
 use crate::{
     vis::{
-        self,
         heart::setup_heart_voxels,
         options::{VisMode, VisOptions},
         sample_tracker::SampleTracker,
     },
     ScenarioList, SelectedSenario,
 };
-
-use super::scenario;
 
 #[allow(
     clippy::needless_pass_by_value,
@@ -31,17 +28,18 @@ pub fn draw_ui_volumetric(
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
 ) {
-    let mut scenario = None;
-    if selected_scenario.index.is_some() {
-        scenario = Some(
+    let scenario = if let Some(index) = selected_scenario.index {
+        Some(
             &scenario_list
                 .entries
-                .get(selected_scenario.index.expect("Scenario to be selected."))
+                .get(index)
                 .as_ref()
                 .expect("Scenario to exist.")
                 .scenario,
-        );
-    }
+        )
+    } else {
+        None
+    };
     egui::SidePanel::left("volumetric_left_panel").show(contexts.ctx_mut(), |ui| {
         ui.label("Volumetric");
         if ui
@@ -104,7 +102,7 @@ pub fn draw_ui_volumetric(
         ui.label("Playback speed:");
         let mut playbackspeed = vis_options.playbackspeed;
         ui.add(egui::Slider::new(&mut playbackspeed, 0.01..=1.0).logarithmic(true));
-        if playbackspeed != vis_options.playbackspeed {
+        if (playbackspeed - vis_options.playbackspeed).abs() > f32::EPSILON {
             vis_options.playbackspeed = playbackspeed;
         }
         let mut manual = sample_tracker.manual;
@@ -142,14 +140,12 @@ pub fn draw_ui_volumetric(
             }
         }
     });
-    if scenario.is_some() {
+    if let Some(scenario) = scenario {
         egui::TopBottomPanel::bottom("Volumetric bottom panel")
             .exact_height(400.0)
             .show(contexts.ctx_mut(), |ui| {
                 let samplerate_hz = f64::from(
                     scenario
-                        .as_ref()
-                        .expect("Scenario to be some.")
                         .config
                         .simulation
                         .as_ref()
@@ -158,13 +154,12 @@ pub fn draw_ui_volumetric(
                 );
                 let sin: PlotPoints = (0..sample_tracker.max_sample)
                     .map(|i| {
+                        #[allow(clippy::cast_precision_loss)]
                         let x = i as f64 / samplerate_hz;
                         [
                             x,
                             f64::from(
                                 scenario
-                                    .as_ref()
-                                    .expect("Scenario to be some")
                                     .results
                                     .as_ref()
                                     .expect("Results to be some")
@@ -175,15 +170,16 @@ pub fn draw_ui_volumetric(
                         ]
                     })
                     .collect();
-                let line = Line::new(sin);
-                let vline = VLine::new(sample_tracker.current_sample as f64 / samplerate_hz);
+                let sin_line = Line::new(sin);
+                #[allow(clippy::cast_precision_loss)]
+                let v_line = VLine::new(sample_tracker.current_sample as f64 / samplerate_hz);
                 Plot::new("my_plot")
                     .include_x(0)
                     .include_x(1)
                     .auto_bounds_y()
                     .show(ui, |plot_ui| {
-                        plot_ui.line(line);
-                        plot_ui.vline(vline);
+                        plot_ui.line(sin_line);
+                        plot_ui.vline(v_line);
                     });
             });
     }

@@ -48,6 +48,7 @@ pub fn setup(mut commands: Commands) {
     setup_light_and_camera(&mut commands);
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn spawn_torso(
     mut commands: Commands,
     ass: Res<AssetServer>,

@@ -1,5 +1,5 @@
-[build]
-rustflags = ["-C", "target-cpu=native"]
+#[build]
+#rustflags = ["-C", "target-cpu=native"]
 
 [target.wasm32-unknown-unknown]
 runner = "wasm-server-runner"  

@@ -28,7 +28,7 @@ impl ArraySystemStates {
     ///
     /// Panics if directory of file cant be created.
     pub fn save_npy(&self, path: &std::path::Path) {
-        fs::create_dir_all(path.clone()).unwrap();
+        fs::create_dir_all(path).unwrap();
 
         let writer = BufWriter::new(File::create(path.join("system_states.npy")).unwrap());
         self.values.write_npy(writer).unwrap();

@@ -1,6 +1,6 @@
 use bevy::{prelude::*, time::common_conditions::on_timer};
 
-use ndarray::{arr1, Dim};
+use ndarray::Dim;
 use serde_json::Value;
 use std::{
     sync::{Arc, Mutex},
@@ -13,12 +13,9 @@ use crate::{
     core::{
         data::Data,
         model::{spatial::voxels::VoxelType, Model},
-        scenario::{self, results::Results, Scenario},
+        scenario::{results::Results, Scenario},
     },
-    vis::{
-        options::VisOptions,
-        sample_tracker::{self, SampleTracker},
-    },
+    vis::{options::VisOptions, sample_tracker::SampleTracker},
     ScenarioBundle, ScenarioList, SelectedSenario,
 };
 
@@ -110,19 +107,11 @@ fn handle_websocket_messages(
                         &mut scenario_list,
                     ),
                     r#""UPDATE_SIM""# => {
-                        handle_update_sim_message(
-                            payload,
-                            &mut selected_scenario,
-                            &mut scenario_list,
-                        );
+                        handle_update_sim_message(payload, &selected_scenario, &mut scenario_list);
                         vis_options.set_changed();
                     }
                     r#""UPDATE_EST""# => {
-                        handle_update_est_message(
-                            payload,
-                            &mut selected_scenario,
-                            &mut scenario_list,
-                        );
+                        handle_update_est_message(payload, &selected_scenario, &mut scenario_list);
                         vis_options.set_changed();
                     }
                     _ => info!("Do not know header {header}"),
@@ -132,6 +121,7 @@ fn handle_websocket_messages(
     }
 }
 
+#[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 fn handle_init_sim_message(
     payload: &Value,
     sample_tracker: &mut SampleTracker,
@@ -208,7 +198,7 @@ fn handle_init_est_message(
 
 fn handle_update_sim_message(
     payload: &Value,
-    selected_scenario: &mut SelectedSenario,
+    selected_scenario: &SelectedSenario,
     scenario_list: &mut ScenarioList,
 ) {
     info!("Updateing simulation values.");
@@ -231,7 +221,7 @@ fn handle_update_sim_message(
 
 fn handle_update_est_message(
     payload: &Value,
-    selected_scenario: &mut SelectedSenario,
+    selected_scenario: &SelectedSenario,
     scenario_list: &mut ScenarioList,
 ) {
     info!("Updateing estimation values.");
@@ -246,6 +236,11 @@ fn handle_update_est_message(
     update_values(payload, states, measurements);
 }
 
+#[allow(
+    clippy::similar_names,
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation
+)]
 fn update_values(
     payload: &Value,
     states: &mut crate::core::data::shapes::ArraySystemStates,
@@ -253,17 +248,17 @@ fn update_values(
 ) {
     let states = &mut states.values;
     let key = "ppfStatesToExoBuffer";
-    let ppfStateBuffer = payload
+    let ppf_state_buffer = payload
         .get(key)
         .unwrap_or_else(|| panic!("Key {key} should exist"))
         .as_array()
         .unwrap_or_else(|| panic!("{key} to be array."));
     for index_sample in 0..states.shape()[0] {
-        let pfStateBuffer = ppfStateBuffer[index_sample]
+        let pf_state_buffer = ppf_state_buffer[index_sample]
             .as_array()
             .expect("pfStateBuffer should be an array.");
         for index_state in 0..states.shape()[1] {
-            let state = pfStateBuffer[index_state]
+            let state = pf_state_buffer[index_state]
                 .as_f64()
                 .expect("State should be a float");
             states[(index_sample, index_state)] = state as f32;
@@ -271,17 +266,17 @@ fn update_values(
     }
     let measurements = &mut measurements.values;
     let key = "ppfMeasurementsToExoBuffer";
-    let ppfMeasurementBuffer = payload
+    let ppf_measurement_buffer = payload
         .get(key)
         .unwrap_or_else(|| panic!("Key {key} should exist"))
         .as_array()
         .unwrap_or_else(|| panic!("{key} to be array."));
     for index_sample in 0..measurements.shape()[0] {
-        let pfMeasurementBuffer = ppfMeasurementBuffer[index_sample]
+        let pf_measurement_buffer = ppf_measurement_buffer[index_sample]
             .as_array()
             .expect("pfMeasurementBuffer should be an array.");
         for index_state in 0..measurements.shape()[1] {
-            let state = pfMeasurementBuffer[index_state]
+            let state = pf_measurement_buffer[index_state]
                 .as_f64()
                 .expect("Measurement should be a float");
             measurements[(index_sample, index_state)] = state as f32;
@@ -289,6 +284,7 @@ fn update_values(
     }
 }
 
+#[allow(clippy::similar_names)]
 fn initialize_voxel_types(model: &mut Model, payload: &Value) {
     let types = &mut model.spatial_description.voxels.types.values;
     let key = "pppcVoxelTypes";
@@ -322,6 +318,11 @@ fn initialize_voxel_types(model: &mut Model, payload: &Value) {
     }
 }
 
+#[allow(
+    clippy::similar_names,
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation
+)]
 fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
     let positions = &mut model.spatial_description.voxels.positions_mm.values;
     let key = "ppppfVoxelPositionsMm";
@@ -354,6 +355,11 @@ fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
     }
 }
 
+#[allow(
+    clippy::similar_names,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss
+)]
 fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
     let numbers = &mut model.spatial_description.voxels.numbers.values;
     let key = "pppuVoxelNumbers";
@@ -380,40 +386,50 @@ fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
     }
 }
 
+#[allow(
+    clippy::similar_names,
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss
+)]
 fn initialize_sensor_positions(model: &mut Model, payload: &Value) {
     let positions = &mut model.spatial_description.sensors.positions_mm;
     let key = "ppfSensorPositionsMm";
-    let ppfSensorPositionsMm = payload
+    let ppf_sensor_positions_mm = payload
         .get(key)
         .unwrap_or_else(|| panic!("Key {key} should exist"))
         .as_array()
         .unwrap_or_else(|| panic!("{key} to be array."));
     for i in 0..positions.shape()[0] {
-        let pfSensorPositionMm = ppfSensorPositionsMm[i]
+        let pf_sensor_position_mm = ppf_sensor_positions_mm[i]
             .as_array()
             .expect("ppf_sensor_positons to be array");
         for d in 0..3 {
-            let position = pfSensorPositionMm[d]
+            let position = pf_sensor_position_mm[d]
                 .as_f64()
                 .expect("Sensor position to be float") as f32;
             positions[(i, d)] = position;
         }
     }
 }
+#[allow(
+    clippy::similar_names,
+    clippy::cast_possible_truncation,
+    clippy::cast_precision_loss
+)]
 fn initialize_sensor_orientations(model: &mut Model, payload: &Value) {
     let orientations = &mut model.spatial_description.sensors.orientations_xyz;
     let key = "ppfSensorOrientations";
-    let ppfSensorOrientations = payload
+    let ppf_sensor_orientations = payload
         .get(key)
         .unwrap_or_else(|| panic!("Key {key} should exist"))
         .as_array()
         .unwrap_or_else(|| panic!("{key} to be array."));
     for i in 0..orientations.shape()[0] {
-        let pfSensorOrientation = ppfSensorOrientations[i]
+        let pf_sensor_orientation = ppf_sensor_orientations[i]
             .as_array()
             .expect("ppf_sensor_orientations to be array");
         for d in 0..3 {
-            let orientation = pfSensorOrientation[d]
+            let orientation = pf_sensor_orientation[d]
                 .as_f64()
                 .expect("Sensor orientation to be float") as f32;
             orientations[(i, d)] = orientation;
@@ -543,7 +559,7 @@ fn init_websocket(
     let onopen_callback = Closure::<dyn FnMut()>::new(move || {
         info!("socket opened");
         match cloned_ws.send_with_str(r#"{"h": "SETP", "p": "CARDIO"}"#) {
-            Ok(_) => info!("message successfully sent"),
+            Ok(()) => info!("message successfully sent"),
             Err(err) => error!("error sending message: {:?}", err),
         }
     });
