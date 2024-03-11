@@ -15,7 +15,7 @@ pub struct SchedulerPlugin;
 
 impl Plugin for SchedulerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<SchedulerState>()
+        app.init_state::<SchedulerState>()
             .init_resource::<NumberOfJobs>()
             .add_systems(
                 Update,

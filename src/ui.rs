@@ -22,7 +22,7 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<UiState>()
+        app.init_state::<UiState>()
             .init_resource::<ResultImages>()
             .init_resource::<SelectedResultImage>()
             .init_resource::<PlaybackSpeed>()
@@ -71,7 +71,7 @@ pub struct ClientUiPlugin;
 
 impl Plugin for ClientUiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<UiState>()
+        app.init_state::<UiState>()
             .init_resource::<PlaybackSpeed>()
             .add_plugins(EguiPlugin)
             .add_systems(Update, draw_ui_volumetric)

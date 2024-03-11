@@ -82,7 +82,9 @@ fn spawn_sensors(
             // Notice how there is no need to set the `alpha_mode` explicitly here.
             // When converting a color to a material using `into()`, the alpha mode is
             // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
-            material: materials.add(Color::rgba(x_ori, z_ori, y_ori, 1.0).into()),
+            material: materials.add(StandardMaterial::from(Color::rgba(
+                x_ori, z_ori, y_ori, 1.0,
+            ))),
             transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
                 .with_scale(Vec3::ONE * 10.0)
                 .with_rotation(Quat::from_euler(EulerRot::XYZ, rot_x, rot_y, rot_z)),
@@ -93,7 +95,9 @@ fn spawn_sensors(
             // Notice how there is no need to set the `alpha_mode` explicitly here.
             // When converting a color to a material using `into()`, the alpha mode is
             // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
-            material: materials.add(Color::rgba(x_ori, z_ori, y_ori, 1.0).into()),
+            material: materials.add(StandardMaterial::from(Color::rgba(
+                x_ori, z_ori, y_ori, 1.0,
+            ))),
             transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
                 .with_scale(Vec3::ONE * 10.0)
                 .with_rotation(Quat::from_euler(EulerRot::XYZ, rot_x, rot_y, rot_z)),
@@ -160,7 +164,9 @@ fn init_voxels(
                 commands.spawn((
                     PbrBundle {
                         mesh: mesh.clone(),
-                        material: materials.add(Color::rgb(x as f32, y as f32, z as f32).into()),
+                        material: materials.add(StandardMaterial::from(Color::rgb(
+                            x as f32, y as f32, z as f32,
+                        ))),
                         transform: Transform::from_xyz(position[0], position[2], position[1]),
                         ..default()
                     },

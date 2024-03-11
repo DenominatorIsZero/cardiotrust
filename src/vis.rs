@@ -64,7 +64,12 @@ fn spawn_torso(
         // Notice how there is no need to set the `alpha_mode` explicitly here.
         // When converting a color to a material using `into()`, the alpha mode is
         // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
-        material: materials.add(Color::rgba(85.0 / 255.0, 79.0 / 255.0, 72.0 / 255.0, 0.25).into()),
+        material: materials.add(StandardMaterial::from(Color::rgba(
+            85.0 / 255.0,
+            79.0 / 255.0,
+            72.0 / 255.0,
+            0.25,
+        ))),
         transform: Transform::from_xyz(0.0, 0.0, 0.0)
             .with_scale(Vec3::ONE * 1000.0)
             .with_rotation(Quat::from_euler(EulerRot::XYZ, PI / 2.0, PI, 0.0)),
@@ -75,7 +80,7 @@ fn spawn_torso(
 pub fn setup_light_and_camera(commands: &mut Commands) {
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
-        brightness: 1.0,
+        brightness: 1000.0,
     });
 
     commands.spawn((
