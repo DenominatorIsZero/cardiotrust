@@ -151,9 +151,13 @@ fn init_voxels(
         Vec3::Y,
     );
 
-    let mesh = meshes.add(Mesh::from(shape::Cube {
-        size: voxels.size_mm,
-    }));
+    let half_size = Vec3::new(
+        voxels.size_mm / 2.0,
+        voxels.size_mm / 2.0,
+        voxels.size_mm / 2.0,
+    );
+
+    let mesh = meshes.add(Mesh::from(Cuboid { half_size }));
     for x in 0..voxel_count[0] {
         for y in 0..voxel_count[1] {
             for z in 0..voxel_count[2] {
