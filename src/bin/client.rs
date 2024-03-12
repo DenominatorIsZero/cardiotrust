@@ -1,7 +1,4 @@
-use bevy::{
-    prelude::*,
-    window::{PresentMode, WindowResolution},
-};
+use bevy::{prelude::*, window::PresentMode};
 use cardiotrust::{
     ui::ClientUiPlugin, vis::VisPlugin, websocket::WebsocketPlugin, ScenarioList, SelectedSenario,
 };
