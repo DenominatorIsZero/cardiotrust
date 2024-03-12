@@ -7,7 +7,7 @@ use crate::core::scenario::{Scenario, Status};
 #[allow(clippy::too_many_lines, clippy::module_name_repetitions)]
 pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
     parent.set_enabled(*scenario.get_status() == Status::Planning);
-    let simulation = scenario.get_config_mut().simulation.as_mut().unwrap();
+    let simulation = scenario.config.simulation.as_mut().unwrap();
     egui::ScrollArea::vertical()
         .id_source("simulation")
         .show(parent, |ui| {

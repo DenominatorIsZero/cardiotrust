@@ -495,24 +495,14 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         ),
         ImageType::ControlFunctionAlgorithm => standard_time_plot(
             &model.functional_description.control_function_values.values,
-            scenario
-                .get_config()
-                .simulation
-                .as_ref()
-                .unwrap()
-                .sample_rate_hz,
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             file_name.to_str().unwrap(),
             "Control Function Algorithm",
             "u [A/mm^2]",
         ),
         ImageType::ControlFunctionSimulation => standard_time_plot(
             &data.get_control_function_values().values,
-            scenario
-                .get_config()
-                .simulation
-                .as_ref()
-                .unwrap()
-                .sample_rate_hz,
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             file_name.to_str().unwrap(),
             "Control Function Simulation",
             "u [A/mm^2]",
@@ -520,12 +510,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         ImageType::ControlFunctionDelta => standard_time_plot(
             &(&model.functional_description.control_function_values.values
                 - &data.get_control_function_values().values),
-            scenario
-                .get_config()
-                .simulation
-                .as_ref()
-                .unwrap()
-                .sample_rate_hz,
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             file_name.to_str().unwrap(),
             "Control Function Delta",
             "u [A/mm^2]",
@@ -533,12 +518,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         ImageType::StateAlgorithm => {
             standard_time_plot(
                 &estimations.system_states.values.slice(s![.., 0]).to_owned(),
-                scenario
-                    .get_config()
-                    .simulation
-                    .as_ref()
-                    .unwrap()
-                    .sample_rate_hz,
+                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
                 file_name.to_str().unwrap(),
                 "System State 0 Algorithm",
                 "j [A/mm^2]",
@@ -546,12 +526,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         }
         ImageType::StateSimulation => standard_time_plot(
             &data.get_system_states().values.slice(s![.., 0]).to_owned(),
-            scenario
-                .get_config()
-                .simulation
-                .as_ref()
-                .unwrap()
-                .sample_rate_hz,
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             file_name.to_str().unwrap(),
             "System State 0 Simulation",
             "j [A/mm^2]",
@@ -560,12 +535,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             standard_time_plot(
                 &(&estimations.system_states.values.slice(s![.., 0]).to_owned()
                     - &data.get_system_states().values.slice(s![.., 0]).to_owned()),
-                scenario
-                    .get_config()
-                    .simulation
-                    .as_ref()
-                    .unwrap()
-                    .sample_rate_hz,
+                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
                 file_name.to_str().unwrap(),
                 "System State 0 Delta",
                 "j [A/mm^2]",
@@ -574,12 +544,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         ImageType::MeasurementAlgorithm => {
             standard_time_plot(
                 &estimations.measurements.values.slice(s![.., 0]).to_owned(),
-                scenario
-                    .get_config()
-                    .simulation
-                    .as_ref()
-                    .unwrap()
-                    .sample_rate_hz,
+                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
                 file_name.to_str().unwrap(),
                 "Measurement 0 Algorithm",
                 "z [pT]",
@@ -587,12 +552,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
         }
         ImageType::MeasurementSimulation => standard_time_plot(
             &data.get_measurements().values.slice(s![.., 0]).to_owned(),
-            scenario
-                .get_config()
-                .simulation
-                .as_ref()
-                .unwrap()
-                .sample_rate_hz,
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             file_name.to_str().unwrap(),
             "Measurement 0 Simulation",
             "z [pT]",
@@ -601,12 +561,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             standard_time_plot(
                 &(&estimations.measurements.values.slice(s![.., 0]).to_owned()
                     - &data.get_measurements().values.slice(s![.., 0]).to_owned()),
-                scenario
-                    .get_config()
-                    .simulation
-                    .as_ref()
-                    .unwrap()
-                    .sample_rate_hz,
+                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
                 file_name.to_str().unwrap(),
                 "Measurement 0 Delta",
                 "z [pT]",

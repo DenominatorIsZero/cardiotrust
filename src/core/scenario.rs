@@ -24,6 +24,7 @@ use super::{
     model::Model,
 };
 
+/// Struct representing a scenario configuration and results.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct Scenario {
     id: String,
@@ -39,6 +40,13 @@ pub struct Scenario {
 }
 
 impl Scenario {
+    /// Creates an empty Scenario with default values.
+    ///
+    /// The id is set to "EMPTY", status to Scheduled, config to default,
+    /// data and results to None, summary to None, and comment to "EMPTY".
+    ///
+    /// This can be useful when needing to initialize a Scenario without
+    /// any specific values.
     #[must_use]
     pub fn empty() -> Self {
         Self {
@@ -52,11 +60,15 @@ impl Scenario {
         }
     }
 
-    /// .
+    /// Creates a new Scenario with a generated ID and default values.
+    ///
+    /// The ID is generated from the current date and time. The status is set to
+    /// Planning, the config to default, data and results to None, summary to
+    /// None, and comment to empty string.
     ///
     /// # Panics
     ///
-    /// Panics if scenario could not be saved in location.
+    /// Panics if the new scenario could not be saved.
     #[must_use]
     pub fn build(id: Option<String>) -> Self {
         let scenario = Self {
@@ -77,12 +89,14 @@ impl Scenario {
         scenario
     }
 
-    /// .
+    /// Loads a Scenario from the scenario.toml file in the given path.
+    ///
+    /// Reads the contents of the scenario.toml file and parses it into a
+    /// Scenario struct.
     ///
     /// # Panics
     ///
-    /// Panics if scenario.toml could not be read in scenario directory.
-    /// Panics if scenario.toml data could not be parsed into scenario struct.
+    /// Panics if the scenario.toml file could not be read or parsed.
     #[must_use]
     pub fn load(path: &Path) -> Self {
         let contents = fs::read_to_string(path.join("scenario.toml")).unwrap_or_else(|_| {
@@ -102,6 +116,11 @@ impl Scenario {
         scenario
     }
 
+    /// Saves the Scenario to a scenario.toml file in the ./results directory.
+    ///
+    /// Creates the directory path from the scenario ID. Converts the Scenario to a TOML string. Creates the file and writes the TOML string to it.
+    /// If the scenario has data, calls `save_data()`. If the scenario has results, calls `save_results()`.
+    ///
     /// # Panics
     ///
     /// Panics if scenario could not be parsed into toml string.
@@ -109,8 +128,6 @@ impl Scenario {
     /// # Errors
     ///
     /// This function will return an error if scenario.toml file could not be created.
-    ///
-    /// This function will return an error if scenario.toml file could not be written to.
     pub fn save(&self) -> Result<(), std::io::Error> {
         let path = Path::new("./results").join(&self.id);
         let toml = toml::to_string(&self).unwrap();
@@ -126,11 +143,14 @@ impl Scenario {
         Ok(())
     }
 
+    /// Returns a reference to the scenario's unique ID.
     #[must_use]
     pub const fn get_id(&self) -> &String {
         &self.id
     }
 
+    /// Returns a string representation of the scenario's status.
+    /// Matches the Status enum variant names.
     #[must_use]
     pub const fn get_status_str(&self) -> &str {
         match self.status {
@@ -142,16 +162,8 @@ impl Scenario {
         }
     }
 
-    #[must_use]
-    pub fn get_config_mut(&mut self) -> &mut Config {
-        &mut self.config
-    }
-
-    #[must_use]
-    pub const fn get_config(&self) -> &Config {
-        &self.config
-    }
-
+    /// Checks if the scenario is in the planning phase before scheduling it.
+    /// If in planning phase, sets status to scheduled and unifies configs.
     ///
     /// # Errors
     ///
@@ -172,6 +184,9 @@ impl Scenario {
         }
     }
 
+    /// Unifies the model configuration between the algorithm config and simulation config, if a simulation config exists.
+    /// This ensures the algorithm and simulation are using the same model parameters.
+    /// Also sets algorithm epochs to 1 if it is `PseudoInverse`.
     fn unify_configs(&mut self) {
         let model = &mut self.config.algorithm.model;
         match &self.config.simulation {
@@ -195,8 +210,6 @@ impl Scenario {
     /// This removes the scenario from the queue and allows
     /// for the parameters to be changed again
     ///
-    /// TODO: Look into types as states
-    ///
     /// # Errors
     ///
     /// This function will return an error if scenario is not in scheduled
@@ -215,29 +228,36 @@ impl Scenario {
         }
     }
 
+    /// Sets the scenario status to Running with the given epoch number.
     pub fn set_running(&mut self, epoch: usize) {
         self.status = Status::Running(epoch);
     }
 
+    /// Sets the scenario status to Done.
     pub fn set_done(&mut self) {
         self.status = Status::Done;
     }
 
+    /// Deletes the results directory for this scenario.
+    ///
     /// # Errors
     ///
-    /// This function will return an error if directories could not
-    /// be deleted.
+    /// This function will return an error if the results directory could not be deleted.
     pub fn delete(&self) -> Result<(), std::io::Error> {
         let path = Path::new("./results").join(&self.id);
         fs::remove_dir_all(path)?;
         Ok(())
     }
 
+    /// Returns an immutable reference to the scenario status.
     #[must_use]
     pub const fn get_status(&self) -> &Status {
         &self.status
     }
 
+    /// Returns the progress of the scenario as a percentage. The progress will be
+    /// 0.0 if the scenario status is not Running. Otherwise it will return the
+    /// current epoch divided by the total number of epochs.
     #[must_use]
     pub fn get_progress(&self) -> f32 {
         #[allow(clippy::cast_precision_loss)]
@@ -247,6 +267,11 @@ impl Scenario {
         }
     }
 
+    /// Saves the scenario data to a file in the results directory.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the results directory could not be created or the data file could not be written.
     fn save_data(&self) -> Result<(), std::io::Error> {
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
@@ -255,6 +280,11 @@ impl Scenario {
         Ok(())
     }
 
+    /// Saves the scenario results to a file in the results directory.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if the results directory could not be created or the results file could not be written.
     fn save_results(&self) -> Result<(), std::io::Error> {
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
@@ -263,6 +293,8 @@ impl Scenario {
         Ok(())
     }
 
+    /// Loads the scenario data from the data.bin file in the results directory if it exists.
+    ///
     /// # Panics
     ///
     /// Panics if the data.bin file can not be parsed into the data struct.
@@ -276,6 +308,8 @@ impl Scenario {
         }
     }
 
+    /// Loads the scenario results from the results.bin file in the results directory if it exists.
+    ///
     /// # Panics
     ///
     /// Panics if the results.bin file can not be parsed into the results struct.
@@ -289,6 +323,7 @@ impl Scenario {
         }
     }
 
+    /// Saves the scenario data and results as .npy files in the results directory.
     ///
     /// # Panics
     ///
@@ -303,7 +338,10 @@ impl Scenario {
     }
 }
 
-/// .
+/// Runs the simulation for the given scenario, model, and data.
+///
+/// Updates the results and summary structs with the output. Sends the final epoch
+/// count and summary via the provided channels. Saves the results to the scenario.
 ///
 /// # Panics
 ///
@@ -384,6 +422,8 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
     summary_tx.send(summary).unwrap();
 }
 
+/// Runs the pseudo inverse algorithm on the given scenario, model, and data.
+/// Calculates the pseudo inverse, runs estimations, and calculates summary metrics.
 fn run_pseudo_inverse(
     scenario: &Scenario,
     model: &Model,
@@ -407,6 +447,11 @@ fn run_pseudo_inverse(
     summary.delta_measurements_max = results.metrics.delta_measurements_max_epoch.values[0];
 }
 
+/// Runs the model-based algorithm on the given scenario, model, and data.
+/// Calculates model parameters over epochs and calculates summary metrics.
+/// Reduces learning rate at intervals. Saves snapshots at intervals.
+/// Sends epoch and summary updates over channels.
+/// Exits early if loss becomes non-finite.
 fn run_model_based(
     scenario: &mut Scenario,
     model: &mut Model,
@@ -468,6 +513,13 @@ fn run_model_based(
     scenario.config.algorithm.learning_rate = original_learning_rate;
 }
 
+/// Enumeration of possible scenario execution statuses.
+///
+/// * `Planning`: Scenario is being planned.
+/// * `Done`: Scenario execution finished.
+/// * `Running`: Scenario is running the specified epoch.
+/// * `Aborted`: Scenario execution was aborted.
+/// * `Scheduled`: Scenario execution is scheduled but not yet running.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum Status {
     Planning,

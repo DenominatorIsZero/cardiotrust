@@ -8,6 +8,7 @@ use std::error::Error;
 use self::{functional::FunctionalDescription, spatial::SpatialDescription};
 use super::config::model::Model as ModelConfig;
 
+/// Struct representing a heart model with functional and spatial descriptions.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Model {
     pub functional_description: FunctionalDescription,
@@ -16,6 +17,7 @@ pub struct Model {
 
 impl Model {
     #[must_use]
+    /// Creates an empty `Model` with the given parameters.
     pub fn empty(
         number_of_states: usize,
         number_of_sensors: usize,
@@ -35,11 +37,17 @@ impl Model {
             ),
         }
     }
-    /// .
+
+    /// Creates a new `Model` instance from the given `ModelConfig`.
+    ///
+    /// This converts the high-level model configuration into a `Model` instance
+    /// with populated `FunctionalDescription` and `SpatialDescription`. It handles
+    /// creating the model topology and computing valid model delays.
     ///
     /// # Errors
     ///
-    /// This function will return an error if model parameters do not result in valid delays.
+    /// This function will return an error if the model configuration does not
+    /// result in valid delays or topology.
     pub fn from_model_config(
         config: &ModelConfig,
         sample_rate_hz: f32,
@@ -58,6 +66,8 @@ impl Model {
         })
     }
 
+    /// Saves the functional and spatial descriptions of the model
+    /// to .npy files at the given path.
     pub fn save_npy(&self, path: &std::path::Path) {
         self.functional_description.save_npy(path);
         self.spatial_description.save_npy(path);

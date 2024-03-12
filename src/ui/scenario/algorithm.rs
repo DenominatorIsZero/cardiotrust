@@ -9,7 +9,7 @@ use crate::core::{
 #[allow(clippy::too_many_lines)]
 pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenario) {
     parent.set_enabled(*scenario.get_status() == Status::Planning);
-    let algorithm = &mut scenario.get_config_mut().algorithm;
+    let algorithm = &mut scenario.config.algorithm;
     egui::ScrollArea::vertical()
         .id_source("algorithm")
         .show(parent, |ui| {
