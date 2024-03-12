@@ -56,6 +56,13 @@ impl Plugin for UiPlugin {
     }
 }
 
+/// An enum representing the different UI states of the application.
+///
+/// The default state is `Explorer`. The other states are `Scenario`,
+/// `Results`, and `Volumetric`.
+///
+/// This allows conditional rendering of different UI components
+/// depending on the current state.
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 #[allow(clippy::module_name_repetitions)]
 pub enum UiState {
@@ -74,11 +81,6 @@ impl Plugin for ClientUiPlugin {
         app.init_state::<UiState>()
             .init_resource::<PlaybackSpeed>()
             .add_plugins(EguiPlugin)
-            .add_systems(Update, draw_ui_volumetric)
-            .add_systems(Startup, set_state_to_vol);
+            .add_systems(Update, draw_ui_volumetric);
     }
-}
-
-fn set_state_to_vol(mut state: ResMut<NextState<UiState>>) {
-    state.set(UiState::Volumetric);
 }

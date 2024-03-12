@@ -6,6 +6,7 @@ use crate::core::{
     scenario::{Scenario, Status},
 };
 
+/// Draws the UI elements for the algorithm.
 #[allow(clippy::too_many_lines)]
 pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenario) {
     parent.set_enabled(*scenario.get_status() == Status::Planning);

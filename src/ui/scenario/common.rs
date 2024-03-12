@@ -5,6 +5,7 @@ use crate::core::{
     model::spatial::voxels::VoxelType,
 };
 
+/// Draws ui for settings common to data generation and optimization.
 #[allow(clippy::too_many_lines, clippy::module_name_repetitions)]
 pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
     // measurement covariance mean

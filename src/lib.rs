@@ -43,6 +43,12 @@ impl ScenarioList {
 }
 
 impl Default for ScenarioList {
+    /// Loads existing scenario results from the `./results` directory into a
+    /// [`ScenarioList`], sorting them by scenario ID. Creates the `./results`
+    /// directory if it does not exist.
+    ///
+    /// This provides the default initialized state for the scenario list resource,
+    /// populated from any existing results.
     fn default() -> Self {
         let mut scenario_list = Self {
             entries: Vec::<ScenarioBundle>::new(),

@@ -5,17 +5,17 @@ pub mod plotting;
 pub mod sample_tracker;
 pub mod sensors;
 
-use std::f32::consts::PI;
-
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use self::{
-    heart::{on_vis_mode_changed, update_heart_voxel_colors},
+    body::spawn_torso,
+    heart::{init_voxels, on_vis_mode_changed, update_heart_voxel_colors},
     options::VisOptions,
-    sample_tracker::{update_sample_index, SampleTracker},
+    sample_tracker::{init_sample_tracker, update_sample_index, SampleTracker},
+    sensors::spawn_sensors,
 };
-use crate::ui::UiState;
+use crate::{core::scenario::Scenario, ui::UiState};
 
 #[allow(clippy::module_name_repetitions)]
 pub struct VisPlugin;
@@ -48,35 +48,8 @@ pub fn setup(mut commands: Commands) {
     setup_light_and_camera(&mut commands);
 }
 
-#[allow(clippy::needless_pass_by_value)]
-fn spawn_torso(
-    mut commands: Commands,
-    ass: Res<AssetServer>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    // note that we have to include the `Scene0` label
-    let my_mesh: Handle<Mesh> = ass.load("torso.glb#Mesh0/Primitive0");
-
-    // to position our 3d model, simply use the Transform
-    // in the SceneBundlex
-    commands.spawn(PbrBundle {
-        mesh: my_mesh,
-        // Notice how there is no need to set the `alpha_mode` explicitly here.
-        // When converting a color to a material using `into()`, the alpha mode is
-        // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
-        material: materials.add(StandardMaterial::from(Color::rgba(
-            85.0 / 255.0,
-            79.0 / 255.0,
-            72.0 / 255.0,
-            0.25,
-        ))),
-        transform: Transform::from_xyz(0.0, 0.0, 0.0)
-            .with_scale(Vec3::ONE * 1000.0)
-            .with_rotation(Quat::from_euler(EulerRot::XYZ, PI / 2.0, PI, 0.0)),
-        ..default()
-    });
-}
-
+/// Creates an ambient light to illuminate the full scene.
+/// Spawns a camera entity with default pan/orbit controls.
 pub fn setup_light_and_camera(commands: &mut Commands) {
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
@@ -90,4 +63,29 @@ pub fn setup_light_and_camera(commands: &mut Commands) {
         },
         PanOrbitCamera::default(),
     ));
+}
+
+/// Sets up the heart mesh, voxel grid, and sensor transforms according
+/// to the provided scenario. Initializes the sample tracker based on the
+/// scenario as well.
+#[allow(clippy::cast_precision_loss)]
+pub fn setup_heart_and_sensors(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<StandardMaterial>,
+    sample_tracker: &mut SampleTracker,
+    scenario: &Scenario,
+    camera: &mut Transform,
+    ass: Res<AssetServer>,
+) {
+    init_sample_tracker(sample_tracker, scenario);
+    spawn_sensors(commands, ass, materials, scenario);
+    init_voxels(
+        commands,
+        meshes,
+        materials,
+        scenario,
+        sample_tracker,
+        camera,
+    );
 }

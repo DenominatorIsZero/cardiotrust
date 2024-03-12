@@ -12,6 +12,11 @@ use crate::{
     ScenarioBundle, ScenarioList, SelectedSenario,
 };
 
+/// Draws the UI for the selected scenario.
+///
+/// This handles:
+/// - The top bar with scenario list and controls
+/// - The central panel showing details of the selected scenario
 #[allow(clippy::module_name_repetitions)]
 pub fn draw_ui_scenario(
     mut contexts: EguiContexts,
@@ -27,6 +32,13 @@ pub fn draw_ui_scenario(
     draw_ui_scenario_central_panel(context, scenario);
 }
 
+/// Draws the top bar UI for the scenario view.
+///
+/// This shows:
+/// - The ID and status of the selected scenario
+/// - Controls to change the status and save the scenario
+/// - A text area to edit the scenario description
+/// - Buttons to copy, delete or select a different scenario
 fn draw_ui_scenario_topbar(
     context: &egui::Context,
     scenarios: &mut ResMut<ScenarioList>,
@@ -84,6 +96,11 @@ fn draw_ui_scenario_topbar(
     });
 }
 
+/// Draws the UI for the central panel of the scenario screen.
+///
+/// Splits the panel into two columns using egui columns.
+/// The left column calls `draw_ui_scenario_data` to show scenario data.
+/// The right column calls `draw_ui_scenario_algorithm` to show algorithm settings.
 fn draw_ui_scenario_central_panel(context: &egui::Context, scenario: &mut Scenario) {
     egui::CentralPanel::default().show(context, |ui| {
         ui.columns(2, |columns| {

@@ -4,6 +4,7 @@ use egui_extras::{Column, TableBuilder};
 use super::common::draw_ui_scenario_common;
 use crate::core::scenario::{Scenario, Status};
 
+/// Draws the data section of the scenario UI.
 #[allow(clippy::too_many_lines, clippy::module_name_repetitions)]
 pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
     parent.set_enabled(*scenario.get_status() == Status::Planning);

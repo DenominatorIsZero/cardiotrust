@@ -9,6 +9,9 @@ use crate::{
     ScenarioList, SelectedSenario,
 };
 
+/// Draws the UI for the top bar, containing buttons to switch between UI states
+/// and start/stop the scheduler. Also contains a slider to control the number
+/// of scheduler jobs.
 #[allow(clippy::module_name_repetitions, clippy::needless_pass_by_value)]
 pub fn draw_ui_topbar(
     mut commands: Commands,

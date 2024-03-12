@@ -63,6 +63,8 @@ struct WebSocketResource {
     pub websocket: Option<WebSocketWrapper>,
 }
 
+/// Sends a heartbeat message over the websocket connection in `websocket_resource`
+/// if it is in a ready state. This keeps the connection alive.
 #[allow(clippy::needless_pass_by_value)]
 fn send_heartbeat(websocket_resource: Res<WebSocketResource>) {
     if let Some(websocket) = websocket_resource.websocket.as_ref() {
@@ -75,6 +77,9 @@ fn send_heartbeat(websocket_resource: Res<WebSocketResource>) {
     }
 }
 
+/// Handles incoming websocket messages by processing the message header and
+/// payload. The header determines which handler function is called. The handlers
+/// update the simulation state and visualizations.
 #[allow(clippy::needless_pass_by_value)]
 fn handle_websocket_messages(
     message_buffer: Res<MessageBuffer>,
@@ -121,6 +126,9 @@ fn handle_websocket_messages(
     }
 }
 
+/// Initializes the simulation struct from the payload of an `INIT_SIM` websocket message.
+/// Sets voxel size, initializes voxel types, positions, numbers, and sensor positions/orientations.
+/// Requires that the selected scenario is already set.
 #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
 fn handle_init_sim_message(
     payload: &Value,
@@ -157,6 +165,9 @@ fn handle_init_sim_message(
     initialize_sensor_orientations(model, payload);
 }
 
+/// Initializes the estimation struct from the payload of an `INIT_EST` websocket message.
+/// Sets voxel size, initializes voxel types, positions, numbers, and sensor positions/orientations.
+/// Requires that the selected scenario is already set.
 #[allow(
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss,
@@ -196,6 +207,9 @@ fn handle_init_est_message(
     initialize_sensor_orientations(model, payload);
 }
 
+/// Updates the simulation values from the payload of an `UPDATE_SIM`
+/// websocket message. Updates the system states and measurements
+/// in the selected scenario's simulation struct.
 fn handle_update_sim_message(
     payload: &Value,
     selected_scenario: &SelectedSenario,
@@ -219,6 +233,9 @@ fn handle_update_sim_message(
     update_values(payload, states, measurements);
 }
 
+/// Updates the estimation values from the payload of an `UPDATE_EST`
+/// websocket message. Updates the system states and measurements
+/// in the selected scenario's estimation struct.
 fn handle_update_est_message(
     payload: &Value,
     selected_scenario: &SelectedSenario,
@@ -236,6 +253,10 @@ fn handle_update_est_message(
     update_values(payload, states, measurements);
 }
 
+/// Updates the system state and measurement values in the provided
+/// ArraySystemStates and ArrayMeasurements from the given payload.
+/// Extracts the state and measurement values from the "ppfStatesToExoBuffer"
+/// and "ppfMeasurementsToExoBuffer" keys in the payload.
 #[allow(
     clippy::similar_names,
     clippy::cast_precision_loss,
@@ -284,6 +305,8 @@ fn update_values(
     }
 }
 
+/// Initializes the voxel types in the model by mapping values from the
+/// "pppcVoxelTypes" key in the payload to `VoxelType` enum variants.
 #[allow(clippy::similar_names)]
 fn initialize_voxel_types(model: &mut Model, payload: &Value) {
     let types = &mut model.spatial_description.voxels.types.values;
@@ -318,6 +341,10 @@ fn initialize_voxel_types(model: &mut Model, payload: &Value) {
     }
 }
 
+/// Initializes voxel positions in the model by mapping values from the
+/// "ppppfVoxelPositionsMm" key in the payload to the positions field of the
+/// voxels struct. Loops through the nested arrays in the payload to populate
+/// the 4D positions array.
 #[allow(
     clippy::similar_names,
     clippy::cast_precision_loss,
@@ -355,6 +382,10 @@ fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
     }
 }
 
+/// Initializes voxel numbers in the model by mapping values from the
+/// "pppuVoxelNumbers" key in the payload to the numbers field of the
+/// voxels struct. Loops through the nested arrays in the payload to populate
+/// the 3D numbers array.
 #[allow(
     clippy::similar_names,
     clippy::cast_possible_truncation,
@@ -386,6 +417,10 @@ fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
     }
 }
 
+/// Initializes sensor positions in the model by mapping values from the
+/// "ppfSensorPositionsMm" key in the payload to the positions field of the
+/// sensors struct. Loops through the nested arrays in the payload to populate  
+/// the 3D positions array.
 #[allow(
     clippy::similar_names,
     clippy::cast_possible_truncation,
@@ -411,6 +446,10 @@ fn initialize_sensor_positions(model: &mut Model, payload: &Value) {
         }
     }
 }
+/// Initializes sensor orientations in the model by mapping values from the
+/// "ppfSensorOrientations" key in the payload to the orientations field of the
+/// sensors struct. Loops through the nested arrays in the payload to populate
+/// the 3D orientations array.
 #[allow(
     clippy::similar_names,
     clippy::cast_possible_truncation,
@@ -437,6 +476,11 @@ fn initialize_sensor_orientations(model: &mut Model, payload: &Value) {
     }
 }
 
+/// Initializes a scenario by mapping values from the payload to a new
+/// Scenario struct. Extracts the number of sensors, states, sample rate,
+/// etc. and uses them to construct a new Scenario with empty Data and
+/// Results structs. Also adds the scenario to the scenario list and
+/// initializes the sample tracker.
 #[allow(
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss,
@@ -522,6 +566,15 @@ fn init_scenario(
     sample_tracker.max_sample = number_of_steps;
 }
 
+/// Initializes a WebSocket connection and sets up callbacks to handle
+/// incoming messages and connection events.
+///
+/// Creates a new WebSocket connection to the specified URL. Configures the
+/// WebSocket to use ArrayBuffers for binary messages. Sets up callbacks to
+/// handle incoming messages, errors, and open events. The message callback
+/// pushes received messages onto the shared message buffer. The open callback
+/// sends an initial message over the socket. Stores the WebSocket in the
+/// WebSocketResource.
 #[allow(clippy::needless_pass_by_value)]
 fn init_websocket(
     message_buffer: Res<MessageBuffer>,

@@ -25,6 +25,13 @@ impl Plugin for SchedulerPlugin {
     }
 }
 
+/// An enum representing the possible states of the scheduler.
+///
+/// `Paused` - The default state where the scheduler is not actively running scenarios.
+///
+/// `Available` - The scheduler is available to start running scenarios.
+///  
+/// `Unavailable` - The scheduler is currently occupied running scenarios and is unavailable to start new ones.
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 #[allow(clippy::module_name_repetitions)]
 pub enum SchedulerState {
@@ -40,11 +47,15 @@ pub struct NumberOfJobs {
 }
 
 impl Default for NumberOfJobs {
+    /// Returns a `NumberOfJobs` instance with the default value of 4 for `value`.
     fn default() -> Self {
         Self { value: 4 }
     }
 }
 
+/// Starts scenarios from the scenario list that are scheduled, spawning threads
+/// to run them and tracking their status. Limits number of concurrent scenarios
+/// based on provided resource. Updates state if max concurrent reached.
 #[allow(clippy::needless_pass_by_value)]
 pub fn start_scenarios(
     mut commands: Commands,
@@ -78,7 +89,10 @@ pub fn start_scenarios(
     }
 }
 
-/// .
+/// Checks the status of running scenarios, updating their epoch and summary if
+/// available. Removes finished scenarios from tracking. Checks if the scheduler
+/// should be marked as available based on running scenario count and current
+/// scheduler state.
 ///
 /// # Panics
 ///

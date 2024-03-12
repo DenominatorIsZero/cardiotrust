@@ -10,6 +10,14 @@ use crate::{
     ScenarioBundle, ScenarioList, SelectedSenario,
 };
 
+/// Draws the UI for the scenario explorer.
+///
+/// This displays a table with columns for scenario ID, status, losses, metrics,
+/// and allows creating new scenarios and selecting one to view/edit details.
+///
+/// Uses egui to create the table and columns. Loops through the scenarios
+/// from the ScenarioList resource to populate the rows. Inserts a new row
+/// when the New button is clicked.
 #[allow(clippy::module_name_repetitions, clippy::too_many_lines)]
 pub fn draw_ui_explorer(
     mut commands: Commands,
@@ -141,6 +149,11 @@ pub fn draw_ui_explorer(
     });
 }
 
+/// Draws a row in the scenario list table.
+///
+/// For the scenario at the given index, this renders UI elements to show the
+/// scenario's status, metrics, comment text box, etc. It is called in a loop
+/// to draw each row.
 #[allow(clippy::too_many_lines)]
 fn draw_row(
     commands: &mut Commands,

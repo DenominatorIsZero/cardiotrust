@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use nalgebra::{Rotation3, Vector3};
 use ndarray::{arr1, s, Array1};
 use ndarray_stats::QuantileExt;
 use scarlet::{
@@ -9,7 +8,7 @@ use scarlet::{
 
 use super::{
     options::{VisMode, VisOptions},
-    sample_tracker::{init_sample_tracker, SampleTracker},
+    sample_tracker::SampleTracker,
 };
 use crate::{
     core::{model::spatial::voxels::VoxelType, scenario::Scenario},
@@ -22,99 +21,17 @@ pub struct VoxelData {
     colors: Array1<Color>,
     position: Array1<usize>,
 }
-/// .
-///
-/// # Panics
-///
-/// Panics if data is missing in sceario.
-#[allow(clippy::cast_precision_loss)]
-pub fn setup_heart_voxels(
-    commands: &mut Commands,
-    meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<StandardMaterial>,
-    sample_tracker: &mut SampleTracker,
-    scenario: &Scenario,
-    camera: &mut Transform,
-    ass: Res<AssetServer>,
-) {
-    init_sample_tracker(sample_tracker, scenario);
-    spawn_sensors(commands, ass, materials, scenario);
-    init_voxels(
-        commands,
-        meshes,
-        materials,
-        scenario,
-        sample_tracker,
-        camera,
-    );
-}
 
-#[allow(clippy::needless_pass_by_value)]
-fn spawn_sensors(
-    commands: &mut Commands,
-    ass: Res<AssetServer>,
-    materials: &mut Assets<StandardMaterial>,
-    scenario: &Scenario,
-) {
-    let data = scenario.data.as_ref().expect("Data to be some");
-    let model = data.get_model();
-    let sensors = &model.spatial_description.sensors;
-
-    // note that we have to include the `Scene0` label
-    let shaft_mesh: Handle<Mesh> = ass.load("RoundArrow.glb#Mesh0/Primitive0");
-    let point_mesh: Handle<Mesh> = ass.load("RoundArrow.glb#Mesh1/Primitive0");
-
-    for index_sensor in 0..sensors.positions_mm.shape()[0] {
-        let x_pos_mm = sensors.positions_mm[(index_sensor, 0)];
-        let y_pos_mm = sensors.positions_mm[(index_sensor, 2)];
-        let z_pos_mm = sensors.positions_mm[(index_sensor, 1)];
-        let x_ori = sensors.orientations_xyz[(index_sensor, 0)];
-        let y_ori = sensors.orientations_xyz[(index_sensor, 2)];
-        let z_ori = sensors.orientations_xyz[(index_sensor, 1)];
-
-        let from = Vector3::new(0.0, 0.0, 1.0);
-        let to = Vector3::new(x_ori, y_ori, z_ori);
-        let rot = Rotation3::rotation_between(&to, &from).expect("Rotation matrix to exist");
-        let (rot_x, rot_y, rot_z) = rot.euler_angles();
-
-        commands.spawn(PbrBundle {
-            mesh: shaft_mesh.clone(),
-            // Notice how there is no need to set the `alpha_mode` explicitly here.
-            // When converting a color to a material using `into()`, the alpha mode is
-            // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
-            material: materials.add(StandardMaterial::from(Color::rgba(
-                x_ori, z_ori, y_ori, 1.0,
-            ))),
-            transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
-                .with_scale(Vec3::ONE * 10.0)
-                .with_rotation(Quat::from_euler(EulerRot::XYZ, rot_x, rot_y, rot_z)),
-            ..default()
-        });
-        commands.spawn(PbrBundle {
-            mesh: point_mesh.clone(),
-            // Notice how there is no need to set the `alpha_mode` explicitly here.
-            // When converting a color to a material using `into()`, the alpha mode is
-            // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
-            material: materials.add(StandardMaterial::from(Color::rgba(
-                x_ori, z_ori, y_ori, 1.0,
-            ))),
-            transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
-                .with_scale(Vec3::ONE * 10.0)
-                .with_rotation(Quat::from_euler(EulerRot::XYZ, rot_x, rot_y, rot_z)),
-            ..default()
-        });
-    }
-
-    // to position our 3d model, simply use the Transform
-    // in the SceneBundlex
-}
-
+/// Initializes voxel components by iterating through the voxel grid
+/// data and spawning a PbrBundle for each voxel. Sets up voxel data
+/// component with index, colors, and position. Also positions the
+/// camera based on voxel grid bounds.
 #[allow(
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss
 )]
-fn init_voxels(
+pub fn init_voxels(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
     materials: &mut Assets<StandardMaterial>,
@@ -188,10 +105,12 @@ fn init_voxels(
     }
 }
 
-/// # Panics
-/// if material doesnt exist
+/// Updates the voxel colors in the heart model by getting the current
+/// sample color from the sample tracker and setting the material base
+/// color to that sample color. This allows the heart model to animate
+/// through the different sample colors over time.
 #[allow(clippy::needless_pass_by_value)]
-pub fn update_heart_voxel_colors(
+pub(crate) fn update_heart_voxel_colors(
     sample_tracker: Res<SampleTracker>,
     mut query: Query<(&Handle<StandardMaterial>, &VoxelData)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -202,7 +121,10 @@ pub fn update_heart_voxel_colors(
     }
 }
 
-/// .
+/// Updates the voxel colors in the heart model based on the current
+/// visualization mode and scenario selection. Retrieves the scenario
+/// data and uses it to set the voxel colors according to the selected
+/// visualization mode.
 ///
 /// # Panics
 ///
@@ -247,6 +169,10 @@ pub fn on_vis_mode_changed(
         }
     }
 }
+
+/// Sets the voxel colors based on the voxel types from the
+/// scenario. Retrieves the voxel types from either the model or simulation
+/// results based on the simulation_not_model flag.
 #[allow(clippy::needless_pass_by_value)]
 fn set_heart_voxel_colors_to_types(
     mut query: Query<&mut VoxelData>,
@@ -282,6 +208,7 @@ fn set_heart_voxel_colors_to_types(
     }
 }
 
+/// Maps VoxelType enum variants to RGBA colors. Used to colorize voxels in the visualization based on voxel type.
 #[must_use]
 const fn type_to_color(voxel_type: VoxelType) -> Color {
     let alpha = 1.0;
@@ -331,6 +258,11 @@ const fn type_to_color(voxel_type: VoxelType) -> Color {
     }
 }
 
+/// Sets the voxel colors in the heart visualization to represent
+/// the activation norm (sum of absolute values) for the current
+/// timestep. Uses the provided scenario data or results to look up
+/// system states over time. Applies a Viridis color map to the norm
+/// values to generate RGB colors for each voxel.
 #[allow(clippy::cast_possible_truncation)]
 fn set_heart_voxel_colors_to_norm(
     mut query: Query<&mut VoxelData>,
@@ -370,6 +302,10 @@ fn set_heart_voxel_colors_to_norm(
     }
 }
 
+/// Sets the voxel colors in the heart visualization to the maximum activation
+/// (sum of absolute values) for each voxel over time. Applies a Viridis color map
+/// to the max values to generate RGB colors for each voxel. Can do relative coloring
+/// based on min/max of activation across voxels if relative_coloring is true.
 #[allow(clippy::cast_possible_truncation)]
 fn set_heart_voxel_colors_to_max(
     mut query: Query<&mut VoxelData>,

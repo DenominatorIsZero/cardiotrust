@@ -4,13 +4,18 @@ use egui_plot::{Line, Plot, PlotPoints, VLine};
 
 use crate::{
     vis::{
-        heart::setup_heart_voxels,
         options::{VisMode, VisOptions},
         sample_tracker::SampleTracker,
+        setup_heart_and_sensors,
     },
     ScenarioList, SelectedSenario,
 };
 
+/// Draws the UI for the volumetric visualization, including the side panel
+/// controls and the time series plot. Handles initializing the voxel meshes if
+/// the "Init Voxels" button is clicked. Updates the visualization mode,
+/// playback speed, manual sample control, and sensor selection based on UI
+/// interactions.
 #[allow(
     clippy::needless_pass_by_value,
     clippy::too_many_arguments,
@@ -46,7 +51,7 @@ pub fn draw_ui_volumetric(
             .add_enabled(scenario.is_some(), egui::Button::new("Init Voxels"))
             .clicked()
         {
-            setup_heart_voxels(
+            setup_heart_and_sensors(
                 &mut commands,
                 &mut meshes,
                 &mut materials,

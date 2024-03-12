@@ -3,6 +3,8 @@ use bevy::prelude::*;
 use super::options::VisOptions;
 use crate::core::scenario::Scenario;
 
+/// Used for animation. Tracks current sample, max sample, and sample rate.
+/// Currently also keeps track of selected sensor.
 #[derive(Resource, Debug)]
 pub struct SampleTracker {
     pub current_sample: usize,
@@ -24,11 +26,13 @@ impl Default for SampleTracker {
     }
 }
 
-/// .
+/// Initializes the sample tracker resource with values from the scenario.
+/// Sets the current sample to 0, the max sample to the number of rows in the
+/// scenario data, and the sample rate to the rate in the scenario config.
 ///
 /// # Panics
 ///
-/// Panics if Simulation or data is none.
+/// Panics if the scenario data or config is None.
 #[allow(
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation,
@@ -52,7 +56,9 @@ pub fn init_sample_tracker(sample_tracker: &mut SampleTracker, scenario: &Scenar
         .expect("Simultaion to be some")
         .sample_rate_hz;
 }
-
+/// If not in manual mode, calculates a new sample index based on the elapsed
+/// time, sample rate, and playback speed. Takes the result modulo the max sample
+/// to loop/wrap around.
 #[allow(
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
