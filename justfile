@@ -1,9 +1,17 @@
-r:
+run:
   cargo run --bin main
 
 release:
   cargo run --release --bin main
 
+test:
+  cargo nextest run
+
+test-all:
+  cargo nextest run -- --ignored
+
+bench:
+  cargo bench
 
 wasm-build:
   cargo build --target wasm32-unknown-unknown --bin client

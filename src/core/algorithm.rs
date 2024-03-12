@@ -353,7 +353,12 @@ mod test {
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
-        let mut algorithm_config = Algorithm::default();
+        let mut algorithm_config = Algorithm {
+            learning_rate: 10.0,
+            epochs: 3,
+            ..Default::default()
+        };
+        algorithm_config.model.apply_system_update = true;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -361,8 +366,6 @@ mod test {
             simulation_config.duration_s,
         )
         .expect("Model parameters to be valid.");
-        algorithm_config.epochs = 3;
-        algorithm_config.model.apply_system_update = true;
 
         let mut results = Results::new(
             algorithm_config.epochs,
@@ -477,8 +480,11 @@ mod test {
 
         let mut algorithm_config = Algorithm {
             calculate_kalman_gain: true,
+            learning_rate: 10.0,
+            epochs: 3,
             ..Default::default()
         };
+        algorithm_config.model.apply_system_update = true;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -486,8 +492,6 @@ mod test {
             simulation_config.duration_s,
         )
         .expect("Model parameters to be valid.");
-        algorithm_config.epochs = 3;
-        algorithm_config.model.apply_system_update = true;
 
         let mut results = Results::new(
             algorithm_config.epochs,
