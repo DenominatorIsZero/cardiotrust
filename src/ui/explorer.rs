@@ -16,7 +16,7 @@ use crate::{
 /// and allows creating new scenarios and selecting one to view/edit details.
 ///
 /// Uses egui to create the table and columns. Loops through the scenarios
-/// from the ScenarioList resource to populate the rows. Inserts a new row
+/// from the `ScenarioList` resource to populate the rows. Inserts a new row
 /// when the New button is clicked.
 #[allow(clippy::module_name_repetitions, clippy::too_many_lines)]
 pub fn draw_ui_explorer(

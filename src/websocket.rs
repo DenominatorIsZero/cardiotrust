@@ -254,7 +254,7 @@ fn handle_update_est_message(
 }
 
 /// Updates the system state and measurement values in the provided
-/// ArraySystemStates and ArrayMeasurements from the given payload.
+/// `ArraySystemStates` and `ArrayMeasurements` from the given payload.
 /// Extracts the state and measurement values from the "ppfStatesToExoBuffer"
 /// and "ppfMeasurementsToExoBuffer" keys in the payload.
 #[allow(
@@ -566,15 +566,15 @@ fn init_scenario(
     sample_tracker.max_sample = number_of_steps;
 }
 
-/// Initializes a WebSocket connection and sets up callbacks to handle
+/// Initializes a `WebSocket` connection and sets up callbacks to handle
 /// incoming messages and connection events.
 ///
-/// Creates a new WebSocket connection to the specified URL. Configures the
-/// WebSocket to use ArrayBuffers for binary messages. Sets up callbacks to
+/// Creates a new `WebSocket` connection to the specified URL. Configures the
+/// `WebSocket` to us`ArrayBuffers`rs for binary messages. Sets up callbacks to
 /// handle incoming messages, errors, and open events. The message callback
 /// pushes received messages onto the shared message buffer. The open callback
-/// sends an initial message over the socket. Stores the WebSocket in the
-/// WebSocketResource.
+/// sends an initial message over the socket. Stores the `WebSocket` in the
+/// `WebSocketResource`.
 #[allow(clippy::needless_pass_by_value)]
 fn init_websocket(
     message_buffer: Res<MessageBuffer>,

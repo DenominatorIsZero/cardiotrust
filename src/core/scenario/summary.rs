@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 /// - `delta_delays_mean`: Mean delta across all delay dimensions.
 /// - `delta_delays_max`: Max delta across all delay dimensions.
 /// - `dice`: The DICE score.
-/// - `iou`: The IoU score.
+/// - `iou`: The `IoU` score.
 /// - `precision`: The precision.
 /// - `recall`: The recall.
 /// - `threshold`: The optimum classification threshold.

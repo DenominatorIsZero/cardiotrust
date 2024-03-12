@@ -1,31 +1,29 @@
-use ndarray::{arr1, s, Array1};
-use ndarray_stats::QuantileExt;
-use plotters::prelude::*;
+use ndarray::Array1;
 use std::error::Error;
 
 use crate::core::data::shapes::ArraySystemStates;
 
 pub fn standard_time_plot(
-    y: &Array1<f32>,
-    sample_rate_hz: f32,
+    _y: &Array1<f32>,
+    _sample_rate_hz: f32,
     _file_name: &str,
     _title: &str,
     _y_label: &str,
 ) {
-    #[allow(clippy::cast_precision_loss)]
-    let t = Array1::from_vec(
-        (0..y.shape()[0])
-            .map(|i| i as f32 / sample_rate_hz)
-            .collect(),
-    );
-    let _t_min = *t.min_skipnan();
-    let _t_max = *t.max_skipnan();
-    let mut y_min = *y.min_skipnan();
-    let mut y_max = *y.max_skipnan();
-    let y_range = y_max - y_min;
-    let y_margin = 0.1_f32;
-    y_min = y_margin.mul_add(-y_range, y_min);
-    y_max = y_margin.mul_add(y_range, y_max);
+    // #[allow(clippy::cast_precision_loss)]
+    // let t = Array1::from_vec(
+    //     (0..y.shape()[0])
+    //         .map(|i| i as f32 / sample_rate_hz)
+    //         .collect(),
+    // );
+    // let _t_min = *t.min_skipnan();
+    // let _t_max = *t.max_skipnan();
+    // let mut y_min = *y.min_skipnan();
+    // let mut y_max = *y.max_skipnan();
+    // let y_range = y_max - y_min;
+    // let y_margin = 0.1_f32;
+    // y_min = y_margin.mul_add(-y_range, y_min);
+    // y_max = y_margin.mul_add(y_range, y_max);
 
     todo!()
     // let mut plot = Plot::new();
@@ -54,21 +52,21 @@ pub fn standard_time_plot(
 ///
 /// Panics if min or max of array couldn't be computed.
 pub fn standard_y_plot(
-    y: &Array1<f32>,
+    _y: &Array1<f32>,
     _file_name: &str,
     _title: &str,
     _y_label: &str,
     _x_label: &str,
 ) {
-    let x = Array1::from_vec((0..y.shape()[0]).collect());
-    let _x_min = *x.min().expect("Could not calculate min of X-array");
-    let _x_max = *x.max().expect("Could not calculate max of X-array");
-    let mut y_min = *y.min_skipnan();
-    let mut y_max = *y.max_skipnan();
-    let y_range = y_max - y_min;
-    let y_margin = 0.1_f32;
-    y_min = y_margin.mul_add(-y_range, y_min);
-    y_max = y_margin.mul_add(y_range, y_max);
+    // let x = Array1::from_vec((0..y.shape()[0]).collect());
+    // let _x_min = *x.min().expect("Could not calculate min of X-array");
+    // let _x_max = *x.max().expect("Could not calculate max of X-array");
+    // let mut y_min = *y.min_skipnan();
+    // let mut y_max = *y.max_skipnan();
+    // let y_range = y_max - y_min;
+    // let y_margin = 0.1_f32;
+    // y_min = y_margin.mul_add(-y_range, y_min);
+    // y_max = y_margin.mul_add(y_range, y_max);
 
     todo!()
 
@@ -93,37 +91,37 @@ pub fn standard_y_plot(
 }
 
 pub fn plot_state_xyz(
-    system_states: &ArraySystemStates,
-    state_index: usize,
-    sample_rate_hz: f32,
+    _system_states: &ArraySystemStates,
+    _state_index: usize,
+    _sample_rate_hz: f32,
     _file_name: &str,
     _title: &str,
 ) {
-    let x = system_states.values.slice(s![.., state_index]).to_owned();
-    let y = system_states
-        .values
-        .slice(s![.., state_index + 1])
-        .to_owned();
-    let z = system_states
-        .values
-        .slice(s![.., state_index + 2])
-        .to_owned();
-    #[allow(clippy::cast_precision_loss)]
-    let t = Array1::from_vec(
-        (0..y.shape()[0])
-            .map(|i| i as f32 / sample_rate_hz)
-            .collect(),
-    );
+    // let x = system_states.values.slice(s![.., state_index]).to_owned();
+    // let y = system_states
+    //     .values
+    //     .slice(s![.., state_index + 1])
+    //     .to_owned();
+    // let z = system_states
+    //     .values
+    //     .slice(s![.., state_index + 2])
+    //     .to_owned();
+    // #[allow(clippy::cast_precision_loss)]
+    // let t = Array1::from_vec(
+    //     (0..y.shape()[0])
+    //         .map(|i| i as f32 / sample_rate_hz)
+    //         .collect(),
+    // );
 
-    let mut xyz_min = *arr1(&[*x.min_skipnan(), *y.min_skipnan(), *z.min_skipnan()]).min_skipnan();
-    let mut xyz_max = *arr1(&[*x.max_skipnan(), *y.max_skipnan(), *z.max_skipnan()]).max_skipnan();
-    let xyz_range = xyz_max - xyz_min;
-    let xyz_margin = 0.1_f32;
-    xyz_min = xyz_margin.mul_add(-xyz_range, xyz_min);
-    xyz_max = xyz_margin.mul_add(xyz_range, xyz_max);
+    // let mut xyz_min = *arr1(&[*x.min_skipnan(), *y.min_skipnan(), *z.min_skipnan()]).min_skipnan();
+    // let mut xyz_max = *arr1(&[*x.max_skipnan(), *y.max_skipnan(), *z.max_skipnan()]).max_skipnan();
+    // let xyz_range = xyz_max - xyz_min;
+    // let xyz_margin = 0.1_f32;
+    // xyz_min = xyz_margin.mul_add(-xyz_range, xyz_min);
+    // xyz_max = xyz_margin.mul_add(xyz_range, xyz_max);
 
-    let _t_min = *t.min_skipnan();
-    let _t_max = *t.max_skipnan();
+    // let _t_min = *t.min_skipnan();
+    // let _t_max = *t.max_skipnan();
 
     todo!()
 
@@ -174,8 +172,8 @@ pub fn plot_state_xyz(
     // save_plot(file_name, &plot, width, height, scale);
 }
 
-const CAPTION_STYLE: (&str, i32) = ("Arial", 30);
-const AXIS_STYLE: (&str, i32) = ("Arial", 20);
+// const CAPTION_STYLE: (&str, i32) = ("Arial", 30);
+// const AXIS_STYLE: (&str, i32) = ("Arial", 20);
 
 /// # Errors
 /// Returns eventual plotter errors.
@@ -217,22 +215,4 @@ pub fn xy_plot(
     //     .draw()?;
 
     // Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use ndarray::Array1;
-
-    use super::xy_plot;
-
-    #[test]
-    fn time_plot_test() {
-        let x = Array1::range(-std::f32::consts::PI, std::f32::consts::PI, 0.01);
-        let y = x.mapv(f32::sin);
-        let file_name = "tests/xy";
-        let title = "XY Plot Test";
-        let x_label = "x [-]";
-        let y_label = "y [-]";
-        xy_plot(&x, &y, file_name, title, y_label, x_label).unwrap();
-    }
 }

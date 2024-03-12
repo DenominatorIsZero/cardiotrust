@@ -36,7 +36,7 @@ pub struct APParameters {
 
 impl APParameters {
     #[must_use]
-    /// Creates an empty APParameters struct with the given number of states and
+    /// Creates an empty `APParameters` struct with the given number of states and
     /// voxel dimensions.
     pub fn empty(number_of_states: usize, voxels_in_dims: Dim<[usize; 3]>) -> Self {
         Self {
@@ -161,7 +161,7 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Array
 }
 
 /// Connects voxels in the model based on voxel type and proximity.
-/// Iteratively activates voxels by updating activation_time_s and current_directions.
+/// Iteratively activates voxels by updating `activation_time_s` and `current_directions`.
 /// Stops when no more voxels can be connected at the current time step.
 fn connect_voxels(
     spatial_description: &SpatialDescription,

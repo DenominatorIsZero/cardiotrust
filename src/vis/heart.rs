@@ -23,9 +23,13 @@ pub struct VoxelData {
 }
 
 /// Initializes voxel components by iterating through the voxel grid
-/// data and spawning a PbrBundle for each voxel. Sets up voxel data
+/// data and spawning a `PbrBundle` for each voxel. Sets up voxel data
 /// component with index, colors, and position. Also positions the
 /// camera based on voxel grid bounds.
+///
+/// # Panics
+///
+/// Panics if the scenario data is None.
 #[allow(
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation,
@@ -172,7 +176,7 @@ pub fn on_vis_mode_changed(
 
 /// Sets the voxel colors based on the voxel types from the
 /// scenario. Retrieves the voxel types from either the model or simulation
-/// results based on the simulation_not_model flag.
+/// results based on the `simulation_not_model` flag.
 #[allow(clippy::needless_pass_by_value)]
 fn set_heart_voxel_colors_to_types(
     mut query: Query<&mut VoxelData>,
@@ -208,7 +212,7 @@ fn set_heart_voxel_colors_to_types(
     }
 }
 
-/// Maps VoxelType enum variants to RGBA colors. Used to colorize voxels in the visualization based on voxel type.
+/// Maps `VoxelType` enum variants to RGBA colors. Used to colorize voxels in the visualization based on voxel type.
 #[must_use]
 const fn type_to_color(voxel_type: VoxelType) -> Color {
     let alpha = 1.0;
@@ -305,7 +309,7 @@ fn set_heart_voxel_colors_to_norm(
 /// Sets the voxel colors in the heart visualization to the maximum activation
 /// (sum of absolute values) for each voxel over time. Applies a Viridis color map
 /// to the max values to generate RGB colors for each voxel. Can do relative coloring
-/// based on min/max of activation across voxels if relative_coloring is true.
+/// based on min/max of activation across voxels if `relative_coloring` is true.
 #[allow(clippy::cast_possible_truncation)]
 fn set_heart_voxel_colors_to_max(
     mut query: Query<&mut VoxelData>,

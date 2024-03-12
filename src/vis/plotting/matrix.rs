@@ -1,10 +1,6 @@
 use itertools::Itertools;
 use ndarray::{s, Array1, Array2, Array3};
 use ndarray_stats::QuantileExt;
-use std::{
-    fs::{self},
-    path::Path,
-};
 
 use crate::core::{
     data::shapes::ArraySystemStates,
@@ -14,24 +10,24 @@ use crate::core::{
     },
 };
 
-pub fn plot_voxel_types(types: &Array3<VoxelType>, _file_name: &str, _title: &str) {
-    let mut z: Vec<Vec<i32>> = Vec::new();
-    for y in 0..types.shape()[1] {
-        let mut row: Vec<i32> = Vec::new();
-        for x in 0..types.shape()[0] {
-            row.push(types[(x, y, 0)] as i32);
-        }
-        z.push(row);
-    }
-    let mut row: Vec<i32> = Vec::new();
-    for x in 0..types.shape()[0] {
-        if x < 7 {
-            row.push(i32::try_from(x).unwrap_or_default());
-        } else {
-            row.push(0);
-        }
-    }
-    z.push(row);
+pub fn plot_voxel_types(_types: &Array3<VoxelType>, _file_name: &str, _title: &str) {
+    // let mut z: Vec<Vec<i32>> = Vec::new();
+    // for y in 0..types.shape()[1] {
+    //     let mut row: Vec<i32> = Vec::new();
+    //     for x in 0..types.shape()[0] {
+    //         row.push(types[(x, y, 0)] as i32);
+    //     }
+    //     z.push(row);
+    // }
+    // let mut row: Vec<i32> = Vec::new();
+    // for x in 0..types.shape()[0] {
+    //     if x < 7 {
+    //         row.push(i32::try_from(x).unwrap_or_default());
+    //     } else {
+    //         row.push(0);
+    //     }
+    // }
+    // z.push(row);
 
     todo!()
     // let trace = HeatMap::new_z(z).color_scale(ColorScale::Palette(
@@ -75,19 +71,19 @@ pub fn plot_voxel_types(types: &Array3<VoxelType>, _file_name: &str, _title: &st
 }
 
 pub fn plot_activation_time(
-    activation_times: &ArrayActivationTime,
+    _activation_times: &ArrayActivationTime,
     _file_name: &str,
     _title: &str,
 ) {
-    let times = &activation_times.values;
-    let mut z: Vec<Vec<f32>> = Vec::new();
-    for y in 0..times.shape()[1] {
-        let mut row: Vec<f32> = Vec::new();
-        for x in 0..times.shape()[0] {
-            row.push(times[(x, y, 0)].unwrap_or(-1.0));
-        }
-        z.push(row);
-    }
+    // let times = &activation_times.values;
+    // let mut z: Vec<Vec<f32>> = Vec::new();
+    // for y in 0..times.shape()[1] {
+    //     let mut row: Vec<f32> = Vec::new();
+    //     for x in 0..times.shape()[0] {
+    //         row.push(times[(x, y, 0)].unwrap_or(-1.0));
+    //     }
+    //     z.push(row);
+    // }
 
     todo!()
 
@@ -154,102 +150,102 @@ pub fn plot_activation_time_delta(
 ///     - absolute value
 #[allow(clippy::too_many_lines)]
 pub fn plot_states_at_time(
-    system_states: &ArraySystemStates,
-    voxels: &Voxels,
-    min_j_init: f32,
-    max_j_init: f32,
-    time_index: usize,
+    _system_states: &ArraySystemStates,
+    _voxels: &Voxels,
+    _min_j_init: f32,
+    _max_j_init: f32,
+    _time_index: usize,
     _file_name: &str,
     _title: &str,
 ) {
-    let system_states = &system_states.values;
-    let z_index = 0;
+    // let system_states = &system_states.values;
+    // let z_index = 0;
 
-    let mut in_x: Vec<Vec<f32>> = Vec::new();
-    let mut in_y: Vec<Vec<f32>> = Vec::new();
-    let mut in_z: Vec<Vec<f32>> = Vec::new();
-    let mut abs: Vec<Vec<f32>> = Vec::new();
+    // let mut in_x: Vec<Vec<f32>> = Vec::new();
+    // let mut in_y: Vec<Vec<f32>> = Vec::new();
+    // let mut in_z: Vec<Vec<f32>> = Vec::new();
+    // let mut abs: Vec<Vec<f32>> = Vec::new();
 
-    let mut min_j = min_j_init;
-    let mut max_j = max_j_init;
+    // let mut min_j = min_j_init;
+    // let mut max_j = max_j_init;
 
-    for y_index in 0..voxels.count_xyz()[1] {
-        let mut row_x: Vec<f32> = Vec::new();
-        let mut row_y: Vec<f32> = Vec::new();
-        let mut row_z: Vec<f32> = Vec::new();
-        let mut row_abs: Vec<f32> = Vec::new();
-        for x_index in 0..voxels.count_xyz()[0] {
-            let voxel_index = [x_index, y_index, z_index];
-            let state_index = voxels.numbers.values[voxel_index];
-            match state_index {
-                None => {
-                    row_x.push(0.0);
-                    row_y.push(0.0);
-                    row_z.push(0.0);
-                    row_abs.push(0.0);
-                }
-                Some(state_index) => {
-                    row_x.push(system_states[(time_index, state_index)]);
-                    row_y.push(system_states[(time_index, state_index + 1)]);
-                    row_z.push(system_states[(time_index, state_index + 2)]);
-                    row_abs.push(
-                        system_states
-                            .slice(s![time_index, state_index..state_index + 3])
-                            .mapv(f32::abs)
-                            .sum(),
-                    );
-                }
-            }
-        }
-        in_x.push(row_x.clone());
-        min_j = f32::min(
-            min_j,
-            row_x.into_iter().reduce(f32::min).unwrap_or_default(),
-        );
-        in_y.push(row_y.clone());
-        min_j = f32::min(
-            min_j,
-            row_y.into_iter().reduce(f32::min).unwrap_or_default(),
-        );
-        in_z.push(row_z.clone());
-        min_j = f32::min(
-            min_j,
-            row_z.into_iter().reduce(f32::min).unwrap_or_default(),
-        );
-        abs.push(row_abs.clone());
-        min_j = f32::min(
-            min_j,
-            row_abs
-                .clone()
-                .into_iter()
-                .reduce(f32::min)
-                .unwrap_or_default(),
-        );
-        max_j = f32::max(
-            max_j,
-            row_abs.into_iter().reduce(f32::max).unwrap_or_default(),
-        );
-    }
+    // for y_index in 0..voxels.count_xyz()[1] {
+    //     let mut row_x: Vec<f32> = Vec::new();
+    //     let mut row_y: Vec<f32> = Vec::new();
+    //     let mut row_z: Vec<f32> = Vec::new();
+    //     let mut row_abs: Vec<f32> = Vec::new();
+    //     for x_index in 0..voxels.count_xyz()[0] {
+    //         let voxel_index = [x_index, y_index, z_index];
+    //         let state_index = voxels.numbers.values[voxel_index];
+    //         match state_index {
+    //             None => {
+    //                 row_x.push(0.0);
+    //                 row_y.push(0.0);
+    //                 row_z.push(0.0);
+    //                 row_abs.push(0.0);
+    //             }
+    //             Some(state_index) => {
+    //                 row_x.push(system_states[(time_index, state_index)]);
+    //                 row_y.push(system_states[(time_index, state_index + 1)]);
+    //                 row_z.push(system_states[(time_index, state_index + 2)]);
+    //                 row_abs.push(
+    //                     system_states
+    //                         .slice(s![time_index, state_index..state_index + 3])
+    //                         .mapv(f32::abs)
+    //                         .sum(),
+    //                 );
+    //             }
+    //         }
+    //     }
+    //     in_x.push(row_x.clone());
+    //     min_j = f32::min(
+    //         min_j,
+    //         row_x.into_iter().reduce(f32::min).unwrap_or_default(),
+    //     );
+    //     in_y.push(row_y.clone());
+    //     min_j = f32::min(
+    //         min_j,
+    //         row_y.into_iter().reduce(f32::min).unwrap_or_default(),
+    //     );
+    //     in_z.push(row_z.clone());
+    //     min_j = f32::min(
+    //         min_j,
+    //         row_z.into_iter().reduce(f32::min).unwrap_or_default(),
+    //     );
+    //     abs.push(row_abs.clone());
+    //     min_j = f32::min(
+    //         min_j,
+    //         row_abs
+    //             .clone()
+    //             .into_iter()
+    //             .reduce(f32::min)
+    //             .unwrap_or_default(),
+    //     );
+    //     max_j = f32::max(
+    //         max_j,
+    //         row_abs.into_iter().reduce(f32::max).unwrap_or_default(),
+    //     );
+    // }
 
-    // add invisible row to make all subplots have the same scale
-    let mut row_x: Vec<f32> = Vec::new();
-    let mut row_y: Vec<f32> = Vec::new();
-    let mut row_z: Vec<f32> = Vec::new();
-    let mut row_abs: Vec<f32> = Vec::new();
-    row_x.push(min_j);
-    row_y.push(min_j);
-    row_z.push(min_j);
-    row_abs.push(min_j);
-    for _ in 1..voxels.count_xyz()[0] {
-        row_x.push(max_j);
-        row_y.push(max_j);
-        row_z.push(max_j);
-        row_abs.push(max_j);
-    }
-    in_x.push(row_x);
-    in_y.push(row_y);
-    in_z.push(row_z);
-    abs.push(row_abs);
+    // // add invisible row to make all subplots have the same scale
+    // let mut row_x: Vec<f32> = Vec::new();
+    // let mut row_y: Vec<f32> = Vec::new();
+    // let mut row_z: Vec<f32> = Vec::new();
+    // let mut row_abs: Vec<f32> = Vec::new();
+    // row_x.push(min_j);
+    // row_y.push(min_j);
+    // row_z.push(min_j);
+    // row_abs.push(min_j);
+    // for _ in 1..voxels.count_xyz()[0] {
+    //     row_x.push(max_j);
+    //     row_y.push(max_j);
+    //     row_z.push(max_j);
+    //     row_abs.push(max_j);
+    // }
+    // in_x.push(row_x);
+    // in_y.push(row_y);
+    // in_z.push(row_z);
+    // abs.push(row_abs);
 
     todo!()
 
@@ -643,48 +639,48 @@ pub fn plot_states_max_delta(
 ///
 /// Panics if something fishy happens with io rights.
 pub fn plot_states_over_time(
-    system_states: &ArraySystemStates,
-    voxels: &Voxels,
-    fps: u32,
-    playback_speed: f32,
-    file_name: &str,
-    title: &str,
+    _system_states: &ArraySystemStates,
+    _voxels: &Voxels,
+    _fps: u32,
+    _playback_speed: f32,
+    _file_name: &str,
+    _title: &str,
 ) {
-    let directory = format!("./tmp/{file_name}/");
-    let dir_path = Path::new(&directory);
-    if dir_path.is_dir() {
-        fs::remove_dir_all(dir_path).expect("Could not delete temporary directory");
-    }
-    fs::create_dir_all(dir_path).expect("Could not create temporary directory.");
+    // let directory = format!("./tmp/{file_name}/");
+    // let dir_path = Path::new(&directory);
+    // if dir_path.is_dir() {
+    //     fs::remove_dir_all(dir_path).expect("Could not delete temporary directory");
+    // }
+    // fs::create_dir_all(dir_path).expect("Could not create temporary directory.");
 
-    let sample_number = system_states.values.shape()[0];
-    #[allow(
-        clippy::cast_precision_loss,
-        clippy::cast_sign_loss,
-        clippy::cast_possible_truncation
-    )]
-    let image_number = (fps as f32 / playback_speed) as usize;
-    let time_step = sample_number / image_number;
+    // let sample_number = system_states.values.shape()[0];
+    // #[allow(
+    //     clippy::cast_precision_loss,
+    //     clippy::cast_sign_loss,
+    //     clippy::cast_possible_truncation
+    // )]
+    // let image_number = (fps as f32 / playback_speed) as usize;
+    // let time_step = sample_number / image_number;
 
-    let min_j_init = *system_states.values.min_skipnan();
-    let max_j_init = *system_states.values.max_skipnan(); // TODO: This should really be over the absolute values...
+    // let min_j_init = *system_states.values.min_skipnan();
+    // let max_j_init = *system_states.values.max_skipnan(); // TODO: This should really be over the absolute values...
 
-    let time_indices: Vec<usize> = (0..sample_number).step_by(time_step).collect();
-    let mut image_names = Vec::new();
+    // let time_indices: Vec<usize> = (0..sample_number).step_by(time_step).collect();
+    // let mut image_names = Vec::new();
 
-    for (image_index, time_index) in time_indices.into_iter().enumerate() {
-        let image_name = format!("./tmp/{file_name}/{image_index}");
-        plot_states_at_time(
-            system_states,
-            voxels,
-            min_j_init,
-            max_j_init,
-            time_index,
-            &image_name,
-            title,
-        );
-        image_names.push(format!("{image_name}.png"));
-    }
+    // for (image_index, time_index) in time_indices.into_iter().enumerate() {
+    //     let image_name = format!("./tmp/{file_name}/{image_index}");
+    //     plot_states_at_time(
+    //         system_states,
+    //         voxels,
+    //         min_j_init,
+    //         max_j_init,
+    //         time_index,
+    //         &image_name,
+    //         title,
+    //     );
+    //     image_names.push(format!("{image_name}.png"));
+    // }
 
     todo!()
     // let images = engiffen::load_images(image_names.as_slice());
@@ -697,15 +693,15 @@ pub fn plot_states_over_time(
     // fs::remove_dir_all(dir_path).expect("Could not remove temporary folders.");
 }
 
-pub fn plot_matrix_as_heatmap(matrix: &Array2<f32>, _file_name: &str, _title: &str) {
-    let mut z: Vec<Vec<f32>> = Vec::new();
-    for y in 0..matrix.shape()[1] {
-        let mut row: Vec<f32> = Vec::new();
-        for x in 0..matrix.shape()[0] {
-            row.push(matrix[(x, y)]);
-        }
-        z.push(row);
-    }
+pub fn plot_matrix_as_heatmap(_matrix: &Array2<f32>, _file_name: &str, _title: &str) {
+    // let mut z: Vec<Vec<f32>> = Vec::new();
+    // for y in 0..matrix.shape()[1] {
+    //     let mut row: Vec<f32> = Vec::new();
+    //     for x in 0..matrix.shape()[0] {
+    //         row.push(matrix[(x, y)]);
+    //     }
+    //     z.push(row);
+    // }
 
     todo!()
 

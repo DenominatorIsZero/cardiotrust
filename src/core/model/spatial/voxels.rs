@@ -135,7 +135,7 @@ impl VoxelTypes {
         }
     }
 
-    /// Creates a VoxelTypes struct initialized with voxel types according
+    /// Creates a `VoxelTypes` struct initialized with voxel types according
     /// to the provided Model configuration. Voxel types are assigned based
     /// on the Model's parameters that define different anatomical regions.
     #[allow(

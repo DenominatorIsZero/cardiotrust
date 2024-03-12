@@ -52,7 +52,7 @@ impl FunctionalDescription {
             control_function_values: ControlFunction::empty(number_of_steps),
         }
     }
-    /// Constructs a FunctionalDescription from the given Model config, SpatialDescription,
+    /// Constructs a `FunctionalDescription` from the given Model config, `SpatialDescription`,
     /// sample rate, and duration. This initializes the internal state like allpass filters,
     /// matrices, gains etc. based on the provided inputs.
     ///
