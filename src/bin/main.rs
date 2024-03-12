@@ -11,7 +11,7 @@ fn main() {
         .insert_resource(Msaa::Off)
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Rusty CDE".into(),
+                title: "Cardio TRust".into(),
                 mode: WindowMode::BorderlessFullscreen,
                 ..default()
             }),
