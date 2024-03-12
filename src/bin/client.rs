@@ -7,7 +7,6 @@ use cardiotrust::{
 };
 
 fn main() {
-    let mut resolution = WindowResolution::default();
     App::new()
         .add_plugins(
             DefaultPlugins

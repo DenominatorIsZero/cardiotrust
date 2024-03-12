@@ -176,7 +176,6 @@ pub fn draw_ui_volumetric(
                 Plot::new("my_plot")
                     .include_x(0)
                     .include_x(1)
-                    .auto_bounds_y()
                     .show(ui, |plot_ui| {
                         plot_ui.line(sin_line);
                         plot_ui.vline(v_line);
