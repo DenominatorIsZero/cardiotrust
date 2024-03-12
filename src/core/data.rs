@@ -24,9 +24,11 @@ use crate::core::{
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Data {
     pub simulation: Option<Simulation>,
-    measurement: Option<Measurement>,
+    pub measurement: Option<Measurement>,
 }
+
 impl Data {
+    /// Creates a new empty `Data` instance with the given dimensions.
     #[must_use]
     pub fn empty(
         number_of_sensors: usize,
@@ -45,11 +47,13 @@ impl Data {
         }
     }
 
-    /// .
+    /// Creates a new [`Data`] instance from a [`SimulationConfig`].
+    ///
+    /// Runs the simulation using the provided config, and stores the result in a new `Data` instance.
     ///
     /// # Errors
     ///
-    /// Errors if model parameters to not result in valid delays.
+    /// Returns an error if creating the `Simulation` from the config fails.
     pub fn from_simulation_config(config: &SimulationConfig) -> Result<Self, Box<dyn Error>> {
         let mut simulation = Simulation::from_config(config)?;
         simulation.run();
@@ -59,8 +63,6 @@ impl Data {
         })
     }
 
-    /// Returns a reference to the get measurements of this [`Data`].
-    ///
     /// # Panics
     ///
     /// Panics if simulation and measurement are both None.
@@ -166,9 +168,7 @@ impl Data {
         )
     }
 
-    /// Returns a reference to the get delays of this [`Data`].
-    ///
-    /// # Panics
+    // # Panics
     ///
     /// Panics if simulation is None
     #[must_use]
@@ -179,8 +179,6 @@ impl Data {
         )
     }
 
-    /// .
-    ///
     /// # Panics
     ///
     /// Panics if simulation is none.

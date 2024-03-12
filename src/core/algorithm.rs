@@ -17,7 +17,15 @@ use super::{
     scenario::results::Results,
 };
 
-#[allow(clippy::missing_panics_doc)]
+/// Calculates a pseudo inverse of the measurement matrix and estimates the system states, residuals, derivatives, and metrics.
+///
+/// This iterates through each time step, calculating the system state estimate, residuals, derivatives, and metrics at each step.
+/// It uses SVD to calculate the pseudo inverse of the measurement matrix.
+///
+/// # Panics
+///
+/// - svd calculation fails
+///
 pub fn calculate_pseudo_inverse(
     functional_description: &FunctionalDescription,
     results: &mut Results,
@@ -112,9 +120,6 @@ pub fn calculate_pseudo_inverse(
 ///
 /// This includes calculating the system estimates
 /// and performing one gradient descent step.
-///
-/// # Panics
-#[allow(clippy::too_many_lines)]
 pub fn run_epoch(
     functional_description: &mut FunctionalDescription,
     results: &mut Results,
@@ -233,24 +238,6 @@ fn constrain_system_states(
     }
 }
 
-#[allow(dead_code)]
-fn run(
-    functional_description: &mut FunctionalDescription,
-    results: &mut Results,
-    data: &Data,
-    algorithm_config: &Algorithm,
-) {
-    for epoch_index in 0..algorithm_config.epochs {
-        run_epoch(
-            functional_description,
-            results,
-            data,
-            algorithm_config,
-            epoch_index,
-        );
-    }
-}
-
 #[cfg(test)]
 mod test {
 
@@ -265,6 +252,23 @@ mod test {
     use crate::vis::plotting::time::standard_y_plot;
 
     use super::*;
+
+    fn run(
+        functional_description: &mut FunctionalDescription,
+        results: &mut Results,
+        data: &Data,
+        algorithm_config: &Algorithm,
+    ) {
+        for epoch_index in 0..algorithm_config.epochs {
+            run_epoch(
+                functional_description,
+                results,
+                data,
+                algorithm_config,
+                epoch_index,
+            );
+        }
+    }
 
     #[test]
     fn run_epoch_no_crash() {
