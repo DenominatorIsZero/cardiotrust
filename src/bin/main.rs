@@ -1,6 +1,6 @@
 use bevy::{prelude::*, window::WindowMode};
 
-use rusty_cde::{
+use cardiotrust::{
     scheduler::SchedulerPlugin, ui::UiPlugin, vis::VisPlugin, ScenarioList, SelectedSenario,
 };
 

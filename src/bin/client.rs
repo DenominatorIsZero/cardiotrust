@@ -1,9 +1,13 @@
-use bevy::{prelude::*, window::PresentMode};
-use rusty_cde::{
+use bevy::{
+    prelude::*,
+    window::{PresentMode, WindowResolution},
+};
+use cardiotrust::{
     ui::ClientUiPlugin, vis::VisPlugin, websocket::WebsocketPlugin, ScenarioList, SelectedSenario,
 };
 
 fn main() {
+    let mut resolution = WindowResolution::default();
     App::new()
         .add_plugins(
             DefaultPlugins
@@ -16,13 +20,6 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         present_mode: PresentMode::AutoNoVsync, // Reduces input lag.
-                        canvas: Some(
-                            "canvas {
-                            width: 100%;
-                            height: 100%;
-                          }"
-                            .to_string(),
-                        ),
                         ..default()
                     }),
                     ..default()

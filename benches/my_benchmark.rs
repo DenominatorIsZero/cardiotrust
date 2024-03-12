@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::time::Duration;
 
-use rusty_cde::core::{
+use cardiotrust::core::{
     algorithm::{
         estimation::{
             prediction::{

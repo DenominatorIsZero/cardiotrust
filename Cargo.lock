@@ -1420,6 +1420,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "cardiotrust"
+version = "0.1.0"
+dependencies = [
+ "approx 0.5.1",
+ "bevy",
+ "bevy_egui",
+ "bevy_panorbit_camera",
+ "bincode",
+ "chrono",
+ "ciborium",
+ "color_quant",
+ "config",
+ "criterion",
+ "egui",
+ "egui_extras",
+ "egui_plot",
+ "fnv",
+ "gif 0.13.1",
+ "image 0.25.0",
+ "itertools 0.12.1",
+ "js-sys",
+ "lab",
+ "nalgebra",
+ "ndarray",
+ "ndarray-npy",
+ "ndarray-stats",
+ "num-traits",
+ "physical_constants",
+ "plotters",
+ "rand",
+ "rand_chacha",
+ "rand_distr",
+ "rayon",
+ "scarlet",
+ "serde",
+ "serde_json",
+ "strum",
+ "strum_macros",
+ "toml 0.8.10",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "cargo-lock"
 version = "8.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4828,50 +4872,6 @@ name = "rustversion"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ffc183a10b4478d04cbbbfc96d0873219d962dd5accaff2ffbd4ceb7df837f4"
-
-[[package]]
-name = "rusty-cde"
-version = "0.1.0"
-dependencies = [
- "approx 0.5.1",
- "bevy",
- "bevy_egui",
- "bevy_panorbit_camera",
- "bincode",
- "chrono",
- "ciborium",
- "color_quant",
- "config",
- "criterion",
- "egui",
- "egui_extras",
- "egui_plot",
- "fnv",
- "gif 0.13.1",
- "image 0.25.0",
- "itertools 0.12.1",
- "js-sys",
- "lab",
- "nalgebra",
- "ndarray",
- "ndarray-npy",
- "ndarray-stats",
- "num-traits",
- "physical_constants",
- "plotters",
- "rand",
- "rand_chacha",
- "rand_distr",
- "rayon",
- "scarlet",
- "serde",
- "serde_json",
- "strum",
- "strum_macros",
- "toml 0.8.10",
- "wasm-bindgen",
- "web-sys",
-]
 
 [[package]]
 name = "ruzstd"
