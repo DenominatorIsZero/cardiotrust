@@ -52,6 +52,11 @@ pub struct Metrics {
 }
 
 impl Metrics {
+    /// Creates a new `Metrics` struct initialized with zeroed arrays for tracking metrics
+    /// over epochs and steps.
+    ///
+    /// The length of the per-step arrays is set to `number_of_steps`, and the length of the
+    /// per-epoch arrays is set to `number_of_epochs`.
     #[must_use]
     pub fn new(number_of_epochs: usize, number_of_steps: usize) -> Self {
         Self {
@@ -90,7 +95,17 @@ impl Metrics {
         }
     }
 
-    /// .
+    /// Calculates metrics for the current step.
+    ///
+    /// Updates the metrics fields with calculations for the current step:
+    /// - MSE loss
+    /// - Maximum regularization loss
+    /// - Total loss
+    /// - Mean and max of absolute deltas for:
+    ///   - System states
+    ///   - Measurements (residuals)
+    ///   - Gains
+    ///   - Delays
     ///
     /// # Panics
     ///
@@ -130,7 +145,7 @@ impl Metrics {
         self.delta_delays_max.values[index] = *delays_delta_abs.max_skipnan();
     }
 
-    /// .
+    /// Calculates epoch metrics by taking the mean of step metrics.
     ///
     /// # Panics
     ///
@@ -162,6 +177,9 @@ impl Metrics {
             *self.delta_delays_max.values.last().unwrap();
     }
 
+    /// Calculates metrics over the full range of thresholds from 0 to 1 by incrementing
+    /// in steps of 0.01. Stores the dice score, `IoU`, precision, and recall for each
+    /// threshold value in the given metric arrays.
     #[allow(clippy::cast_precision_loss)]
     pub fn calculate_final(
         &mut self,
@@ -180,6 +198,8 @@ impl Metrics {
         }
     }
 
+    /// Saves all metric arrays to .npy files in the given path.
+    /// Creates the directory if it does not exist.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
 
@@ -239,6 +259,10 @@ impl Metrics {
     }
 }
 
+/// Calculates Dice score, `IoU`, precision, and recall for the given estimations, ground truth, and voxel numbers at the specified threshold.
+///
+/// The estimations, ground truth, and voxel numbers are used to generate voxel type predictions at the given threshold.
+/// These predictions are then compared to the ground truth to calculate the metrics.
 fn calculate_for_threshold(
     estimations: &Estimations,
     ground_truth: &VoxelTypes,
@@ -255,6 +279,10 @@ fn calculate_for_threshold(
     (dice, iou, precision, recall)
 }
 
+/// Calculates the recall for the given predictions and ground truth voxel types.
+///
+/// Recall is defined as the ratio of true positives to total positives.
+/// Returns 1.0 if there are no ground truth positives.
 #[allow(clippy::cast_precision_loss)]
 fn calculate_recall(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     let gt_positives = ground_truth
@@ -279,6 +307,10 @@ fn calculate_recall(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 
     }
 }
 
+/// Calculates the precision for the given predictions and ground truth voxel types.
+///
+/// Precision is defined as the ratio of true positives to total predicted positives.
+/// Returns 0.0 if there are no predicted positives.
 #[allow(clippy::cast_precision_loss)]
 fn calculate_precision(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     let predicted_positves = predictions
@@ -303,6 +335,12 @@ fn calculate_precision(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f
     }
 }
 
+/// Calculates the Intersection over Union (`IoU`) for the given predictions
+/// and ground truth voxel types.
+///
+/// The `IoU` is defined as the ratio of the intersection (true positives)
+/// to the union (true positives + false positives + false negatives).
+/// Returns 0.0 if there is no intersection.
 #[allow(clippy::cast_precision_loss)]
 fn calculate_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     let intersection = predictions
@@ -330,6 +368,13 @@ fn calculate_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     }
 }
 
+/// Calculates the Dice coefficient for the given predictions and ground
+/// truth voxel types.
+///
+/// The Dice coefficient is defined as twice the number of true positives
+/// divided by the total number of positives in both the predictions and
+/// ground truth. It ranges from 0 to 1, with 1 being perfect agreement
+/// between predictions and ground truth.
 #[allow(clippy::cast_precision_loss)]
 fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     let true_positives = predictions
@@ -366,8 +411,15 @@ fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     }
 }
 
+/// Predicts the voxel type (pathological or ventricle) for each voxel, based on the
+/// provided estimations and ground truth data. Voxels are predicted as pathological if
+/// the maximum absolute value of the system state estimations for that voxel is below
+/// the provided threshold. Otherwise they are predicted as ventricle.
+///
+/// # Panics
+///
+/// Panics if the provided estimations and ground truth data do not have the same shape.
 #[must_use]
-#[allow(clippy::missing_panics_doc)]
 pub fn predict_voxeltype(
     estimations: &Estimations,
     ground_truth: &VoxelTypes,
@@ -414,6 +466,8 @@ pub struct ArrayMetricsSample {
 }
 
 impl ArrayMetricsSample {
+    /// Creates a new `ArrayMetricsSample` with the given number of steps, initializing
+    /// the values to all zeros.
     #[must_use]
     pub fn new(number_of_steps: usize) -> Self {
         Self {
@@ -421,6 +475,8 @@ impl ArrayMetricsSample {
         }
     }
 
+    /// Saves the array values to a .npy file at the given path with the given name.
+    /// Creates any missing directories in the path if needed.
     fn save_npy(&self, path: &std::path::Path, name: &str) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
@@ -434,6 +490,8 @@ pub struct ArrayMetricsEpoch {
 }
 
 impl ArrayMetricsEpoch {
+    /// Creates a new `ArrayMetricsEpoch` with the given number of epochs, initializing
+    /// the values to all zeros.
     #[must_use]
     pub fn new(number_of_epochs: usize) -> Self {
         Self {
@@ -441,6 +499,8 @@ impl ArrayMetricsEpoch {
         }
     }
 
+    /// Saves the array values to a .npy file at the given path with the given name.  
+    /// Creates any missing directories in the path if needed.
     fn save_npy(&self, path: &std::path::Path, name: &str) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());

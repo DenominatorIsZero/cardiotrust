@@ -22,6 +22,8 @@ pub struct MeasurementMatrix {
 }
 
 impl MeasurementMatrix {
+    /// Creates a new `MeasurementMatrix` with the given number of sensor states
+    /// and number of sensors, initializing all values to 0.
     #[must_use]
     pub fn empty(number_of_states: usize, number_of_sensors: usize) -> Self {
         Self {
@@ -29,7 +31,11 @@ impl MeasurementMatrix {
         }
     }
 
-    /// .
+    /// Creates a new `MeasurementMatrix` from the given `Model` config and
+    /// `SpatialDescription`. Initializes the matrix values by calculating the
+    /// magnetic flux density at each sensor position for each voxel, based on
+    /// voxel type, position, sensor position and orientation.
+    /// Uses the Biot-Savart law to calculate the magnetic flux density.
     ///
     /// # Panics
     ///
@@ -84,6 +90,8 @@ impl MeasurementMatrix {
         measurement_matrix
     }
 
+    /// Saves the measurement matrix to a .npy file at the given path.
+    /// Creates the directory if it does not exist.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("measurement_matrix.npy")).unwrap());
@@ -98,6 +106,8 @@ pub struct MeasurementCovariance {
 }
 
 impl MeasurementCovariance {
+    /// Creates a new `MeasurementCovariance` with the given number of sensors,
+    /// initialized to all zeros.
     #[must_use]
     pub fn empty(number_of_sensors: usize) -> Self {
         Self {
@@ -105,8 +115,11 @@ impl MeasurementCovariance {
         }
     }
 
-    /// .
-    ///
+    /// Creates a new `MeasurementCovariance` initialized from the model
+    /// configuration. The diagonal is filled with random values drawn from
+    /// a normal distribution with the configured mean and standard deviation.
+    /// If the standard deviation is 0, the diagonal is filled with the mean.
+    //
     /// # Panics
     ///
     /// Panics if voxel numbers are not initialized correctly.
@@ -137,6 +150,8 @@ impl MeasurementCovariance {
         measurement_covariance
     }
 
+    /// Saves the process covariance matrix to a .npy file at the given path.
+    /// Creates the directory if it does not exist.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("process_covariance.npy")).unwrap());

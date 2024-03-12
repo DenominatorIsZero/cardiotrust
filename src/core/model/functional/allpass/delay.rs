@@ -5,6 +5,10 @@ use std::{collections::HashMap, error::Error};
 use super::{offset_to_delay_index, shapes::ArrayDelays};
 use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
 
+/// Calculates the delay in seconds for a given input and output position,
+/// based on the propagation velocity. Takes the Euclidean distance between
+/// the input and output positions (converted to meters), divides by the  
+/// propagation velocity to get the delay in seconds.
 pub fn calculate_delay_s(
     input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
     output_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
@@ -15,6 +19,15 @@ pub fn calculate_delay_s(
     distance_norm_m / propagation_velocity_m_per_s
 }
 
+/// Calculates an array of delay values in samples for each voxel and its neighborhood,
+/// based on the spatial description, material propagation velocities, and sample rate.
+///
+/// The delay values are calculated by taking the Euclidean distance between each voxel
+/// and its neighbors, dividing by the propagation velocity to get delay in seconds,
+/// and multiplying by the sample rate to convert to samples.
+///
+/// Returns the 2D array of delay values, with dimensions corresponding to the
+/// voxel numbers and neighbor offsets.
 pub fn calculate_delay_samples_array(
     spatial_description: &SpatialDescription,
     propagation_velocities_m_per_s: &HashMap<VoxelType, f32>,

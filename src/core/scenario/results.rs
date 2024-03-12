@@ -6,6 +6,10 @@ use crate::core::{
     model::{functional::FunctionalDescription, Model},
 };
 
+/// Results contains the outputs from running a scenario.
+///
+/// This includes metrics, estimations, derivatives, snapshots,
+/// the model, etc. It is returned after running the scenario.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Results {
     pub metrics: Metrics,
@@ -17,6 +21,9 @@ pub struct Results {
 
 #[allow(clippy::useless_let_if_seq)]
 impl Results {
+    /// Creates a new Results instance with empty estimations, derivatives,
+    /// snapshots, and model. The metrics are initialized based on the provided
+    /// number of epochs, steps, sensors, and states.
     #[must_use]
     pub fn new(
         number_of_epochs: usize,
@@ -37,6 +44,7 @@ impl Results {
         }
     }
 
+    /// Saves the metrics, estimations, and model as .npy files to the given path.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         self.metrics.save_npy(&path.join("metrics"));
         self.estimations.save_npy(&path.join("estimations"));
@@ -44,6 +52,8 @@ impl Results {
     }
 }
 
+/// Snapshot contains estimations and functional description at a point in time.
+/// Used to capture model state during scenario execution.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Snapshot {
     pub estimations: Estimations,
@@ -52,6 +62,8 @@ pub struct Snapshot {
 
 impl Snapshot {
     #[must_use]
+    /// Creates a new Snapshot instance with the provided estimations and
+    /// functional description.
     pub fn new(estimations: &Estimations, functional_description: &FunctionalDescription) -> Self {
         Self {
             estimations: estimations.clone(),

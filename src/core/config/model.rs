@@ -43,6 +43,20 @@ pub struct Model {
 }
 
 impl Default for Model {
+    /// Returns a default Model configuration with reasonable default values.
+    ///
+    /// The default includes:
+    /// - Default control function of Ohara
+    /// - Pathological set to false  
+    /// - Default sensor configuration
+    /// - Default voxel and heart sizes
+    /// - Default covariance values
+    /// - `apply_system_update` set to false
+    /// - Default propagation velocities for each voxel type
+    /// - Default percentages for positioning various heart components
+    ///
+    /// This provides a reasonable starting point for configuring a Model.
+    /// Individual properties can be overriden as needed.
     fn default() -> Self {
         let mut propagation_velocities_m_per_s = HashMap::new();
         propagation_velocities_m_per_s.insert(VoxelType::Sinoatrial, 1.1);

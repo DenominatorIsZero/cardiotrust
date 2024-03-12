@@ -41,6 +41,7 @@ pub struct Algorithm {
     pub calculate_kalman_gain: bool,
 }
 impl Default for Algorithm {
+    /// Returns a default `Algorithm` configuration with reasonable defaults for most use cases.
     #[must_use]
     fn default() -> Self {
         Self {

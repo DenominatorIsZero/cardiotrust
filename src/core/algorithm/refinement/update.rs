@@ -8,9 +8,12 @@ use crate::core::{
 };
 
 impl APParameters {
-    /// Performs one gradient descent step on the all-pass parameters.
+    /// Updates the allpass filter parameters based on the provided derivatives.
     ///
-    /// Derivatives must be reset before the next update.
+    /// This takes in the derivatives calculated during backpropagation and uses them
+    /// to update the filter's gains and delays, based on the provided learning rate
+    /// and batch size. Freezing gains or delays can be configured via the Algorithm
+    /// config. Gradient clamping is also applied based on the config threshold.
     #[inline]
     pub fn update(
         &mut self,
@@ -44,7 +47,9 @@ impl APParameters {
     }
 }
 
-/// Performs one gradient descent step on the all-pass gains.
+/// Updates the gains based on the provided derivatives, learning rate,
+/// batch size, and gradient clamping threshold. The gains are updated
+/// by subtracting the scaled and clamped derivatives.
 #[allow(clippy::cast_precision_loss)]
 #[inline]
 fn update_gains(
@@ -58,13 +63,16 @@ fn update_gains(
         .map(|v| v.clamp(-clamping_threshold, clamping_threshold));
 }
 
-/// Performs one gradient descent step on the all-pass coeffs.
+/// Updates the all-pass coefficients and integer delays
+/// based on the provided derivatives and specified
+/// learning rate, batch size, and gradient clamping threshold.
 ///
-/// Coefficients are kept between 0 and 1.
+/// The all-pass coefficients are updated by subtracting the
+/// scaled and clamped derivatives. The coefficients are kept
+/// between 0 and 1 by adjusting the integer delays accordingly.
 ///
 /// When a step would place a coefficient outside this range,
-/// the integer delay parameter is adjusted to "roll" the
-/// coefficient.
+/// the integer delay is adjusted to "roll" the coefficient.
 #[allow(clippy::cast_precision_loss)]
 #[inline]
 fn update_delays(

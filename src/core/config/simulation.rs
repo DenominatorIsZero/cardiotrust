@@ -9,6 +9,8 @@ pub struct Simulation {
     pub model: Model,
 }
 impl Default for Simulation {
+    /// Returns a default `Simulation` struct with sample rate 2000 Hz,
+    /// duration 1 second, and default model.
     fn default() -> Self {
         Self {
             sample_rate_hz: 2000.0,

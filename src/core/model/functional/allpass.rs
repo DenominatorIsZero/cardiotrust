@@ -36,6 +36,8 @@ pub struct APParameters {
 
 impl APParameters {
     #[must_use]
+    /// Creates an empty APParameters struct with the given number of states and
+    /// voxel dimensions.
     pub fn empty(number_of_states: usize, voxels_in_dims: Dim<[usize; 3]>) -> Self {
         Self {
             gains: ArrayGains::empty(number_of_states),
@@ -46,12 +48,14 @@ impl APParameters {
         }
     }
 
-    /// .
+    /// Creates AP parameters from the model config and spatial description.
+    ///
+    /// Calculates the delay samples and coefficients from the propagation velocities.
+    /// Initializes the output state indices.
     ///
     /// # Errors
     ///
-    /// This function will return an error if model cant be build with
-    /// given config.
+    /// Returns an error if the AP parameters cannot be created from the given config.
     pub fn from_model_config(
         config: &Model,
         spatial_description: &SpatialDescription,
@@ -89,6 +93,7 @@ impl APParameters {
         Ok(ap_params)
     }
 
+    /// Saves the allpass filter parameters to .npy files.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         let path = &path.join("allpass");
         self.gains.save_npy(path, "gains.npy");
@@ -99,6 +104,11 @@ impl APParameters {
     }
 }
 
+/// Initializes the output state indices for the allpass filter based on the
+/// spatial description. It finds neighboring output voxels for each input
+/// voxel and maps the input states to the corresponding output states. This
+/// allows signals to propagate from input voxels to neighboring output voxels
+/// through the allpass filter.
 fn init_output_state_indicies(spatial_description: &SpatialDescription) -> ArrayIndicesGains {
     let mut output_state_indices =
         ArrayIndicesGains::empty(spatial_description.voxels.count_states());
@@ -150,6 +160,9 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Array
     output_state_indices
 }
 
+/// Connects voxels in the model based on voxel type and proximity.
+/// Iteratively activates voxels by updating activation_time_s and current_directions.
+/// Stops when no more voxels can be connected at the current time step.
 fn connect_voxels(
     spatial_description: &SpatialDescription,
     config: &Model,
@@ -224,6 +237,8 @@ fn connect_voxels(
         .for_each(|(ms, s)| *ms = Some(s.unwrap() * 1000.0));
 }
 
+/// Attempts to connect the voxel at the given offset from the output voxel.
+/// Returns true if a connection was made, false otherwise.
 fn try_to_connect(
     voxel_offset: (i32, i32, i32),
     output_voxel_index: (usize, usize, usize),
@@ -317,6 +332,10 @@ fn try_to_connect(
     true
 }
 
+/// Assigns the given gain values to the appropriate indices in the
+/// all-pass filter parameter gains array. Maps the gain values from the
+/// (`input_dim`, `output_dim`) coordinate space to the flattened 22D gains array
+/// using the provided state number and offset indices.
 fn assign_gain(
     ap_params: &mut APParameters,
     input_state_number: usize,
@@ -336,6 +355,10 @@ fn assign_gain(
     }
 }
 
+/// Converts the given x, y, z offset values to an index in the 2D gains array.
+/// The offsets are relative to a given input voxel. The output dimension
+/// indicates which output voxel the gain value is for. Handles converting the
+/// 3D coordinate offsets to 1D index. Returns None if offsets are all zero.
 #[allow(clippy::cast_sign_loss)]
 #[must_use]
 pub const fn offset_to_gain_index(
@@ -361,6 +384,9 @@ pub const fn offset_to_gain_index(
     )
 }
 
+/// Converts a 1D index into the gains array to the corresponding
+/// x, y, z offset values and output dimension. Returns None if the index
+/// is out of bounds of the gains array.
 #[allow(
     clippy::cast_sign_loss,
     clippy::cast_possible_truncation,
@@ -385,6 +411,8 @@ pub const fn gain_index_to_offset(gain_index: usize) -> Option<[i32; 4]> {
     Some([x_offset, y_offset, z_offset, output_dimension])
 }
 
+/// Converts the given x, y, z offset values to a 1D index into the delays array.
+/// Returns None if x, y, z offsets are all 0.
 #[allow(clippy::cast_sign_loss)]
 #[must_use]
 pub const fn offset_to_delay_index(x_offset: i32, y_offset: i32, z_offset: i32) -> Option<usize> {
@@ -402,6 +430,10 @@ pub const fn offset_to_delay_index(x_offset: i32, y_offset: i32, z_offset: i32) 
     )
 }
 
+/// Finds candidate voxels that are activated at the given `current_time_s`.
+///
+/// Filters the `activation_time_s` array for voxels with activation time
+/// equal to `current_time_s`, returning a vector of their indices.
 fn find_candidate_voxels(
     activation_time_s: &ndarray::ArrayBase<ndarray::OwnedRepr<Option<f32>>, Dim<[usize; 3]>>,
     current_time_s: f32,
@@ -414,11 +446,14 @@ fn find_candidate_voxels(
     output_voxel_indices
 }
 
+/// Converts a sample value in the range to the corresponding
+/// all-pass filter coefficient.
 fn from_samples_to_coef(samples: f32) -> f32 {
     let fractional = samples % 1.0;
     (1.0 - fractional) / (1.0 + fractional)
 }
 
+/// Computes the integer part of the given samples value.
 #[allow(
     clippy::cast_precision_loss,
     clippy::cast_sign_loss,
@@ -429,6 +464,7 @@ const fn from_samples_to_usize(samples: f32) -> usize {
     samples as usize
 }
 
+/// Converts an all-pass filter coefficient to the corresponding delay in samples.
 #[must_use]
 pub fn from_coef_to_samples(coef: f32) -> f32 {
     (1.0 - coef) / (coef + 1.0)

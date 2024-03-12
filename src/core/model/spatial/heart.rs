@@ -15,6 +15,8 @@ pub struct Heart {
 }
 
 impl Heart {
+    /// Creates an empty Heart struct with origin and size arrays initialized to 0.
+    /// This is a convenience constructor for creating a Heart with default values.
     #[must_use]
     pub fn empty() -> Self {
         Self {
@@ -23,6 +25,10 @@ impl Heart {
         }
     }
 
+    /// Creates a Heart struct from the given Model config.
+    ///
+    /// This initializes the `origin_mm` an`size_mm`mm fields from the
+    /// corresponding values in the Model config.
     #[must_use]
     pub fn from_model_config(config: &Model) -> Self {
         Self {
@@ -31,10 +37,11 @@ impl Heart {
         }
     }
 
+    /// Saves the heart origin and size as .npy files in the given path.
     ///
     /// # Panics
     ///
-    /// Panics if file or directory can't be written to.
+    /// Panics if the directory cannot be created or the files cannot be written.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("heart_origin_mm.npy")).unwrap());

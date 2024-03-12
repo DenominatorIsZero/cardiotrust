@@ -20,6 +20,8 @@ pub struct Simulation {
     pub model: Model,
 }
 impl Simulation {
+    /// Creates an empty Simulation with the given dimensions and number of
+    /// sensors, states, and steps.
     #[must_use]
     pub fn empty(
         number_of_sensors: usize,
@@ -39,12 +41,15 @@ impl Simulation {
         }
     }
 
-    /// .
+    /// Creates a new Simulation instance from the provided `SimulationConfig`.
+    ///
+    /// Initializes an empty Simulation with the model, number of sensors, states,
+    /// and time steps specified in the config. The model is validated before
+    /// creating the Simulation.
     ///
     /// # Errors
     ///
-    /// This function will return an error if the model parameters
-    /// do not result in a valid model.
+    /// Returns an error if the model fails to initialize from the config.
     pub fn from_config(config: &SimulationConfig) -> Result<Self, Box<dyn Error>> {
         let model =
             Model::from_model_config(&config.model, config.sample_rate_hz, config.duration_s)?;
@@ -63,7 +68,11 @@ impl Simulation {
         })
     }
 
+    /// Runs a simulation by calculating system predictions, adding measurement
+    /// noise, and storing results in the measurements and `system_states` fields.
+    ///
     /// # Panics
+    ///
     /// if there are negative values in the measurement covariance matrix.
     pub fn run(&mut self) {
         let measurements = &mut self.measurements;
@@ -94,6 +103,8 @@ impl Simulation {
         }
     }
 
+    /// Saves the simulation data (measurements, system states, model) to `NumPy` files at the given path.
+    /// The measurements, system states, and model are saved to separate .npy files.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         self.measurements.save_npy(path);
         self.system_states.save_npy(path);

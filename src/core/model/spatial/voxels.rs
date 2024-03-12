@@ -17,6 +17,7 @@ pub struct Voxels {
 }
 
 impl Voxels {
+    /// Creates an empty Voxels struct with the given dimensions.
     #[must_use]
     pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
@@ -27,6 +28,7 @@ impl Voxels {
         }
     }
 
+    /// Creates a Voxels struct from the given Model config.
     #[must_use]
     pub fn from_model_config(config: &Model) -> Self {
         let types = VoxelTypes::from_simulation_config(config);
@@ -40,17 +42,25 @@ impl Voxels {
         }
     }
 
+    /// Returns the total number of voxels.
+    ///
+    /// This is calculated as the product of the x, y, and z dimensions.
     #[must_use]
     pub fn count(&self) -> usize {
         self.count_xyz().iter().product()
     }
 
+    /// Returns the x, y, and z dimensions of the voxels as a 3-element array.
+    /// This represents the shape of the voxel grid.
     #[must_use]
     pub fn count_xyz(&self) -> [usize; 3] {
         let shape = self.types.values.raw_dim();
         [shape[0], shape[1], shape[2]]
     }
 
+    /// Counts the total number of states by iterating through the
+    /// voxel types, filtering out voxels of type 'None', and multiplying by 3
+    /// (since each voxel has an x, y, and z state).
     #[must_use]
     pub fn count_states(&self) -> usize {
         self.types
@@ -61,7 +71,10 @@ impl Voxels {
             * 3
     }
 
-    /// .
+    /// Checks if the given voxel index is within the valid bounds of the voxel grid
+    /// and that the voxel type at that index is not `VoxelType::None`.
+    ///
+    /// Returns `true` if the index is valid, `false` otherwise.
     ///
     /// # Panics
     ///
@@ -81,7 +94,7 @@ impl Voxels {
             )] != VoxelType::None)
     }
 
-    /// .
+    /// Returns the index of the first voxel of type `v_type`.
     ///
     /// # Panics
     ///
@@ -97,6 +110,7 @@ impl Voxels {
         query.unwrap().1.unwrap()
     }
 
+    /// Saves the voxel grid data to .npy files in the given path.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("voxel_size_mm.npy")).unwrap());
@@ -113,6 +127,7 @@ pub struct VoxelTypes {
 }
 
 impl VoxelTypes {
+    /// Creates an empty `VoxelTypes` with the given dimensions.
     #[must_use]
     pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
@@ -120,6 +135,9 @@ impl VoxelTypes {
         }
     }
 
+    /// Creates a VoxelTypes struct initialized with voxel types according
+    /// to the provided Model configuration. Voxel types are assigned based
+    /// on the Model's parameters that define different anatomical regions.
     #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss,
@@ -232,6 +250,8 @@ pub struct VoxelNumbers {
 }
 
 impl VoxelNumbers {
+    /// Creates a new `VoxelNumbers` instance with the given dimensions,
+    /// initializing all voxel values to None.
     #[must_use]
     pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
@@ -239,6 +259,11 @@ impl VoxelNumbers {
         }
     }
 
+    /// Creates a new `VoxelNumbers` instance from the given `VoxelTypes`.
+    /// initializing the voxel number values based on the voxel types.
+    /// Voxels with type `None` will have their number set to `None`.
+    /// Other voxels will have their number set to a incrementing integer,
+    /// starting from 0 and incrementing by 3 for each voxel.
     #[must_use]
     pub fn from_voxel_types(types: &VoxelTypes) -> Self {
         let mut numbers = Self {
@@ -261,6 +286,9 @@ impl VoxelNumbers {
         numbers
     }
 
+    /// Saves the voxel numbers to a .npy file at the given path.
+    /// The voxel numbers are converted to i32, with -1 representing None.
+    /// Uses numpy's .npy format for efficient storage and loading.
     fn save_npy(&self, path: &std::path::Path) {
         let writer = BufWriter::new(File::create(path.join("voxel_numbers.npy")).unwrap());
         self.values
@@ -280,6 +308,8 @@ pub struct VoxelPositions {
 }
 
 impl VoxelPositions {
+    /// Creates a new empty `VoxelPositions` instance with the given dimensions.
+    /// Initializes the position values to all zeros.
     #[must_use]
     pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
@@ -287,6 +317,9 @@ impl VoxelPositions {
         }
     }
 
+    /// Creates a new `VoxelPositions` instance from the given `Model` config
+    /// and `VoxelTypes`. Initializes the position values based on the voxel
+    /// size and dimensions specified in the `Model`.
     #[must_use]
     pub fn from_model_config(config: &Model, types: &VoxelTypes) -> Self {
         let shape = types.values.raw_dim();
@@ -308,6 +341,10 @@ impl VoxelPositions {
         positions
     }
 
+    /// Saves the voxel position values to a .npy file at the given path.
+    /// The position values are saved as a 4D float32 array with shape
+    /// (x, y, z, 3), where the last dimension contains the x, y, z
+    /// coordinates for each voxel position.
     fn save_npy(&self, path: &std::path::Path) {
         let writer = BufWriter::new(File::create(path.join("voxel_positions_mm.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
@@ -326,6 +363,8 @@ pub enum VoxelType {
     Pathological,
 }
 
+/// Checks if a connection between the given input and output voxel types is allowed
+/// based on anatomical constraints. Returns true if allowed, false otherwise.
 #[must_use]
 pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &VoxelType) -> bool {
     match output_voxel_type {

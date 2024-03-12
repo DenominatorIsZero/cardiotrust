@@ -18,6 +18,8 @@ pub struct Gain {
 }
 
 impl Gain {
+    /// Creates a new Gain with the given number of states and sensors,
+    /// initializing the values to a matrix of zeros.
     #[must_use]
     pub fn empty(number_of_states: usize, number_of_sensors: usize) -> Self {
         Self {
@@ -25,7 +27,11 @@ impl Gain {
         }
     }
 
-    /// .
+    /// Creates a new Gain matrix by calculating it from the provided model config and
+    /// measurement matrix. The gain matrix is calculated as:
+    /// K = P * H^T * (H * P * H^T + R)^-1
+    /// Where P is the process covariance, H is the measurement matrix, and R is the
+    /// measurement covariance.
     ///
     /// # Panics
     ///
@@ -89,6 +95,7 @@ impl Gain {
         Self { values: k }
     }
 
+    /// Saves the Kalman gain matrix to a .npy file at the given path.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("kalman_gain.npy")).unwrap());

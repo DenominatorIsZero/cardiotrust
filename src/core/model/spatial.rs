@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use self::{heart::Heart, sensors::Sensors, voxels::Voxels};
 use crate::core::config::model::Model;
 
+/// Struct containing fields for the heart,
+/// voxels and sensors spatial model components.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
 pub struct SpatialDescription {
@@ -16,6 +18,8 @@ pub struct SpatialDescription {
 }
 
 impl SpatialDescription {
+    /// Creates an empty `SpatialDescription` struct with the given number of
+    /// sensors and voxel dimensions.
     #[must_use]
     pub fn empty(number_of_sensors: usize, voxels_in_dims: [usize; 3]) -> Self {
         Self {
@@ -25,6 +29,10 @@ impl SpatialDescription {
         }
     }
 
+    /// Creates a `SpatialDescription` from the given [`Model`] configuration.
+    ///
+    /// Constructs the `heart`, `voxels`, and `sensors` fields by calling their
+    /// respective `from_model_config()` methods.
     #[must_use]
     pub fn from_model_config(config: &Model) -> Self {
         let heart = Heart::from_model_config(config);
@@ -38,6 +46,10 @@ impl SpatialDescription {
         }
     }
 
+    /// Saves the spatial description components to .npy files.
+    ///
+    /// Saves the `heart`, `voxels`, and `sensors` fields to .npy files
+    /// in the given `path`.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         let path = &path.join("spatial_description");
         self.heart.save_npy(path);

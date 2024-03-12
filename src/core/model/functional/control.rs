@@ -18,6 +18,8 @@ pub struct ControlMatrix {
 }
 
 impl ControlMatrix {
+    /// Creates a new empty `ControlMatrix` with the given number of states initialized
+    /// to all zeros.
     #[must_use]
     pub fn empty(number_of_states: usize) -> Self {
         Self {
@@ -25,7 +27,9 @@ impl ControlMatrix {
         }
     }
 
-    /// .
+    /// Creates a `ControlMatrix` from the given `Model` configuration and
+    /// `SpatialDescription`. Initializes the control matrix by setting the value
+    /// for the state of the sinoatrial voxel to 1.0, and all other states to 0.
     ///
     /// # Panics
     ///
@@ -47,6 +51,8 @@ impl ControlMatrix {
         control_matrix
     }
 
+    /// Saves the control matrix to a .npy file at the given path.
+    /// Creates any missing directories in the path if needed.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("control_matrix.npy")).unwrap());
@@ -68,7 +74,17 @@ impl ControlFunction {
         }
     }
 
-    /// .
+    /// Creates a new `ControlFunction` by reading a control function .npy file,
+    /// resampling it to match the given sample rate and duration, and returning
+    /// the resampled values as a new `ControlFunction`.
+    ///
+    /// The control function .npy file is assumed to be located in `assets/`.
+    /// The resampling is done by looping through the target number of samples
+    /// based on sample rate and duration, and taking values from the .npy file
+    /// using modulo to wrap the index.
+    ///
+    /// This allows creating a `ControlFunction` of arbitrary duration from a fixed
+    /// length control function file.
     ///
     /// # Panics
     ///
@@ -103,6 +119,9 @@ impl ControlFunction {
         }
     }
 
+    /// Saves the control function values to a .npy file at the given path.
+    /// Creates any missing directories in the path, opens a file for writing,
+    /// and writes the values using the numpy npy format.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer =

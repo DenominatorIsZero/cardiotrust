@@ -16,6 +16,8 @@ pub struct Sensors {
 }
 
 impl Sensors {
+    /// Creates a new `Sensors` instance with the given number of sensors, initializing
+    /// all position and orientation values to 0.
     #[must_use]
     pub fn empty(number_of_sensors: usize) -> Self {
         Self {
@@ -24,6 +26,13 @@ impl Sensors {
         }
     }
 
+    /// Creates a new `Sensors` instance initialized with sensor positions and
+    /// orientations based on the provided `Model` config.
+    ///
+    /// The sensor positions are spaced evenly throughout the configured sensor
+    /// array volume, starting from the configured `sensor_array_origin_mm`.
+    ///
+    /// The sensor orientations alternate between x, y, and z axes aligned.
     #[must_use]
     pub fn from_model_config(config: &Model) -> Self {
         #[allow(clippy::cast_precision_loss)]
@@ -60,11 +69,17 @@ impl Sensors {
         sensors
     }
 
+    /// Returns the number of sensors.
+    ///
+    /// This is determined by the size of the first dimension of the
+    /// `positions_mm` array.
     #[must_use]
     pub fn count(&self) -> usize {
         self.positions_mm.shape()[0]
     }
 
+    /// Saves the sensor positions and orientations to .npy files in the given path.
+    /// Creates the directory if it does not exist.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("sensor_positions_mm.npy")).unwrap());

@@ -39,6 +39,8 @@ pub struct Derivatives {
 }
 
 impl Derivatives {
+    /// Creates a new Derivatives struct with empty arrays initialized to
+    /// the given number of states.
     #[must_use]
     pub fn new(number_of_states: usize) -> Self {
         Self {
@@ -72,6 +74,7 @@ impl Derivatives {
     /// derivatives to update the parameters.
     ///
     /// # Panics
+    ///
     /// Panics if `ap_params` is not set.
     #[inline]
     pub fn calculate(
@@ -115,6 +118,7 @@ impl Derivatives {
         }
     }
 
+    /// Calculates the derivatives for the allpass filter gains.
     #[inline]
     fn calculate_derivatives_gains(
         // This gets updated
@@ -143,6 +147,12 @@ impl Derivatives {
             });
     }
 
+    /// Calculates the derivatives for the allpass filter coefficients.
+    ///
+    /// This mutates the `self.coefs` values based on the provided `ap_outputs`,
+    /// `estimated_system_states`, `ap_params`, `time_index`, and `number_of_sensors`.
+    /// It calculates the FIR and IIR coefficient derivatives separately,
+    /// then combines them to update `self.coefs`.
     #[inline]
     fn calculate_derivatives_coefs(
         // These get updated
@@ -196,6 +206,10 @@ impl Derivatives {
             });
     }
 
+    /// Calculates the maximum regularization for the given system states.
+    /// Iterates through the states, calculates the sum of the absolute values,
+    /// compares to the threshold, and calculates & assigns maximum regularization
+    /// accordingly.
     #[inline]
     fn calculate_maximum_regularization(
         &mut self,

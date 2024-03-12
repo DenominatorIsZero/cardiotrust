@@ -31,6 +31,10 @@ pub struct FunctionalDescription {
 }
 
 impl FunctionalDescription {
+    /// Creates an empty `FunctionalDescription` with the given dimensions.
+    ///
+    /// This initializes all internal state to empty arrays or matrices of the appropriate size.
+    /// It can be used to create a blank `FunctionalDescription` before populating its fields.
     #[must_use]
     pub fn empty(
         number_of_states: usize,
@@ -48,7 +52,9 @@ impl FunctionalDescription {
             control_function_values: ControlFunction::empty(number_of_steps),
         }
     }
-    /// .
+    /// Constructs a FunctionalDescription from the given Model config, SpatialDescription,
+    /// sample rate, and duration. This initializes the internal state like allpass filters,
+    /// matrices, gains etc. based on the provided inputs.
     ///
     /// # Errors
     ///
@@ -87,6 +93,11 @@ impl FunctionalDescription {
         })
     }
 
+    /// Saves the internal state of the `FunctionalDescription` to .npy files.
+    ///
+    /// This exports the allpass filter parameters, process covariance,
+    /// measurement matrix, control matrix, measurement covariance, Kalman
+    /// gain, and control function values to .npy files in the provided path.
     pub fn save_npy(&self, path: &std::path::Path) {
         let path = &path.join("functional_description");
         self.ap_params.save_npy(path);
@@ -100,6 +111,13 @@ impl FunctionalDescription {
     }
 }
 
+/// Generates a process covariance matrix from the model configuration,
+/// spatial description, and allpass filter parameters.
+///
+/// Uses the `process_covariance_mean` and `process_covariance_std` from
+/// the model config to sample a normal distribution for the diagonal
+/// of the process covariance matrix. Filters down to only the states  
+/// that correspond to AP filter outputs based on `ap_params`.
 fn process_covariance_from_model_config(
     config: &Model,
     spatial_description: &SpatialDescription,

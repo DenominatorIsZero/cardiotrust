@@ -36,6 +36,7 @@ pub struct Estimations {
 }
 
 impl Estimations {
+    /// Creates a new empty Estimations struct with the given dimensions.
     #[must_use]
     pub fn empty(
         number_of_states: usize,
@@ -58,6 +59,9 @@ impl Estimations {
         }
     }
 
+    /// Resets all the internal state of the Estimations struct by filling the
+    /// underlying data structures with 0.0. This is done to prepare for a new
+    /// epoch.
     pub fn reset(&mut self) {
         self.ap_outputs.values.fill(0.0);
         self.system_states.values.fill(0.0);
@@ -72,12 +76,16 @@ impl Estimations {
         self.kalman_gain_converged = false;
     }
 
+    /// Saves the system states and measurements to .npy files at the given path.
+    /// The filenames will be automatically generated based on the struct field names.
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         self.system_states.save_npy(path);
         self.measurements.save_npy(path);
     }
 }
 
+/// Calculates the residuals between the predicted and actual measurements for the given time index.
+/// The residuals are stored in the provided `residuals` array.
 #[inline]
 pub fn calculate_residuals(
     residuals: &mut ArrayMeasurements,
@@ -91,6 +99,9 @@ pub fn calculate_residuals(
     );
 }
 
+/// Calculates the residuals between the estimated measurements from the
+/// estimated system states and the actual measurements. The residuals are
+/// stored in the provided `post_update_residuals` array.
 #[inline]
 pub fn calculate_post_update_residuals(
     post_update_residuals: &mut ArrayMeasurements,
@@ -107,6 +118,8 @@ pub fn calculate_post_update_residuals(
     );
 }
 
+/// Calculates the delta between the estimated system states and the actual system states for the given time index.
+/// The delta is stored in the provided `system_states_delta` array.
 #[inline]
 pub fn calculate_system_states_delta(
     system_states_delta: &mut ArraySystemStates,
@@ -120,6 +133,8 @@ pub fn calculate_system_states_delta(
     );
 }
 
+/// Calculates the delta between the estimated gains and the actual gains.  
+/// The delta is stored in the provided `gains_delta` array.
 #[inline]
 pub fn calculate_gains_delta(
     gains_delta: &mut ArrayGains<f32>,
@@ -131,6 +146,8 @@ pub fn calculate_gains_delta(
         .assign(&(&estimated_gains.values - &actual_gains.values));
 }
 
+/// Calculates the delta between the estimated delays and actual delays.
+/// The delta is stored in the provided `delays_delta` array.
 #[inline]
 pub fn calculate_delays_delta(
     delays_delta: &mut ArrayDelays<f32>,
@@ -151,6 +168,8 @@ pub fn calculate_delays_delta(
         });
 }
 
+/// Updates the system state estimations based on the Kalman gain and residuals.
+/// If configured, calculates the Kalman gain. Checks for Kalman gain convergence.
 #[inline]
 pub fn calculate_system_update(
     estimations: &mut Estimations,
@@ -181,6 +200,8 @@ pub fn calculate_system_update(
     );
 }
 
+/// Calculates the Kalman gain matrix based on the current state covariance
+/// and measurement covariance.
 #[inline]
 fn calculate_kalman_gain(
     estimations: &mut Estimations,
@@ -192,6 +213,8 @@ fn calculate_kalman_gain(
     estimate_state_covariance(estimations, functional_description);
 }
 
+/// Estimates the state covariance matrix based on the Kalman gain and
+/// predicted state covariance.
 #[inline]
 fn estimate_state_covariance(
     estimations: &mut Estimations,
@@ -241,6 +264,10 @@ fn estimate_state_covariance(
         });
 }
 
+/// Calculates the Kalman gain matrix based on the current state covariance
+/// prediction and measurement matrix. Iterates through each element of the
+/// Kalman gain matrix and computes it based on the weighted sum of relevant
+/// elements from the state covariance and measurement matrices.
 #[inline]
 fn calculate_k(estimations: &Estimations, functional_description: &mut FunctionalDescription) {
     functional_description
@@ -276,6 +303,13 @@ fn calculate_k(estimations: &Estimations, functional_description: &mut Functiona
         });
 }
 
+/// Calculates the inverse of the innovation covariance matrix S.
+/// Iterates through each element of S and initializes it to the
+/// corresponding element of the measurement covariance matrix.
+/// Then iterates through each column of S and updates it by computing
+/// the weighted sum of relevant elements from the state covariance
+/// prediction matrix and the measurement matrix. Finally inverts S
+/// in place.
 #[inline]
 fn calculate_s_inv(estimations: &mut Estimations, functional_description: &FunctionalDescription) {
     for i in 0..estimations.s.shape().0 {
@@ -323,6 +357,10 @@ fn calculate_s_inv(estimations: &mut Estimations, functional_description: &Funct
     estimations.s.try_inverse_mut();
 }
 
+/// Predicts the state covariance for the next time step using the
+/// autoregressive process model. Iterates over the output state indices,
+/// updating each variance using the process covariance and gains between
+/// connected voxels.
 #[allow(clippy::cast_sign_loss)]
 #[inline]
 fn predict_state_covariance(

@@ -9,7 +9,7 @@ use crate::core::{
     },
 };
 
-/// .
+/// Calculates the system prediction by innovating the system states, adding the control function, and predicting measurements.
 ///
 /// # Panics
 ///
@@ -37,7 +37,12 @@ pub fn calculate_system_prediction(
     );
 }
 
-/// Uses unsafe get operations.
+/// Innovates the system states by calculating the all-pass filter outputs,
+/// multiplying by the gains, and adding to the appropriate system states.
+///
+/// It calculates the all-pass outputs based on previous states and coefficients.
+/// The outputs are multiplied by the gains and added to the system states.
+/// Uses unsafe indexing to avoid bounds checks.
 ///
 /// # Panics
 ///
@@ -91,6 +96,9 @@ pub fn innovate_system_states_v1(
     }
 }
 
+/// Adds a control function value multiplied by the control matrix to the
+/// system states for the given time index. This allows an external control
+/// signal to be injected into the system states.
 #[inline]
 pub fn add_control_function(
     functional_description: &FunctionalDescription,
@@ -109,6 +117,9 @@ pub fn add_control_function(
         });
 }
 
+/// Predicts the measurements by multiplying the measurement matrix with the
+/// system states for the given time index. This computes the model predicted
+/// measurements to compare against the actual measurements.
 #[inline]
 pub fn predict_measurements(
     measurements: &mut ArrayMeasurements,
