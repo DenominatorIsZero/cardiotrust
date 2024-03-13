@@ -9,7 +9,8 @@ use crate::core::{
     },
 };
 
-/// Calculates the system prediction by innovating the system states, adding the control function, and predicting measurements.
+/// Calculates the system prediction by innovating the system states,
+/// adding the control function, and predicting measurements.
 ///
 /// # Panics
 ///
