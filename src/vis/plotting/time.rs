@@ -5,11 +5,11 @@ use crate::core::data::shapes::ArraySystemStates;
 
 #[tracing::instrument]
 pub fn standard_time_plot(
-    _y: &Array1<f32>,
-    _sample_rate_hz: f32,
-    _file_name: &str,
-    _title: &str,
-    _y_label: &str,
+    y: &Array1<f32>,
+    sample_rate_hz: f32,
+    file_name: &str,
+    title: &str,
+    y_label: &str,
 ) {
     // #[allow(clippy::cast_precision_loss)]
     // let t = Array1::from_vec(
@@ -54,11 +54,11 @@ pub fn standard_time_plot(
 /// Panics if min or max of array couldn't be computed.
 #[tracing::instrument]
 pub fn standard_y_plot(
-    _y: &Array1<f32>,
-    _file_name: &str,
-    _title: &str,
-    _y_label: &str,
-    _x_label: &str,
+    y: &Array1<f32>,
+    file_name: &str,
+    title: &str,
+    y_label: &str,
+    x_label: &str,
 ) {
     // let x = Array1::from_vec((0..y.shape()[0]).collect());
     // let _x_min = *x.min().expect("Could not calculate min of X-array");
@@ -94,11 +94,11 @@ pub fn standard_y_plot(
 
 #[tracing::instrument]
 pub fn plot_state_xyz(
-    _system_states: &ArraySystemStates,
-    _state_index: usize,
-    _sample_rate_hz: f32,
-    _file_name: &str,
-    _title: &str,
+    system_states: &ArraySystemStates,
+    state_index: usize,
+    sample_rate_hz: f32,
+    file_name: &str,
+    title: &str,
 ) {
     // let x = system_states.values.slice(s![.., state_index]).to_owned();
     // let y = system_states
@@ -182,12 +182,12 @@ pub fn plot_state_xyz(
 /// Returns eventual plotter errors.
 #[tracing::instrument]
 pub fn xy_plot(
-    _x: &Array1<f32>,
-    _y: &Array1<f32>,
+    x: &Array1<f32>,
+    y: &Array1<f32>,
     file_name: &str,
-    _title: &str,
-    _y_label: &str,
-    _x_label: &str,
+    title: &str,
+    y_label: &str,
+    x_label: &str,
 ) -> Result<(), Box<dyn Error>> {
     let _path = format!("{file_name}.png");
     todo!()

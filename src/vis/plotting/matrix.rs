@@ -11,7 +11,7 @@ use crate::core::{
 };
 
 #[tracing::instrument]
-pub fn plot_voxel_types(_types: &Array3<VoxelType>, _file_name: &str, _title: &str) {
+pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str) {
     // let mut z: Vec<Vec<i32>> = Vec::new();
     // for y in 0..types.shape()[1] {
     //     let mut row: Vec<i32> = Vec::new();
@@ -72,11 +72,7 @@ pub fn plot_voxel_types(_types: &Array3<VoxelType>, _file_name: &str, _title: &s
 }
 
 #[tracing::instrument]
-pub fn plot_activation_time(
-    _activation_times: &ArrayActivationTime,
-    _file_name: &str,
-    _title: &str,
-) {
+pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &str, title: &str) {
     // let times = &activation_times.values;
     // let mut z: Vec<Vec<f32>> = Vec::new();
     // for y in 0..times.shape()[1] {
@@ -154,13 +150,13 @@ pub fn plot_activation_time_delta(
 #[allow(clippy::too_many_lines)]
 #[tracing::instrument]
 pub fn plot_states_at_time(
-    _system_states: &ArraySystemStates,
-    _voxels: &Voxels,
-    _min_j_init: f32,
-    _max_j_init: f32,
-    _time_index: usize,
-    _file_name: &str,
-    _title: &str,
+    system_states: &ArraySystemStates,
+    voxels: &Voxels,
+    min_j_init: f32,
+    max_j_init: f32,
+    time_index: usize,
+    file_name: &str,
+    title: &str,
 ) {
     // let system_states = &system_states.values;
     // let z_index = 0;
@@ -559,8 +555,8 @@ fn calculate_states_max(
 pub fn plot_states_max(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
-    _file_name: &str,
-    _title: &str,
+    file_name: &str,
+    title: &str,
 ) {
     let mut in_x: Vec<Vec<f32>> = Vec::new();
     let mut in_y: Vec<Vec<f32>> = Vec::new();
@@ -649,12 +645,12 @@ pub fn plot_states_max_delta(
 /// Panics if something fishy happens with io rights.
 #[tracing::instrument]
 pub fn plot_states_over_time(
-    _system_states: &ArraySystemStates,
-    _voxels: &Voxels,
-    _fps: u32,
-    _playback_speed: f32,
-    _file_name: &str,
-    _title: &str,
+    system_states: &ArraySystemStates,
+    voxels: &Voxels,
+    fps: u32,
+    playback_speed: f32,
+    file_name: &str,
+    title: &str,
 ) {
     // let directory = format!("./tmp/{file_name}/");
     // let dir_path = Path::new(&directory);
@@ -704,7 +700,7 @@ pub fn plot_states_over_time(
 }
 
 #[tracing::instrument]
-pub fn plot_matrix_as_heatmap(_matrix: &Array2<f32>, _file_name: &str, _title: &str) {
+pub fn plot_matrix_as_heatmap(matrix: &Array2<f32>, file_name: &str, title: &str) {
     // let mut z: Vec<Vec<f32>> = Vec::new();
     // for y in 0..matrix.shape()[1] {
     //     let mut row: Vec<f32> = Vec::new();
