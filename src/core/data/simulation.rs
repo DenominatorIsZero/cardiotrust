@@ -23,6 +23,7 @@ impl Simulation {
     /// Creates an empty Simulation with the given dimensions and number of
     /// sensors, states, and steps.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(
         number_of_sensors: usize,
         number_of_states: usize,

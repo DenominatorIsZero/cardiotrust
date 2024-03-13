@@ -18,9 +18,11 @@ use self::{
 };
 
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug)]
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
+    #[tracing::instrument(skip(app))]
     fn build(&self, app: &mut App) {
         app.init_state::<UiState>()
             .init_resource::<ResultImages>()
@@ -74,9 +76,11 @@ pub enum UiState {
 }
 
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug)]
 pub struct ClientUiPlugin;
 
 impl Plugin for ClientUiPlugin {
+    #[tracing::instrument(skip(app))]
     fn build(&self, app: &mut App) {
         app.init_state::<UiState>()
             .init_resource::<PlaybackSpeed>()

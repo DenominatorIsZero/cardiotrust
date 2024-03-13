@@ -137,6 +137,7 @@ pub struct VoxelTypes {
 impl VoxelTypes {
     /// Creates an empty `VoxelTypes` with the given dimensions.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
             values: Array3::default(voxels_in_dims),
@@ -153,6 +154,7 @@ impl VoxelTypes {
         clippy::similar_names
     )]
     #[must_use]
+    #[tracing::instrument]
     pub fn from_simulation_config(config: &Model) -> Self {
         // Config Parameters
         let voxel_size_mm = config.voxel_size_mm;
@@ -222,6 +224,7 @@ impl VoxelTypes {
         voxel_types
     }
 
+    #[tracing::instrument]
     fn save_npy(&self, path: &std::path::Path) {
         let writer = BufWriter::new(File::create(path.join("voxel_types.npy")).unwrap());
         self.values
@@ -261,6 +264,7 @@ impl VoxelNumbers {
     /// Creates a new `VoxelNumbers` instance with the given dimensions,
     /// initializing all voxel values to None.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
             values: Array3::default(voxels_in_dims),
@@ -273,6 +277,7 @@ impl VoxelNumbers {
     /// Other voxels will have their number set to a incrementing integer,
     /// starting from 0 and incrementing by 3 for each voxel.
     #[must_use]
+    #[tracing::instrument]
     pub fn from_voxel_types(types: &VoxelTypes) -> Self {
         let mut numbers = Self {
             values: Array3::default(types.values.raw_dim()),
@@ -297,6 +302,7 @@ impl VoxelNumbers {
     /// Saves the voxel numbers to a .npy file at the given path.
     /// The voxel numbers are converted to i32, with -1 representing None.
     /// Uses numpy's .npy format for efficient storage and loading.
+    #[tracing::instrument]
     fn save_npy(&self, path: &std::path::Path) {
         let writer = BufWriter::new(File::create(path.join("voxel_numbers.npy")).unwrap());
         self.values
@@ -319,6 +325,7 @@ impl VoxelPositions {
     /// Creates a new empty `VoxelPositions` instance with the given dimensions.
     /// Initializes the position values to all zeros.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
             values: Array4::zeros((voxels_in_dims[0], voxels_in_dims[1], voxels_in_dims[2], 3)),
@@ -329,6 +336,7 @@ impl VoxelPositions {
     /// and `VoxelTypes`. Initializes the position values based on the voxel
     /// size and dimensions specified in the `Model`.
     #[must_use]
+    #[tracing::instrument]
     pub fn from_model_config(config: &Model, types: &VoxelTypes) -> Self {
         let shape = types.values.raw_dim();
         let mut positions = Self::empty([shape[0], shape[1], shape[2]]);
@@ -353,6 +361,7 @@ impl VoxelPositions {
     /// The position values are saved as a 4D float32 array with shape
     /// (x, y, z, 3), where the last dimension contains the x, y, z
     /// coordinates for each voxel position.
+    #[tracing::instrument]
     fn save_npy(&self, path: &std::path::Path) {
         let writer = BufWriter::new(File::create(path.join("voxel_positions_mm.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
@@ -374,6 +383,7 @@ pub enum VoxelType {
 /// Checks if a connection between the given input and output voxel types is allowed
 /// based on anatomical constraints. Returns true if allowed, false otherwise.
 #[must_use]
+#[tracing::instrument]
 pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &VoxelType) -> bool {
     match output_voxel_type {
         VoxelType::None => false,

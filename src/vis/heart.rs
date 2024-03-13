@@ -35,6 +35,7 @@ pub struct VoxelData {
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss
 )]
+#[tracing::instrument(skip(commands, meshes, materials))]
 pub fn init_voxels(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
@@ -114,6 +115,7 @@ pub fn init_voxels(
 /// color to that sample color. This allows the heart model to animate
 /// through the different sample colors over time.
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(skip(query, materials))]
 pub(crate) fn update_heart_voxel_colors(
     sample_tracker: Res<SampleTracker>,
     mut query: Query<(&Handle<StandardMaterial>, &VoxelData)>,
@@ -134,6 +136,7 @@ pub(crate) fn update_heart_voxel_colors(
 ///
 /// Panics if selected scenario is corrupted.
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument]
 pub fn on_vis_mode_changed(
     vis_options: Res<VisOptions>,
     query: Query<&mut VoxelData>,
@@ -178,6 +181,7 @@ pub fn on_vis_mode_changed(
 /// scenario. Retrieves the voxel types from either the model or simulation
 /// results based on the `simulation_not_model` flag.
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument]
 fn set_heart_voxel_colors_to_types(
     mut query: Query<&mut VoxelData>,
     scenario: &Scenario,

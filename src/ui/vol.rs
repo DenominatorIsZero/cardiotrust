@@ -21,6 +21,7 @@ use crate::{
     clippy::too_many_arguments,
     clippy::too_many_lines
 )]
+#[tracing::instrument(skip(contexts, commands, meshes, materials))]
 pub fn draw_ui_volumetric(
     mut contexts: EguiContexts,
     mut commands: Commands,

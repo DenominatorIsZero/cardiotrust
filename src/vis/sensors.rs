@@ -10,6 +10,7 @@ use crate::core::scenario::Scenario;
 /// and spawns an entity for each with the appropriate transform.
 /// The color and scale are also set based on the sensor orientation.
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(skip(commands, materials))]
 pub(crate) fn spawn_sensors(
     commands: &mut Commands,
     ass: Res<AssetServer>,

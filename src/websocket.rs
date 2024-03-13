@@ -23,9 +23,11 @@ use crate::{
 };
 
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug)]
 pub struct WebsocketPlugin;
 
 impl Plugin for WebsocketPlugin {
+    #[tracing::instrument(skip(app))]
     fn build(&self, app: &mut App) {
         app.init_resource::<MessageBuffer>()
             .init_resource::<WebSocketResource>()

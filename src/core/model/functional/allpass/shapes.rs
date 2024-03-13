@@ -17,6 +17,7 @@ impl ArrayActivationTime {
     #[must_use]
     /// Creates a new `ArrayActivationTime` with the given voxel dimensions,
     /// initializing all values to `None`.
+    #[tracing::instrument]
     pub fn empty(voxels_in_dims: Dim<[usize; 3]>) -> Self {
         Self {
             values: Array3::from_elem(voxels_in_dims, None),

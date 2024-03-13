@@ -8,6 +8,7 @@ use crate::core::{
 
 /// Draws the UI elements for the algorithm.
 #[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip(parent))]
 pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenario) {
     parent.set_enabled(*scenario.get_status() == Status::Planning);
     let algorithm = &mut scenario.config.algorithm;

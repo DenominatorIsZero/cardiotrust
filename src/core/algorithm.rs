@@ -256,6 +256,7 @@ mod test {
 
     use super::*;
 
+    #[tracing::instrument]
     fn run(
         functional_description: &mut FunctionalDescription,
         results: &mut Results,

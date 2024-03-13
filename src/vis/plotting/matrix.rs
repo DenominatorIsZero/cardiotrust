@@ -363,6 +363,7 @@ fn get_max_for_state(system_states: &ArraySystemStates, state_index: usize) -> f
         .max(system_states.slice(s![.., state_index]).min_skipnan().abs())
 }
 
+#[tracing::instrument]
 fn fill_vecs_with_states_max(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
@@ -646,6 +647,7 @@ pub fn plot_states_max_delta(
 /// # Panics
 ///
 /// Panics if something fishy happens with io rights.
+#[tracing::instrument]
 pub fn plot_states_over_time(
     _system_states: &ArraySystemStates,
     _voxels: &Voxels,

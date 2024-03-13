@@ -122,6 +122,7 @@ impl Default for ResultImages {
 
 impl ResultImages {
     /// Resets the `ResultImages` to the default state.
+    #[tracing::instrument]
     fn reset(&mut self) {
         *self = Self::default();
     }
@@ -132,6 +133,7 @@ impl ResultImages {
 /// This allows the result images to be cleared when switching between scenarios,
 /// so that the new images can be loaded.
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument]
 pub fn reset_result_images(
     mut result_images: ResMut<ResultImages>,
     selected_scenario: Res<SelectedSenario>,

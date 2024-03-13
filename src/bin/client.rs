@@ -3,6 +3,7 @@ use cardiotrust::{
     ui::ClientUiPlugin, vis::VisPlugin, websocket::WebsocketPlugin, ScenarioList, SelectedSenario,
 };
 
+#[tracing::instrument]
 fn main() {
     App::new()
         .add_plugins(

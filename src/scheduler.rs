@@ -11,9 +11,11 @@ use crate::{
 };
 
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug)]
 pub struct SchedulerPlugin;
 
 impl Plugin for SchedulerPlugin {
+    #[tracing::instrument(skip(app))]
     fn build(&self, app: &mut App) {
         app.init_state::<SchedulerState>()
             .init_resource::<NumberOfJobs>()
@@ -41,7 +43,7 @@ pub enum SchedulerState {
     Unavailale,
 }
 
-#[derive(Resource)]
+#[derive(Resource, Debug)]
 pub struct NumberOfJobs {
     pub value: usize,
 }
@@ -58,6 +60,7 @@ impl Default for NumberOfJobs {
 /// to run them and tracking their status. Limits number of concurrent scenarios
 /// based on provided resource. Updates state if max concurrent reached.
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(skip(commands))]
 pub fn start_scenarios(
     mut commands: Commands,
     mut scenario_list: ResMut<ScenarioList>,
@@ -100,6 +103,7 @@ pub fn start_scenarios(
 /// Panics if a running scenario has no epoch receiver, summary receiver or
 /// join handle.
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(skip(commands))]
 pub fn check_scenarios(
     mut commands: Commands,
     mut scenario_list: ResMut<ScenarioList>,

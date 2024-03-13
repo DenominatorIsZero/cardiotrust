@@ -18,9 +18,11 @@ use self::{
 use crate::{core::scenario::Scenario, ui::UiState};
 
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug)]
 pub struct VisPlugin;
 
 impl Plugin for VisPlugin {
+    #[tracing::instrument(skip(app))]
     fn build(&self, app: &mut App) {
         app.add_plugins(PanOrbitCameraPlugin)
             .init_resource::<SampleTracker>()
@@ -44,12 +46,14 @@ impl Plugin for VisPlugin {
     }
 }
 
+#[tracing::instrument(skip(commands))]
 pub fn setup(mut commands: Commands) {
     setup_light_and_camera(&mut commands);
 }
 
 /// Creates an ambient light to illuminate the full scene.
 /// Spawns a camera entity with default pan/orbit controls.
+#[tracing::instrument(skip(commands))]
 pub fn setup_light_and_camera(commands: &mut Commands) {
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
@@ -69,6 +73,7 @@ pub fn setup_light_and_camera(commands: &mut Commands) {
 /// to the provided scenario. Initializes the sample tracker based on the
 /// scenario as well.
 #[allow(clippy::cast_precision_loss)]
+#[tracing::instrument(skip(commands, meshes, materials))]
 pub fn setup_heart_and_sensors(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,

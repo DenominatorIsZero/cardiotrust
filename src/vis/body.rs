@@ -6,6 +6,7 @@ use std::f32::consts::PI;
 /// and translated. A PBR material with a transparent color is created and
 /// applied to the mesh.
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(skip(commands, materials))]
 pub(crate) fn spawn_torso(
     mut commands: Commands,
     ass: Res<AssetServer>,

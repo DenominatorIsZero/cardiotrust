@@ -42,6 +42,7 @@ impl Derivatives {
     /// Creates a new Derivatives struct with empty arrays initialized to
     /// the given number of states.
     #[must_use]
+    #[tracing::instrument]
     pub fn new(number_of_states: usize) -> Self {
         Self {
             gains: ArrayGains::empty(number_of_states),
@@ -263,6 +264,7 @@ struct ArrayMappedResiduals {
 
 impl ArrayMappedResiduals {
     #[must_use]
+    #[tracing::instrument]
     pub fn new(number_of_states: usize) -> Self {
         Self {
             values: Array1::zeros(number_of_states),
@@ -292,6 +294,7 @@ pub struct ArrayMaximumRegularization {
 
 impl ArrayMaximumRegularization {
     #[must_use]
+    #[tracing::instrument]
     pub fn new(number_of_states: usize) -> Self {
         Self {
             values: Array1::zeros(number_of_states),
