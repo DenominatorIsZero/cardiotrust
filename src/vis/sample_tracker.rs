@@ -15,6 +15,7 @@ pub struct SampleTracker {
 }
 
 impl Default for SampleTracker {
+    #[tracing::instrument]
     fn default() -> Self {
         Self {
             current_sample: 1,
@@ -40,6 +41,7 @@ impl Default for SampleTracker {
     clippy::needless_pass_by_value,
     clippy::module_name_repetitions
 )]
+#[tracing::instrument]
 pub fn init_sample_tracker(sample_tracker: &mut SampleTracker, scenario: &Scenario) {
     sample_tracker.current_sample = 0;
     sample_tracker.max_sample = scenario
@@ -64,6 +66,7 @@ pub fn init_sample_tracker(sample_tracker: &mut SampleTracker, scenario: &Scenar
     clippy::cast_sign_loss,
     clippy::needless_pass_by_value
 )]
+#[tracing::instrument]
 pub fn update_sample_index(
     mut sample_tracker: ResMut<SampleTracker>,
     time: Res<Time>,

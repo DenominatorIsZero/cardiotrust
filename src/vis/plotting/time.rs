@@ -3,6 +3,7 @@ use std::error::Error;
 
 use crate::core::data::shapes::ArraySystemStates;
 
+#[tracing::instrument]
 pub fn standard_time_plot(
     _y: &Array1<f32>,
     _sample_rate_hz: f32,
@@ -51,6 +52,7 @@ pub fn standard_time_plot(
 /// # Panics
 ///
 /// Panics if min or max of array couldn't be computed.
+#[tracing::instrument]
 pub fn standard_y_plot(
     _y: &Array1<f32>,
     _file_name: &str,
@@ -90,6 +92,7 @@ pub fn standard_y_plot(
     // save_plot(file_name, &plot, width, height, scale);
 }
 
+#[tracing::instrument]
 pub fn plot_state_xyz(
     _system_states: &ArraySystemStates,
     _state_index: usize,
@@ -177,6 +180,7 @@ pub fn plot_state_xyz(
 
 /// # Errors
 /// Returns eventual plotter errors.
+#[tracing::instrument]
 pub fn xy_plot(
     _x: &Array1<f32>,
     _y: &Array1<f32>,

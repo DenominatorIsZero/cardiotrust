@@ -18,6 +18,7 @@ impl Heart {
     /// Creates an empty Heart struct with origin and size arrays initialized to 0.
     /// This is a convenience constructor for creating a Heart with default values.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty() -> Self {
         Self {
             origin_mm: Array1::zeros(3),
@@ -30,6 +31,7 @@ impl Heart {
     /// This initializes the `origin_mm` an`size_mm`mm fields from the
     /// corresponding values in the Model config.
     #[must_use]
+    #[tracing::instrument]
     pub fn from_model_config(config: &Model) -> Self {
         Self {
             origin_mm: arr1(&config.heart_origin_mm),
@@ -42,6 +44,7 @@ impl Heart {
     /// # Panics
     ///
     /// Panics if the directory cannot be created or the files cannot be written.
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("heart_origin_mm.npy")).unwrap());

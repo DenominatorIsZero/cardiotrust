@@ -22,8 +22,9 @@ pub struct Config {
 }
 
 impl Default for Config {
-    #[must_use]
     /// Returns a default `Config` struct with `measurement` set to `None`.
+    #[must_use]
+    #[tracing::instrument]
     fn default() -> Self {
         Self {
             measurement: None,

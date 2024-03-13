@@ -11,7 +11,10 @@ use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 
 use crate::{
     core::{
-        data::Data,
+        data::{
+            shapes::{ArrayMeasurements, ArraySystemStates},
+            Data,
+        },
         model::{spatial::voxels::VoxelType, Model},
         scenario::{results::Results, Scenario},
     },
@@ -43,6 +46,7 @@ struct MessageBuffer {
 }
 
 impl Default for MessageBuffer {
+    #[tracing::instrument]
     fn default() -> Self {
         Self {
             messages: Arc::new(Mutex::new(Vec::new())),
@@ -50,6 +54,7 @@ impl Default for MessageBuffer {
     }
 }
 
+#[derive(Debug)]
 struct WebSocketWrapper {
     pub websocket: WebSocket,
 }
@@ -58,7 +63,7 @@ struct WebSocketWrapper {
 unsafe impl Send for WebSocketWrapper {}
 unsafe impl Sync for WebSocketWrapper {}
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Debug)]
 struct WebSocketResource {
     pub websocket: Option<WebSocketWrapper>,
 }
@@ -66,6 +71,7 @@ struct WebSocketResource {
 /// Sends a heartbeat message over the websocket connection in `websocket_resource`
 /// if it is in a ready state. This keeps the connection alive.
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument]
 fn send_heartbeat(websocket_resource: Res<WebSocketResource>) {
     if let Some(websocket) = websocket_resource.websocket.as_ref() {
         if websocket.websocket.ready_state() == 1 {
@@ -81,6 +87,7 @@ fn send_heartbeat(websocket_resource: Res<WebSocketResource>) {
 /// payload. The header determines which handler function is called. The handlers
 /// update the simulation state and visualizations.
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument]
 fn handle_websocket_messages(
     message_buffer: Res<MessageBuffer>,
     mut sample_tracker: ResMut<SampleTracker>,
@@ -130,6 +137,7 @@ fn handle_websocket_messages(
 /// Sets voxel size, initializes voxel types, positions, numbers, and sensor positions/orientations.
 /// Requires that the selected scenario is already set.
 #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+#[tracing::instrument]
 fn handle_init_sim_message(
     payload: &Value,
     sample_tracker: &mut SampleTracker,
@@ -173,6 +181,7 @@ fn handle_init_sim_message(
     clippy::cast_precision_loss,
     clippy::cast_sign_loss
 )]
+#[tracing::instrument]
 fn handle_init_est_message(
     payload: &Value,
     sample_tracker: &mut SampleTracker,
@@ -210,6 +219,7 @@ fn handle_init_est_message(
 /// Updates the simulation values from the payload of an `UPDATE_SIM`
 /// websocket message. Updates the system states and measurements
 /// in the selected scenario's simulation struct.
+#[tracing::instrument]
 fn handle_update_sim_message(
     payload: &Value,
     selected_scenario: &SelectedSenario,
@@ -236,6 +246,7 @@ fn handle_update_sim_message(
 /// Updates the estimation values from the payload of an `UPDATE_EST`
 /// websocket message. Updates the system states and measurements
 /// in the selected scenario's estimation struct.
+#[tracing::instrument]
 fn handle_update_est_message(
     payload: &Value,
     selected_scenario: &SelectedSenario,
@@ -262,10 +273,11 @@ fn handle_update_est_message(
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation
 )]
+#[tracing::instrument]
 fn update_values(
     payload: &Value,
-    states: &mut crate::core::data::shapes::ArraySystemStates,
-    measurements: &mut crate::core::data::shapes::ArrayMeasurements,
+    states: &mut ArraySystemStates,
+    measurements: &mut ArrayMeasurements,
 ) {
     let states = &mut states.values;
     let key = "ppfStatesToExoBuffer";
@@ -308,6 +320,7 @@ fn update_values(
 /// Initializes the voxel types in the model by mapping values from the
 /// "pppcVoxelTypes" key in the payload to `VoxelType` enum variants.
 #[allow(clippy::similar_names)]
+#[tracing::instrument]
 fn initialize_voxel_types(model: &mut Model, payload: &Value) {
     let types = &mut model.spatial_description.voxels.types.values;
     let key = "pppcVoxelTypes";
@@ -350,6 +363,7 @@ fn initialize_voxel_types(model: &mut Model, payload: &Value) {
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation
 )]
+#[tracing::instrument]
 fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
     let positions = &mut model.spatial_description.voxels.positions_mm.values;
     let key = "ppppfVoxelPositionsMm";
@@ -391,6 +405,7 @@ fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss
 )]
+#[tracing::instrument]
 fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
     let numbers = &mut model.spatial_description.voxels.numbers.values;
     let key = "pppuVoxelNumbers";
@@ -426,6 +441,7 @@ fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss
 )]
+#[tracing::instrument]
 fn initialize_sensor_positions(model: &mut Model, payload: &Value) {
     let positions = &mut model.spatial_description.sensors.positions_mm;
     let key = "ppfSensorPositionsMm";
@@ -455,6 +471,7 @@ fn initialize_sensor_positions(model: &mut Model, payload: &Value) {
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss
 )]
+#[tracing::instrument]
 fn initialize_sensor_orientations(model: &mut Model, payload: &Value) {
     let orientations = &mut model.spatial_description.sensors.orientations_xyz;
     let key = "ppfSensorOrientations";
@@ -486,6 +503,7 @@ fn initialize_sensor_orientations(model: &mut Model, payload: &Value) {
     clippy::cast_precision_loss,
     clippy::cast_sign_loss
 )]
+#[tracing::instrument]
 fn init_scenario(
     payload: &Value,
     selected_scenario: &mut SelectedSenario,
@@ -576,6 +594,7 @@ fn init_scenario(
 /// sends an initial message over the socket. Stores the `WebSocket` in the
 /// `WebSocketResource`.
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument]
 fn init_websocket(
     message_buffer: Res<MessageBuffer>,
     mut websocket_resource: ResMut<WebSocketResource>,

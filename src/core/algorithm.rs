@@ -26,6 +26,7 @@ use super::{
 ///
 /// - svd calculation fails
 ///
+#[tracing::instrument]
 pub fn calculate_pseudo_inverse(
     functional_description: &FunctionalDescription,
     results: &mut Results,
@@ -120,6 +121,7 @@ pub fn calculate_pseudo_inverse(
 ///
 /// This includes calculating the system estimates
 /// and performing one gradient descent step.
+#[tracing::instrument]
 pub fn run_epoch(
     functional_description: &mut FunctionalDescription,
     results: &mut Results,
@@ -220,6 +222,7 @@ pub fn run_epoch(
     results.metrics.calculate_epoch(epoch_index);
 }
 
+#[tracing::instrument]
 fn constrain_system_states(
     system_states: &mut ArraySystemStates,
     time_index: usize,

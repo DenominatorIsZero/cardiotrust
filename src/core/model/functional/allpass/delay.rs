@@ -9,6 +9,7 @@ use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
 /// based on the propagation velocity. Takes the Euclidean distance between
 /// the input and output positions (converted to meters), divides by the  
 /// propagation velocity to get the delay in seconds.
+#[tracing::instrument]
 pub fn calculate_delay_s(
     input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
     output_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
@@ -28,6 +29,7 @@ pub fn calculate_delay_s(
 ///
 /// Returns the 2D array of delay values, with dimensions corresponding to the
 /// voxel numbers and neighbor offsets.
+#[tracing::instrument]
 pub fn calculate_delay_samples_array(
     spatial_description: &SpatialDescription,
     propagation_velocities_m_per_s: &HashMap<VoxelType, f32>,

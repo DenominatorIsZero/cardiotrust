@@ -30,6 +30,7 @@ pub struct Data {
 impl Data {
     /// Creates a new empty `Data` instance with the given dimensions.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(
         number_of_sensors: usize,
         number_of_states: usize,
@@ -54,6 +55,7 @@ impl Data {
     /// # Errors
     ///
     /// Returns an error if creating the `Simulation` from the config fails.
+    #[tracing::instrument]
     pub fn from_simulation_config(config: &SimulationConfig) -> Result<Self, Box<dyn Error>> {
         let mut simulation = Simulation::from_config(config)?;
         simulation.run();
@@ -67,6 +69,7 @@ impl Data {
     ///
     /// Panics if simulation and measurement are both None.
     #[must_use]
+    #[tracing::instrument]
     pub fn get_measurements(&self) -> &ArrayMeasurements {
         self.simulation.as_ref().map_or_else(
             || {
@@ -84,6 +87,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
+    #[tracing::instrument]
     pub fn get_system_states(&self) -> &ArraySystemStates {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -95,6 +99,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
+    #[tracing::instrument]
     pub fn get_control_function_values(&self) -> &ControlFunction {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -111,6 +116,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
+    #[tracing::instrument]
     pub fn get_gains(&self) -> &ArrayGains<f32> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -122,6 +128,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
+    #[tracing::instrument]
     pub fn get_coefs(&self) -> &ArrayDelays<f32> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -133,6 +140,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
+    #[tracing::instrument]
     pub fn get_voxel_types(&self) -> &VoxelTypes {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -144,6 +152,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
+    #[tracing::instrument]
     pub fn get_model(&self) -> &Model {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -155,6 +164,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
+    #[tracing::instrument]
     pub fn get_activation_time_ms(&self) -> &ArrayActivationTime {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -172,6 +182,7 @@ impl Data {
     ///
     /// Panics if simulation is None
     #[must_use]
+    #[tracing::instrument]
     pub fn get_delays(&self) -> &ArrayDelays<usize> {
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -182,6 +193,7 @@ impl Data {
     /// # Panics
     ///
     /// Panics if simulation is none.
+    #[tracing::instrument]
     pub fn save_npy(&self, path: &std::path::Path) {
         self.simulation
             .as_ref()

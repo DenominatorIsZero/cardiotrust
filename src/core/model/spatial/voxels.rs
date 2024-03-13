@@ -19,6 +19,7 @@ pub struct Voxels {
 impl Voxels {
     /// Creates an empty Voxels struct with the given dimensions.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         Self {
             size_mm: 0.0,
@@ -30,6 +31,7 @@ impl Voxels {
 
     /// Creates a Voxels struct from the given Model config.
     #[must_use]
+    #[tracing::instrument]
     pub fn from_model_config(config: &Model) -> Self {
         let types = VoxelTypes::from_simulation_config(config);
         let numbers = VoxelNumbers::from_voxel_types(&types);
@@ -46,6 +48,7 @@ impl Voxels {
     ///
     /// This is calculated as the product of the x, y, and z dimensions.
     #[must_use]
+    #[tracing::instrument]
     pub fn count(&self) -> usize {
         self.count_xyz().iter().product()
     }
@@ -53,6 +56,7 @@ impl Voxels {
     /// Returns the x, y, and z dimensions of the voxels as a 3-element array.
     /// This represents the shape of the voxel grid.
     #[must_use]
+    #[tracing::instrument]
     pub fn count_xyz(&self) -> [usize; 3] {
         let shape = self.types.values.raw_dim();
         [shape[0], shape[1], shape[2]]
@@ -62,6 +66,7 @@ impl Voxels {
     /// voxel types, filtering out voxels of type 'None', and multiplying by 3
     /// (since each voxel has an x, y, and z state).
     #[must_use]
+    #[tracing::instrument]
     pub fn count_states(&self) -> usize {
         self.types
             .values
@@ -81,6 +86,7 @@ impl Voxels {
     /// Panics if number of voxels in any direction
     /// exceed `i32::MAX`.
     #[must_use]
+    #[tracing::instrument]
     pub fn is_valid_index(&self, index: [i32; 3]) -> bool {
         let [x, y, z] = index;
         let [x_max, y_max, z_max] = self.count_xyz();
@@ -100,6 +106,7 @@ impl Voxels {
     ///
     /// Panics if no voxel of `v_type` is present in `Voxels`.
     #[must_use]
+    #[tracing::instrument]
     pub fn get_first_state_of_type(&self, v_type: VoxelType) -> usize {
         let query = self
             .types
@@ -111,6 +118,7 @@ impl Voxels {
     }
 
     /// Saves the voxel grid data to .npy files in the given path.
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("voxel_size_mm.npy")).unwrap());

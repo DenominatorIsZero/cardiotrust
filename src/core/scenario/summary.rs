@@ -61,6 +61,7 @@ impl Default for Summary {
     ///
     /// Default values are 0.0 for all fields.
     #[must_use]
+    #[tracing::instrument]
     fn default() -> Self {
         Self {
             loss: 0.0,

@@ -50,6 +50,7 @@ impl Simulation {
     /// # Errors
     ///
     /// Returns an error if the model fails to initialize from the config.
+    #[tracing::instrument]
     pub fn from_config(config: &SimulationConfig) -> Result<Self, Box<dyn Error>> {
         let model =
             Model::from_model_config(&config.model, config.sample_rate_hz, config.duration_s)?;
@@ -74,6 +75,7 @@ impl Simulation {
     /// # Panics
     ///
     /// if there are negative values in the measurement covariance matrix.
+    #[tracing::instrument]
     pub fn run(&mut self) {
         let measurements = &mut self.measurements;
         let system_states = &mut self.system_states;
@@ -105,6 +107,7 @@ impl Simulation {
 
     /// Saves the simulation data (measurements, system states, model) to `NumPy` files at the given path.
     /// The measurements, system states, and model are saved to separate .npy files.
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         self.measurements.save_npy(path);
         self.system_states.save_npy(path);

@@ -38,6 +38,7 @@ impl APParameters {
     #[must_use]
     /// Creates an empty `APParameters` struct with the given number of states and
     /// voxel dimensions.
+    #[tracing::instrument]
     pub fn empty(number_of_states: usize, voxels_in_dims: Dim<[usize; 3]>) -> Self {
         Self {
             gains: ArrayGains::empty(number_of_states),
@@ -56,6 +57,7 @@ impl APParameters {
     /// # Errors
     ///
     /// Returns an error if the AP parameters cannot be created from the given config.
+    #[tracing::instrument]
     pub fn from_model_config(
         config: &Model,
         spatial_description: &SpatialDescription,
@@ -94,6 +96,7 @@ impl APParameters {
     }
 
     /// Saves the allpass filter parameters to .npy files.
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         let path = &path.join("allpass");
         self.gains.save_npy(path, "gains.npy");
@@ -109,6 +112,7 @@ impl APParameters {
 /// voxel and maps the input states to the corresponding output states. This
 /// allows signals to propagate from input voxels to neighboring output voxels
 /// through the allpass filter.
+#[tracing::instrument]
 fn init_output_state_indicies(spatial_description: &SpatialDescription) -> ArrayIndicesGains {
     let mut output_state_indices =
         ArrayIndicesGains::empty(spatial_description.voxels.count_states());
@@ -163,6 +167,7 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Array
 /// Connects voxels in the model based on voxel type and proximity.
 /// Iteratively activates voxels by updating `activation_time_s` and `current_directions`.
 /// Stops when no more voxels can be connected at the current time step.
+#[tracing::instrument]
 fn connect_voxels(
     spatial_description: &SpatialDescription,
     config: &Model,
@@ -239,6 +244,7 @@ fn connect_voxels(
 
 /// Attempts to connect the voxel at the given offset from the output voxel.
 /// Returns true if a connection was made, false otherwise.
+#[tracing::instrument]
 fn try_to_connect(
     voxel_offset: (i32, i32, i32),
     output_voxel_index: (usize, usize, usize),
@@ -336,6 +342,7 @@ fn try_to_connect(
 /// all-pass filter parameter gains array. Maps the gain values from the
 /// (`input_dim`, `output_dim`) coordinate space to the flattened 22D gains array
 /// using the provided state number and offset indices.
+#[tracing::instrument]
 fn assign_gain(
     ap_params: &mut APParameters,
     input_state_number: usize,
@@ -361,7 +368,8 @@ fn assign_gain(
 /// 3D coordinate offsets to 1D index. Returns None if offsets are all zero.
 #[allow(clippy::cast_sign_loss)]
 #[must_use]
-pub const fn offset_to_gain_index(
+#[tracing::instrument]
+pub fn offset_to_gain_index(
     x_offset: i32,
     y_offset: i32,
     z_offset: i32,
@@ -393,7 +401,8 @@ pub const fn offset_to_gain_index(
     clippy::cast_possible_wrap
 )]
 #[must_use]
-pub const fn gain_index_to_offset(gain_index: usize) -> Option<[i32; 4]> {
+#[tracing::instrument]
+pub fn gain_index_to_offset(gain_index: usize) -> Option<[i32; 4]> {
     if gain_index > 77 {
         return None;
     }
@@ -415,15 +424,13 @@ pub const fn gain_index_to_offset(gain_index: usize) -> Option<[i32; 4]> {
 /// Returns None if x, y, z offsets are all 0.
 #[allow(clippy::cast_sign_loss)]
 #[must_use]
-pub const fn offset_to_delay_index(x_offset: i32, y_offset: i32, z_offset: i32) -> Option<usize> {
+#[tracing::instrument]
+pub fn offset_to_delay_index(x_offset: i32, y_offset: i32, z_offset: i32) -> Option<usize> {
     if x_offset == 0 && y_offset == 0 && z_offset == 0 {
         return None;
     }
-    let correction = if x_offset >= 0 && y_offset >= 0 && z_offset >= 0 {
-        1
-    } else {
-        0
-    };
+    let correction = usize::from((x_offset >= 0) && (y_offset >= 0) && (z_offset >= 0));
+
     Some(
         (z_offset + 1) as usize + (y_offset + 1) as usize * 3 + (x_offset + 1) as usize * 9
             - correction,
@@ -434,6 +441,7 @@ pub const fn offset_to_delay_index(x_offset: i32, y_offset: i32, z_offset: i32) 
 ///
 /// Filters the `activation_time_s` array for voxels with activation time
 /// equal to `current_time_s`, returning a vector of their indices.
+#[tracing::instrument]
 fn find_candidate_voxels(
     activation_time_s: &ndarray::ArrayBase<ndarray::OwnedRepr<Option<f32>>, Dim<[usize; 3]>>,
     current_time_s: f32,
@@ -448,6 +456,7 @@ fn find_candidate_voxels(
 
 /// Converts a sample value in the range to the corresponding
 /// all-pass filter coefficient.
+#[tracing::instrument]
 fn from_samples_to_coef(samples: f32) -> f32 {
     let fractional = samples % 1.0;
     (1.0 - fractional) / (1.0 + fractional)
@@ -460,12 +469,14 @@ fn from_samples_to_coef(samples: f32) -> f32 {
     clippy::cast_possible_truncation
 )]
 #[must_use]
-const fn from_samples_to_usize(samples: f32) -> usize {
+#[tracing::instrument]
+fn from_samples_to_usize(samples: f32) -> usize {
     samples as usize
 }
 
 /// Converts an all-pass filter coefficient to the corresponding delay in samples.
 #[must_use]
+#[tracing::instrument]
 pub fn from_coef_to_samples(coef: f32) -> f32 {
     (1.0 - coef) / (coef + 1.0)
 }

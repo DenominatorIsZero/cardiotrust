@@ -8,6 +8,7 @@ use ndarray::{Array1, ArrayBase, Dim, ViewRepr};
 /// An array containing the current direction, where the
 /// sum over the absolute value of the components is always
 /// equal to one.
+#[tracing::instrument]
 pub fn calculate(
     input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
     output_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,

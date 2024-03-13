@@ -15,6 +15,7 @@ impl APParameters {
     /// and batch size. Freezing gains or delays can be configured via the Algorithm
     /// config. Gradient clamping is also applied based on the config threshold.
     #[inline]
+    #[tracing::instrument]
     pub fn update(
         &mut self,
         derivatives: &Derivatives,
@@ -52,6 +53,7 @@ impl APParameters {
 /// by subtracting the scaled and clamped derivatives.
 #[allow(clippy::cast_precision_loss)]
 #[inline]
+#[tracing::instrument]
 fn update_gains(
     gains: &mut ArrayGains<f32>,
     derivatives: &ArrayGains<f32>,
@@ -75,6 +77,7 @@ fn update_gains(
 /// the integer delay is adjusted to "roll" the coefficient.
 #[allow(clippy::cast_precision_loss)]
 #[inline]
+#[tracing::instrument]
 fn update_delays(
     ap_coefs: &mut ArrayDelays<f32>,
     delays: &mut ArrayDelays<usize>,

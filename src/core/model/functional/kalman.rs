@@ -21,6 +21,7 @@ impl Gain {
     /// Creates a new Gain with the given number of states and sensors,
     /// initializing the values to a matrix of zeros.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(number_of_states: usize, number_of_sensors: usize) -> Self {
         Self {
             values: Array2::zeros((number_of_states, number_of_sensors)),
@@ -37,6 +38,7 @@ impl Gain {
     ///
     /// Panics if covariances are invalid.
     #[must_use]
+    #[tracing::instrument]
     pub fn from_model_config(config: &Model, measurement_matrix: &MeasurementMatrix) -> Self {
         let mut process_covariance = Array2::<f32>::zeros((
             measurement_matrix.values.shape()[1],
@@ -96,6 +98,7 @@ impl Gain {
     }
 
     /// Saves the Kalman gain matrix to a .npy file at the given path.
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("kalman_gain.npy")).unwrap());

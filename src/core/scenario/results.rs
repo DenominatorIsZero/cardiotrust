@@ -25,6 +25,7 @@ impl Results {
     /// snapshots, and model. The metrics are initialized based on the provided
     /// number of epochs, steps, sensors, and states.
     #[must_use]
+    #[tracing::instrument]
     pub fn new(
         number_of_epochs: usize,
         number_of_steps: usize,
@@ -45,6 +46,7 @@ impl Results {
     }
 
     /// Saves the metrics, estimations, and model as .npy files to the given path.
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         self.metrics.save_npy(&path.join("metrics"));
         self.estimations.save_npy(&path.join("estimations"));
@@ -64,6 +66,7 @@ impl Snapshot {
     #[must_use]
     /// Creates a new Snapshot instance with the provided estimations and
     /// functional description.
+    #[tracing::instrument]
     pub fn new(estimations: &Estimations, functional_description: &FunctionalDescription) -> Self {
         Self {
             estimations: estimations.clone(),

@@ -58,6 +58,7 @@ impl Metrics {
     /// The length of the per-step arrays is set to `number_of_steps`, and the length of the
     /// per-epoch arrays is set to `number_of_epochs`.
     #[must_use]
+    #[tracing::instrument]
     pub fn new(number_of_epochs: usize, number_of_steps: usize) -> Self {
         Self {
             loss: ArrayMetricsSample::new(number_of_steps),
@@ -111,6 +112,7 @@ impl Metrics {
     ///
     /// Panics if any array is None.
     #[allow(clippy::cast_precision_loss)]
+    #[tracing::instrument]
     pub fn calculate_step(
         &mut self,
         estimations: &Estimations,
@@ -150,6 +152,7 @@ impl Metrics {
     /// # Panics
     ///
     /// Panics if any loss array is None.
+    #[tracing::instrument]
     pub fn calculate_epoch(&mut self, epoch_index: usize) {
         self.loss_mse_epoch.values[epoch_index] = self.loss_mse.values.mean().unwrap();
         self.loss_maximum_regularization_epoch.values[epoch_index] =
@@ -181,6 +184,7 @@ impl Metrics {
     /// in steps of 0.01. Stores the dice score, `IoU`, precision, and recall for each
     /// threshold value in the given metric arrays.
     #[allow(clippy::cast_precision_loss)]
+    #[tracing::instrument]
     pub fn calculate_final(
         &mut self,
         estimations: &Estimations,
@@ -200,6 +204,7 @@ impl Metrics {
 
     /// Saves all metric arrays to .npy files in the given path.
     /// Creates the directory if it does not exist.
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
 
@@ -263,6 +268,7 @@ impl Metrics {
 ///
 /// The estimations, ground truth, and voxel numbers are used to generate voxel type predictions at the given threshold.
 /// These predictions are then compared to the ground truth to calculate the metrics.
+#[tracing::instrument]
 fn calculate_for_threshold(
     estimations: &Estimations,
     ground_truth: &VoxelTypes,
@@ -284,6 +290,7 @@ fn calculate_for_threshold(
 /// Recall is defined as the ratio of true positives to total positives.
 /// Returns 1.0 if there are no ground truth positives.
 #[allow(clippy::cast_precision_loss)]
+#[tracing::instrument]
 fn calculate_recall(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     let gt_positives = ground_truth
         .values
@@ -312,6 +319,7 @@ fn calculate_recall(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 
 /// Precision is defined as the ratio of true positives to total predicted positives.
 /// Returns 0.0 if there are no predicted positives.
 #[allow(clippy::cast_precision_loss)]
+#[tracing::instrument]
 fn calculate_precision(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     let predicted_positves = predictions
         .values
@@ -342,6 +350,7 @@ fn calculate_precision(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f
 /// to the union (true positives + false positives + false negatives).
 /// Returns 0.0 if there is no intersection.
 #[allow(clippy::cast_precision_loss)]
+#[tracing::instrument]
 fn calculate_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     let intersection = predictions
         .values
@@ -376,6 +385,7 @@ fn calculate_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
 /// ground truth. It ranges from 0 to 1, with 1 being perfect agreement
 /// between predictions and ground truth.
 #[allow(clippy::cast_precision_loss)]
+#[tracing::instrument]
 fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     let true_positives = predictions
         .values
@@ -420,6 +430,7 @@ fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
 ///
 /// Panics if the provided estimations and ground truth data do not have the same shape.
 #[must_use]
+#[tracing::instrument]
 pub fn predict_voxeltype(
     estimations: &Estimations,
     ground_truth: &VoxelTypes,
@@ -469,6 +480,7 @@ impl ArrayMetricsSample {
     /// Creates a new `ArrayMetricsSample` with the given number of steps, initializing
     /// the values to all zeros.
     #[must_use]
+    #[tracing::instrument]
     pub fn new(number_of_steps: usize) -> Self {
         Self {
             values: Array1::zeros(number_of_steps),
@@ -477,6 +489,7 @@ impl ArrayMetricsSample {
 
     /// Saves the array values to a .npy file at the given path with the given name.
     /// Creates any missing directories in the path if needed.
+    #[tracing::instrument]
     fn save_npy(&self, path: &std::path::Path, name: &str) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
@@ -493,6 +506,7 @@ impl ArrayMetricsEpoch {
     /// Creates a new `ArrayMetricsEpoch` with the given number of epochs, initializing
     /// the values to all zeros.
     #[must_use]
+    #[tracing::instrument]
     pub fn new(number_of_epochs: usize) -> Self {
         Self {
             values: Array1::zeros(number_of_epochs),
@@ -501,6 +515,7 @@ impl ArrayMetricsEpoch {
 
     /// Saves the array values to a .npy file at the given path with the given name.  
     /// Creates any missing directories in the path if needed.
+    #[tracing::instrument]
     fn save_npy(&self, path: &std::path::Path, name: &str) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());

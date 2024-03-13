@@ -21,6 +21,7 @@ impl SpatialDescription {
     /// Creates an empty `SpatialDescription` struct with the given number of
     /// sensors and voxel dimensions.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(number_of_sensors: usize, voxels_in_dims: [usize; 3]) -> Self {
         Self {
             heart: Heart::empty(),
@@ -34,6 +35,7 @@ impl SpatialDescription {
     /// Constructs the `heart`, `voxels`, and `sensors` fields by calling their
     /// respective `from_model_config()` methods.
     #[must_use]
+    #[tracing::instrument]
     pub fn from_model_config(config: &Model) -> Self {
         let heart = Heart::from_model_config(config);
         let voxels = Voxels::from_model_config(config);
@@ -50,6 +52,7 @@ impl SpatialDescription {
     ///
     /// Saves the `heart`, `voxels`, and `sensors` fields to .npy files
     /// in the given `path`.
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         let path = &path.join("spatial_description");
         self.heart.save_npy(path);

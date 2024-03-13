@@ -23,7 +23,7 @@ use crate::{
     ScenarioList, SelectedSenario,
 };
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ImageBundle {
     pub path: Option<String>,
     pub join_handle: Option<JoinHandle<()>>,
@@ -90,17 +90,17 @@ pub enum GifType {
     StatesSimulation,
 }
 
-#[derive(Resource)]
+#[derive(Resource, Debug)]
 pub struct ResultImages {
     pub image_bundles: HashMap<ImageType, ImageBundle>,
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Debug)]
 pub struct SelectedResultImage {
     pub image_type: ImageType,
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Debug)]
 pub struct PlaybackSpeed {
     pub value: f32,
 }
@@ -108,6 +108,7 @@ pub struct PlaybackSpeed {
 impl Default for ResultImages {
     /// Populates the image bundles with default `ImageBundle` instances for each `ImageType`.
     /// This provides an initial empty set of images that can be rendered.
+    #[tracing::instrument]
     fn default() -> Self {
         let mut image_bundles = HashMap::new();
 
@@ -146,6 +147,7 @@ pub fn reset_result_images(
 /// and loading/displaying the image. Handles async image loading in the background.
 /// Resets images when switching scenarios.
 #[allow(clippy::module_name_repetitions, clippy::needless_pass_by_value)]
+#[tracing::instrument(skip(contexts))]
 pub fn draw_ui_results(
     mut contexts: EguiContexts,
     mut result_images: ResMut<ResultImages>,
@@ -236,6 +238,7 @@ pub fn draw_ui_results(
 /// Returns the file path for the image of the given type for the provided scenario.
 /// Joins the results directory, scenario ID, image folder, image type string,
 /// and png extension to generate the path.
+#[tracing::instrument]
 fn get_image_path(scenario: &Scenario, image_type: ImageType) -> String {
     Path::new("file://results")
         .join(scenario.get_id())
@@ -256,6 +259,7 @@ fn get_image_path(scenario: &Scenario, image_type: ImageType) -> String {
     clippy::used_underscore_binding,
     unreachable_code
 )]
+#[tracing::instrument]
 fn generate_image(scenario: Scenario, image_type: ImageType) {
     let mut path = Path::new("results").join(scenario.get_id()).join("img");
     fs::create_dir_all(&path).unwrap();
@@ -726,6 +730,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
     clippy::too_many_lines,
     clippy::useless_let_if_seq
 )]
+#[tracing::instrument]
 fn generate_gifs(scenario: Scenario, gif_type: GifType, playback_speed: f32) {
     let mut path = Path::new("results").join(scenario.get_id()).join("img");
     fs::create_dir_all(&path).unwrap();

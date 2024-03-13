@@ -36,6 +36,7 @@ impl FunctionalDescription {
     /// This initializes all internal state to empty arrays or matrices of the appropriate size.
     /// It can be used to create a blank `FunctionalDescription` before populating its fields.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(
         number_of_states: usize,
         number_of_sensors: usize,
@@ -64,6 +65,7 @@ impl FunctionalDescription {
     /// # Panics
     /// If delay cant be configured with samplerate, voxelsize and propagation speed
     #[allow(clippy::useless_let_if_seq)]
+    #[tracing::instrument]
     pub fn from_model_config(
         config: &Model,
         spatial_description: &SpatialDescription,
@@ -98,6 +100,7 @@ impl FunctionalDescription {
     /// This exports the allpass filter parameters, process covariance,
     /// measurement matrix, control matrix, measurement covariance, Kalman
     /// gain, and control function values to .npy files in the provided path.
+    #[tracing::instrument]
     pub fn save_npy(&self, path: &std::path::Path) {
         let path = &path.join("functional_description");
         self.ap_params.save_npy(path);
@@ -118,6 +121,7 @@ impl FunctionalDescription {
 /// the model config to sample a normal distribution for the diagonal
 /// of the process covariance matrix. Filters down to only the states  
 /// that correspond to AP filter outputs based on `ap_params`.
+#[tracing::instrument]
 fn process_covariance_from_model_config(
     config: &Model,
     spatial_description: &SpatialDescription,

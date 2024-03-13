@@ -16,6 +16,7 @@ use crate::core::{
 ///
 /// Panics if `ap_params_flat` is not set.
 #[allow(clippy::module_name_repetitions)]
+#[tracing::instrument]
 pub fn calculate_system_prediction(
     ap_outputs: &mut ArrayGains<f32>,
     system_states: &mut ArraySystemStates,
@@ -49,6 +50,7 @@ pub fn calculate_system_prediction(
 ///
 /// Panics if output state indices are not initialized corrrectly.
 #[inline]
+#[tracing::instrument]
 pub fn innovate_system_states_v1(
     ap_outputs: &mut ArrayGains<f32>,
     ap_params: &APParameters,
@@ -101,6 +103,7 @@ pub fn innovate_system_states_v1(
 /// system states for the given time index. This allows an external control
 /// signal to be injected into the system states.
 #[inline]
+#[tracing::instrument]
 pub fn add_control_function(
     functional_description: &FunctionalDescription,
     time_index: usize,
@@ -122,6 +125,7 @@ pub fn add_control_function(
 /// system states for the given time index. This computes the model predicted
 /// measurements to compare against the actual measurements.
 #[inline]
+#[tracing::instrument]
 pub fn predict_measurements(
     measurements: &mut ArrayMeasurements,
     time_index: usize,

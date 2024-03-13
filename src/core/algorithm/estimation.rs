@@ -38,6 +38,7 @@ pub struct Estimations {
 impl Estimations {
     /// Creates a new empty Estimations struct with the given dimensions.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(
         number_of_states: usize,
         number_of_sensors: usize,
@@ -62,6 +63,7 @@ impl Estimations {
     /// Resets all the internal state of the Estimations struct by filling the
     /// underlying data structures with 0.0. This is done to prepare for a new
     /// epoch.
+    #[tracing::instrument]
     pub fn reset(&mut self) {
         self.ap_outputs.values.fill(0.0);
         self.system_states.values.fill(0.0);
@@ -78,6 +80,7 @@ impl Estimations {
 
     /// Saves the system states and measurements to .npy files at the given path.
     /// The filenames will be automatically generated based on the struct field names.
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         self.system_states.save_npy(path);
         self.measurements.save_npy(path);
@@ -87,6 +90,7 @@ impl Estimations {
 /// Calculates the residuals between the predicted and actual measurements for the given time index.
 /// The residuals are stored in the provided `residuals` array.
 #[inline]
+#[tracing::instrument]
 pub fn calculate_residuals(
     residuals: &mut ArrayMeasurements,
     predicted_measurements: &ArrayMeasurements,
@@ -103,6 +107,7 @@ pub fn calculate_residuals(
 /// estimated system states and the actual measurements. The residuals are
 /// stored in the provided `post_update_residuals` array.
 #[inline]
+#[tracing::instrument]
 pub fn calculate_post_update_residuals(
     post_update_residuals: &mut ArrayMeasurements,
     measurement_matrix: &MeasurementMatrix,
@@ -121,6 +126,7 @@ pub fn calculate_post_update_residuals(
 /// Calculates the delta between the estimated system states and the actual system states for the given time index.
 /// The delta is stored in the provided `system_states_delta` array.
 #[inline]
+#[tracing::instrument]
 pub fn calculate_system_states_delta(
     system_states_delta: &mut ArraySystemStates,
     estimated_system_states: &ArraySystemStates,
@@ -136,6 +142,7 @@ pub fn calculate_system_states_delta(
 /// Calculates the delta between the estimated gains and the actual gains.  
 /// The delta is stored in the provided `gains_delta` array.
 #[inline]
+#[tracing::instrument]
 pub fn calculate_gains_delta(
     gains_delta: &mut ArrayGains<f32>,
     estimated_gains: &ArrayGains<f32>,
@@ -149,6 +156,7 @@ pub fn calculate_gains_delta(
 /// Calculates the delta between the estimated delays and actual delays.
 /// The delta is stored in the provided `delays_delta` array.
 #[inline]
+#[tracing::instrument]
 pub fn calculate_delays_delta(
     delays_delta: &mut ArrayDelays<f32>,
     estimated_delays: &ArrayDelays<usize>,
@@ -171,6 +179,7 @@ pub fn calculate_delays_delta(
 /// Updates the system state estimations based on the Kalman gain and residuals.
 /// If configured, calculates the Kalman gain. Checks for Kalman gain convergence.
 #[inline]
+#[tracing::instrument]
 pub fn calculate_system_update(
     estimations: &mut Estimations,
     time_index: usize,
@@ -203,6 +212,7 @@ pub fn calculate_system_update(
 /// Calculates the Kalman gain matrix based on the current state covariance
 /// and measurement covariance.
 #[inline]
+#[tracing::instrument]
 fn calculate_kalman_gain(
     estimations: &mut Estimations,
     functional_description: &mut FunctionalDescription,
@@ -216,6 +226,7 @@ fn calculate_kalman_gain(
 /// Estimates the state covariance matrix based on the Kalman gain and
 /// predicted state covariance.
 #[inline]
+#[tracing::instrument]
 fn estimate_state_covariance(
     estimations: &mut Estimations,
     functional_description: &FunctionalDescription,
@@ -269,6 +280,7 @@ fn estimate_state_covariance(
 /// Kalman gain matrix and computes it based on the weighted sum of relevant
 /// elements from the state covariance and measurement matrices.
 #[inline]
+#[tracing::instrument]
 fn calculate_k(estimations: &Estimations, functional_description: &mut FunctionalDescription) {
     functional_description
         .kalman_gain
@@ -311,6 +323,7 @@ fn calculate_k(estimations: &Estimations, functional_description: &mut Functiona
 /// prediction matrix and the measurement matrix. Finally inverts S
 /// in place.
 #[inline]
+#[tracing::instrument]
 fn calculate_s_inv(estimations: &mut Estimations, functional_description: &FunctionalDescription) {
     for i in 0..estimations.s.shape().0 {
         for j in 0..estimations.s.shape().1 {
@@ -363,6 +376,7 @@ fn calculate_s_inv(estimations: &mut Estimations, functional_description: &Funct
 /// connected voxels.
 #[allow(clippy::cast_sign_loss)]
 #[inline]
+#[tracing::instrument]
 fn predict_state_covariance(
     estimations: &mut Estimations,
     functional_description: &FunctionalDescription,

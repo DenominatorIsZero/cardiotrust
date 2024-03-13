@@ -48,6 +48,7 @@ pub struct NumberOfJobs {
 
 impl Default for NumberOfJobs {
     /// Returns a `NumberOfJobs` instance with the default value of 4 for `value`.
+    #[tracing::instrument]
     fn default() -> Self {
         Self { value: 4 }
     }

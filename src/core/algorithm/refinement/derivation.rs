@@ -58,6 +58,7 @@ impl Derivatives {
     ///
     /// Usually used after updating the parameters.
     #[inline]
+    #[tracing::instrument]
     pub fn reset(&mut self) {
         self.gains.values.fill(0.0);
         self.coefs.values.fill(0.0);
@@ -77,6 +78,7 @@ impl Derivatives {
     ///
     /// Panics if `ap_params` is not set.
     #[inline]
+    #[tracing::instrument]
     pub fn calculate(
         &mut self,
         functional_description: &FunctionalDescription,
@@ -120,6 +122,7 @@ impl Derivatives {
 
     /// Calculates the derivatives for the allpass filter gains.
     #[inline]
+    #[tracing::instrument]
     fn calculate_derivatives_gains(
         // This gets updated
         &mut self,
@@ -154,6 +157,7 @@ impl Derivatives {
     /// It calculates the FIR and IIR coefficient derivatives separately,
     /// then combines them to update `self.coefs`.
     #[inline]
+    #[tracing::instrument]
     fn calculate_derivatives_coefs(
         // These get updated
         &mut self,
@@ -211,6 +215,8 @@ impl Derivatives {
     /// compares to the threshold, and calculates & assigns maximum regularization
     /// accordingly.
     #[inline]
+    #[tracing::instrument]
+
     fn calculate_maximum_regularization(
         &mut self,
         system_states: &ArraySystemStates,

@@ -16,8 +16,9 @@ pub struct Model {
 }
 
 impl Model {
-    #[must_use]
     /// Creates an empty `Model` with the given parameters.
+    #[must_use]
+    #[tracing::instrument]
     pub fn empty(
         number_of_states: usize,
         number_of_sensors: usize,
@@ -48,6 +49,7 @@ impl Model {
     ///
     /// This function will return an error if the model configuration does not
     /// result in valid delays or topology.
+    #[tracing::instrument]
     pub fn from_model_config(
         config: &ModelConfig,
         sample_rate_hz: f32,
@@ -68,6 +70,7 @@ impl Model {
 
     /// Saves the functional and spatial descriptions of the model
     /// to .npy files at the given path.
+    #[tracing::instrument]
     pub fn save_npy(&self, path: &std::path::Path) {
         self.functional_description.save_npy(path);
         self.spatial_description.save_npy(path);

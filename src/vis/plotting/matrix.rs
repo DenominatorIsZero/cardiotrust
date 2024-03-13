@@ -10,6 +10,7 @@ use crate::core::{
     },
 };
 
+#[tracing::instrument]
 pub fn plot_voxel_types(_types: &Array3<VoxelType>, _file_name: &str, _title: &str) {
     // let mut z: Vec<Vec<i32>> = Vec::new();
     // for y in 0..types.shape()[1] {
@@ -70,6 +71,7 @@ pub fn plot_voxel_types(_types: &Array3<VoxelType>, _file_name: &str, _title: &s
     // save_plot(file_name, &plot, width, height, 1.0);
 }
 
+#[tracing::instrument]
 pub fn plot_activation_time(
     _activation_times: &ArrayActivationTime,
     _file_name: &str,
@@ -126,6 +128,7 @@ pub fn plot_activation_time(
     // save_plot(file_name, &plot, width, height, 1.0);
 }
 
+#[tracing::instrument]
 pub fn plot_activation_time_delta(
     estimated_activation_times: &ArrayActivationTime,
     actual_activation_times: &ArrayActivationTime,
@@ -149,6 +152,7 @@ pub fn plot_activation_time_delta(
 ///     - in z direction
 ///     - absolute value
 #[allow(clippy::too_many_lines)]
+#[tracing::instrument]
 pub fn plot_states_at_time(
     _system_states: &ArraySystemStates,
     _voxels: &Voxels,
@@ -350,6 +354,7 @@ pub fn plot_states_at_time(
     // save_plot(file_name, &plot, width, height, 1.0);
 }
 
+#[tracing::instrument]
 fn get_max_for_state(system_states: &ArraySystemStates, state_index: usize) -> f32 {
     let system_states = &system_states.values;
     system_states
@@ -449,6 +454,7 @@ fn fill_vecs_with_states_max(
     (min_j, max_j)
 }
 
+#[tracing::instrument]
 fn calculate_states_max(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
@@ -548,6 +554,7 @@ fn calculate_states_max(
 ///     - in y direction
 ///     - in z direction
 ///     - absolute value
+#[tracing::instrument]
 pub fn plot_states_max(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
@@ -618,6 +625,7 @@ pub fn plot_states_max(
     // save_plot(file_name, &plot, width, height, 1.0);
 }
 
+#[tracing::instrument]
 pub fn plot_states_max_delta(
     estimated_system_states: &ArraySystemStates,
     actual_system_states: &ArraySystemStates,
@@ -693,6 +701,7 @@ pub fn plot_states_over_time(
     // fs::remove_dir_all(dir_path).expect("Could not remove temporary folders.");
 }
 
+#[tracing::instrument]
 pub fn plot_matrix_as_heatmap(_matrix: &Array2<f32>, _file_name: &str, _title: &str) {
     // let mut z: Vec<Vec<f32>> = Vec::new();
     // for y in 0..matrix.shape()[1] {

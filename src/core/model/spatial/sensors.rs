@@ -19,6 +19,7 @@ impl Sensors {
     /// Creates a new `Sensors` instance with the given number of sensors, initializing
     /// all position and orientation values to 0.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(number_of_sensors: usize) -> Self {
         Self {
             positions_mm: Array2::zeros((number_of_sensors, 3)),
@@ -34,6 +35,7 @@ impl Sensors {
     ///
     /// The sensor orientations alternate between x, y, and z axes aligned.
     #[must_use]
+    #[tracing::instrument]
     pub fn from_model_config(config: &Model) -> Self {
         #[allow(clippy::cast_precision_loss)]
         let distance = [
@@ -74,12 +76,14 @@ impl Sensors {
     /// This is determined by the size of the first dimension of the
     /// `positions_mm` array.
     #[must_use]
+    #[tracing::instrument]
     pub fn count(&self) -> usize {
         self.positions_mm.shape()[0]
     }
 
     /// Saves the sensor positions and orientations to .npy files in the given path.
     /// Creates the directory if it does not exist.
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("sensor_positions_mm.npy")).unwrap());

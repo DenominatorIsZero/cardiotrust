@@ -57,6 +57,7 @@ impl Default for Model {
     ///
     /// This provides a reasonable starting point for configuring a Model.
     /// Individual properties can be overriden as needed.
+    #[tracing::instrument]
     fn default() -> Self {
         let mut propagation_velocities_m_per_s = HashMap::new();
         propagation_velocities_m_per_s.insert(VoxelType::Sinoatrial, 1.1);

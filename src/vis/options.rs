@@ -17,6 +17,7 @@ pub struct VisOptions {
 }
 
 impl Default for VisOptions {
+    #[tracing::instrument]
     fn default() -> Self {
         Self {
             playbackspeed: 0.1,

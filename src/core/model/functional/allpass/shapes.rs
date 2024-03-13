@@ -30,6 +30,7 @@ impl ArrayActivationTime {
     /// # Panics
     ///
     /// Panics if the values cannot be written to the file.
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("activation_time.npy")).unwrap());
@@ -56,6 +57,7 @@ where
     /// Creates a new `ArrayGains` with the given number of states,
     /// initializing all values to zeros.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(number_of_states: usize) -> Self {
         Self {
             values: Array2::zeros((number_of_states, 78)),
@@ -70,6 +72,7 @@ impl ArrayGains<f32> {
     ///
     /// Panics if the file cannot be created or written to.
     #[allow(dead_code)]
+    #[tracing::instrument]
     pub(crate) fn save_npy(&self, path: &std::path::Path, name: &str) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
@@ -87,6 +90,7 @@ impl ArrayIndicesGains {
     /// Creates a new `ArrayIndicesGains` with the given number of states,
     /// initializing all values to `None`.
     #[must_use]
+    #[tracing::instrument]
     pub fn empty(number_of_states: usize) -> Self {
         Self {
             values: Array2::from_elem((number_of_states, 78), None),
@@ -100,6 +104,7 @@ impl ArrayIndicesGains {
     /// # Panics
     ///
     /// Panics if the file cannot be created or written to.
+    #[tracing::instrument]
     pub fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("output_state_indices.npy")).unwrap());
@@ -134,6 +139,7 @@ where
     /// Panics if `number_of_states` is not divisible by 3.
     #[must_use]
     #[allow(clippy::cast_precision_loss)]
+    #[tracing::instrument]
     pub fn empty(number_of_states: usize) -> Self {
         assert_relative_eq!(number_of_states as f32 % 3.0, 0.0);
         Self {
@@ -150,6 +156,7 @@ impl ArrayDelays<f32> {
     /// # Panics
     ///
     /// Panics if the file cannot be created or written to.
+    #[tracing::instrument]
     pub fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("coefs.npy")).unwrap());
@@ -166,6 +173,7 @@ impl ArrayDelays<usize> {
     ///
     /// If the target directory cannot be created, the file cannot be opened,
     /// or if a delay value cannot be converted to `u32`.
+    #[tracing::instrument]
     pub fn save_npy(&self, path: &std::path::Path) {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("delays.npy")).unwrap());

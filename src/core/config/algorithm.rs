@@ -43,6 +43,7 @@ pub struct Algorithm {
 impl Default for Algorithm {
     /// Returns a default `Algorithm` configuration with reasonable defaults for most use cases.
     #[must_use]
+    #[tracing::instrument]
     fn default() -> Self {
         Self {
             algorithm_type: AlgorithmType::ModelBased,

@@ -10,8 +10,15 @@ test:
 test-all:
   cargo nextest run -- --ignored
 
+lint:
+    clippy-tracing --action check --exclude target --exclude benches
+    cargo clippy
+
 bench:
   cargo bench
+
+work: lint test bench
+
 
 wasm-build:
   cargo build --target wasm32-unknown-unknown --bin client

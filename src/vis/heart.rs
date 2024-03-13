@@ -268,6 +268,7 @@ const fn type_to_color(voxel_type: VoxelType) -> Color {
 /// system states over time. Applies a Viridis color map to the norm
 /// values to generate RGB colors for each voxel.
 #[allow(clippy::cast_possible_truncation)]
+#[tracing::instrument]
 fn set_heart_voxel_colors_to_norm(
     mut query: Query<&mut VoxelData>,
     scenario: &Scenario,
@@ -311,6 +312,7 @@ fn set_heart_voxel_colors_to_norm(
 /// to the max values to generate RGB colors for each voxel. Can do relative coloring
 /// based on min/max of activation across voxels if `relative_coloring` is true.
 #[allow(clippy::cast_possible_truncation)]
+#[tracing::instrument]
 fn set_heart_voxel_colors_to_max(
     mut query: Query<&mut VoxelData>,
     scenario: &Scenario,

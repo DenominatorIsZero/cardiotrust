@@ -4,6 +4,7 @@ use ndarray::{Array2, ArrayBase, Dim, OwnedRepr, ViewRepr};
 /// Calculates a gain matrix that scales each input dimension by the sign of
 /// the corresponding output dimension, with zeros for output dimensions that
 /// are close to zero.
+#[tracing::instrument]
 pub fn calculate(
     input_direction: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
     output_direction: ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
