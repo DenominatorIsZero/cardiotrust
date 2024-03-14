@@ -303,7 +303,7 @@ impl ArrayMaximumRegularization {
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn new(number_of_states: usize) -> Self {
-         trace!("Creating ArrayMaximumRegularization");
+        trace!("Creating ArrayMaximumRegularization");
         Self {
             values: Array1::zeros(number_of_states),
         }
