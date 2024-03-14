@@ -2,9 +2,9 @@ pub mod estimation;
 pub mod metrics;
 pub mod refinement;
 
-use nalgebra::{inf_sup, DMatrix, SVD};
+use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
-use tracing::{debug, info, trace};
+use tracing::{debug, trace};
 
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
@@ -250,6 +250,7 @@ mod test {
 
     use ndarray::Dim;
     use ndarray_stats::QuantileExt;
+    use tracing::info;
 
     use crate::core::config::algorithm::Algorithm as AlgorithmConfig;
     use crate::core::config::simulation::Simulation as SimulationConfig;

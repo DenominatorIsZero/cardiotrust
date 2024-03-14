@@ -6,7 +6,7 @@ use std::{
     fs::{self, File},
     io::BufWriter,
 };
-use tracing::{debug, info, trace};
+use tracing::{debug, trace};
 
 use super::{estimation::Estimations, refinement::derivation::Derivatives};
 use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
