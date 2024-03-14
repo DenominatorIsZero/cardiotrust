@@ -10,14 +10,14 @@ use crate::core::scenario::Scenario;
 /// and spawns an entity for each with the appropriate transform.
 /// The color and scale are also set based on the sensor orientation.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 pub(crate) fn spawn_sensors(
     commands: &mut Commands,
     ass: Res<AssetServer>,
     materials: &mut Assets<StandardMaterial>,
     scenario: &Scenario,
 ) {
-    info!("Running system to spawn sensors.");
+    debug!("Running system to spawn sensors.");
     let data = scenario.data.as_ref().expect("Data to be some");
     let model = data.get_model();
     let sensors = &model.spatial_description.sensors;

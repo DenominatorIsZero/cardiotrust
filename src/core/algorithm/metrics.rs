@@ -188,14 +188,14 @@ impl Metrics {
     /// in steps of 0.01. Stores the dice score, `IoU`, precision, and recall for each
     /// threshold value in the given metric arrays.
     #[allow(clippy::cast_precision_loss)]
-    #[tracing::instrument(level = "info", skip_all)]
+    #[tracing::instrument(level = "debug", skip_all)]
     pub fn calculate_final(
         &mut self,
         estimations: &Estimations,
         ground_truth: &VoxelTypes,
         voxel_numbers: &VoxelNumbers,
     ) {
-        info!("Calculating final metrics");
+        debug!("Calculating final metrics");
         for i in 0..=100 {
             let threshold = i as f32 / 100.0;
             let (dice, iou, precision, recall) =

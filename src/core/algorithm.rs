@@ -2,9 +2,9 @@ pub mod estimation;
 pub mod metrics;
 pub mod refinement;
 
-use nalgebra::{DMatrix, SVD};
+use nalgebra::{inf_sup, DMatrix, SVD};
 use ndarray::{s, Array1};
-use tracing::{info, trace};
+use tracing::{debug, info, trace};
 
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
@@ -27,14 +27,14 @@ use super::{
 ///
 /// - svd calculation fails
 ///
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 pub fn calculate_pseudo_inverse(
     functional_description: &FunctionalDescription,
     results: &mut Results,
     data: &Data,
     config: &Algorithm,
 ) {
-    info!("Calculating pseudo inverse");
+    debug!("Calculating pseudo inverse");
     let rows = functional_description.measurement_matrix.values.shape()[0];
     let columns = functional_description.measurement_matrix.values.shape()[1];
     let measurement_matrix = DMatrix::from_row_slice(
@@ -123,7 +123,7 @@ pub fn calculate_pseudo_inverse(
 ///
 /// This includes calculating the system estimates
 /// and performing one gradient descent step.
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "debug")]
 pub fn run_epoch(
     functional_description: &mut FunctionalDescription,
     results: &mut Results,
@@ -131,7 +131,7 @@ pub fn run_epoch(
     config: &Algorithm,
     epoch_index: usize,
 ) {
-    info!("Running epoch {}", epoch_index);
+    debug!("Running epoch {}", epoch_index);
     results.estimations.reset();
     results.derivatives.reset();
     let num_steps = results.estimations.system_states.values.shape()[0];

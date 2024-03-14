@@ -225,13 +225,13 @@ fn handle_init_est_message(
 /// Updates the simulation values from the payload of an `UPDATE_SIM`
 /// websocket message. Updates the system states and measurements
 /// in the selected scenario's simulation struct.
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 fn handle_update_sim_message(
     payload: &Value,
     selected_scenario: &SelectedSenario,
     scenario_list: &mut ScenarioList,
 ) {
-    info!("Updateing simulation values.");
+    debug!("Updateing simulation values.");
     let scenario = &mut scenario_list.entries[selected_scenario
         .index
         .expect("Selected scenario to be some.")]
@@ -252,13 +252,13 @@ fn handle_update_sim_message(
 /// Updates the estimation values from the payload of an `UPDATE_EST`
 /// websocket message. Updates the system states and measurements
 /// in the selected scenario's estimation struct.
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 fn handle_update_est_message(
     payload: &Value,
     selected_scenario: &SelectedSenario,
     scenario_list: &mut ScenarioList,
 ) {
-    info!("Updateing estimation values.");
+    debug!("Updateing estimation values.");
     let scenario = &mut scenario_list.entries[selected_scenario
         .index
         .expect("Selected scenario to be some.")]
@@ -327,9 +327,9 @@ fn update_values(
 /// Initializes the voxel types in the model by mapping values from the
 /// "pppcVoxelTypes" key in the payload to `VoxelType` enum variants.
 #[allow(clippy::similar_names)]
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 fn initialize_voxel_types(model: &mut Model, payload: &Value) {
-    info!("Initializing voxel types.");
+    debug!("Initializing voxel types.");
     let types = &mut model.spatial_description.voxels.types.values;
     let key = "pppcVoxelTypes";
     let pppc_voxel_types = payload
@@ -371,9 +371,9 @@ fn initialize_voxel_types(model: &mut Model, payload: &Value) {
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation
 )]
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
-    info!("Initializing voxel positions.");
+    debug!("Initializing voxel positions.");
     let positions = &mut model.spatial_description.voxels.positions_mm.values;
     let key = "ppppfVoxelPositionsMm";
     let ppppf_voxel_positions = payload
@@ -414,9 +414,9 @@ fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss
 )]
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
-    info!("Initializing voxel numbers.");
+    debug!("Initializing voxel numbers.");
     let numbers = &mut model.spatial_description.voxels.numbers.values;
     let key = "pppuVoxelNumbers";
     let pppu_voxel_numbers = payload
@@ -451,9 +451,9 @@ fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss
 )]
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 fn initialize_sensor_positions(model: &mut Model, payload: &Value) {
-    info!("Initializing sensor positions.");
+    debug!("Initializing sensor positions.");
     let positions = &mut model.spatial_description.sensors.positions_mm;
     let key = "ppfSensorPositionsMm";
     let ppf_sensor_positions_mm = payload
@@ -482,9 +482,9 @@ fn initialize_sensor_positions(model: &mut Model, payload: &Value) {
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss
 )]
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 fn initialize_sensor_orientations(model: &mut Model, payload: &Value) {
-    info!("Initializing sensor orientations.");
+    debug!("Initializing sensor orientations.");
     let orientations = &mut model.spatial_description.sensors.orientations_xyz;
     let key = "ppfSensorOrientations";
     let ppf_sensor_orientations = payload
@@ -515,14 +515,14 @@ fn initialize_sensor_orientations(model: &mut Model, payload: &Value) {
     clippy::cast_precision_loss,
     clippy::cast_sign_loss
 )]
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 fn init_scenario(
     payload: &Value,
     selected_scenario: &mut SelectedSenario,
     scenario_list: &mut ScenarioList,
     sample_tracker: &mut SampleTracker,
 ) {
-    info!("Initializing scenario struct.");
+    debug!("Initializing scenario struct.");
     let number_of_sensors = usize::try_from(
         payload
             .get("iNumberOfSensors")

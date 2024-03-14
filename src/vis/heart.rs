@@ -35,7 +35,7 @@ pub struct VoxelData {
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss
 )]
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 pub fn init_voxels(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
@@ -44,7 +44,7 @@ pub fn init_voxels(
     sample_tracker: &SampleTracker,
     camera: &mut Transform,
 ) {
-    info!("Running system to initialize voxel components.");
+    debug!("Running system to initialize voxel components.");
     let data = scenario.data.as_ref().expect("Data to be some");
     let model = data.get_model();
     let voxels = &model.spatial_description.voxels;
@@ -137,7 +137,7 @@ pub(crate) fn update_heart_voxel_colors(
 ///
 /// Panics if selected scenario is corrupted.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument(level = "info", skip_all)]
+#[tracing::instrument(level = "debug", skip_all)]
 pub fn on_vis_mode_changed(
     vis_options: Res<VisOptions>,
     query: Query<&mut VoxelData>,
@@ -151,7 +151,7 @@ pub fn on_vis_mode_changed(
     if !vis_options.is_changed() {
         return;
     }
-    info!("Visualization mode changed to {:?}.", vis_options.mode);
+    debug!("Visualization mode changed to {:?}.", vis_options.mode);
     let scenario =
         &scenario_list.entries[selected_scenario.index.expect("index to be some.")].scenario;
 

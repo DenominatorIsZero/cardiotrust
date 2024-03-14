@@ -6,13 +6,13 @@ use std::f32::consts::PI;
 /// and translated. A PBR material with a transparent color is created and
 /// applied to the mesh.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument(skip(commands, materials, ass), level = "info")]
+#[tracing::instrument(skip(commands, materials, ass), level = "debug")]
 pub(crate) fn spawn_torso(
     mut commands: Commands,
     ass: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    info!("Running system to spawn torso.");
+    debug!("Running system to spawn torso.");
     // note that we have to include the `Scene0` label
     let my_mesh: Handle<Mesh> = ass.load("torso.glb#Mesh0/Primitive0");
 
