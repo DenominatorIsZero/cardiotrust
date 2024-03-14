@@ -59,7 +59,7 @@ impl Default for Algorithm {
             regularization_strength: 1.0,
             regularization_threshold: 1.01,
             model: Model::default(),
-            constrain_system_states: true,
+            constrain_system_states: false,
             state_clamping_threshold: 1.5,
             freeze_gains: false,
             freeze_delays: true,

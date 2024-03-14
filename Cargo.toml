@@ -54,7 +54,7 @@ features = [
 criterion = "0.5.1"
 
 [[bench]]
-name = "my_benchmark"
+name = "run_epoch_benches"
 harness = false
 
 [profile.test]
