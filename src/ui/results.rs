@@ -1,4 +1,4 @@
-use bevy::{prelude::*, ui::debug};
+use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
 use egui::{Slider, Spinner};
 use ndarray::s;

@@ -2,9 +2,9 @@ pub mod estimation;
 pub mod metrics;
 pub mod refinement;
 
-use nalgebra::{inf_sup, DMatrix, SVD};
+use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
-use tracing::{debug, info, trace};
+use tracing::{info, trace};
 
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,

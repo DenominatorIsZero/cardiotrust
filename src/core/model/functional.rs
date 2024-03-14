@@ -9,7 +9,6 @@ use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tracing::{debug, trace};
-use tracing_subscriber::field::debug;
 
 use self::{
     allpass::{shapes::ArrayGains, APParameters},
