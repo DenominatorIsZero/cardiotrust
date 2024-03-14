@@ -21,7 +21,7 @@ use crate::{
     clippy::too_many_arguments,
     clippy::too_many_lines
 )]
-#[tracing::instrument(skip(contexts, commands, meshes, materials))]
+#[tracing::instrument(skip(contexts, commands, meshes, materials), level = "trace")]
 pub fn draw_ui_volumetric(
     mut contexts: EguiContexts,
     mut commands: Commands,
@@ -34,6 +34,7 @@ pub fn draw_ui_volumetric(
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
 ) {
+    trace!("Running system to draw volumetric UI.");
     let scenario = if let Some(index) = selected_scenario.index {
         Some(
             &scenario_list

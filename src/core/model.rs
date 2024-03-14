@@ -4,6 +4,7 @@ pub mod spatial;
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use tracing::{debug, trace};
 
 use self::{functional::FunctionalDescription, spatial::SpatialDescription};
 use super::config::model::Model as ModelConfig;
@@ -18,13 +19,14 @@ pub struct Model {
 impl Model {
     /// Creates an empty `Model` with the given parameters.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn empty(
         number_of_states: usize,
         number_of_sensors: usize,
         number_of_steps: usize,
         voxels_in_dims: Dim<[usize; 3]>,
     ) -> Self {
+        debug!("Creating empty model");
         Self {
             functional_description: FunctionalDescription::empty(
                 number_of_states,
@@ -49,12 +51,13 @@ impl Model {
     ///
     /// This function will return an error if the model configuration does not
     /// result in valid delays or topology.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn from_model_config(
         config: &ModelConfig,
         sample_rate_hz: f32,
         duration_s: f32,
     ) -> Result<Self, Box<dyn Error>> {
+        debug!("Creating model from config");
         let spatial_description = SpatialDescription::from_model_config(config);
         let functional_description = FunctionalDescription::from_model_config(
             config,
@@ -70,8 +73,9 @@ impl Model {
 
     /// Saves the functional and spatial descriptions of the model
     /// to .npy files at the given path.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving model to npy");
         self.functional_description.save_npy(path);
         self.spatial_description.save_npy(path);
     }

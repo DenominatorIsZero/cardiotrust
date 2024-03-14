@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tracing::debug;
 
 use super::model::Model;
 
@@ -43,8 +44,9 @@ pub struct Algorithm {
 impl Default for Algorithm {
     /// Returns a default `Algorithm` configuration with reasonable defaults for most use cases.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn default() -> Self {
+        debug!("Creating default algorithm");
         Self {
             algorithm_type: AlgorithmType::ModelBased,
             epochs: 1,

@@ -1,4 +1,4 @@
-use bevy::{prelude::*, time::common_conditions::on_timer};
+use bevy::{prelude::*, time::common_conditions::on_timer, ui::debug};
 
 use ndarray::Dim;
 use serde_json::Value;
@@ -27,8 +27,9 @@ use crate::{
 pub struct WebsocketPlugin;
 
 impl Plugin for WebsocketPlugin {
-    #[tracing::instrument(skip(app))]
+    #[tracing::instrument(level = "info", skip(app))]
     fn build(&self, app: &mut App) {
+        info!("Initializing websocket plugin.");
         app.init_resource::<MessageBuffer>()
             .init_resource::<WebSocketResource>()
             .add_systems(Startup, init_websocket)
@@ -48,8 +49,9 @@ struct MessageBuffer {
 }
 
 impl Default for MessageBuffer {
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn default() -> Self {
+        debug!("Initializing message buffer.");
         Self {
             messages: Arc::new(Mutex::new(Vec::new())),
         }
@@ -73,8 +75,9 @@ struct WebSocketResource {
 /// Sends a heartbeat message over the websocket connection in `websocket_resource`
 /// if it is in a ready state. This keeps the connection alive.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn send_heartbeat(websocket_resource: Res<WebSocketResource>) {
+    debug!("Sending heartbeat.");
     if let Some(websocket) = websocket_resource.websocket.as_ref() {
         if websocket.websocket.ready_state() == 1 {
             websocket
@@ -89,7 +92,7 @@ fn send_heartbeat(websocket_resource: Res<WebSocketResource>) {
 /// payload. The header determines which handler function is called. The handlers
 /// update the simulation state and visualizations.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument]
+#[tracing::instrument(level = "warn")]
 fn handle_websocket_messages(
     message_buffer: Res<MessageBuffer>,
     mut sample_tracker: ResMut<SampleTracker>,
@@ -97,6 +100,7 @@ fn handle_websocket_messages(
     mut scenario_list: ResMut<ScenarioList>,
     mut vis_options: ResMut<VisOptions>,
 ) {
+    trace!("Running handle_websocket_messages system");
     if let Some(message) = message_buffer.messages.lock().unwrap().pop() {
         let message: Value = serde_json::from_str(&message).unwrap();
         message.get("h").map_or_else(
@@ -128,7 +132,7 @@ fn handle_websocket_messages(
                         handle_update_est_message(payload, &selected_scenario, &mut scenario_list);
                         vis_options.set_changed();
                     }
-                    _ => info!("Do not know header {header}"),
+                    _ => warn!("Do not know header {header}"),
                 }
             },
         );
@@ -139,7 +143,7 @@ fn handle_websocket_messages(
 /// Sets voxel size, initializes voxel types, positions, numbers, and sensor positions/orientations.
 /// Requires that the selected scenario is already set.
 #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn handle_init_sim_message(
     payload: &Value,
     sample_tracker: &mut SampleTracker,
@@ -183,7 +187,7 @@ fn handle_init_sim_message(
     clippy::cast_precision_loss,
     clippy::cast_sign_loss
 )]
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn handle_init_est_message(
     payload: &Value,
     sample_tracker: &mut SampleTracker,
@@ -221,7 +225,7 @@ fn handle_init_est_message(
 /// Updates the simulation values from the payload of an `UPDATE_SIM`
 /// websocket message. Updates the system states and measurements
 /// in the selected scenario's simulation struct.
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn handle_update_sim_message(
     payload: &Value,
     selected_scenario: &SelectedSenario,
@@ -248,7 +252,7 @@ fn handle_update_sim_message(
 /// Updates the estimation values from the payload of an `UPDATE_EST`
 /// websocket message. Updates the system states and measurements
 /// in the selected scenario's estimation struct.
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn handle_update_est_message(
     payload: &Value,
     selected_scenario: &SelectedSenario,
@@ -275,12 +279,13 @@ fn handle_update_est_message(
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation
 )]
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn update_values(
     payload: &Value,
     states: &mut ArraySystemStates,
     measurements: &mut ArrayMeasurements,
 ) {
+    debug!("Updating values.");
     let states = &mut states.values;
     let key = "ppfStatesToExoBuffer";
     let ppf_state_buffer = payload
@@ -322,8 +327,9 @@ fn update_values(
 /// Initializes the voxel types in the model by mapping values from the
 /// "pppcVoxelTypes" key in the payload to `VoxelType` enum variants.
 #[allow(clippy::similar_names)]
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn initialize_voxel_types(model: &mut Model, payload: &Value) {
+    info!("Initializing voxel types.");
     let types = &mut model.spatial_description.voxels.types.values;
     let key = "pppcVoxelTypes";
     let pppc_voxel_types = payload
@@ -365,8 +371,9 @@ fn initialize_voxel_types(model: &mut Model, payload: &Value) {
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation
 )]
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
+    info!("Initializing voxel positions.");
     let positions = &mut model.spatial_description.voxels.positions_mm.values;
     let key = "ppppfVoxelPositionsMm";
     let ppppf_voxel_positions = payload
@@ -407,8 +414,9 @@ fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss
 )]
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
+    info!("Initializing voxel numbers.");
     let numbers = &mut model.spatial_description.voxels.numbers.values;
     let key = "pppuVoxelNumbers";
     let pppu_voxel_numbers = payload
@@ -443,8 +451,9 @@ fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss
 )]
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn initialize_sensor_positions(model: &mut Model, payload: &Value) {
+    info!("Initializing sensor positions.");
     let positions = &mut model.spatial_description.sensors.positions_mm;
     let key = "ppfSensorPositionsMm";
     let ppf_sensor_positions_mm = payload
@@ -473,8 +482,9 @@ fn initialize_sensor_positions(model: &mut Model, payload: &Value) {
     clippy::cast_possible_truncation,
     clippy::cast_precision_loss
 )]
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn initialize_sensor_orientations(model: &mut Model, payload: &Value) {
+    info!("Initializing sensor orientations.");
     let orientations = &mut model.spatial_description.sensors.orientations_xyz;
     let key = "ppfSensorOrientations";
     let ppf_sensor_orientations = payload
@@ -505,13 +515,14 @@ fn initialize_sensor_orientations(model: &mut Model, payload: &Value) {
     clippy::cast_precision_loss,
     clippy::cast_sign_loss
 )]
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn init_scenario(
     payload: &Value,
     selected_scenario: &mut SelectedSenario,
     scenario_list: &mut ScenarioList,
     sample_tracker: &mut SampleTracker,
 ) {
+    info!("Initializing scenario struct.");
     let number_of_sensors = usize::try_from(
         payload
             .get("iNumberOfSensors")
@@ -596,11 +607,12 @@ fn init_scenario(
 /// sends an initial message over the socket. Stores the `WebSocket` in the
 /// `WebSocketResource`.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn init_websocket(
     message_buffer: Res<MessageBuffer>,
     mut websocket_resource: ResMut<WebSocketResource>,
 ) {
+    info!("Initializing WebSocket.");
     // Connect to an echo server
     let ws = WebSocket::new("ws://127.0.0.1:3774/").unwrap();
     // For small binary messages, like CBOR, Arraybuffer is more efficient than Blob handling

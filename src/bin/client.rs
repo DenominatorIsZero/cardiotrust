@@ -3,8 +3,9 @@ use cardiotrust::{
     ui::ClientUiPlugin, vis::VisPlugin, websocket::WebsocketPlugin, ScenarioList, SelectedSenario,
 };
 
-#[tracing::instrument]
+#[tracing::instrument(level = "info")]
 fn main() {
+    info!("Starting Websocket Client application.");
     App::new()
         .add_plugins(
             DefaultPlugins

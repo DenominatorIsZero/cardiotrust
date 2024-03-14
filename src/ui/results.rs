@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, ui::debug};
 use bevy_egui::{egui, EguiContexts};
 use egui::{Slider, Spinner};
 use ndarray::s;
@@ -108,8 +108,9 @@ pub struct PlaybackSpeed {
 impl Default for ResultImages {
     /// Populates the image bundles with default `ImageBundle` instances for each `ImageType`.
     /// This provides an initial empty set of images that can be rendered.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn default() -> Self {
+        debug!("Creating default result images");
         let mut image_bundles = HashMap::new();
 
         ImageType::iter().for_each(|image_type| {
@@ -122,8 +123,9 @@ impl Default for ResultImages {
 
 impl ResultImages {
     /// Resets the `ResultImages` to the default state.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn reset(&mut self) {
+        debug!("Resetting result images");
         *self = Self::default();
     }
 }
@@ -133,11 +135,12 @@ impl ResultImages {
 /// This allows the result images to be cleared when switching between scenarios,
 /// so that the new images can be loaded.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn reset_result_images(
     mut result_images: ResMut<ResultImages>,
     selected_scenario: Res<SelectedSenario>,
 ) {
+    trace!("Runing system to check if result images need to be reset");
     if selected_scenario.is_changed() {
         result_images.reset();
     }
@@ -149,7 +152,7 @@ pub fn reset_result_images(
 /// and loading/displaying the image. Handles async image loading in the background.
 /// Resets images when switching scenarios.
 #[allow(clippy::module_name_repetitions, clippy::needless_pass_by_value)]
-#[tracing::instrument(skip(contexts))]
+#[tracing::instrument(skip(contexts), level = "trace")]
 pub fn draw_ui_results(
     mut contexts: EguiContexts,
     mut result_images: ResMut<ResultImages>,
@@ -158,6 +161,7 @@ pub fn draw_ui_results(
     selected_scenario: Res<SelectedSenario>,
     mut playback_speed: ResMut<PlaybackSpeed>,
 ) {
+    trace!("Runing system to draw results UI");
     egui_extras::install_image_loaders(contexts.ctx_mut());
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
         ui.label("");
@@ -240,8 +244,9 @@ pub fn draw_ui_results(
 /// Returns the file path for the image of the given type for the provided scenario.
 /// Joins the results directory, scenario ID, image folder, image type string,
 /// and png extension to generate the path.
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn get_image_path(scenario: &Scenario, image_type: ImageType) -> String {
+    debug!("Generating image path");
     Path::new("file://results")
         .join(scenario.get_id())
         .join("img")
@@ -261,8 +266,9 @@ fn get_image_path(scenario: &Scenario, image_type: ImageType) -> String {
     clippy::used_underscore_binding,
     unreachable_code
 )]
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn generate_image(scenario: Scenario, image_type: ImageType) {
+    debug!("Generating image");
     let mut path = Path::new("results").join(scenario.get_id()).join("img");
     fs::create_dir_all(&path).unwrap();
     path = path.join(image_type.to_string()).with_extension("png");
@@ -732,8 +738,9 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
     clippy::too_many_lines,
     clippy::useless_let_if_seq
 )]
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn generate_gifs(scenario: Scenario, gif_type: GifType, playback_speed: f32) {
+    debug!("Generating GIFs for scenario {}", scenario.get_id());
     let mut path = Path::new("results").join(scenario.get_id()).join("img");
     fs::create_dir_all(&path).unwrap();
     path = path.join(gif_type.to_string()).with_extension("png");

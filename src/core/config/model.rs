@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use tracing::debug;
 
 use crate::core::model::spatial::voxels::VoxelType;
 
@@ -57,8 +58,9 @@ impl Default for Model {
     ///
     /// This provides a reasonable starting point for configuring a Model.
     /// Individual properties can be overriden as needed.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn default() -> Self {
+        debug!("Creating default model");
         let mut propagation_velocities_m_per_s = HashMap::new();
         propagation_velocities_m_per_s.insert(VoxelType::Sinoatrial, 1.1);
         propagation_velocities_m_per_s.insert(VoxelType::Atrium, 1.1);

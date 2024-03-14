@@ -1,4 +1,5 @@
 use egui_extras::{Column, TableBuilder};
+use tracing::trace;
 
 use super::common::draw_ui_scenario_common;
 use crate::core::{
@@ -8,8 +9,9 @@ use crate::core::{
 
 /// Draws the UI elements for the algorithm.
 #[allow(clippy::too_many_lines)]
-#[tracing::instrument(skip(parent))]
+#[tracing::instrument(skip(parent), level = "trace")]
 pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenario) {
+    trace!("Running system to draw scenario algorithm UI.");
     parent.set_enabled(*scenario.get_status() == Status::Planning);
     let algorithm = &mut scenario.config.algorithm;
     egui::ScrollArea::vertical()

@@ -5,6 +5,7 @@ use std::{
     fs::{self, File},
     io::BufWriter,
 };
+use tracing::{debug, trace};
 
 use crate::core::config::model::Model;
 
@@ -19,8 +20,9 @@ impl Sensors {
     /// Creates a new `Sensors` instance with the given number of sensors, initializing
     /// all position and orientation values to 0.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn empty(number_of_sensors: usize) -> Self {
+        debug!("Creating empty sensors");
         Self {
             positions_mm: Array2::zeros((number_of_sensors, 3)),
             orientations_xyz: Array2::zeros((number_of_sensors, 3)),
@@ -35,8 +37,9 @@ impl Sensors {
     ///
     /// The sensor orientations alternate between x, y, and z axes aligned.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn from_model_config(config: &Model) -> Self {
+        debug!("Creating sensors from model config");
         #[allow(clippy::cast_precision_loss)]
         let distance = [
             config.sensor_array_size_mm[0] / config.sensors_per_axis[0] as f32,
@@ -76,15 +79,17 @@ impl Sensors {
     /// This is determined by the size of the first dimension of the
     /// `positions_mm` array.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn count(&self) -> usize {
+        trace!("Retrieving number of sensors");
         self.positions_mm.shape()[0]
     }
 
     /// Saves the sensor positions and orientations to .npy files in the given path.
     /// Creates the directory if it does not exist.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving sensors to npy files");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("sensor_positions_mm.npy")).unwrap());
         self.positions_mm.write_npy(writer).unwrap();

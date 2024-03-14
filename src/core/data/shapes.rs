@@ -5,6 +5,7 @@ use std::{
     fs::{self, File},
     io::BufWriter,
 };
+use tracing::trace;
 
 /// Shape for the simulated/estimated system states
 ///
@@ -17,8 +18,9 @@ pub struct ArraySystemStates {
 impl ArraySystemStates {
     /// Creates an empty `ArraySystemStates` with the given dimensions.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn empty(number_of_steps: usize, number_of_states: usize) -> Self {
+        trace!("Creating empty system states");
         Self {
             values: Array2::zeros((number_of_steps, number_of_states)),
         }
@@ -32,8 +34,9 @@ impl ArraySystemStates {
     /// # Panics
     ///
     /// Panics if directory of file cant be created.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving system states");
         fs::create_dir_all(path).unwrap();
 
         let writer = BufWriter::new(File::create(path.join("system_states.npy")).unwrap());
@@ -48,9 +51,10 @@ pub struct ArrayMeasurements {
 
 impl ArrayMeasurements {
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     /// Creates an empty `ArrayMeasurements` with the given dimensions.
     pub fn empty(number_of_steps: usize, number_of_sensors: usize) -> Self {
+        trace!("Creating empty measurements");
         Self {
             values: Array2::zeros((number_of_steps, number_of_sensors)),
         }
@@ -65,8 +69,9 @@ impl ArrayMeasurements {
     /// # Panics
     ///
     /// Panics if directory of file cant be created.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving measurements");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("measurements.npy")).unwrap());
         self.values.write_npy(writer).unwrap();

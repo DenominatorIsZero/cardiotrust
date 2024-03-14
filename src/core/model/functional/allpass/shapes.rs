@@ -7,6 +7,7 @@ use std::{
     fs::{self, File},
     io::BufWriter,
 };
+use tracing::{debug, trace};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ArrayActivationTime {
@@ -17,8 +18,9 @@ impl ArrayActivationTime {
     #[must_use]
     /// Creates a new `ArrayActivationTime` with the given voxel dimensions,
     /// initializing all values to `None`.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn empty(voxels_in_dims: Dim<[usize; 3]>) -> Self {
+        debug!("Creating empty activation time array");
         Self {
             values: Array3::from_elem(voxels_in_dims, None),
         }
@@ -31,8 +33,9 @@ impl ArrayActivationTime {
     /// # Panics
     ///
     /// Panics if the values cannot be written to the file.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving activation time to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("activation_time.npy")).unwrap());
         self.values
@@ -58,8 +61,9 @@ where
     /// Creates a new `ArrayGains` with the given number of states,
     /// initializing all values to zeros.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn empty(number_of_states: usize) -> Self {
+        trace!("Creating empty gains array");
         Self {
             values: Array2::zeros((number_of_states, 78)),
         }
@@ -73,8 +77,9 @@ impl ArrayGains<f32> {
     ///
     /// Panics if the file cannot be created or written to.
     #[allow(dead_code)]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path, name: &str) {
+        trace!("Saving gains to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
         self.values.write_npy(writer).unwrap();
@@ -91,8 +96,9 @@ impl ArrayIndicesGains {
     /// Creates a new `ArrayIndicesGains` with the given number of states,
     /// initializing all values to `None`.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn empty(number_of_states: usize) -> Self {
+        trace!("Creating empty indices gains array");
         Self {
             values: Array2::from_elem((number_of_states, 78), None),
         }
@@ -105,8 +111,9 @@ impl ArrayIndicesGains {
     /// # Panics
     ///
     /// Panics if the file cannot be created or written to.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving indices gains to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("output_state_indices.npy")).unwrap());
         self.values
@@ -140,8 +147,9 @@ where
     /// Panics if `number_of_states` is not divisible by 3.
     #[must_use]
     #[allow(clippy::cast_precision_loss)]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn empty(number_of_states: usize) -> Self {
+        trace!("Creating empty delays array");
         assert_relative_eq!(number_of_states as f32 % 3.0, 0.0);
         Self {
             values: Array2::zeros((number_of_states / 3, 26)),
@@ -157,8 +165,9 @@ impl ArrayDelays<f32> {
     /// # Panics
     ///
     /// Panics if the file cannot be created or written to.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving delays to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("coefs.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
@@ -174,8 +183,9 @@ impl ArrayDelays<usize> {
     ///
     /// If the target directory cannot be created, the file cannot be opened,
     /// or if a delay value cannot be converted to `u32`.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving delays to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("delays.npy")).unwrap());
         self.values

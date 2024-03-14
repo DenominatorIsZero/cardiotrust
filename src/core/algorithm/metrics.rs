@@ -6,6 +6,7 @@ use std::{
     fs::{self, File},
     io::BufWriter,
 };
+use tracing::{debug, info, trace};
 
 use super::{estimation::Estimations, refinement::derivation::Derivatives};
 use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
@@ -58,8 +59,9 @@ impl Metrics {
     /// The length of the per-step arrays is set to `number_of_steps`, and the length of the
     /// per-epoch arrays is set to `number_of_epochs`.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn new(number_of_epochs: usize, number_of_steps: usize) -> Self {
+        debug!("Creating new Metrics struct");
         Self {
             loss: ArrayMetricsSample::new(number_of_steps),
             loss_epoch: ArrayMetricsEpoch::new(number_of_epochs),
@@ -112,7 +114,7 @@ impl Metrics {
     ///
     /// Panics if any array is None.
     #[allow(clippy::cast_precision_loss)]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn calculate_step(
         &mut self,
         estimations: &Estimations,
@@ -120,6 +122,7 @@ impl Metrics {
         regularization_strength: f32,
         time_index: usize,
     ) {
+        trace!("Calculating metrics for step {}", time_index);
         let index = time_index;
 
         self.loss_mse.values[index] = estimations.residuals.values.mapv(|v| v.powi(2)).sum()
@@ -152,8 +155,9 @@ impl Metrics {
     /// # Panics
     ///
     /// Panics if any loss array is None.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn calculate_epoch(&mut self, epoch_index: usize) {
+        debug!("Calculating metrics for epoch {}", epoch_index);
         self.loss_mse_epoch.values[epoch_index] = self.loss_mse.values.mean().unwrap();
         self.loss_maximum_regularization_epoch.values[epoch_index] =
             self.loss_maximum_regularization.values.mean().unwrap();
@@ -184,13 +188,14 @@ impl Metrics {
     /// in steps of 0.01. Stores the dice score, `IoU`, precision, and recall for each
     /// threshold value in the given metric arrays.
     #[allow(clippy::cast_precision_loss)]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "info", skip_all)]
     pub fn calculate_final(
         &mut self,
         estimations: &Estimations,
         ground_truth: &VoxelTypes,
         voxel_numbers: &VoxelNumbers,
     ) {
+        info!("Calculating final metrics");
         for i in 0..=100 {
             let threshold = i as f32 / 100.0;
             let (dice, iou, precision, recall) =
@@ -204,8 +209,9 @@ impl Metrics {
 
     /// Saves all metric arrays to .npy files in the given path.
     /// Creates the directory if it does not exist.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving metrics to npy");
         fs::create_dir_all(path).unwrap();
 
         self.loss.save_npy(path, "loss.npy");
@@ -268,13 +274,17 @@ impl Metrics {
 ///
 /// The estimations, ground truth, and voxel numbers are used to generate voxel type predictions at the given threshold.
 /// These predictions are then compared to the ground truth to calculate the metrics.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 fn calculate_for_threshold(
     estimations: &Estimations,
     ground_truth: &VoxelTypes,
     voxel_numbers: &VoxelNumbers,
     threshold: f32,
 ) -> (f32, f32, f32, f32) {
+    trace!(
+        "Calculating segmentation metrics for threshold {}",
+        threshold
+    );
     let predictions = predict_voxeltype(estimations, ground_truth, voxel_numbers, threshold);
 
     let dice = calculate_dice(&predictions, ground_truth);
@@ -290,8 +300,9 @@ fn calculate_for_threshold(
 /// Recall is defined as the ratio of true positives to total positives.
 /// Returns 1.0 if there are no ground truth positives.
 #[allow(clippy::cast_precision_loss)]
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 fn calculate_recall(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
+    trace!("Calculating recall");
     let gt_positives = ground_truth
         .values
         .iter()
@@ -319,8 +330,9 @@ fn calculate_recall(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 
 /// Precision is defined as the ratio of true positives to total predicted positives.
 /// Returns 0.0 if there are no predicted positives.
 #[allow(clippy::cast_precision_loss)]
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 fn calculate_precision(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
+    trace!("Calculating precision");
     let predicted_positves = predictions
         .values
         .iter()
@@ -350,8 +362,9 @@ fn calculate_precision(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f
 /// to the union (true positives + false positives + false negatives).
 /// Returns 0.0 if there is no intersection.
 #[allow(clippy::cast_precision_loss)]
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 fn calculate_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
+    trace!("Calculating IoU");
     let intersection = predictions
         .values
         .iter()
@@ -385,8 +398,9 @@ fn calculate_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
 /// ground truth. It ranges from 0 to 1, with 1 being perfect agreement
 /// between predictions and ground truth.
 #[allow(clippy::cast_precision_loss)]
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
+    trace!("Calculating Dice");
     let true_positives = predictions
         .values
         .iter()
@@ -430,13 +444,14 @@ fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
 ///
 /// Panics if the provided estimations and ground truth data do not have the same shape.
 #[must_use]
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn predict_voxeltype(
     estimations: &Estimations,
     ground_truth: &VoxelTypes,
     voxel_numbers: &VoxelNumbers,
     threshold: f32,
 ) -> VoxelTypes {
+    trace!("Predicting voxel types");
     let mut predictions = VoxelTypes::empty([
         ground_truth.values.shape()[0],
         ground_truth.values.shape()[1],
@@ -480,8 +495,9 @@ impl ArrayMetricsSample {
     /// Creates a new `ArrayMetricsSample` with the given number of steps, initializing
     /// the values to all zeros.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn new(number_of_steps: usize) -> Self {
+        trace!("Creating ArrayMetricsSample");
         Self {
             values: Array1::zeros(number_of_steps),
         }
@@ -489,8 +505,9 @@ impl ArrayMetricsSample {
 
     /// Saves the array values to a .npy file at the given path with the given name.
     /// Creates any missing directories in the path if needed.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     fn save_npy(&self, path: &std::path::Path, name: &str) {
+        trace!("Saving ArrayMetricsSample");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
         self.values.write_npy(writer).unwrap();
@@ -506,8 +523,9 @@ impl ArrayMetricsEpoch {
     /// Creates a new `ArrayMetricsEpoch` with the given number of epochs, initializing
     /// the values to all zeros.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn new(number_of_epochs: usize) -> Self {
+        trace!("Creating ArrayMetricsEpoch");
         Self {
             values: Array1::zeros(number_of_epochs),
         }
@@ -515,8 +533,9 @@ impl ArrayMetricsEpoch {
 
     /// Saves the array values to a .npy file at the given path with the given name.  
     /// Creates any missing directories in the path if needed.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     fn save_npy(&self, path: &std::path::Path, name: &str) {
+        trace!("Saving ArrayMetricsEpoch to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
         self.values.write_npy(writer).unwrap();

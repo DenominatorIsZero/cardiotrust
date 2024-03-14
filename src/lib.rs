@@ -49,8 +49,9 @@ impl Default for ScenarioList {
     ///
     /// This provides the default initialized state for the scenario list resource,
     /// populated from any existing results.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "info")]
     fn default() -> Self {
+        info!("Loading scenarios from ./results");
         let mut scenario_list = Self {
             entries: Vec::<ScenarioBundle>::new(),
         };

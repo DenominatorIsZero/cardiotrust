@@ -22,12 +22,13 @@ use crate::{core::scenario::Scenario, ui::UiState};
 pub struct VisPlugin;
 
 impl Plugin for VisPlugin {
-    #[tracing::instrument(skip(app))]
+    #[tracing::instrument(level = "info", skip(app))]
     fn build(&self, app: &mut App) {
+        info!("Initializing visualization plugin.");
         app.add_plugins(PanOrbitCameraPlugin)
             .init_resource::<SampleTracker>()
             .init_resource::<VisOptions>()
-            .add_systems(Startup, setup)
+            .add_systems(Startup, setup_light_and_camera)
             .add_systems(Startup, spawn_torso)
             .add_systems(
                 Update,
@@ -46,15 +47,11 @@ impl Plugin for VisPlugin {
     }
 }
 
-#[tracing::instrument(skip(commands))]
-pub fn setup(mut commands: Commands) {
-    setup_light_and_camera(&mut commands);
-}
-
 /// Creates an ambient light to illuminate the full scene.
 /// Spawns a camera entity with default pan/orbit controls.
-#[tracing::instrument(skip(commands))]
-pub fn setup_light_and_camera(commands: &mut Commands) {
+#[tracing::instrument(level = "info", skip_all)]
+pub fn setup_light_and_camera(mut commands: Commands) {
+    info!("Setting up light and camera.");
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
         brightness: 1000.0,
@@ -73,7 +70,7 @@ pub fn setup_light_and_camera(commands: &mut Commands) {
 /// to the provided scenario. Initializes the sample tracker based on the
 /// scenario as well.
 #[allow(clippy::cast_precision_loss)]
-#[tracing::instrument(skip(commands, meshes, materials))]
+#[tracing::instrument(level = "info", skip_all)]
 pub fn setup_heart_and_sensors(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
@@ -83,6 +80,7 @@ pub fn setup_heart_and_sensors(
     camera: &mut Transform,
     ass: Res<AssetServer>,
 ) {
+    info!("Setting up heart and sensors.");
     init_sample_tracker(sample_tracker, scenario);
     spawn_sensors(commands, ass, materials, scenario);
     init_voxels(

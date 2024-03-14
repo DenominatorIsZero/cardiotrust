@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tracing::trace;
 
 /// Summary contains summary statistics for evaluating a scenario.
 ///
@@ -61,8 +62,9 @@ impl Default for Summary {
     ///
     /// Default values are 0.0 for all fields.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     fn default() -> Self {
+        trace!("Creating default summary");
         Self {
             loss: 0.0,
             loss_mse: 0.0,

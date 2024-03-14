@@ -1,14 +1,16 @@
 use approx::relative_eq;
 use ndarray::{Array2, ArrayBase, Dim, OwnedRepr, ViewRepr};
+use tracing::trace;
 
 /// Calculates a gain matrix that scales each input dimension by the sign of
 /// the corresponding output dimension, with zeros for output dimensions that
 /// are close to zero.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn calculate(
     input_direction: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
     output_direction: ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
 ) -> Array2<f32> {
+    trace!("Calculating gain matrix");
     let mut gain = Array2::<f32>::zeros((3, 3));
 
     for input_dimension in 0..3 {

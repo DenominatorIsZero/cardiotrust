@@ -22,8 +22,9 @@ use self::{
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
-    #[tracing::instrument(skip(app))]
+    #[tracing::instrument(level = "info", skip(app))]
     fn build(&self, app: &mut App) {
+        info!("Initializing UI plugin.");
         app.init_state::<UiState>()
             .init_resource::<ResultImages>()
             .init_resource::<SelectedResultImage>()
@@ -80,8 +81,9 @@ pub enum UiState {
 pub struct ClientUiPlugin;
 
 impl Plugin for ClientUiPlugin {
-    #[tracing::instrument(skip(app))]
+    #[tracing::instrument(level = "info", skip(app))]
     fn build(&self, app: &mut App) {
+        info!("Initializing client UI plugin.");
         app.init_state::<UiState>()
             .init_resource::<PlaybackSpeed>()
             .add_plugins(EguiPlugin)

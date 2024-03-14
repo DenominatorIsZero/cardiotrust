@@ -1,5 +1,6 @@
 use ndarray::{s, Array1};
 use serde::{Deserialize, Serialize};
+use tracing::{debug, trace};
 
 use crate::core::{
     algorithm::estimation::Estimations,
@@ -42,8 +43,9 @@ impl Derivatives {
     /// Creates a new Derivatives struct with empty arrays initialized to
     /// the given number of states.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn new(number_of_states: usize) -> Self {
+        debug!("Creating empty derivatives");
         Self {
             gains: ArrayGains::empty(number_of_states),
             coefs: ArrayDelays::empty(number_of_states),
@@ -59,8 +61,9 @@ impl Derivatives {
     ///
     /// Usually used after updating the parameters.
     #[inline]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn reset(&mut self) {
+        debug!("Resetting derivatives");
         self.gains.values.fill(0.0);
         self.coefs.values.fill(0.0);
         self.coefs_iir.values.fill(0.0);
@@ -79,7 +82,7 @@ impl Derivatives {
     ///
     /// Panics if `ap_params` is not set.
     #[inline]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn calculate(
         &mut self,
         functional_description: &FunctionalDescription,
@@ -87,6 +90,7 @@ impl Derivatives {
         config: &Algorithm,
         time_index: usize,
     ) {
+        debug!("Calculating derivatives");
         self.mapped_residuals.values = functional_description
             .measurement_matrix
             .values
@@ -123,7 +127,7 @@ impl Derivatives {
 
     /// Calculates the derivatives for the allpass filter gains.
     #[inline]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     fn calculate_derivatives_gains(
         // This gets updated
         &mut self,
@@ -133,6 +137,7 @@ impl Derivatives {
         regularization_strength: f32,
         number_of_sensors: usize,
     ) {
+        trace!("Calculating derivatives for gains");
         #[allow(clippy::cast_precision_loss)]
         let scaling = 1.0 / number_of_sensors as f32;
         #[allow(clippy::cast_precision_loss)]
@@ -158,7 +163,7 @@ impl Derivatives {
     /// It calculates the FIR and IIR coefficient derivatives separately,
     /// then combines them to update `self.coefs`.
     #[inline]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     fn calculate_derivatives_coefs(
         // These get updated
         &mut self,
@@ -169,6 +174,7 @@ impl Derivatives {
         time_index: usize,
         number_of_sensors: usize,
     ) {
+        trace!("Calculating derivatives for coefficients");
         self.coefs_fir
             .values
             .indexed_iter_mut()
@@ -216,14 +222,14 @@ impl Derivatives {
     /// compares to the threshold, and calculates & assigns maximum regularization
     /// accordingly.
     #[inline]
-    #[tracing::instrument]
-
+    #[tracing::instrument(level = "trace")]
     fn calculate_maximum_regularization(
         &mut self,
         system_states: &ArraySystemStates,
         time_index: usize,
         regularization_threshold: f32,
     ) {
+        trace!("Calculating maximum regularization");
         // self.maximum_regularization_sum = 0.0; // This is probably wrong, no?
         for state_index in (0..system_states.values.raw_dim()[1]).step_by(3) {
             let sum = system_states.values[[time_index, state_index]].abs()
@@ -264,8 +270,9 @@ struct ArrayMappedResiduals {
 
 impl ArrayMappedResiduals {
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn new(number_of_states: usize) -> Self {
+        trace!("Creating ArrayMappedResiduals");
         Self {
             values: Array1::zeros(number_of_states),
         }
@@ -294,8 +301,9 @@ pub struct ArrayMaximumRegularization {
 
 impl ArrayMaximumRegularization {
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn new(number_of_states: usize) -> Self {
+         trace!("Creating ArrayMaximumRegularization");
         Self {
             values: Array1::zeros(number_of_states),
         }

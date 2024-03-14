@@ -19,6 +19,9 @@ bench:
 
 work: lint test bench
 
+flamegraph:
+  CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph --bin main --release --root
+
 
 wasm-build:
   cargo build --target wasm32-unknown-unknown --bin client

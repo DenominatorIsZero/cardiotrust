@@ -1,4 +1,5 @@
 use ndarray::{Array1, ArrayBase, Dim, ViewRepr};
+use tracing::trace;
 
 /// Calculates the direction the current should flow in the
 /// Voxel at `input_position`, when excited form the voxel at
@@ -8,11 +9,12 @@ use ndarray::{Array1, ArrayBase, Dim, ViewRepr};
 /// An array containing the current direction, where the
 /// sum over the absolute value of the components is always
 /// equal to one.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn calculate(
     input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
     output_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
 ) -> Array1<f32> {
+    trace!("Calculating direction");
     let distance_m = (input_position_mm - output_position_mm) / 1000.0;
     let distance_norm_m = distance_m.mapv(f32::abs).sum();
 

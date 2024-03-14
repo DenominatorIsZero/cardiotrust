@@ -15,8 +15,9 @@ use crate::{
 pub struct SchedulerPlugin;
 
 impl Plugin for SchedulerPlugin {
-    #[tracing::instrument(skip(app))]
+    #[tracing::instrument(level = "info", skip(app))]
     fn build(&self, app: &mut App) {
+        info!("Initializing scheduler plugin.");
         app.init_state::<SchedulerState>()
             .init_resource::<NumberOfJobs>()
             .add_systems(
@@ -50,8 +51,9 @@ pub struct NumberOfJobs {
 
 impl Default for NumberOfJobs {
     /// Returns a `NumberOfJobs` instance with the default value of 4 for `value`.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "info")]
     fn default() -> Self {
+        info!("Initializing number of jobs resource.");
         Self { value: 4 }
     }
 }
@@ -60,12 +62,13 @@ impl Default for NumberOfJobs {
 /// to run them and tracking their status. Limits number of concurrent scenarios
 /// based on provided resource. Updates state if max concurrent reached.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument(skip(commands))]
+#[tracing::instrument(level = "trace", skip(commands))]
 pub fn start_scenarios(
     mut commands: Commands,
     mut scenario_list: ResMut<ScenarioList>,
     number_of_jobs: Res<NumberOfJobs>,
 ) {
+    trace!("Running start_scenarios system.");
     if let Some(entry) = scenario_list
         .entries
         .iter_mut()
@@ -103,13 +106,14 @@ pub fn start_scenarios(
 /// Panics if a running scenario has no epoch receiver, summary receiver or
 /// join handle.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument(skip(commands))]
+#[tracing::instrument(level = "trace", skip(commands))]
 pub fn check_scenarios(
     mut commands: Commands,
     mut scenario_list: ResMut<ScenarioList>,
     number_of_jobs: Res<NumberOfJobs>,
     scheduler_state: Res<State<SchedulerState>>,
 ) {
+    trace!("Running check_scenarios system.");
     scenario_list
         .entries
         .iter_mut()

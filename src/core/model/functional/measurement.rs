@@ -9,6 +9,7 @@ use std::{
     fs::{self, File},
     io::BufWriter,
 };
+use tracing::{debug, trace};
 
 use crate::core::{
     config::model::Model,
@@ -25,8 +26,9 @@ impl MeasurementMatrix {
     /// Creates a new `MeasurementMatrix` with the given number of sensor states
     /// and number of sensors, initializing all values to 0.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn empty(number_of_states: usize, number_of_sensors: usize) -> Self {
+        debug!("Creating empty measurement matrix");
         Self {
             values: Array2::zeros((number_of_sensors, number_of_states)),
         }
@@ -42,8 +44,9 @@ impl MeasurementMatrix {
     ///
     /// Panics if voxel numbers are not initialized correctly.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Self {
+        debug!("Creating measurement matrix from model config");
         let mut measurement_matrix = Self::empty(
             spatial_description.voxels.count() * 3,
             spatial_description.sensors.count(),
@@ -94,8 +97,9 @@ impl MeasurementMatrix {
 
     /// Saves the measurement matrix to a .npy file at the given path.
     /// Creates the directory if it does not exist.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving measurement matrix to npy file");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("measurement_matrix.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
@@ -112,8 +116,9 @@ impl MeasurementCovariance {
     /// Creates a new `MeasurementCovariance` with the given number of sensors,
     /// initialized to all zeros.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn empty(number_of_sensors: usize) -> Self {
+        debug!("Creating empty measurement covariance");
         Self {
             values: Array2::zeros((number_of_sensors, number_of_sensors)),
         }
@@ -128,8 +133,9 @@ impl MeasurementCovariance {
     ///
     /// Panics if voxel numbers are not initialized correctly.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Self {
+        debug!("Creating measurement covariance from model config");
         let mut measurement_covariance = Self::empty(spatial_description.sensors.count());
 
         if relative_eq!(config.measurement_covariance_std, 0.0) {
@@ -157,8 +163,9 @@ impl MeasurementCovariance {
 
     /// Saves the process covariance matrix to a .npy file at the given path.
     /// Creates the directory if it does not exist.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving process covariance matrix to npy file");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("process_covariance.npy")).unwrap());
         self.values.write_npy(writer).unwrap();

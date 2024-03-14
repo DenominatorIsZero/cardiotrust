@@ -1,9 +1,10 @@
 use ndarray::Array1;
 use std::error::Error;
+use tracing::trace;
 
 use crate::core::data::shapes::ArraySystemStates;
 
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn standard_time_plot(
     y: &Array1<f32>,
     sample_rate_hz: f32,
@@ -11,6 +12,7 @@ pub fn standard_time_plot(
     title: &str,
     y_label: &str,
 ) {
+    trace!("Generating time plot.");
     // #[allow(clippy::cast_precision_loss)]
     // let t = Array1::from_vec(
     //     (0..y.shape()[0])
@@ -52,7 +54,7 @@ pub fn standard_time_plot(
 /// # Panics
 ///
 /// Panics if min or max of array couldn't be computed.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn standard_y_plot(
     y: &Array1<f32>,
     file_name: &str,
@@ -60,6 +62,7 @@ pub fn standard_y_plot(
     y_label: &str,
     x_label: &str,
 ) {
+    trace!("Generating y plot.");
     // let x = Array1::from_vec((0..y.shape()[0]).collect());
     // let _x_min = *x.min().expect("Could not calculate min of X-array");
     // let _x_max = *x.max().expect("Could not calculate max of X-array");
@@ -92,7 +95,7 @@ pub fn standard_y_plot(
     // save_plot(file_name, &plot, width, height, scale);
 }
 
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn plot_state_xyz(
     system_states: &ArraySystemStates,
     state_index: usize,
@@ -100,6 +103,7 @@ pub fn plot_state_xyz(
     file_name: &str,
     title: &str,
 ) {
+    trace!("Generating state xyz plot.");
     // let x = system_states.values.slice(s![.., state_index]).to_owned();
     // let y = system_states
     //     .values
@@ -180,7 +184,7 @@ pub fn plot_state_xyz(
 
 /// # Errors
 /// Returns eventual plotter errors.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn xy_plot(
     x: &Array1<f32>,
     y: &Array1<f32>,
@@ -189,6 +193,7 @@ pub fn xy_plot(
     y_label: &str,
     x_label: &str,
 ) -> Result<(), Box<dyn Error>> {
+    trace!("Generating xy plot.");
     let _path = format!("{file_name}.png");
     todo!()
     // let root_drawing_area = Bitmap::new(&path, (800, 600)).into_drawing_area();

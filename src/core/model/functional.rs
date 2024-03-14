@@ -8,6 +8,8 @@ use ndarray::Dim;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use tracing::{debug, trace};
+use tracing_subscriber::field::debug;
 
 use self::{
     allpass::{shapes::ArrayGains, APParameters},
@@ -36,13 +38,14 @@ impl FunctionalDescription {
     /// This initializes all internal state to empty arrays or matrices of the appropriate size.
     /// It can be used to create a blank `FunctionalDescription` before populating its fields.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn empty(
         number_of_states: usize,
         number_of_sensors: usize,
         number_of_steps: usize,
         voxels_in_dims: Dim<[usize; 3]>,
     ) -> Self {
+        debug!("Creating empty functional description");
         Self {
             ap_params: APParameters::empty(number_of_states, voxels_in_dims),
             measurement_matrix: MeasurementMatrix::empty(number_of_states, number_of_sensors),
@@ -65,13 +68,14 @@ impl FunctionalDescription {
     /// # Panics
     /// If delay cant be configured with samplerate, voxelsize and propagation speed
     #[allow(clippy::useless_let_if_seq)]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn from_model_config(
         config: &Model,
         spatial_description: &SpatialDescription,
         sample_rate_hz: f32,
         duration_s: f32,
     ) -> Result<Self, Box<dyn Error>> {
+        debug!("Creating functional description from model config");
         let ap_params =
             APParameters::from_model_config(config, spatial_description, sample_rate_hz)?;
         let process_covariance =
@@ -100,8 +104,9 @@ impl FunctionalDescription {
     /// This exports the allpass filter parameters, process covariance,
     /// measurement matrix, control matrix, measurement covariance, Kalman
     /// gain, and control function values to .npy files in the provided path.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving functional description to npy");
         let path = &path.join("functional_description");
         self.ap_params.save_npy(path);
         self.process_covariance
@@ -121,12 +126,13 @@ impl FunctionalDescription {
 /// the model config to sample a normal distribution for the diagonal
 /// of the process covariance matrix. Filters down to only the states  
 /// that correspond to AP filter outputs based on `ap_params`.
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn process_covariance_from_model_config(
     config: &Model,
     spatial_description: &SpatialDescription,
     ap_params: &APParameters,
 ) -> ArrayGains<f32> {
+    debug!("Creating process covariance matrix from model config");
     let normal = if relative_eq!(config.process_covariance_std, 0.0) {
         None
     } else {

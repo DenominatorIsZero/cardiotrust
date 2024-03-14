@@ -17,8 +17,9 @@ pub struct VisOptions {
 }
 
 impl Default for VisOptions {
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn default() -> Self {
+        debug!("Initializing default visualization options.");
         Self {
             playbackspeed: 0.1,
             mode: VisMode::SimulationVoxelTypes,

@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use ndarray::{s, Array1, Array2, Array3};
 use ndarray_stats::QuantileExt;
+use tracing::trace;
 
 use crate::core::{
     data::shapes::ArraySystemStates,
@@ -10,8 +11,9 @@ use crate::core::{
     },
 };
 
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str) {
+    trace!("Plotting sytem states.");
     // let mut z: Vec<Vec<i32>> = Vec::new();
     // for y in 0..types.shape()[1] {
     //     let mut row: Vec<i32> = Vec::new();
@@ -71,8 +73,9 @@ pub fn plot_voxel_types(types: &Array3<VoxelType>, file_name: &str, title: &str)
     // save_plot(file_name, &plot, width, height, 1.0);
 }
 
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &str, title: &str) {
+    trace!("Plotting activation times.");
     // let times = &activation_times.values;
     // let mut z: Vec<Vec<f32>> = Vec::new();
     // for y in 0..times.shape()[1] {
@@ -124,13 +127,14 @@ pub fn plot_activation_time(activation_times: &ArrayActivationTime, file_name: &
     // save_plot(file_name, &plot, width, height, 1.0);
 }
 
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn plot_activation_time_delta(
     estimated_activation_times: &ArrayActivationTime,
     actual_activation_times: &ArrayActivationTime,
     file_name: &str,
     title: &str,
 ) {
+    trace!("Plotting activation times delta.");
     let mut delta_activation_times = estimated_activation_times.clone();
     delta_activation_times
         .values
@@ -148,7 +152,7 @@ pub fn plot_activation_time_delta(
 ///     - in z direction
 ///     - absolute value
 #[allow(clippy::too_many_lines)]
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn plot_states_at_time(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
@@ -158,6 +162,7 @@ pub fn plot_states_at_time(
     file_name: &str,
     title: &str,
 ) {
+    trace!("Plotting system states at time.");
     // let system_states = &system_states.values;
     // let z_index = 0;
 
@@ -350,8 +355,9 @@ pub fn plot_states_at_time(
     // save_plot(file_name, &plot, width, height, 1.0);
 }
 
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 fn get_max_for_state(system_states: &ArraySystemStates, state_index: usize) -> f32 {
+    trace!("Computing max for states at index {}", state_index);
     let system_states = &system_states.values;
     system_states
         .slice(s![.., state_index])
@@ -359,7 +365,7 @@ fn get_max_for_state(system_states: &ArraySystemStates, state_index: usize) -> f
         .max(system_states.slice(s![.., state_index]).min_skipnan().abs())
 }
 
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 fn fill_vecs_with_states_max(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
@@ -368,6 +374,7 @@ fn fill_vecs_with_states_max(
     in_z: &mut Vec<Vec<f32>>,
     abs: &mut Vec<Vec<f32>>,
 ) -> (f32, f32) {
+    trace!("Filling vecs with states max");
     let mut min_j = f32::MAX;
     let mut max_j = f32::MIN;
     let z_index = 0;
@@ -451,7 +458,7 @@ fn fill_vecs_with_states_max(
     (min_j, max_j)
 }
 
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 fn calculate_states_max(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
@@ -460,6 +467,7 @@ fn calculate_states_max(
     in_z: &mut Vec<Vec<f32>>,
     abs: &mut Vec<Vec<f32>>,
 ) {
+    trace!("Calculating states max");
     let (min_j, max_j) = fill_vecs_with_states_max(system_states, voxels, in_x, in_y, in_z, abs);
 
     // add invisible row to make all subplots have the same scale
@@ -551,13 +559,14 @@ fn calculate_states_max(
 ///     - in y direction
 ///     - in z direction
 ///     - absolute value
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn plot_states_max(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
     file_name: &str,
     title: &str,
 ) {
+    trace!("Plotting states max");
     let mut in_x: Vec<Vec<f32>> = Vec::new();
     let mut in_y: Vec<Vec<f32>> = Vec::new();
     let mut in_z: Vec<Vec<f32>> = Vec::new();
@@ -622,7 +631,7 @@ pub fn plot_states_max(
     // save_plot(file_name, &plot, width, height, 1.0);
 }
 
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn plot_states_max_delta(
     estimated_system_states: &ArraySystemStates,
     actual_system_states: &ArraySystemStates,
@@ -630,6 +639,7 @@ pub fn plot_states_max_delta(
     file_name: &str,
     title: &str,
 ) {
+    trace!("Plotting states max delta");
     // TODO: reconsider this. Might be not what I want to show..
 
     let mut delta_system_states = estimated_system_states.clone();
@@ -643,7 +653,7 @@ pub fn plot_states_max_delta(
 /// # Panics
 ///
 /// Panics if something fishy happens with io rights.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn plot_states_over_time(
     system_states: &ArraySystemStates,
     voxels: &Voxels,
@@ -652,6 +662,7 @@ pub fn plot_states_over_time(
     file_name: &str,
     title: &str,
 ) {
+    trace!("Plotting states over time");
     // let directory = format!("./tmp/{file_name}/");
     // let dir_path = Path::new(&directory);
     // if dir_path.is_dir() {
@@ -699,8 +710,9 @@ pub fn plot_states_over_time(
     // fs::remove_dir_all(dir_path).expect("Could not remove temporary folders.");
 }
 
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn plot_matrix_as_heatmap(matrix: &Array2<f32>, file_name: &str, title: &str) {
+    trace!("Plotting matrix as heatmap");
     // let mut z: Vec<Vec<f32>> = Vec::new();
     // for y in 0..matrix.shape()[1] {
     //     let mut row: Vec<f32> = Vec::new();

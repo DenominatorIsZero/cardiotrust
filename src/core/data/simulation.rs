@@ -4,6 +4,7 @@ use rand_chacha::ChaCha8Rng;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use tracing::{debug, info, trace};
 
 use super::shapes::ArraySystemStates;
 use crate::core::{
@@ -23,13 +24,14 @@ impl Simulation {
     /// Creates an empty Simulation with the given dimensions and number of
     /// sensors, states, and steps.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn empty(
         number_of_sensors: usize,
         number_of_states: usize,
         number_of_steps: usize,
         voxels_in_dims: Dim<[usize; 3]>,
     ) -> Self {
+        debug!("Creating empty simulation");
         Self {
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
@@ -51,8 +53,9 @@ impl Simulation {
     /// # Errors
     ///
     /// Returns an error if the model fails to initialize from the config.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn from_config(config: &SimulationConfig) -> Result<Self, Box<dyn Error>> {
+        debug!("Creating simulation from config");
         let model =
             Model::from_model_config(&config.model, config.sample_rate_hz, config.duration_s)?;
         let number_of_sensors = model.spatial_description.sensors.count();
@@ -76,8 +79,9 @@ impl Simulation {
     /// # Panics
     ///
     /// if there are negative values in the measurement covariance matrix.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "info", skip_all)]
     pub fn run(&mut self) {
+        info!("Running simulation");
         let measurements = &mut self.measurements;
         let system_states = &mut self.system_states;
         let model = &self.model;
@@ -108,8 +112,9 @@ impl Simulation {
 
     /// Saves the simulation data (measurements, system states, model) to `NumPy` files at the given path.
     /// The measurements, system states, and model are saved to separate .npy files.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving simulation data to npy");
         self.measurements.save_npy(path);
         self.system_states.save_npy(path);
         self.model.save_npy(path);

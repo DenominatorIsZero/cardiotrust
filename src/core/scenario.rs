@@ -1,6 +1,7 @@
 pub mod results;
 pub mod summary;
 
+use bevy::scene::ron::de;
 use bincode;
 use chrono;
 use ndarray_stats::QuantileExt;
@@ -12,6 +13,7 @@ use std::{
     sync::mpsc::Sender,
 };
 use toml;
+use tracing::{debug, info, trace};
 
 use self::{
     results::{Results, Snapshot},
@@ -48,8 +50,9 @@ impl Scenario {
     /// This can be useful when needing to initialize a Scenario without
     /// any specific values.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn empty() -> Self {
+        debug!("Creating empty scenario");
         Self {
             id: "EMPTY".into(),
             status: Status::Scheduled,
@@ -71,8 +74,9 @@ impl Scenario {
     ///
     /// Panics if the new scenario could not be saved.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn build(id: Option<String>) -> Self {
+        debug!("Building new scenario");
         let scenario = Self {
             id: id.map_or_else(
                 || format!("{}", chrono::Utc::now().format("%Y-%m-%d-%H-%M-%S-%f")),
@@ -100,8 +104,9 @@ impl Scenario {
     ///
     /// Panics if the scenario.toml file could not be read or parsed.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "info", skip_all)]
     pub fn load(path: &Path) -> Self {
+        info!("Loading scenario from {}", path.to_string_lossy());
         let contents = fs::read_to_string(path.join("scenario.toml")).unwrap_or_else(|_| {
             panic!(
                 "Could not read scenario.toml file in directory '{}'",
@@ -131,8 +136,9 @@ impl Scenario {
     /// # Errors
     ///
     /// This function will return an error if scenario.toml file could not be created.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "info", skip(self))]
     pub fn save(&self) -> Result<(), std::io::Error> {
+        info!("Saving scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
         let toml = toml::to_string(&self).unwrap();
         fs::create_dir_all(&path)?;
@@ -156,8 +162,7 @@ impl Scenario {
     /// Returns a string representation of the scenario's status.
     /// Matches the Status enum variant names.
     #[must_use]
-    #[tracing::instrument]
-    pub fn get_status_str(&self) -> &str {
+    pub const fn get_status_str(&self) -> &str {
         match self.status {
             Status::Planning => "Planning",
             Status::Done => "Done",
@@ -174,8 +179,9 @@ impl Scenario {
     ///
     /// This function will return an error if scenario is not in plannig
     /// phase.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn schedule(&mut self) -> Result<(), String> {
+        debug!("Scheduling scenario");
         match self.status {
             Status::Planning => {
                 self.status = Status::Scheduled;
@@ -193,8 +199,9 @@ impl Scenario {
     /// Unifies the model configuration between the algorithm config and simulation config, if a simulation config exists.
     /// This ensures the algorithm and simulation are using the same model parameters.
     /// Also sets algorithm epochs to 1 if it is `PseudoInverse`.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn unify_configs(&mut self) {
+        debug!("Unifying algorithm and simulation configs");
         let model = &mut self.config.algorithm.model;
         match &self.config.simulation {
             Some(simulation) => {
@@ -221,8 +228,9 @@ impl Scenario {
     ///
     /// This function will return an error if scenario is not in scheduled
     /// phase.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn unschedule(&mut self) -> Result<(), String> {
+        debug!("Unscheduling scenario");
         match self.status {
             Status::Scheduled => {
                 self.status = Status::Planning;
@@ -237,14 +245,16 @@ impl Scenario {
     }
 
     /// Sets the scenario status to Running with the given epoch number.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn set_running(&mut self, epoch: usize) {
+        debug!("Setting scenario status to running with epoch {}", epoch);
         self.status = Status::Running(epoch);
     }
 
     /// Sets the scenario status to Done.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn set_done(&mut self) {
+        debug!("Setting scenario status to done");
         self.status = Status::Done;
     }
 
@@ -253,8 +263,9 @@ impl Scenario {
     /// # Errors
     ///
     /// This function will return an error if the results directory could not be deleted.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "info", skip_all)]
     pub fn delete(&self) -> Result<(), std::io::Error> {
+        info!("Deleting scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
         fs::remove_dir_all(path)?;
         Ok(())
@@ -262,8 +273,7 @@ impl Scenario {
 
     /// Returns an immutable reference to the scenario status.
     #[must_use]
-    #[tracing::instrument]
-    pub fn get_status(&self) -> &Status {
+    pub const fn get_status(&self) -> &Status {
         &self.status
     }
 
@@ -271,8 +281,9 @@ impl Scenario {
     /// 0.0 if the scenario status is not Running. Otherwise it will return the
     /// current epoch divided by the total number of epochs.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn get_progress(&self) -> f32 {
+        trace!("Getting progress for scenario with id {}", self.id);
         #[allow(clippy::cast_precision_loss)]
         match self.status {
             Status::Running(epoch) => epoch as f32 / self.config.algorithm.epochs as f32,
@@ -285,8 +296,9 @@ impl Scenario {
     /// # Errors
     ///
     /// This function will return an error if the results directory could not be created or the data file could not be written.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn save_data(&self) -> Result<(), std::io::Error> {
+        debug!("Saving scenario data for scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
         let f = File::create(path.join("data.bin"))?;
@@ -299,8 +311,9 @@ impl Scenario {
     /// # Errors
     ///
     /// This function will return an error if the results directory could not be created or the results file could not be written.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     fn save_results(&self) -> Result<(), std::io::Error> {
+        debug!("Saving scenario results for scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
         let f = File::create(path.join("results.bin"))?;
@@ -313,8 +326,9 @@ impl Scenario {
     /// # Panics
     ///
     /// Panics if the data.bin file can not be parsed into the data struct.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn load_data(&mut self) {
+        debug!("Loading scenario data for scenario with id {}", self.id);
         if self.data.is_some() {
             return;
         }
@@ -329,8 +343,9 @@ impl Scenario {
     /// # Panics
     ///
     /// Panics if the results.bin file can not be parsed into the results struct.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn load_results(&mut self) {
+        debug!("Loading scenario results for scenario with id {}", self.id);
         if self.results.is_some() {
             return;
         }
@@ -345,8 +360,9 @@ impl Scenario {
     /// # Panics
     ///
     /// Panics if a file or directory cant be created or written to.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn save_npy(&self) {
+        debug!("Saving scenario data and results as npy");
         let path = Path::new("./results").join(&self.id).join("npy");
         self.data.as_ref().unwrap().save_npy(&path.join("data"));
         self.results
@@ -365,8 +381,9 @@ impl Scenario {
 ///
 /// Panics if simulation is none, an unimplemented algorithm is selected or
 /// the parameters do not yield a valid model.
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all, fields(id = %scenario.id))]
 pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender<Summary>) {
+    debug!("Running scenario with id {}", scenario.id);
     let Some(simulation) = &scenario.config.simulation else {
         panic!("Non-simulation case not yet implemented.")
     };
@@ -443,7 +460,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
 
 /// Runs the pseudo inverse algorithm on the given scenario, model, and data.
 /// Calculates the pseudo inverse, runs estimations, and calculates summary metrics.
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn run_pseudo_inverse(
     scenario: &Scenario,
     model: &Model,
@@ -451,6 +468,7 @@ fn run_pseudo_inverse(
     data: &Data,
     summary: &mut Summary,
 ) {
+    info!("Running pseudo inverse algorithm");
     calculate_pseudo_inverse(
         &model.functional_description,
         results,
@@ -472,7 +490,7 @@ fn run_pseudo_inverse(
 /// Reduces learning rate at intervals. Saves snapshots at intervals.
 /// Sends epoch and summary updates over channels.
 /// Exits early if loss becomes non-finite.
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 fn run_model_based(
     scenario: &mut Scenario,
     model: &mut Model,
@@ -482,6 +500,7 @@ fn run_model_based(
     epoch_tx: &Sender<usize>,
     summary_tx: &Sender<Summary>,
 ) {
+    info!("Running model-based algorithm");
     let original_learning_rate = scenario.config.algorithm.learning_rate;
     for epoch_index in 0..scenario.config.algorithm.epochs {
         if scenario.config.algorithm.learning_rate_reduction_interval != 0

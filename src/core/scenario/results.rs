@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tracing::{debug, trace};
 
 use super::algorithm::metrics::Metrics;
 use crate::core::{
@@ -25,13 +26,14 @@ impl Results {
     /// snapshots, and model. The metrics are initialized based on the provided
     /// number of epochs, steps, sensors, and states.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn new(
         number_of_epochs: usize,
         number_of_steps: usize,
         number_of_sensors: usize,
         number_of_states: usize,
     ) -> Self {
+        debug!("Creating results with empty estimations, derivatives, snapshots, and model");
         let estimations = Estimations::empty(number_of_states, number_of_sensors, number_of_steps);
         let derivatives = Derivatives::new(number_of_states);
         let snapshots = Vec::new();
@@ -46,8 +48,9 @@ impl Results {
     }
 
     /// Saves the metrics, estimations, and model as .npy files to the given path.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving results to.npy files");
         self.metrics.save_npy(&path.join("metrics"));
         self.estimations.save_npy(&path.join("estimations"));
         self.model.as_ref().unwrap().save_npy(&path.join("model"));
@@ -66,8 +69,9 @@ impl Snapshot {
     #[must_use]
     /// Creates a new Snapshot instance with the provided estimations and
     /// functional description.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub fn new(estimations: &Estimations, functional_description: &FunctionalDescription) -> Self {
+        trace!("Creating snapshot with estimations and functional description");
         Self {
             estimations: estimations.clone(),
             functional_description: functional_description.clone(),

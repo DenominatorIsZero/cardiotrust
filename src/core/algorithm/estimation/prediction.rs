@@ -1,4 +1,5 @@
 use ndarray::s;
+use tracing::trace;
 
 use crate::core::{
     data::shapes::{ArrayMeasurements, ArraySystemStates},
@@ -16,7 +17,7 @@ use crate::core::{
 ///
 /// Panics if `ap_params_flat` is not set.
 #[allow(clippy::module_name_repetitions)]
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn calculate_system_prediction(
     ap_outputs: &mut ArrayGains<f32>,
     system_states: &mut ArraySystemStates,
@@ -24,6 +25,7 @@ pub fn calculate_system_prediction(
     functional_description: &FunctionalDescription,
     time_index: usize,
 ) {
+    trace!("Calculating system prediction");
     innovate_system_states_v1(
         ap_outputs,
         &functional_description.ap_params,
@@ -50,13 +52,14 @@ pub fn calculate_system_prediction(
 ///
 /// Panics if output state indices are not initialized corrrectly.
 #[inline]
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn innovate_system_states_v1(
     ap_outputs: &mut ArrayGains<f32>,
     ap_params: &APParameters,
     time_index: usize,
     system_states: &mut ArraySystemStates,
 ) {
+    trace!("Innovating system states");
     // Calculate ap outputs and system states
     let output_state_indices = &ap_params.output_state_indices.values;
     for index_state in 0..ap_outputs.values.shape()[0] {
@@ -103,12 +106,13 @@ pub fn innovate_system_states_v1(
 /// system states for the given time index. This allows an external control
 /// signal to be injected into the system states.
 #[inline]
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn add_control_function(
     functional_description: &FunctionalDescription,
     time_index: usize,
     system_states: &mut ArraySystemStates,
 ) {
+    trace!("Adding control function");
     // Add control function
     let control_function_value = functional_description.control_function_values.values[time_index];
     system_states
@@ -125,13 +129,14 @@ pub fn add_control_function(
 /// system states for the given time index. This computes the model predicted
 /// measurements to compare against the actual measurements.
 #[inline]
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn predict_measurements(
     measurements: &mut ArrayMeasurements,
     time_index: usize,
     measurement_matrix: &MeasurementMatrix,
     system_states: &ArraySystemStates,
 ) {
+    trace!("Predicting measurements");
     // Prediction of measurements H * x
     measurements.values.slice_mut(s![time_index, ..]).assign(
         &measurement_matrix

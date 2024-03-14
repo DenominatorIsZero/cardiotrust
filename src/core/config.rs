@@ -4,6 +4,7 @@ pub mod simulation;
 
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use tracing::info;
 
 use self::{algorithm::Algorithm, simulation::Simulation};
 
@@ -24,8 +25,9 @@ pub struct Config {
 impl Default for Config {
     /// Returns a default `Config` struct with `measurement` set to `None`.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "info")]
     fn default() -> Self {
+        info!("Creating default config");
         Self {
             measurement: None,
             simulation: Some(Simulation::default()),

@@ -1,4 +1,5 @@
 use egui_extras::TableBody;
+use tracing::trace;
 
 use crate::core::{
     config::model::{ControlFunction, Model},
@@ -7,8 +8,9 @@ use crate::core::{
 
 /// Draws ui for settings common to data generation and optimization.
 #[allow(clippy::too_many_lines, clippy::module_name_repetitions)]
-#[tracing::instrument(skip(body))]
+#[tracing::instrument(skip(body), level = "trace")]
 pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
+    trace!("Running system to draw scenario common UI.");
     // measurement covariance mean
     body.row(30.0, |mut row| {
         row.col(|ui| {

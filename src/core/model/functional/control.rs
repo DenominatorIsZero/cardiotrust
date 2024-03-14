@@ -5,6 +5,7 @@ use std::{
     fs::{self, File},
     io::BufWriter,
 };
+use tracing::{debug, trace};
 
 use crate::core::{
     config::model::Model,
@@ -21,8 +22,9 @@ impl ControlMatrix {
     /// Creates a new empty `ControlMatrix` with the given number of states initialized
     /// to all zeros.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn empty(number_of_states: usize) -> Self {
+        debug!("Creating empty control matrix");
         Self {
             values: Array1::zeros(number_of_states),
         }
@@ -36,8 +38,9 @@ impl ControlMatrix {
     ///
     /// Panics if the `v_number` of the sinoatrial node is None.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Self {
+        debug!("Creating control matrix from model config");
         let mut control_matrix = Self::empty(spatial_description.voxels.count_states());
         spatial_description
             .voxels
@@ -55,8 +58,9 @@ impl ControlMatrix {
 
     /// Saves the control matrix to a .npy file at the given path.
     /// Creates any missing directories in the path if needed.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving control matrix to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("control_matrix.npy")).unwrap());
         self.values.write_npy(writer).unwrap();
@@ -71,8 +75,9 @@ pub struct ControlFunction {
 
 impl ControlFunction {
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn empty(number_of_steps: usize) -> Self {
+        debug!("Creating empty control function");
         Self {
             values: Array1::zeros(number_of_steps),
         }
@@ -94,8 +99,9 @@ impl ControlFunction {
     ///
     /// Panics if the control function input file is missing.
     #[must_use]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn from_model_config(config: &Model, sample_rate_hz: f32, duration_s: f32) -> Self {
+        debug!("Creating control function from model config");
         //let _sample_rate_hz_in = 2000.0;
         let control_function_raw: Array1<f32> =
             read_npy("assets/control_function_ohara.npy").unwrap();
@@ -127,8 +133,9 @@ impl ControlFunction {
     /// Saves the control function values to a .npy file at the given path.
     /// Creates any missing directories in the path, opens a file for writing,
     /// and writes the values using the numpy npy format.
-    #[tracing::instrument]
+    #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving control function values to npy");
         fs::create_dir_all(path).unwrap();
         let writer =
             BufWriter::new(File::create(path.join("control_function_values.npy")).unwrap());

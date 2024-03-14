@@ -18,12 +18,13 @@ use crate::{
 /// - The top bar with scenario list and controls
 /// - The central panel showing details of the selected scenario
 #[allow(clippy::module_name_repetitions)]
-#[tracing::instrument(skip(contexts))]
+#[tracing::instrument(skip(contexts), level = "trace")]
 pub fn draw_ui_scenario(
     mut contexts: EguiContexts,
     mut scenarios: ResMut<ScenarioList>,
     mut selected_scenario: ResMut<SelectedSenario>,
 ) {
+    trace!("Running system to draw scenario UI.");
     let context = contexts.ctx_mut();
 
     draw_ui_scenario_topbar(context, &mut scenarios, &mut selected_scenario);
@@ -40,12 +41,13 @@ pub fn draw_ui_scenario(
 /// - Controls to change the status and save the scenario
 /// - A text area to edit the scenario description
 /// - Buttons to copy, delete or select a different scenario
-#[tracing::instrument(skip(context))]
+#[tracing::instrument(skip(context), level = "trace")]
 fn draw_ui_scenario_topbar(
     context: &egui::Context,
     scenarios: &mut ResMut<ScenarioList>,
     selected_scenario: &mut ResMut<SelectedSenario>,
 ) {
+    trace!("Running system to draw scenario topbar.");
     egui::TopBottomPanel::top("scenario_status").show(context, |ui| {
         ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
             let index = selected_scenario.index.unwrap();
@@ -103,8 +105,9 @@ fn draw_ui_scenario_topbar(
 /// Splits the panel into two columns using egui columns.
 /// The left column calls `draw_ui_scenario_data` to show scenario data.
 /// The right column calls `draw_ui_scenario_algorithm` to show algorithm settings.
-#[tracing::instrument(skip(context))]
+#[tracing::instrument(skip(context), level = "trace")]
 fn draw_ui_scenario_central_panel(context: &egui::Context, scenario: &mut Scenario) {
+    trace!("Running system to draw scenario central panel");
     egui::CentralPanel::default().show(context, |ui| {
         ui.columns(2, |columns| {
             draw_ui_scenario_data(&mut columns[0], scenario);

@@ -1,24 +1,48 @@
+use std::process::Command;
+
 use bevy::{log::LogPlugin, prelude::*};
 use tracing::info;
+use tracing_subscriber::fmt;
+use tracing_subscriber::layer::SubscriberExt;
 
 use cardiotrust::{
     scheduler::SchedulerPlugin, ui::UiPlugin, vis::VisPlugin, ScenarioList, SelectedSenario,
 };
 
-#[tracing::instrument]
+#[tracing::instrument(level = "info")]
 fn main() {
-    let file_appender = tracing_appender::rolling::hourly("./logs/", "cardiotrust.log");
-    let (file_writer, _guard) = tracing_appender::non_blocking(file_appender);
-    let (stdio_writer, _guard) = tracing_appender::non_blocking(std::io::stdout());
+    // Set up the file appender
+    let file_appender = tracing_appender::rolling::daily("./logs", "CardioTRust.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 
-    tracing_subscriber::fmt()
-        .with_thread_ids(true)
-        .with_thread_names(true)
-        .with_writer(file_writer)
-        .with_writer(stdio_writer)
-        .init();
+    // Combine multiple layers together
+    let subscriber = tracing_subscriber::registry()
+        .with(
+            fmt::Layer::new()
+                .with_writer(std::io::stdout) // Logs to stdout
+                .with_thread_names(true)
+                .with_ansi(true),
+        ) // For colored logs in the console
+        .with(
+            fmt::Layer::new()
+                .with_writer(non_blocking) // Logs to file
+                .with_thread_names(true)
+                .with_line_number(true)
+                .fmt_fields(fmt::format::PrettyFields::new())
+                .with_ansi(false),
+        ); // Typically, file logs don't need ANSI colors
 
-    info!("Starting CardioTRust");
+    // Apply the combined subscriber to the current context
+    tracing::subscriber::set_global_default(subscriber).expect("Setting default subscriber failed");
+
+    let output = Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .unwrap();
+    let git_hash = String::from_utf8(output.stdout).unwrap();
+
+    info!("Starting CardioTRust application. Git hash: {}", git_hash);
+
     App::new()
         .init_resource::<ScenarioList>()
         .init_resource::<SelectedSenario>()

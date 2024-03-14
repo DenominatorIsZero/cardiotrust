@@ -1,13 +1,15 @@
 use egui::Align;
 use egui_extras::{Column, TableBuilder};
+use tracing::trace;
 
 use super::common::draw_ui_scenario_common;
 use crate::core::scenario::{Scenario, Status};
 
 /// Draws the data section of the scenario UI.
 #[allow(clippy::too_many_lines, clippy::module_name_repetitions)]
-#[tracing::instrument(skip(parent))]
+#[tracing::instrument(skip(parent), level = "trace")]
 pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
+    trace!("Running system to draw scenario data UI.");
     parent.set_enabled(*scenario.get_status() == Status::Planning);
     let simulation = scenario.config.simulation.as_mut().unwrap();
     egui::ScrollArea::vertical()

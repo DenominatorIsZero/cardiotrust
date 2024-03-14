@@ -35,7 +35,7 @@ pub struct VoxelData {
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss
 )]
-#[tracing::instrument(skip(commands, meshes, materials))]
+#[tracing::instrument(level = "info", skip_all)]
 pub fn init_voxels(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
@@ -44,7 +44,7 @@ pub fn init_voxels(
     sample_tracker: &SampleTracker,
     camera: &mut Transform,
 ) {
-    info!("Initializing voxels!");
+    info!("Running system to initialize voxel components.");
     let data = scenario.data.as_ref().expect("Data to be some");
     let model = data.get_model();
     let voxels = &model.spatial_description.voxels;
@@ -115,12 +115,13 @@ pub fn init_voxels(
 /// color to that sample color. This allows the heart model to animate
 /// through the different sample colors over time.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument(skip(query, materials))]
+#[tracing::instrument(skip(query, materials), level = "trace")]
 pub(crate) fn update_heart_voxel_colors(
     sample_tracker: Res<SampleTracker>,
     mut query: Query<(&Handle<StandardMaterial>, &VoxelData)>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    trace!("Running system to update heart voxel colors.");
     for (handle, data) in &mut query {
         let material = materials.get_mut(handle).unwrap();
         material.base_color = data.colors[sample_tracker.current_sample];
@@ -136,22 +137,21 @@ pub(crate) fn update_heart_voxel_colors(
 ///
 /// Panics if selected scenario is corrupted.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument]
+#[tracing::instrument(level = "info", skip_all)]
 pub fn on_vis_mode_changed(
     vis_options: Res<VisOptions>,
     query: Query<&mut VoxelData>,
     scenario_list: Res<ScenarioList>,
     selected_scenario: Res<SelectedSenario>,
 ) {
+    trace!("Running system to change visualization mode.");
     if selected_scenario.index.is_none() {
         return;
     }
     if !vis_options.is_changed() {
         return;
     }
-    let index = selected_scenario.index.expect("Index to be some");
-    let len = scenario_list.entries.len();
-    info!("index {index}, len {len}");
+    info!("Visualization mode changed to {:?}.", vis_options.mode);
     let scenario =
         &scenario_list.entries[selected_scenario.index.expect("index to be some.")].scenario;
 
@@ -181,12 +181,13 @@ pub fn on_vis_mode_changed(
 /// scenario. Retrieves the voxel types from either the model or simulation
 /// results based on the `simulation_not_model` flag.
 #[allow(clippy::needless_pass_by_value)]
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn set_heart_voxel_colors_to_types(
     mut query: Query<&mut VoxelData>,
     scenario: &Scenario,
     simulation_not_model: bool,
 ) {
+    debug!("Setting heart voxel colors to types.");
     let voxel_types = if simulation_not_model {
         scenario
             .data
@@ -272,12 +273,13 @@ const fn type_to_color(voxel_type: VoxelType) -> Color {
 /// system states over time. Applies a Viridis color map to the norm
 /// values to generate RGB colors for each voxel.
 #[allow(clippy::cast_possible_truncation)]
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn set_heart_voxel_colors_to_norm(
     mut query: Query<&mut VoxelData>,
     scenario: &Scenario,
     simulation_not_model: bool,
 ) {
+    debug!("Setting heart voxel colors to norm.");
     let system_states = if simulation_not_model {
         scenario
             .data
@@ -316,13 +318,14 @@ fn set_heart_voxel_colors_to_norm(
 /// to the max values to generate RGB colors for each voxel. Can do relative coloring
 /// based on min/max of activation across voxels if `relative_coloring` is true.
 #[allow(clippy::cast_possible_truncation)]
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn set_heart_voxel_colors_to_max(
     mut query: Query<&mut VoxelData>,
     scenario: &Scenario,
     simulation_not_model: bool,
     relative_coloring: bool,
 ) {
+    debug!("Setting heart voxel colors to max.");
     let system_states = if simulation_not_model {
         scenario
             .data

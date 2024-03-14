@@ -13,7 +13,7 @@ use crate::{
 /// and start/stop the scheduler. Also contains a slider to control the number
 /// of scheduler jobs.
 #[allow(clippy::module_name_repetitions, clippy::needless_pass_by_value)]
-#[tracing::instrument(skip(commands, contexts))]
+#[tracing::instrument(skip(commands, contexts), level = "trace")]
 pub fn draw_ui_topbar(
     mut commands: Commands,
     mut contexts: EguiContexts,
@@ -23,6 +23,7 @@ pub fn draw_ui_topbar(
     selected_scenario: Res<SelectedSenario>,
     mut number_of_jobs: ResMut<NumberOfJobs>,
 ) {
+    trace!("Running system to draw topbar.");
     egui::TopBottomPanel::top("menu_panel").show(contexts.ctx_mut(), |ui| {
         ui.horizontal(|ui| {
             if ui

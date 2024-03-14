@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use ndarray::{s, ArrayBase, Dim, ViewRepr};
 use std::{collections::HashMap, error::Error};
+use tracing::trace;
 
 use super::{offset_to_delay_index, shapes::ArrayDelays};
 use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
@@ -9,12 +10,13 @@ use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
 /// based on the propagation velocity. Takes the Euclidean distance between
 /// the input and output positions (converted to meters), divides by the  
 /// propagation velocity to get the delay in seconds.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn calculate_delay_s(
     input_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
     output_position_mm: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 1]>>,
     propagation_velocity_m_per_s: f32,
 ) -> f32 {
+    trace!("Calculating delay in seconds");
     let distance_m = (input_position_mm - output_position_mm) / 1000.0;
     let distance_norm_m = distance_m.mapv(|v| v.powi(2)).sum().sqrt();
     distance_norm_m / propagation_velocity_m_per_s
@@ -29,12 +31,13 @@ pub fn calculate_delay_s(
 ///
 /// Returns the 2D array of delay values, with dimensions corresponding to the
 /// voxel numbers and neighbor offsets.
-#[tracing::instrument]
+#[tracing::instrument(level = "trace")]
 pub fn calculate_delay_samples_array(
     spatial_description: &SpatialDescription,
     propagation_velocities_m_per_s: &HashMap<VoxelType, f32>,
     sample_rate_hz: f32,
 ) -> Result<ArrayDelays<f32>, Box<dyn Error>> {
+    trace!("Calculating delay samples array");
     let mut delay_samples_array =
         ArrayDelays::<f32>::empty(spatial_description.voxels.count_states());
 

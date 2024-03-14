@@ -1,3 +1,5 @@
+use tracing::debug;
+
 use super::derivation::Derivatives;
 use crate::core::{
     config::algorithm::Algorithm,
@@ -15,13 +17,14 @@ impl APParameters {
     /// and batch size. Freezing gains or delays can be configured via the Algorithm
     /// config. Gradient clamping is also applied based on the config threshold.
     #[inline]
-    #[tracing::instrument]
+    #[tracing::instrument(level = "debug")]
     pub fn update(
         &mut self,
         derivatives: &Derivatives,
         config: &Algorithm,
         number_of_steps: usize,
     ) {
+        debug!("Updating allpass filter parameters");
         let batch_size = match config.batch_size {
             0 => number_of_steps,
             _ => config.batch_size,
@@ -53,7 +56,7 @@ impl APParameters {
 /// by subtracting the scaled and clamped derivatives.
 #[allow(clippy::cast_precision_loss)]
 #[inline]
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn update_gains(
     gains: &mut ArrayGains<f32>,
     derivatives: &ArrayGains<f32>,
@@ -61,6 +64,7 @@ fn update_gains(
     batch_size: usize,
     clamping_threshold: f32,
 ) {
+    debug!("Updating gains");
     gains.values -= &(learning_rate / batch_size as f32 * &derivatives.values)
         .map(|v| v.clamp(-clamping_threshold, clamping_threshold));
 }
@@ -77,7 +81,7 @@ fn update_gains(
 /// the integer delay is adjusted to "roll" the coefficient.
 #[allow(clippy::cast_precision_loss)]
 #[inline]
-#[tracing::instrument]
+#[tracing::instrument(level = "debug")]
 fn update_delays(
     ap_coefs: &mut ArrayDelays<f32>,
     delays: &mut ArrayDelays<usize>,
@@ -86,6 +90,7 @@ fn update_delays(
     batch_size: usize,
     clamping_threshold: f32,
 ) {
+    debug!("Updating coefficients and delays");
     ap_coefs.values -= &(learning_rate / batch_size as f32 * &derivatives.values)
         .map(|v| v.clamp(-clamping_threshold, clamping_threshold));
     // make sure to keep the all pass coefficients between 0 and 1 by

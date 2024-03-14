@@ -19,13 +19,14 @@ use crate::{
 /// from the `ScenarioList` resource to populate the rows. Inserts a new row
 /// when the New button is clicked.
 #[allow(clippy::module_name_repetitions, clippy::too_many_lines)]
-#[tracing::instrument(skip(commands, contexts))]
+#[tracing::instrument(skip(commands, contexts), level = "trace")]
 pub fn draw_ui_explorer(
     mut commands: Commands,
     mut contexts: EguiContexts,
     mut scenario_list: ResMut<ScenarioList>,
     mut selected_scenario: ResMut<SelectedSenario>,
 ) {
+    trace!("Drawing UI for explorer tab");
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
         TableBuilder::new(ui)
             .column(Column::auto().resizable(true))
@@ -156,7 +157,7 @@ pub fn draw_ui_explorer(
 /// scenario's status, metrics, comment text box, etc. It is called in a loop
 /// to draw each row.
 #[allow(clippy::too_many_lines)]
-#[tracing::instrument(skip(commands, body))]
+#[tracing::instrument(skip(commands, body), level = "trace")]
 fn draw_row(
     commands: &mut Commands,
     body: &mut egui_extras::TableBody,
@@ -164,6 +165,7 @@ fn draw_row(
     scenario_list: &mut ResMut<ScenarioList>,
     selected_scenario: &mut ResMut<SelectedSenario>,
 ) {
+    trace!("Drawing row in scenario list table");
     body.row(30.0, |mut row| {
         row.col(|_ui| {
             // Checkbox goes here later
