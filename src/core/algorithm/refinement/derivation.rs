@@ -1,3 +1,4 @@
+use bevy::ui::measurement;
 use ndarray::{s, Array1};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -5,12 +6,13 @@ use tracing::{debug, trace};
 use crate::core::{
     algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
-    data::shapes::ArraySystemStates,
+    data::shapes::{ArrayMeasurements, ArraySystemStates},
     model::functional::{
         allpass::{
             shapes::{ArrayDelays, ArrayGains},
             APParameters,
         },
+        measurement::MeasurementMatrix,
         FunctionalDescription,
     },
 };
@@ -91,11 +93,10 @@ impl Derivatives {
         time_index: usize,
     ) {
         debug!("Calculating derivatives");
-        self.mapped_residuals.values = functional_description
-            .measurement_matrix
-            .values
-            .t()
-            .dot(&estimations.residuals.values.slice(s![0, ..]));
+        self.calculate_mapped_residuals(
+            &functional_description.measurement_matrix,
+            &estimations.residuals,
+        );
         self.calculate_maximum_regularization(
             &estimations.system_states,
             time_index,
@@ -128,7 +129,7 @@ impl Derivatives {
     /// Calculates the derivatives for the allpass filter gains.
     #[inline]
     #[tracing::instrument(level = "trace")]
-    fn calculate_derivatives_gains(
+    pub fn calculate_derivatives_gains(
         // This gets updated
         &mut self,
         // Based on these values
@@ -164,7 +165,7 @@ impl Derivatives {
     /// then combines them to update `self.coefs`.
     #[inline]
     #[tracing::instrument(level = "trace")]
-    fn calculate_derivatives_coefs(
+    pub fn calculate_derivatives_coefs(
         // These get updated
         &mut self,
         // Based on these values
@@ -223,7 +224,7 @@ impl Derivatives {
     /// accordingly.
     #[inline]
     #[tracing::instrument(level = "trace")]
-    fn calculate_maximum_regularization(
+    pub fn calculate_maximum_regularization(
         &mut self,
         system_states: &ArraySystemStates,
         time_index: usize,
@@ -250,6 +251,20 @@ impl Derivatives {
                 self.maximum_regularization.values[state_index + 2] = 0.0;
             }
         }
+    }
+
+    #[inline]
+    #[tracing::instrument(level = "trace")]
+    pub fn calculate_mapped_residuals(
+        &mut self,
+        measurement_matrix: &MeasurementMatrix,
+        residuals: &ArrayMeasurements,
+    ) {
+        trace!("Calculating mapped residuals");
+        self.mapped_residuals.values = measurement_matrix
+            .values
+            .t()
+            .dot(&residuals.values.slice(s![0, ..]));
     }
 }
 

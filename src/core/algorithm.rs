@@ -183,6 +183,7 @@ pub fn run_epoch(
             config.regularization_strength,
             time_index,
         );
+
         if let Some(n) = batch.as_mut() {
             *n += 1;
             if *n == config.batch_size {

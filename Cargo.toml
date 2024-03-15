@@ -69,6 +69,14 @@ harness = false
 name = "in_kalman_benches"
 harness = false
 
+[[bench]]
+name = "in_update_benches"
+harness = false
+
+[[bench]]
+name = "in_derivation_benches"
+harness = false
+
 [profile.test]
 opt-level = 3
 

@@ -57,7 +57,7 @@ impl APParameters {
 #[allow(clippy::cast_precision_loss)]
 #[inline]
 #[tracing::instrument(level = "debug")]
-fn update_gains(
+pub fn update_gains(
     gains: &mut ArrayGains<f32>,
     derivatives: &ArrayGains<f32>,
     learning_rate: f32,
@@ -82,7 +82,7 @@ fn update_gains(
 #[allow(clippy::cast_precision_loss)]
 #[inline]
 #[tracing::instrument(level = "debug")]
-fn update_delays(
+pub fn update_delays(
     ap_coefs: &mut ArrayDelays<f32>,
     delays: &mut ArrayDelays<usize>,
     derivatives: &ArrayDelays<f32>,
