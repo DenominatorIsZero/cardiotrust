@@ -1,7 +1,7 @@
 use ndarray::Array1;
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
-use std::{error::Error, path::Path};
+use std::{error::Error, io, path::Path};
 use tracing::trace;
 
 use crate::core::data::shapes::ArraySystemStates;
@@ -213,6 +213,13 @@ pub fn xy_plot(
         .then(|| Array1::linspace(0.0, y.len() as f32, y.len()));
     let x = x.unwrap_or_else(|| default_x.as_ref().unwrap());
 
+    if x.len() != y.len() {
+        return Err(Box::new(std::io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "x and y must have same length",
+        )));
+    }
+
     let title = title.unwrap_or("Plot");
     let y_label = y_label.unwrap_or("y");
     let x_label = x_label.unwrap_or("x");
@@ -352,5 +359,41 @@ mod test {
         xy_plot(None, &y, None, None, None, None, None).unwrap();
 
         assert!(!files[0].is_file());
+    }
+
+    #[test]
+    fn test_xy_plot_default_resolution() {
+        let x = Array1::linspace(0.0, 10.0, 100);
+        let y = x.map(|x| x * x);
+
+        let buffer = xy_plot(None, &y, None, None, None, None, None).unwrap();
+
+        assert_eq!(
+            buffer.len(),
+            STANDARD_RESOLUTION.0 as usize * STANDARD_RESOLUTION.1 as usize * 3
+        );
+    }
+
+    #[test]
+    fn test_xy_plot_custom_resolution() {
+        let x = Array1::linspace(0.0, 10.0, 100);
+        let y = x.map(|x| x * x);
+
+        let resolution = (400, 300);
+
+        let buffer = xy_plot(None, &y, None, None, None, None, Some(resolution)).unwrap();
+
+        assert_eq!(
+            buffer.len(),
+            resolution.0 as usize * resolution.1 as usize * 3
+        );
+    }
+
+    #[test]
+    fn test_xy_plot_incompatible_x_y() {
+        let x = Array1::linspace(0.0, 10.0, 100);
+        let y = Array1::zeros(90);
+
+        assert!(xy_plot(Some(&x), &y, None, None, None, None, None).is_err());
     }
 }
