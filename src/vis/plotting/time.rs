@@ -1,8 +1,16 @@
 use ndarray::Array1;
-use std::error::Error;
+use ndarray_stats::QuantileExt;
+use plotters::prelude::*;
+use std::{error::Error, path::Path};
 use tracing::trace;
 
 use crate::core::data::shapes::ArraySystemStates;
+
+const STANDARD_RESOLUTION: (u32, u32) = (800, 600);
+const X_MARGIN: f32 = 0.0;
+const Y_MARGIN: f32 = 0.1;
+const CAPTION_STYLE: (&str, i32) = ("Arial", 30);
+const AXIS_STYLE: (&str, i32) = ("Arial", 20);
 
 #[tracing::instrument(level = "trace")]
 pub fn standard_time_plot(
@@ -179,49 +187,170 @@ pub fn plot_state_xyz(
     // save_plot(file_name, &plot, width, height, scale);
 }
 
-// const CAPTION_STYLE: (&str, i32) = ("Arial", 30);
-// const AXIS_STYLE: (&str, i32) = ("Arial", 20);
-
-/// # Errors
-/// Returns eventual plotter errors.
+/// Generates an XY plot from the provided x and y data.
+///
+/// Saves the plot to the optionally provided path as a PNG,
+/// returns the raw pixel buffer.
+#[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace")]
 pub fn xy_plot(
-    x: &Array1<f32>,
+    x: Option<&Array1<f32>>,
     y: &Array1<f32>,
-    file_name: &str,
-    title: &str,
-    y_label: &str,
-    x_label: &str,
-) -> Result<(), Box<dyn Error>> {
+    path: Option<&Path>,
+    title: Option<&str>,
+    y_label: Option<&str>,
+    x_label: Option<&str>,
+    resolution: Option<(u32, u32)>,
+) -> Result<Vec<u8>, Box<dyn Error>> {
     trace!("Generating xy plot.");
-    let _path = format!("{file_name}.png");
-    todo!()
-    // let root_drawing_area = Bitmap::new(&path, (800, 600)).into_drawing_area();
 
-    // root_drawing_area.fill(&WHITE)?;
+    let (width, height) = resolution.unwrap_or(STANDARD_RESOLUTION);
 
-    // let mut chart = ChartBuilder::on(&root_drawing_area)
-    //     .caption(title, CAPTION_STYLE)
-    //     .set_left_and_bottom_label_area_size(60)
-    //     .build_cartesian_2d(
-    //         f64::from(*x.min_skipnan())..f64::from(*x.max_skipnan()),
-    //         f64::from(*y.min_skipnan())..f64::from(*y.max_skipnan()),
-    //     )?;
+    let mut buffer = allocate_buffer(width, height);
 
-    // let color = Palette99::pick(0);
-    // chart.draw_series(LineSeries::new(
-    //     x.iter()
-    //         .zip(y.iter())
-    //         .map(|(x, y)| (f64::from(*x), f64::from(*y))),
-    //     color.stroke_width(2),
-    // ))?;
+    let default_x = x
+        .is_none()
+        .then(|| Array1::linspace(0.0, y.len() as f32, y.len()));
+    let x = x.unwrap_or_else(|| default_x.as_ref().unwrap());
 
-    // chart
-    //     .configure_mesh()
-    //     .label_style(AXIS_STYLE)
-    //     .x_desc(x_label)
-    //     .y_desc(y_label)
-    //     .draw()?;
+    let title = title.unwrap_or("Plot");
+    let y_label = y_label.unwrap_or("y");
+    let x_label = x_label.unwrap_or("x");
 
-    // Ok(())
+    let x_min = x.min().unwrap();
+    let x_max = x.max().unwrap();
+    let y_min = y.min().unwrap();
+    let y_max = y.max().unwrap();
+
+    let x_range = x_max - x_min;
+    let y_range = y_max - y_min;
+
+    let x_min = x_min - x_range * X_MARGIN;
+    let x_max = x_max + x_range * X_MARGIN;
+    let y_min = y_min - y_range * Y_MARGIN;
+    let y_max = y_max + y_range * Y_MARGIN;
+
+    let data: Vec<(f32, f32)> = x.iter().zip(y.iter()).map(|(x, y)| (*x, *y)).collect();
+
+    {
+        let root = BitMapBackend::with_buffer(&mut buffer[..], (width, height)).into_drawing_area();
+        root.fill(&WHITE)?;
+
+        let mut chart = ChartBuilder::on(&root)
+            .caption(title, CAPTION_STYLE.into_font())
+            .margin(5)
+            .x_label_area_size(50)
+            .y_label_area_size(75)
+            .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+
+        chart
+            .configure_mesh()
+            .x_desc(x_label)
+            .x_label_style(AXIS_STYLE.into_font())
+            .y_desc(y_label)
+            .y_label_style(AXIS_STYLE.into_font())
+            .draw()?;
+
+        chart.draw_series(LineSeries::new(data, &RED))?;
+
+        root.present()?;
+    } // dropping bitmap backend
+
+    if let Some(path) = path {
+        image::save_buffer_with_format(
+            path,
+            &buffer,
+            width,
+            height,
+            image::ColorType::Rgb8,
+            image::ImageFormat::Png,
+        )?;
+    }
+
+    Ok(buffer)
+}
+
+/// Allocates a buffer for storing pixel data for an image of the given width and height.
+///
+/// The buffer is allocated as a `Vec<u8>` with 3 bytes per pixel (for RGB color). The size of the
+/// buffer is calculated from the width and height.
+///
+/// This function is used to allocate image buffers before rendering to them for plotting.
+#[tracing::instrument(level = "trace")]
+fn allocate_buffer(width: u32, height: u32) -> Vec<u8> {
+    trace!("Allocating buffer.");
+    let buffer: Vec<u8> = vec![0; width as usize * height as usize * 3];
+    buffer
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    fn setup() {
+        if !std::path::Path::new("tests/vis/plotting/time").exists() {
+            std::fs::create_dir_all("tests/vis/plotting/time").unwrap();
+        }
+    }
+
+    fn clean(files: &Vec<&Path>) {
+        for file in files {
+            if file.is_file() {
+                std::fs::remove_file(file).unwrap();
+            }
+        }
+    }
+
+    #[test]
+    fn test_xy_plot() {
+        setup();
+        let files = vec![Path::new("tests/vis/plotting/time/test_xy_plot.png")];
+        clean(&files);
+
+        let x = Array1::linspace(0.0, 10.0, 100);
+        let y = x.map(|x| x * x);
+        xy_plot(
+            Some(&x),
+            &y,
+            Some(files[0]),
+            Some("y=x^2"),
+            Some("x [a.u.]"),
+            Some("y [a.u.]"),
+            None,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    fn test_xy_plot_defaults() {
+        setup();
+        let files = vec![Path::new(
+            "tests/vis/plotting/time/test_xy_plot_default.png",
+        )];
+        clean(&files);
+
+        let x = Array1::linspace(0.0, 10.0, 100);
+        let y = x.map(|x| x * x);
+        xy_plot(None, &y, Some(files[0]), None, None, None, None).unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    fn test_xy_plot_no_path() {
+        setup();
+        let files = vec![Path::new(
+            "tests/vis/plotting/time/test_xy_plot_no_path.png",
+        )];
+        clean(&files);
+
+        let x = Array1::linspace(0.0, 10.0, 100);
+        let y = x.map(|x| x * x);
+        xy_plot(None, &y, None, None, None, None, None).unwrap();
+
+        assert!(!files[0].is_file());
+    }
 }
