@@ -57,6 +57,10 @@ criterion = "0.5.1"
 name = "run_epoch_benches"
 harness = false
 
+[[bench]]
+name = "in_epoch_benches"
+harness = false
+
 [profile.test]
 opt-level = 3
 

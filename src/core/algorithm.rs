@@ -9,7 +9,7 @@ use tracing::{debug, trace};
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
     calculate_residuals, calculate_system_states_delta, calculate_system_update,
-    prediction::calculate_system_prediction,
+    prediction::calculate_system_prediction, Estimations,
 };
 use super::{
     config::algorithm::Algorithm,
@@ -170,31 +170,8 @@ pub fn run_epoch(
             calculate_system_update(estimations, time_index, functional_description, config);
         }
 
-        calculate_post_update_residuals(
-            &mut estimations.post_update_residuals,
-            &functional_description.measurement_matrix,
-            &estimations.system_states,
-            data.get_measurements(),
-            time_index,
-        );
-        calculate_system_states_delta(
-            &mut estimations.system_states_delta,
-            &estimations.system_states,
-            data.get_system_states(),
-            time_index,
-        );
-        calculate_gains_delta(
-            &mut estimations.gains_delta,
-            &functional_description.ap_params.gains,
-            data.get_gains(),
-        );
-        calculate_delays_delta(
-            &mut estimations.delays_delta,
-            &functional_description.ap_params.delays,
-            data.get_delays(),
-            &functional_description.ap_params.coefs,
-            data.get_coefs(),
-        );
+        calculate_deltas(estimations, functional_description, data, time_index);
+
         results.metrics.calculate_step(
             estimations,
             derivatives,
@@ -226,7 +203,42 @@ pub fn run_epoch(
 }
 
 #[tracing::instrument(level = "trace")]
-fn constrain_system_states(
+pub fn calculate_deltas(
+    estimations: &mut Estimations,
+    functional_description: &FunctionalDescription,
+    data: &Data,
+    time_index: usize,
+) {
+    trace!("Calculating deltas");
+    calculate_post_update_residuals(
+        &mut estimations.post_update_residuals,
+        &functional_description.measurement_matrix,
+        &estimations.system_states,
+        data.get_measurements(),
+        time_index,
+    );
+    calculate_system_states_delta(
+        &mut estimations.system_states_delta,
+        &estimations.system_states,
+        data.get_system_states(),
+        time_index,
+    );
+    calculate_gains_delta(
+        &mut estimations.gains_delta,
+        &functional_description.ap_params.gains,
+        data.get_gains(),
+    );
+    calculate_delays_delta(
+        &mut estimations.delays_delta,
+        &functional_description.ap_params.delays,
+        data.get_delays(),
+        &functional_description.ap_params.coefs,
+        data.get_coefs(),
+    );
+}
+
+#[tracing::instrument(level = "trace")]
+pub fn constrain_system_states(
     system_states: &mut ArraySystemStates,
     time_index: usize,
     clamping_threshold: f32,
