@@ -13,7 +13,6 @@ use std::time::Duration;
 
 const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
 const LEARNING_RATE: f32 = 1e-3;
-const TIME_INDEX: usize = 42;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Update");
@@ -109,7 +108,7 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         &mut results,
         &data,
         &config.algorithm,
-        TIME_INDEX,
+        0,
     );
 
     (data, model, results)

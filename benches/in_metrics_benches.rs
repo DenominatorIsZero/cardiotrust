@@ -130,7 +130,7 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         &mut results,
         &data,
         &config.algorithm,
-        TIME_INDEX,
+        0,
     );
 
     (data, model, results)
