@@ -61,6 +61,10 @@ harness = false
 name = "in_epoch_benches"
 harness = false
 
+[[bench]]
+name = "in_system_prediction_benches"
+harness = false
+
 [profile.test]
 opt-level = 3
 
