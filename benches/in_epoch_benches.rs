@@ -4,7 +4,6 @@ use cardiotrust::core::{
         estimation::{
             calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
         },
-        run_epoch,
     },
     config::Config,
     data::Data,

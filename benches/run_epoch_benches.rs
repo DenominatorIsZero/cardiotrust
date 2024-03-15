@@ -73,7 +73,7 @@ fn with_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
 
 fn with_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
     for voxel_size in VOXEL_SIZES.iter() {
-        let mut config = setup_config(voxel_size);
+        let config = setup_config(voxel_size);
 
         // setup inputs
         let (data, mut model, mut results) = setup_inputs(&config);
