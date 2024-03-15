@@ -1,8 +1,5 @@
 use cardiotrust::core::{
-    algorithm::{
-        refinement::update::{update_delays, update_gains},
-        run_epoch,
-    },
+    algorithm::{calculate_deltas, run_epoch},
     config::Config,
     data::Data,
     model::Model,
@@ -16,56 +13,80 @@ const LEARNING_RATE: f32 = 1e-3;
 const TIME_INDEX: usize = 42;
 
 fn run_benches(c: &mut Criterion) {
-    let mut group = c.benchmark_group("In Update");
-    bench_gains(&mut group);
-    bench_delays(&mut group);
+    let mut group = c.benchmark_group("In Metrics");
+    bench_deltas(&mut group);
+    bench_step(&mut group);
+    bench_epoch(&mut group);
     group.finish();
 }
 
-fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn bench_deltas(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, mut model, results) = setup_inputs(&config);
+        let (data, model, mut results) = setup_inputs(&config);
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("gains", voxel_size), |b| {
             b.iter(|| {
-                update_gains(
-                    &mut model.functional_description.ap_params.gains,
-                    &results.derivatives.gains,
-                    config.algorithm.learning_rate,
-                    2000,
-                    config.algorithm.gradient_clamping_threshold,
+                calculate_deltas(
+                    &mut results.estimations,
+                    &model.functional_description,
+                    &data,
+                    TIME_INDEX,
                 );
             })
         });
     }
 }
 
-fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, mut model, results) = setup_inputs(&config);
+        let (data, model, mut results) = setup_inputs(&config);
+
+        // perpare inputs
+        calculate_deltas(
+            &mut results.estimations,
+            &model.functional_description,
+            &data,
+            TIME_INDEX,
+        );
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        group.bench_function(BenchmarkId::new("delays", voxel_size), |b| {
+        group.bench_function(BenchmarkId::new("step", voxel_size), |b| {
             b.iter(|| {
-                update_delays(
-                    &mut model.functional_description.ap_params.coefs,
-                    &mut model.functional_description.ap_params.delays,
-                    &results.derivatives.coefs,
-                    config.algorithm.learning_rate,
-                    2000,
-                    config.algorithm.gradient_clamping_threshold,
+                results.metrics.calculate_step(
+                    &results.estimations,
+                    &results.derivatives,
+                    config.algorithm.regularization_strength,
+                    TIME_INDEX,
                 );
+            })
+        });
+    }
+}
+
+fn bench_epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+    for voxel_size in VOXEL_SIZES.iter() {
+        let config = setup_config(voxel_size);
+
+        // setup inputs
+        let (_, model, mut results) = setup_inputs(&config);
+
+        // run bench
+        let number_of_voxels = model.spatial_description.voxels.count();
+        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
+        group.bench_function(BenchmarkId::new("epoch", voxel_size), |b| {
+            b.iter(|| {
+                results.metrics.calculate_epoch(0);
             })
         });
     }

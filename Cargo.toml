@@ -77,9 +77,12 @@ harness = false
 name = "in_derivation_benches"
 harness = false
 
+[[bench]]
+name = "in_metrics_benches"
+harness = false
+
 [profile.test]
 opt-level = 3
-
 
 [profile.dev]
 opt-level = 3

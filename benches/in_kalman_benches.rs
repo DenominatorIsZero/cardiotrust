@@ -15,7 +15,7 @@ const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
 const LEARNING_RATE: f32 = 1e-3;
 
 fn run_benches(c: &mut Criterion) {
-    let mut group = c.benchmark_group("In System Prediction");
+    let mut group = c.benchmark_group("In Kalman");
     bench_kalman(&mut group);
     bench_calculation(&mut group);
     bench_predict_state_covariance(&mut group);
