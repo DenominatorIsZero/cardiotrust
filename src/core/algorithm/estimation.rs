@@ -196,16 +196,6 @@ pub fn calculate_system_update(
     config: &Algorithm,
 ) {
     trace!("Calculating system update");
-    if config.calculate_kalman_gain && !estimations.kalman_gain_converged {
-        let kalman_gain_old = functional_description.kalman_gain.values.clone();
-        calculate_kalman_gain(estimations, functional_description);
-        let difference = (kalman_gain_old - &functional_description.kalman_gain.values)
-            .mapv(|v| v.powi(2))
-            .sum();
-        if difference < 1e-6 {
-            estimations.kalman_gain_converged = true;
-        }
-    }
     let mut states = estimations
         .system_states
         .values
@@ -219,11 +209,36 @@ pub fn calculate_system_update(
     );
 }
 
+/// Updates the Kalman gain matrix if not already converged
+/// and then checks if it has converged.
+/// The Kalman gain is updated by calculating the new value and comparing
+/// it to the previous value. Convergence is detected when the difference
+/// between the new and old Kalman gain drops below a threshold. The
+/// convergence status is tracked in the estimations struct.
+#[inline]
+#[tracing::instrument(level = "trace")]
+pub fn update_kalman_gain_and_check_convergence(
+    estimations: &mut Estimations,
+    functional_description: &mut FunctionalDescription,
+) {
+    trace!("Updating Kalman gain and checking convergence");
+    if !estimations.kalman_gain_converged {
+        let kalman_gain_old = functional_description.kalman_gain.values.clone();
+        calculate_kalman_gain(estimations, functional_description);
+        let difference = (kalman_gain_old - &functional_description.kalman_gain.values)
+            .mapv(|v| v.powi(2))
+            .sum();
+        if difference < 1e-6 {
+            estimations.kalman_gain_converged = true;
+        }
+    }
+}
+
 /// Calculates the Kalman gain matrix based on the current state covariance
 /// and measurement covariance.
 #[inline]
 #[tracing::instrument(level = "trace")]
-fn calculate_kalman_gain(
+pub fn calculate_kalman_gain(
     estimations: &mut Estimations,
     functional_description: &mut FunctionalDescription,
 ) {
@@ -238,7 +253,7 @@ fn calculate_kalman_gain(
 /// predicted state covariance.
 #[inline]
 #[tracing::instrument(level = "trace")]
-fn estimate_state_covariance(
+pub fn estimate_state_covariance(
     estimations: &mut Estimations,
     functional_description: &FunctionalDescription,
 ) {
@@ -293,7 +308,7 @@ fn estimate_state_covariance(
 /// elements from the state covariance and measurement matrices.
 #[inline]
 #[tracing::instrument(level = "trace")]
-fn calculate_k(estimations: &Estimations, functional_description: &mut FunctionalDescription) {
+pub fn calculate_k(estimations: &Estimations, functional_description: &mut FunctionalDescription) {
     trace!("Calculating Kalman gain");
     functional_description
         .kalman_gain
@@ -337,7 +352,10 @@ fn calculate_k(estimations: &Estimations, functional_description: &mut Functiona
 /// in place.
 #[inline]
 #[tracing::instrument(level = "trace")]
-fn calculate_s_inv(estimations: &mut Estimations, functional_description: &FunctionalDescription) {
+pub fn calculate_s_inv(
+    estimations: &mut Estimations,
+    functional_description: &FunctionalDescription,
+) {
     trace!("Calculating S^-1");
     for i in 0..estimations.s.shape().0 {
         for j in 0..estimations.s.shape().1 {
@@ -391,7 +409,7 @@ fn calculate_s_inv(estimations: &mut Estimations, functional_description: &Funct
 #[allow(clippy::cast_sign_loss)]
 #[inline]
 #[tracing::instrument(level = "trace")]
-fn predict_state_covariance(
+pub fn predict_state_covariance(
     estimations: &mut Estimations,
     functional_description: &FunctionalDescription,
 ) {

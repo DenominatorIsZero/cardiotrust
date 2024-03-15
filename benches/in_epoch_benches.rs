@@ -3,6 +3,7 @@ use cardiotrust::core::{
         calculate_deltas, constrain_system_states,
         estimation::{
             calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
+            update_kalman_gain_and_check_convergence,
         },
     },
     config::Config,
@@ -23,6 +24,7 @@ fn run_benches(c: &mut Criterion) {
     bench_system_prediction(&mut group);
     bench_residuals(&mut group);
     bench_constrain(&mut group);
+    bench_kalman(&mut group);
     bench_system_update(&mut group);
     bench_derivation(&mut group);
     bench_deltas(&mut group);
@@ -145,6 +147,31 @@ fn bench_derivation(group: &mut criterion::BenchmarkGroup<criterion::measurement
                 );
             })
         });
+    }
+}
+
+fn bench_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+    for voxel_size in VOXEL_SIZES.iter() {
+        let config = setup_config(voxel_size);
+
+        // setup inputs
+        let (_, mut model, mut results) = setup_inputs(&config);
+
+        // run bench
+        let number_of_voxels = model.spatial_description.voxels.count();
+        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
+        group.bench_function(
+            BenchmarkId::new("update_kalman_gain_and_check_congergence", voxel_size),
+            |b| {
+                b.iter(|| {
+                    update_kalman_gain_and_check_convergence(
+                        &mut results.estimations,
+                        &mut model.functional_description,
+                    );
+                    results.estimations.kalman_gain_converged = false;
+                })
+            },
+        );
     }
 }
 

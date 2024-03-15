@@ -6,6 +6,8 @@ use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
 use tracing::{debug, trace};
 
+use crate::core::algorithm::estimation::update_kalman_gain_and_check_convergence;
+
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
     calculate_residuals, calculate_system_states_delta, calculate_system_update,
@@ -167,6 +169,9 @@ pub fn run_epoch(
         derivatives.calculate(functional_description, estimations, config, time_index);
 
         if config.model.apply_system_update {
+            if config.calculate_kalman_gain {
+                update_kalman_gain_and_check_convergence(estimations, functional_description);
+            }
             calculate_system_update(estimations, time_index, functional_description, config);
         }
 
@@ -680,6 +685,7 @@ mod test {
         model.functional_description.ap_params.gains.values *= 2.0;
         algorithm_config.epochs = 1;
         algorithm_config.model.apply_system_update = false;
+        algorithm_config.constrain_system_states = true;
 
         let mut results = Results::new(
             algorithm_config.epochs,
