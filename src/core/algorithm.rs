@@ -465,14 +465,16 @@ mod test {
             "Loss",
             "Loss",
             "Step",
-        );
+        )
+        .unwrap();
         standard_y_plot(
             &results.metrics.loss_epoch.values,
             Path::new("tests/algorithm_loss_epoch"),
             "Sum Loss Per Epoch",
             "Loss",
             "Epoch",
-        );
+        )
+        .unwrap();
 
         plot_states_max(
             &results.estimations.system_states,
@@ -635,14 +637,16 @@ mod test {
             "Loss",
             "Loss",
             "Step",
-        );
+        )
+        .unwrap();
         standard_y_plot(
             &results.metrics.loss_epoch.values,
             Path::new("tests/algorithm_no_update_loss_epoch"),
             "Sum Loss Per Epoch",
             "Loss",
             "Epoch",
-        );
+        )
+        .unwrap();
 
         plot_states_max(
             &results.estimations.system_states,
