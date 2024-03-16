@@ -15,12 +15,12 @@ use strum_macros::{Display, EnumIter};
 use crate::{
     core::{algorithm::metrics::predict_voxeltype, scenario::Scenario},
     vis::plotting::{
+        line::standard_y_plot,
         matrix::{
             plot_activation_time, plot_activation_time_delta, plot_states_max,
             plot_states_max_delta, plot_states_over_time, plot_voxel_types,
         },
         time::standard_time_plot,
-        y::standard_y_plot,
     },
     ScenarioList, SelectedSenario,
 };
