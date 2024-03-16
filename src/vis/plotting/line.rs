@@ -136,6 +136,42 @@ pub fn standard_y_plot(
     )
 }
 
+/// Generates a standard time plot from the provided y values and sample rate.
+///
+/// Plots the y values against time in seconds based on the provided sample rate.
+/// Saves the plot to the provided path as a PNG image. Applies the provided
+/// title and axis labels.
+///
+/// Returns the plot data as a `Vec<u8>`, or an error if the plot could not be
+/// generated.
+#[allow(clippy::cast_precision_loss)]
+#[tracing::instrument(level = "trace")]
+pub fn standard_time_plot(
+    y: &Array1<f32>,
+    sample_rate_hz: f32,
+    path: &Path,
+    title: &str,
+    y_label: &str,
+) -> Result<Vec<u8>, Box<dyn Error>> {
+    trace!("Generating time plot.");
+    if sample_rate_hz <= 0.0 {
+        return Err(Box::new(std::io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "sample_rate_hz must be greater than zero",
+        )));
+    }
+    let x = Array1::linspace(0.0, y.len() as f32 / sample_rate_hz, y.len());
+    xy_plot(
+        Some(&x),
+        y,
+        Some(path),
+        Some(title),
+        Some(y_label),
+        Some("t [s]"),
+        None,
+    )
+}
+
 #[cfg(test)]
 mod test {
 
@@ -279,5 +315,61 @@ mod test {
 
         assert!(result.is_err());
         assert!(!files[0].exists());
+    }
+
+    #[test]
+    fn test_standard_time_plot_normal() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_time_plot_normal.png")];
+        clean(&files);
+
+        let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
+
+        let sample_rate_hz = 1.0;
+
+        let title = "Test Plot";
+        let y_label = "Y Label";
+
+        standard_time_plot(&y, sample_rate_hz, files[0].as_path(), title, y_label).unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    fn test_standard_time_plot_zero_sample_rate() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_time_plot_zero_sample_rate.png")];
+        clean(&files);
+
+        let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
+
+        let sample_rate_hz = 0.0;
+
+        let title = "Test Plot";
+        let y_label = "Y Label";
+
+        let result = standard_time_plot(&y, sample_rate_hz, files[0].as_path(), title, y_label);
+
+        assert!(result.is_err());
+        assert!(!files[0].is_file());
+    }
+
+    #[test]
+    fn test_standard_time_plot_negative_sample_rate() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_time_plot_negative_sample_rate.png")];
+        clean(&files);
+
+        let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
+
+        let sample_rate_hz = -1.0;
+
+        let title = "Test Plot";
+        let y_label = "Y Label";
+
+        let result = standard_time_plot(&y, sample_rate_hz, files[0].as_path(), title, y_label);
+
+        assert!(result.is_err());
+        assert!(!files[0].is_file());
     }
 }

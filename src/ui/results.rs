@@ -15,12 +15,12 @@ use strum_macros::{Display, EnumIter};
 use crate::{
     core::{algorithm::metrics::predict_voxeltype, scenario::Scenario},
     vis::plotting::{
+        line::standard_time_plot,
         line::standard_y_plot,
         matrix::{
             plot_activation_time, plot_activation_time_delta, plot_states_max,
             plot_states_max_delta, plot_states_over_time, plot_voxel_types,
         },
-        time::standard_time_plot,
     },
     ScenarioList, SelectedSenario,
 };
@@ -631,20 +631,20 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             standard_time_plot(
                 &_model.functional_description.control_function_values.values,
                 scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Control Function Algorithm",
                 "u [A/mm^2]",
-            );
+            )?;
         }
         ImageType::ControlFunctionSimulation => {
             todo!();
             standard_time_plot(
                 &_data.get_control_function_values().values,
                 scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Control Function Simulation",
                 "u [A/mm^2]",
-            );
+            )?;
         }
         ImageType::ControlFunctionDelta => {
             todo!();
@@ -652,10 +652,10 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
                 &(&_model.functional_description.control_function_values.values
                     - &_data.get_control_function_values().values),
                 scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Control Function Delta",
                 "u [A/mm^2]",
-            );
+            )?;
         }
         ImageType::StateAlgorithm => {
             todo!();
@@ -666,20 +666,20 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
                     .slice(s![.., 0])
                     .to_owned(),
                 scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "System State 0 Algorithm",
                 "j [A/mm^2]",
-            );
+            )?;
         }
         ImageType::StateSimulation => {
             todo!();
             standard_time_plot(
                 &_data.get_system_states().values.slice(s![.., 0]).to_owned(),
                 scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "System State 0 Simulation",
                 "j [A/mm^2]",
-            );
+            )?;
         }
         ImageType::StateDelta => {
             todo!();
@@ -691,30 +691,30 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
                     .to_owned()
                     - &_data.get_system_states().values.slice(s![.., 0]).to_owned()),
                 scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "System State 0 Delta",
                 "j [A/mm^2]",
-            );
+            )?;
         }
         ImageType::MeasurementAlgorithm => {
             todo!();
             standard_time_plot(
                 &_estimations.measurements.values.slice(s![.., 0]).to_owned(),
                 scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Measurement 0 Algorithm",
                 "z [pT]",
-            );
+            )?;
         }
         ImageType::MeasurementSimulation => {
             todo!();
             standard_time_plot(
                 &_data.get_measurements().values.slice(s![.., 0]).to_owned(),
                 scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Measurement 0 Simulation",
                 "z [pT]",
-            );
+            )?;
         }
         ImageType::MeasurementDelta => {
             todo!();
@@ -722,10 +722,10 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
                 &(&_estimations.measurements.values.slice(s![.., 0]).to_owned()
                     - &_data.get_measurements().values.slice(s![.., 0]).to_owned()),
                 scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Measurement 0 Delta",
                 "z [pT]",
-            );
+            )?;
         }
     };
 }

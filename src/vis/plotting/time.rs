@@ -1,52 +1,9 @@
+use std::path::Path;
+
 use ndarray::Array1;
 use tracing::trace;
 
-use crate::core::data::shapes::ArraySystemStates;
-
-#[tracing::instrument(level = "trace")]
-pub fn standard_time_plot(
-    y: &Array1<f32>,
-    sample_rate_hz: f32,
-    file_name: &str,
-    title: &str,
-    y_label: &str,
-) {
-    trace!("Generating time plot.");
-    // #[allow(clippy::cast_precision_loss)]
-    // let t = Array1::from_vec(
-    //     (0..y.shape()[0])
-    //         .map(|i| i as f32 / sample_rate_hz)
-    //         .collect(),
-    // );
-    // let _t_min = *t.min_skipnan();
-    // let _t_max = *t.max_skipnan();
-    // let mut y_min = *y.min_skipnan();
-    // let mut y_max = *y.max_skipnan();
-    // let y_range = y_max - y_min;
-    // let y_margin = 0.1_f32;
-    // y_min = y_margin.mul_add(-y_range, y_min);
-    // y_max = y_margin.mul_add(y_range, y_max);
-
-    todo!()
-    // let mut plot = Plot::new();
-    // let trace = Scatter::from_array(t, y.clone()).mode(Mode::Lines);
-    // plot.add_trace(trace);
-    // let layout = Layout::new()
-    //     .title(title.into())
-    //     .x_axis(
-    //         Axis::new()
-    //             .title("t [s]".into())
-    //             .range(vec![t_min, t_max])
-    //             .show_spikes(true),
-    //     )
-    //     .y_axis(Axis::new().title(y_label.into()).range(vec![y_min, y_max]));
-    // plot.set_layout(layout);
-
-    // let width = 800;
-    // let height = 600;
-    // let scale = 1.0;
-    // save_plot(file_name, &plot, width, height, scale);
-}
+use crate::{core::data::shapes::ArraySystemStates, vis::plotting::line::xy_plot};
 
 #[tracing::instrument(level = "trace")]
 pub fn plot_state_xyz(

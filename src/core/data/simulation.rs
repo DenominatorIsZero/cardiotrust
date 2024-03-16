@@ -123,6 +123,8 @@ impl Simulation {
 
 #[cfg(test)]
 mod test {
+    use std::path::Path;
+
     use approx::{assert_relative_eq, RelativeEq};
 
     use ndarray::s;
@@ -131,8 +133,9 @@ mod test {
     use crate::{
         core::model::spatial::voxels::VoxelType,
         vis::plotting::{
+            line::standard_time_plot,
             matrix::{plot_states_at_time, plot_states_max, plot_states_over_time},
-            time::{plot_state_xyz, standard_time_plot},
+            time::plot_state_xyz,
         },
     };
 
@@ -202,24 +205,27 @@ mod test {
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 0]).to_owned(),
             config.sample_rate_hz,
-            "tests/simulation_sensor_0_x",
+            Path::new("tests/simulation_sensor_0_x"),
             "Simulated Measurement Sensor 0 - x",
             "H [pT]",
-        );
+        )
+        .unwrap();
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 1]).to_owned(),
             config.sample_rate_hz,
-            "tests/simulation_sensor_0_y",
+            Path::new("tests/simulation_sensor_0_y"),
             "Simulated Measurement Sensor 0 - y",
             "H [pT]",
-        );
+        )
+        .unwrap();
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 2]).to_owned(),
             config.sample_rate_hz,
-            "tests/simulation_sensor_0_z",
+            Path::new("tests/simulation_sensor_0_z"),
             "Simulated Measurement Sensor 0 - z",
             "H [pT]",
-        );
+        )
+        .unwrap();
 
         let time_index = simulation.system_states.values.shape()[0] / 3;
 
@@ -319,24 +325,27 @@ mod test {
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 0]).to_owned(),
             config.sample_rate_hz,
-            "tests/simulation_sensor_0_x_pathological",
+            Path::new("tests/simulation_sensor_0_x_pathological"),
             "Simulated Measurement Sensor 0 - x",
             "H [pT]",
-        );
+        )
+        .unwrap();
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 1]).to_owned(),
             config.sample_rate_hz,
-            "tests/simulation_sensor_0_y_pathological",
+            Path::new("tests/simulation_sensor_0_y_pathological"),
             "Simulated Measurement Sensor 0 - y",
             "H [pT]",
-        );
+        )
+        .unwrap();
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 2]).to_owned(),
             config.sample_rate_hz,
-            "tests/simulation_sensor_0_z_pathological",
+            Path::new("tests/simulation_sensor_0_z_pathological"),
             "Simulated Measurement Sensor 0 - z",
             "H [pT]",
-        );
+        )
+        .unwrap();
 
         let time_index = simulation.system_states.values.shape()[0] / 3;
 

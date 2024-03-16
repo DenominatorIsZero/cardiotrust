@@ -146,9 +146,11 @@ impl ControlFunction {
 #[cfg(test)]
 mod test {
 
+    use std::path::Path;
+
     use approx::assert_relative_eq;
 
-    use crate::vis::plotting;
+    use crate::vis::plotting::{self, line::standard_time_plot};
 
     use super::*;
 
@@ -196,12 +198,13 @@ mod test {
             ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
         assert_eq!(expected_length_samples, control_function.values.shape()[0]);
 
-        plotting::time::standard_time_plot(
+        standard_time_plot(
             &control_function.values,
             sample_rate_hz,
-            "tests/control_function",
+            Path::new("tests/control_function"),
             "Control Function",
             "j [A/mm^2]",
-        );
+        )
+        .unwrap();
     }
 }
