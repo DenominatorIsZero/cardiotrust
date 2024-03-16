@@ -4,6 +4,7 @@ use egui::{Slider, Spinner};
 use ndarray::s;
 use std::{
     collections::HashMap,
+    error::Error,
     fs,
     path::Path,
     thread::{self, JoinHandle},
@@ -18,7 +19,8 @@ use crate::{
             plot_activation_time, plot_activation_time_delta, plot_states_max,
             plot_states_max_delta, plot_states_over_time, plot_voxel_types,
         },
-        time::{standard_time_plot, standard_y_plot},
+        time::standard_time_plot,
+        y::standard_y_plot,
     },
     ScenarioList, SelectedSenario,
 };
@@ -232,7 +234,7 @@ pub fn draw_ui_results(
                 }
                 None => {
                     image_bundle.join_handle = Some(thread::spawn(move || {
-                        generate_image(send_scenario, image_type);
+                        generate_image(send_scenario, image_type).unwrap();
                     }));
                 }
             }
@@ -267,13 +269,13 @@ fn get_image_path(scenario: &Scenario, image_type: ImageType) -> String {
     unreachable_code
 )]
 #[tracing::instrument(level = "debug")]
-fn generate_image(scenario: Scenario, image_type: ImageType) {
+fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<dyn Error>> {
     debug!("Generating image");
     let mut path = Path::new("results").join(scenario.get_id()).join("img");
     fs::create_dir_all(&path).unwrap();
     path = path.join(image_type.to_string()).with_extension("png");
     if path.is_file() {
-        return;
+        return Ok(());
     }
     let _file_name = path.with_extension("");
     let _estimations = &scenario.results.as_ref().unwrap().estimations;
@@ -368,261 +370,261 @@ fn generate_image(scenario: Scenario, image_type: ImageType) {
             todo!();
             standard_y_plot(
                 &_metrics.loss_epoch.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Sum Loss Per Epoch",
                 "Loss",
                 "Epoch",
-            );
+            )?;
         }
         ImageType::Loss => {
             todo!();
             standard_y_plot(
                 &_metrics.loss.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Loss Per Step",
                 "Loss",
                 "Step",
-            );
+            )?;
         }
         ImageType::LossMseEpoch => {
             todo!();
             standard_y_plot(
                 &_metrics.loss_mse_epoch.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Sum MSE Loss Per Epoch",
                 "Loss",
                 "Epoch",
-            );
+            )?;
         }
         ImageType::LossMse => {
             todo!();
             standard_y_plot(
                 &_metrics.loss_mse.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "MSE Loss Per Step",
                 "Loss",
                 "Step",
-            );
+            )?;
         }
         ImageType::LossMaximumRegularizationEpoch => {
             todo!();
             standard_y_plot(
                 &_metrics.loss_maximum_regularization_epoch.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Sum Max. Reg. Loss Per Epoch",
                 "Loss",
                 "Epoch",
-            );
+            )?;
         }
         ImageType::LossMaximumRegularization => {
             todo!();
             standard_y_plot(
                 &_metrics.loss_maximum_regularization.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Max. Reg. Loss Per Step",
                 "Loss",
                 "Step",
-            );
+            )?;
         }
         ImageType::DeltaStatesMeanEpoch => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_states_mean_epoch.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Mean Absolute Error Of System States Per Epoch",
                 "Error",
                 "Epoch",
-            );
+            )?;
         }
         ImageType::DeltaStatesMean => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_states_mean.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Mean Absolute Error Of System States Per Step",
                 "Error",
                 "Step",
-            );
+            )?;
         }
         ImageType::DeltaStatesMaxEpoch => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_states_max_epoch.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Max Absolute Error Of System States Per Epoch",
                 "Error",
                 "Epoch",
-            );
+            )?;
         }
         ImageType::DeltaStatesMax => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_states_max.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Max Absolute Error Of System States Per Step",
                 "Error",
                 "Step",
-            );
+            )?;
         }
         ImageType::DeltaMeasurementsMeanEpoch => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_measurements_mean_epoch.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Mean Absolute Error Of Measurements Per Epoch",
                 "Error",
                 "Epoch",
-            );
+            )?;
         }
         ImageType::DeltaMeasurementsMean => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_measurements_mean.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Mean Absolute Error Of Measurements Per Step",
                 "Error",
                 "Step",
-            );
+            )?;
         }
         ImageType::DeltaMeasurementsMaxEpoch => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_measurements_max_epoch.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Max Absolute Error Of Measurements Per Epoch",
                 "Error",
                 "Epoch",
-            );
+            )?;
         }
         ImageType::DeltaMeasurementsMax => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_measurements_max.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Max Absolute Error Of Measurements Per Step",
                 "Error",
                 "Step",
-            );
+            )?;
         }
         ImageType::DeltaGainsMeanEpoch => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_gains_mean_epoch.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Final Mean Absolute Error Of Gains Per Epoch",
                 "Error",
                 "Epoch",
-            );
+            )?;
         }
         ImageType::DeltaGainsMean => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_gains_mean.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Mean Absolute Error Of Gains Per Step",
                 "Error",
                 "Step",
-            );
+            )?;
         }
         ImageType::DeltaGainsMaxEpoch => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_gains_max_epoch.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Final Max Absolute Error Of Gains Per Epoch",
                 "Error",
                 "Epoch",
-            );
+            )?;
         }
         ImageType::DeltaGainsMax => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_gains_max.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Max Absolute Error Of Gains Per Step",
                 "Error",
                 "Step",
-            );
+            )?;
         }
         ImageType::DeltaDelaysMeanEpoch => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_delays_mean_epoch.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Final Mean Absolute Error Of Delays Per Epoch",
                 "Error",
                 "Epoch",
-            );
+            )?;
         }
         ImageType::DeltaDelaysMean => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_delays_mean.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Mean Absolute Error Of Delays Per Step",
                 "Error",
                 "Step",
-            );
+            )?;
         }
         ImageType::DeltaDelaysMaxEpoch => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_delays_max_epoch.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Final Max Absolute Error Of Delays Per Epoch",
                 "Error",
                 "Epoch",
-            );
+            )?;
         }
         ImageType::DeltaDelaysMax => {
             todo!();
             standard_y_plot(
                 &_metrics.delta_delays_max.values,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Max Absolute Error Of Delays Per Step",
                 "Error",
                 "Step",
-            );
+            )?;
         }
         ImageType::Dice => {
             todo!();
             standard_y_plot(
                 &_metrics.dice_score_over_threshold,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Dice Score over Threshold",
                 "Dice Score",
                 "Threshold * 100",
-            );
+            )?;
         }
         ImageType::IoU => {
             todo!();
             standard_y_plot(
                 &_metrics.iou_over_threshold,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "IoU over Threshold",
                 "IoU",
                 "Threshold * 100",
-            );
+            )?;
         }
         ImageType::Recall => {
             todo!();
             standard_y_plot(
                 &_metrics.recall_over_threshold,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Recall over Threshold",
                 "Recall",
                 "Threshold * 100",
-            );
+            )?;
         }
         ImageType::Precision => {
             todo!();
             standard_y_plot(
                 &_metrics.precision_over_threshold,
-                _file_name.to_str().unwrap(),
+                &_file_name,
                 "Precision over Threshold",
                 "Precision",
                 "Threshold * 100",
-            );
+            )?;
         }
         ImageType::ControlFunctionAlgorithm => {
             todo!();

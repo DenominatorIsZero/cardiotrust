@@ -1,6 +1,7 @@
 pub mod matrix;
 pub mod time;
 pub mod xy;
+pub mod y;
 
 const STANDARD_RESOLUTION: (u32, u32) = (800, 600);
 const X_MARGIN: f32 = 0.0;

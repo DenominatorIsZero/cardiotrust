@@ -48,52 +48,6 @@ pub fn standard_time_plot(
     // save_plot(file_name, &plot, width, height, scale);
 }
 
-/// .
-///
-/// # Panics
-///
-/// Panics if min or max of array couldn't be computed.
-#[tracing::instrument(level = "trace")]
-pub fn standard_y_plot(
-    y: &Array1<f32>,
-    file_name: &str,
-    title: &str,
-    y_label: &str,
-    x_label: &str,
-) {
-    trace!("Generating y plot.");
-    // let x = Array1::from_vec((0..y.shape()[0]).collect());
-    // let _x_min = *x.min().expect("Could not calculate min of X-array");
-    // let _x_max = *x.max().expect("Could not calculate max of X-array");
-    // let mut y_min = *y.min_skipnan();
-    // let mut y_max = *y.max_skipnan();
-    // let y_range = y_max - y_min;
-    // let y_margin = 0.1_f32;
-    // y_min = y_margin.mul_add(-y_range, y_min);
-    // y_max = y_margin.mul_add(y_range, y_max);
-
-    todo!()
-
-    // let mut plot = Plot::new();
-    // let trace = Scatter::from_array(x, y.clone()).mode(Mode::Lines);
-    // plot.add_trace(trace);
-    // let layout = Layout::new()
-    //     .title(title.into())
-    //     .x_axis(
-    //         Axis::new()
-    //             .title(x_label.into())
-    //             .range(vec![x_min, x_max])
-    //             .show_spikes(true),
-    //     )
-    //     .y_axis(Axis::new().title(y_label.into()).range(vec![y_min, y_max]));
-    // plot.set_layout(layout);
-
-    // let width = 800;
-    // let height = 600;
-    // let scale = 1.0;
-    // save_plot(file_name, &plot, width, height, scale);
-}
-
 #[tracing::instrument(level = "trace")]
 pub fn plot_state_xyz(
     system_states: &ArraySystemStates,

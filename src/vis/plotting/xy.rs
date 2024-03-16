@@ -43,10 +43,10 @@ pub fn xy_plot(
     let y_label = y_label.unwrap_or("y");
     let x_label = x_label.unwrap_or("x");
 
-    let x_min = x.min().unwrap();
-    let x_max = x.max().unwrap();
-    let y_min = y.min().unwrap();
-    let y_max = y.max().unwrap();
+    let x_min = x.min()?;
+    let x_max = x.max()?;
+    let y_min = y.min()?;
+    let y_max = y.max()?;
 
     let x_range = x_max - x_min;
     let y_range = y_max - y_min;
@@ -112,15 +112,18 @@ fn allocate_buffer(width: u32, height: u32) -> Vec<u8> {
 #[cfg(test)]
 mod test {
 
+    use std::path::PathBuf;
+
     use super::*;
+    const COMMON_PATH: &str = "tests/vis/plotting/xy";
 
     fn setup() {
-        if !std::path::Path::new("tests/vis/plotting/xy").exists() {
-            std::fs::create_dir_all("tests/vis/plotting/xy").unwrap();
+        if !Path::new(COMMON_PATH).exists() {
+            std::fs::create_dir_all(COMMON_PATH).unwrap();
         }
     }
 
-    fn clean(files: &Vec<&Path>) {
+    fn clean(files: &Vec<PathBuf>) {
         for file in files {
             if file.is_file() {
                 std::fs::remove_file(file).unwrap();
@@ -131,7 +134,7 @@ mod test {
     #[test]
     fn test_xy_plot() {
         setup();
-        let files = vec![Path::new("tests/vis/plotting/xy/test_xy_plot.png")];
+        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot.png")];
         clean(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
@@ -139,7 +142,7 @@ mod test {
         xy_plot(
             Some(&x),
             &y,
-            Some(files[0]),
+            Some(files[0].as_path()),
             Some("y=x^2"),
             Some("x [a.u.]"),
             Some("y [a.u.]"),
@@ -153,12 +156,12 @@ mod test {
     #[test]
     fn test_xy_plot_defaults() {
         setup();
-        let files = vec![Path::new("tests/vis/plotting/xy/test_xy_plot_default.png")];
+        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot_default.png")];
         clean(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
-        xy_plot(None, &y, Some(files[0]), None, None, None, None).unwrap();
+        xy_plot(None, &y, Some(files[0].as_path()), None, None, None, None).unwrap();
 
         assert!(files[0].is_file());
     }
@@ -166,7 +169,7 @@ mod test {
     #[test]
     fn test_xy_plot_no_path() {
         setup();
-        let files = vec![Path::new("tests/vis/plotting/xy/test_xy_plot_no_path.png")];
+        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot_no_path.png")];
         clean(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);

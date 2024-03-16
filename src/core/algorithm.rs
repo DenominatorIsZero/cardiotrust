@@ -266,6 +266,8 @@ pub fn constrain_system_states(
 #[cfg(test)]
 mod test {
 
+    use std::path::Path;
+
     use ndarray::Dim;
     use ndarray_stats::QuantileExt;
     use tracing::info;
@@ -275,7 +277,7 @@ mod test {
     use crate::core::model::Model;
 
     use crate::vis::plotting::matrix::{plot_states_max, plot_states_over_time};
-    use crate::vis::plotting::time::standard_y_plot;
+    use crate::vis::plotting::y::standard_y_plot;
 
     use super::*;
 
@@ -459,14 +461,14 @@ mod test {
 
         standard_y_plot(
             &results.metrics.loss.values,
-            "tests/algorithm_loss",
+            Path::new("tests/algorithm_loss"),
             "Loss",
             "Loss",
             "Step",
         );
         standard_y_plot(
             &results.metrics.loss_epoch.values,
-            "tests/algorithm_loss_epoch",
+            Path::new("tests/algorithm_loss_epoch"),
             "Sum Loss Per Epoch",
             "Loss",
             "Epoch",
@@ -629,14 +631,14 @@ mod test {
 
         standard_y_plot(
             &results.metrics.loss.values,
-            "tests/algorithm_no_update_loss",
+            Path::new("tests/algorithm_no_update_loss"),
             "Loss",
             "Loss",
             "Step",
         );
         standard_y_plot(
             &results.metrics.loss_epoch.values,
-            "tests/algorithm_no_update_loss_epoch",
+            Path::new("tests/algorithm_no_update_loss_epoch"),
             "Sum Loss Per Epoch",
             "Loss",
             "Epoch",
