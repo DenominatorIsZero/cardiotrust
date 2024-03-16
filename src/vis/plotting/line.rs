@@ -12,7 +12,7 @@ use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
 ///
 /// Saves the plot to the optionally provided path as a PNG,
 /// returns the raw pixel buffer.
-#[allow(clippy::cast_precision_loss)]
+#[allow(clippy::cast_precision_loss, clippy::too_many_arguments)]
 #[tracing::instrument(level = "trace")]
 pub fn xy_plot(
     x: Option<&Array1<f32>>,
@@ -21,6 +21,7 @@ pub fn xy_plot(
     title: Option<&str>,
     y_label: Option<&str>,
     x_label: Option<&str>,
+    item_labels: Option<&Vec<&str>>,
     resolution: Option<(u32, u32)>,
 ) -> Result<Vec<u8>, Box<dyn Error>> {
     trace!("Generating xy plot.");
@@ -36,6 +37,15 @@ pub fn xy_plot(
             return Err(Box::new(std::io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "y data must have same length",
+            )));
+        }
+    }
+
+    if let Some(item_labels) = item_labels {
+        if item_labels.len() != ys.len() {
+            return Err(Box::new(std::io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "if not None, item_labels must be same length as ys",
             )));
         }
     }
@@ -96,10 +106,30 @@ pub fn xy_plot(
             .draw()?;
 
         for (i, y) in ys.iter().enumerate() {
-            chart.draw_series(LineSeries::new(
-                x.iter().zip(y.iter()).map(|(x, y)| (*x, *y)),
-                &COLORS[i % COLORS.len()],
-            ))?;
+            let color = &COLORS[i % COLORS.len()];
+            if let Some(item_labels) = item_labels {
+                chart
+                    .draw_series(LineSeries::new(
+                        x.iter().zip(y.iter()).map(|(x, y)| (*x, *y)),
+                        color,
+                    ))?
+                    .label(item_labels[i])
+                    .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
+            } else {
+                chart.draw_series(LineSeries::new(
+                    x.iter().zip(y.iter()).map(|(x, y)| (*x, *y)),
+                    color,
+                ))?;
+            }
+        }
+
+        if item_labels.is_some() {
+            chart
+                .configure_series_labels()
+                .background_style(WHITE.mix(0.8))
+                .border_style(BLACK)
+                .label_font(AXIS_STYLE.into_font())
+                .draw()?;
         }
 
         root.present()?;
@@ -156,6 +186,7 @@ pub fn standard_y_plot(
         Some(y_label),
         Some(x_label),
         None,
+        None,
     )
 }
 
@@ -191,6 +222,7 @@ pub fn standard_time_plot(
         Some(title),
         Some(y_label),
         Some("t [s]"),
+        None,
         None,
     )
 }
@@ -233,6 +265,7 @@ mod test {
             Some("x [a.u.]"),
             Some("y [a.u.]"),
             None,
+            None,
         )
         .unwrap();
 
@@ -255,6 +288,7 @@ mod test {
             None,
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -269,7 +303,7 @@ mod test {
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
-        xy_plot(None, vec![&y], None, None, None, None, None).unwrap();
+        xy_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
 
         assert!(!files[0].is_file());
     }
@@ -279,7 +313,7 @@ mod test {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
 
-        let buffer = xy_plot(None, vec![&y], None, None, None, None, None).unwrap();
+        let buffer = xy_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
 
         assert_eq!(
             buffer.len(),
@@ -294,7 +328,17 @@ mod test {
 
         let resolution = (400, 300);
 
-        let buffer = xy_plot(None, vec![&y], None, None, None, None, Some(resolution)).unwrap();
+        let buffer = xy_plot(
+            None,
+            vec![&y],
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(resolution),
+        )
+        .unwrap();
 
         assert_eq!(
             buffer.len(),
@@ -307,8 +351,96 @@ mod test {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = Array1::zeros(90);
 
-        assert!(xy_plot(Some(&x), vec![&y], None, None, None, None, None).is_err());
+        assert!(xy_plot(Some(&x), vec![&y], None, None, None, None, None, None).is_err());
     }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_xy_plot_multiple_y() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot_multiple_y.png")];
+        clean(&files);
+
+        let x = Array1::linspace(0.0, 10.0, 100);
+        let ys_owned: Vec<Array1<f32>> = (0..10).map(|i| x.map(|x| x * x * i as f32)).collect();
+        let ys: Vec<&Array1<f32>> = ys_owned.iter().collect();
+        xy_plot(
+            Some(&x),
+            ys,
+            Some(files[0].as_path()),
+            Some("y=x^2"),
+            Some("x [a.u.]"),
+            Some("y [a.u.]"),
+            None,
+            None,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_xy_plot_with_labels() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot_with_labels.png")];
+        clean(&files);
+
+        let x = Array1::linspace(0.0, 10.0, 100);
+        let ys_owned: Vec<Array1<f32>> = (0..10).map(|i| x.map(|x| x * x * i as f32)).collect();
+        let ys: Vec<&Array1<f32>> = ys_owned.iter().collect();
+        let labels_owned: Vec<String> = (0..10).map(|i| format!("y_{i}")).collect();
+        let labels: Vec<&str> = labels_owned
+            .iter()
+            .map(std::string::String::as_str)
+            .collect();
+
+        xy_plot(
+            Some(&x),
+            ys,
+            Some(files[0].as_path()),
+            Some("y=x^2"),
+            Some("x [a.u.]"),
+            Some("y [a.u.]"),
+            Some(&labels),
+            None,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_xy_plot_with_invalid_labels() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot_with_invalid_labels.png")];
+        clean(&files);
+
+        let x = Array1::linspace(0.0, 10.0, 100);
+        let ys_owned: Vec<Array1<f32>> = (0..10).map(|i| x.map(|x| x * x * i as f32)).collect();
+        let ys: Vec<&Array1<f32>> = ys_owned.iter().collect();
+        let labels_owned: Vec<String> = (0..9).map(|i| format!("y_{i}")).collect();
+        let labels: Vec<&str> = labels_owned
+            .iter()
+            .map(std::string::String::as_str)
+            .collect();
+
+        let result = xy_plot(
+            Some(&x),
+            ys,
+            Some(files[0].as_path()),
+            Some("y=x^2"),
+            Some("x [a.u.]"),
+            Some("y [a.u.]"),
+            Some(&labels),
+            None,
+        );
+
+        assert!(result.is_err());
+        assert!(!files[0].is_file());
+    }
+
     #[test]
     fn test_standard_y_plot_basic() {
         setup();
