@@ -4,6 +4,8 @@ use plotters::prelude::*;
 use std::{error::Error, io, path::Path};
 use tracing::trace;
 
+use crate::vis::plotting::COLORS;
+
 use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
 
 /// Generates an XY plot from the provided x and y data.
@@ -14,7 +16,7 @@ use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
 #[tracing::instrument(level = "trace")]
 pub fn xy_plot(
     x: Option<&Array1<f32>>,
-    y: &Array1<f32>,
+    ys: Vec<&Array1<f32>>,
     path: Option<&Path>,
     title: Option<&str>,
     y_label: Option<&str>,
@@ -27,12 +29,23 @@ pub fn xy_plot(
 
     let mut buffer = allocate_buffer(width, height);
 
+    let y_len = ys[0].len();
+
+    for y in &ys {
+        if y.len() != y_len {
+            return Err(Box::new(std::io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "y data must have same length",
+            )));
+        }
+    }
+
     let default_x = x
         .is_none()
-        .then(|| Array1::linspace(0.0, y.len() as f32, y.len()));
+        .then(|| Array1::linspace(0.0, y_len as f32, y_len));
     let x = x.unwrap_or_else(|| default_x.as_ref().unwrap());
 
-    if x.len() != y.len() {
+    if x.len() != y_len {
         return Err(Box::new(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "x and y must have same length",
@@ -45,18 +58,23 @@ pub fn xy_plot(
 
     let x_min = x.min()?;
     let x_max = x.max()?;
-    let y_min = y.min()?;
-    let y_max = y.max()?;
+    let mut y_min = f32::INFINITY;
+    let mut y_max = -f32::INFINITY;
+
+    for y in &ys {
+        let min = y.min()?;
+        let max = y.max()?;
+        y_min = y_min.min(*min);
+        y_max = y_max.max(*max);
+    }
 
     let x_range = x_max - x_min;
     let y_range = y_max - y_min;
 
     let x_min = x_min - x_range * X_MARGIN;
     let x_max = x_max + x_range * X_MARGIN;
-    let y_min = y_min - y_range * Y_MARGIN;
-    let y_max = y_max + y_range * Y_MARGIN;
-
-    let data: Vec<(f32, f32)> = x.iter().zip(y.iter()).map(|(x, y)| (*x, *y)).collect();
+    let y_min = y_range.mul_add(-Y_MARGIN, y_min);
+    let y_max = y_range.mul_add(Y_MARGIN, y_max);
 
     {
         let root = BitMapBackend::with_buffer(&mut buffer[..], (width, height)).into_drawing_area();
@@ -77,7 +95,12 @@ pub fn xy_plot(
             .y_label_style(AXIS_STYLE.into_font())
             .draw()?;
 
-        chart.draw_series(LineSeries::new(data, &RED))?;
+        for (i, y) in ys.iter().enumerate() {
+            chart.draw_series(LineSeries::new(
+                x.iter().zip(y.iter()).map(|(x, y)| (*x, *y)),
+                &COLORS[i % COLORS.len()],
+            ))?;
+        }
 
         root.present()?;
     } // dropping bitmap backend
@@ -127,7 +150,7 @@ pub fn standard_y_plot(
     trace!("Generating y plot.");
     xy_plot(
         None,
-        y,
+        vec![y],
         Some(path),
         Some(title),
         Some(y_label),
@@ -163,7 +186,7 @@ pub fn standard_time_plot(
     let x = Array1::linspace(0.0, y.len() as f32 / sample_rate_hz, y.len());
     xy_plot(
         Some(&x),
-        y,
+        vec![y],
         Some(path),
         Some(title),
         Some(y_label),
@@ -204,7 +227,7 @@ mod test {
         let y = x.map(|x| x * x);
         xy_plot(
             Some(&x),
-            &y,
+            vec![&y],
             Some(files[0].as_path()),
             Some("y=x^2"),
             Some("x [a.u.]"),
@@ -224,7 +247,16 @@ mod test {
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
-        xy_plot(None, &y, Some(files[0].as_path()), None, None, None, None).unwrap();
+        xy_plot(
+            None,
+            vec![&y],
+            Some(files[0].as_path()),
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
 
         assert!(files[0].is_file());
     }
@@ -237,7 +269,7 @@ mod test {
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
-        xy_plot(None, &y, None, None, None, None, None).unwrap();
+        xy_plot(None, vec![&y], None, None, None, None, None).unwrap();
 
         assert!(!files[0].is_file());
     }
@@ -247,7 +279,7 @@ mod test {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
 
-        let buffer = xy_plot(None, &y, None, None, None, None, None).unwrap();
+        let buffer = xy_plot(None, vec![&y], None, None, None, None, None).unwrap();
 
         assert_eq!(
             buffer.len(),
@@ -262,7 +294,7 @@ mod test {
 
         let resolution = (400, 300);
 
-        let buffer = xy_plot(None, &y, None, None, None, None, Some(resolution)).unwrap();
+        let buffer = xy_plot(None, vec![&y], None, None, None, None, Some(resolution)).unwrap();
 
         assert_eq!(
             buffer.len(),
@@ -275,7 +307,7 @@ mod test {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = Array1::zeros(90);
 
-        assert!(xy_plot(Some(&x), &y, None, None, None, None, None).is_err());
+        assert!(xy_plot(Some(&x), vec![&y], None, None, None, None, None).is_err());
     }
     #[test]
     fn test_standard_y_plot_basic() {
