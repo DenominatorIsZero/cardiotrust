@@ -1,4 +1,3 @@
-
 use ndarray::{s, Array1};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};

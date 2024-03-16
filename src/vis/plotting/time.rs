@@ -1,9 +1,6 @@
-use std::path::Path;
-
-use ndarray::Array1;
 use tracing::trace;
 
-use crate::{core::data::shapes::ArraySystemStates, vis::plotting::line::xy_plot};
+use crate::core::data::shapes::ArraySystemStates;
 
 #[tracing::instrument(level = "trace")]
 pub fn plot_state_xyz(

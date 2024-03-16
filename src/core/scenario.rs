@@ -1,7 +1,6 @@
 pub mod results;
 pub mod summary;
 
-
 use bincode;
 use chrono;
 use ndarray_stats::QuantileExt;
