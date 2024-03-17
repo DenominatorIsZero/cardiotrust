@@ -16,7 +16,9 @@ use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
     clippy::cast_precision_loss,
     clippy::too_many_arguments,
     clippy::cast_possible_truncation,
-    clippy::cast_sign_loss
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
+    clippy::cast_lossless
 )]
 #[tracing::instrument(level = "trace")]
 pub fn matrix_plot<A>(
@@ -43,12 +45,12 @@ where
             let ratio = dim_x as f32 / dim_y as f32;
             if ratio > 1.0 {
                 (
-                    STANDARD_RESOLUTION.0 + 100,
+                    STANDARD_RESOLUTION.0 + 250,
                     (STANDARD_RESOLUTION.0 as f32 / ratio) as u32 + 150,
                 )
             } else {
                 (
-                    (STANDARD_RESOLUTION.0 as f32 * ratio) as u32 + 100,
+                    (STANDARD_RESOLUTION.0 as f32 * ratio) as u32 + 250,
                     STANDARD_RESOLUTION.0 + 150,
                 )
             }
@@ -97,10 +99,49 @@ where
     {
         let root = BitMapBackend::with_buffer(&mut buffer[..], (width, height)).into_drawing_area();
         root.fill(&WHITE)?;
+        let (root_width, root_height) = root.dim_in_pixel();
+
+        let colorbar_area = root.margin(60, 75, root_width - 150, 50);
+
+        let num_colors = 100;
+        let (cb_width, cb_height) = colorbar_area.dim_in_pixel();
+
+        for i in 0..num_colors {
+            let color: scarlet::color::RGBColor =
+                color_map.transform_single(1.0 - i as f64 / (num_colors - 1) as f64);
+            let color = RGBColor(
+                (color.r * 255.0) as u8,
+                (color.g * 255.0) as u8,
+                (color.b * 255.0) as u8,
+            );
+            colorbar_area.draw(&Rectangle::new(
+                [
+                    (0, (i * cb_height / num_colors) as i32),
+                    (cb_width as i32, ((i + 1) * cb_height / num_colors) as i32),
+                ],
+                color.filled(),
+            ))?;
+        }
+
+        // Drawing labels for the colorbar
+        let label_area = root.margin(60, 75, root_width - 50, 10); // Adjust margins to align with the colorbar
+        let num_labels = 4; // Number of labels on the colorbar
+        for i in 0..=num_labels {
+            label_area.draw(&Text::new(
+                format!("{:.2}", 1.0 - i as f32 / num_labels as f32),
+                (5, (i * cb_height / num_labels) as i32),
+                AXIS_STYLE.into_font(),
+            ))?;
+        }
+
+        // Drawing units for colorbar
+        let unit_area = root.margin(root_height - cb_height - 60 - 75, 25, root_width - 150, 50); // Adjust margins to align with the colorbar
+        unit_area.draw(&Text::new("[a.u.]", (35, 30), AXIS_STYLE.into_font()))?;
 
         let mut chart = ChartBuilder::on(&root)
             .caption(title, CAPTION_STYLE.into_font())
             .margin(25)
+            .margin_right(175) // make room for colorbar
             .x_label_area_size(75)
             .y_label_area_size(75)
             .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
@@ -110,10 +151,10 @@ where
             .disable_mesh()
             .x_desc(x_label)
             .x_label_style(AXIS_STYLE.into_font())
-            .x_labels(dim_x)
+            .x_labels(dim_x.min(10))
             .y_desc(y_label)
             .y_label_style(AXIS_STYLE.into_font())
-            .y_labels(dim_y)
+            .y_labels(dim_y.min(10))
             .draw()?;
 
         chart.draw_series(data.indexed_iter().map(|((index_x, index_y), &value)| {
@@ -283,6 +324,37 @@ mod test {
         for x in 0..1 {
             for y in 0..8 {
                 data[(x, y)] = ((x + 1) + (y * 8)) as f32;
+            }
+        }
+
+        matrix_plot(
+            &data,
+            None,
+            None,
+            None,
+            Some(files[0].as_path()),
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_matrix_plot_large() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_large.png")];
+        clean(&files);
+
+        let mut data = Array2::zeros((1000, 1000));
+
+        for x in 0..1000 {
+            for y in 0..1000 {
+                data[(x, y)] = ((x + 1) + (y * 1000)) as f32;
             }
         }
 
