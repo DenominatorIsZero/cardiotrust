@@ -1,10 +1,10 @@
-use ndarray::Array1;
+use ndarray::{s, Array1, ArrayBase, Data, Ix1};
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use std::{error::Error, io, path::Path};
 use tracing::trace;
 
-use crate::vis::plotting::COLORS;
+use crate::{core::data::shapes::ArraySystemStates, vis::plotting::COLORS};
 
 use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
 
@@ -14,16 +14,19 @@ use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
 /// returns the raw pixel buffer.
 #[allow(clippy::cast_precision_loss, clippy::too_many_arguments)]
 #[tracing::instrument(level = "trace")]
-pub fn xy_plot(
+pub fn xy_plot<A>(
     x: Option<&Array1<f32>>,
-    ys: Vec<&Array1<f32>>,
+    ys: Vec<&ArrayBase<A, Ix1>>,
     path: Option<&Path>,
     title: Option<&str>,
     y_label: Option<&str>,
     x_label: Option<&str>,
     item_labels: Option<&Vec<&str>>,
     resolution: Option<(u32, u32)>,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+) -> Result<Vec<u8>, Box<dyn Error>>
+where
+    A: Data<Elem = f32>,
+{
     trace!("Generating xy plot.");
 
     let (width, height) = resolution.unwrap_or(STANDARD_RESOLUTION);
@@ -170,13 +173,16 @@ fn allocate_buffer(width: u32, height: u32) -> Vec<u8> {
 /// Returns the plot data as a `Vec<u8>`, or an error if the plot could not be
 /// generated.
 #[tracing::instrument(level = "trace")]
-pub fn standard_y_plot(
-    y: &Array1<f32>,
+pub fn standard_y_plot<A>(
+    y: &ArrayBase<A, Ix1>,
     path: &Path,
     title: &str,
     y_label: &str,
     x_label: &str,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+) -> Result<Vec<u8>, Box<dyn Error>>
+where
+    A: Data<Elem = f32>,
+{
     trace!("Generating y plot.");
     xy_plot(
         None,
@@ -200,13 +206,16 @@ pub fn standard_y_plot(
 /// generated.
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace")]
-pub fn standard_time_plot(
-    y: &Array1<f32>,
+pub fn standard_time_plot<A>(
+    y: &ArrayBase<A, Ix1>,
     sample_rate_hz: f32,
     path: &Path,
     title: &str,
     y_label: &str,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+) -> Result<Vec<u8>, Box<dyn Error>>
+where
+    A: Data<Elem = f32>,
+{
     trace!("Generating time plot.");
     if sample_rate_hz <= 0.0 {
         return Err(Box::new(std::io::Error::new(
@@ -227,10 +236,64 @@ pub fn standard_time_plot(
     )
 }
 
+/// Generates a plot of the x, y, and z values for a specific state index from
+/// the provided system state data.
+///
+/// Plots the x, y, and z values for the state at the given index against time
+/// in seconds based on the provided sample rate. Saves the plot to the provided
+/// path as a PNG image. Applies the provided title and axis labels.
+///
+/// `system_states` - The system state data to extract values from.
+/// `state_index` - The index of the state to plot.
+/// `sample_rate_hz` - The sample rate of the data in Hz.  
+/// `path` - The path to save the generated plot to.
+/// `title` - The title for the plot.
+///
+/// Returns the plot data as a `Vec<u8>`, or an error if the plot could not be
+/// generated.
+#[allow(clippy::cast_precision_loss)]
+#[tracing::instrument(level = "trace")]
+pub fn plot_state_xyz(
+    system_states: &ArraySystemStates,
+    state_index: usize,
+    sample_rate_hz: f32,
+    path: &Path,
+    title: &str,
+) -> Result<Vec<u8>, Box<dyn Error>> {
+    trace!("Generating state xyz plot.");
+
+    if state_index >= (system_states.values.shape()[1] / 3) {
+        return Err(Box::new(std::io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "state_index out of bounds",
+        )));
+    }
+
+    let state_x = system_states.values.slice(s![.., state_index]);
+    let state_y = system_states.values.slice(s![.., state_index + 1]);
+    let state_z = system_states.values.slice(s![.., state_index + 2]);
+    let x = Array1::linspace(0.0, state_x.len() as f32 / sample_rate_hz, state_x.len());
+    let y = vec![&state_x, &state_y, &state_z];
+    let labels: Vec<&str> = vec!["x", "y", "z"];
+    let title = format!("{title} - State Index: {state_index}");
+    xy_plot(
+        Some(&x),
+        y,
+        Some(path),
+        Some(title.as_str()),
+        Some("j [A/mm^2]"),
+        Some("t [s]"),
+        Some(&labels),
+        None,
+    )
+}
+
 #[cfg(test)]
 mod test {
 
     use std::path::PathBuf;
+
+    use ndarray::Array2;
 
     use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/line";
@@ -534,6 +597,49 @@ mod test {
         let result = standard_time_plot(&y, sample_rate_hz, files[0].as_path(), title, y_label);
 
         assert!(result.is_err());
+        assert!(!files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_xyz_state_plot_basic() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("xyz_state_plot_basic.png")];
+        clean(&files);
+
+        let mut system_states = ArraySystemStates {
+            values: Array2::zeros((100, 6)),
+        };
+
+        for i in 0..100 {
+            for j in 0..6 {
+                system_states.values[(i, j)] = i as f32 * j as f32;
+            }
+        }
+
+        let title = "Test Plot";
+        let sample_rate_hz = 10.0;
+
+        plot_state_xyz(&system_states, 1, sample_rate_hz, files[0].as_path(), title).unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    fn test_xyz_state_plot_invalid_index() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("xyz_state_plot_basic.png")];
+        clean(&files);
+
+        let system_states = ArraySystemStates {
+            values: Array2::zeros((100, 6)),
+        };
+        let title = "Test Plot";
+        let sample_rate_hz = 10.0;
+
+        let results = plot_state_xyz(&system_states, 2, sample_rate_hz, files[0].as_path(), title);
+
+        assert!(results.is_err());
         assert!(!files[0].is_file());
     }
 }

@@ -133,9 +133,8 @@ mod test {
     use crate::{
         core::model::spatial::voxels::VoxelType,
         vis::plotting::{
-            line::standard_time_plot,
+            line::{plot_state_xyz, standard_time_plot},
             matrix::{plot_states_at_time, plot_states_max, plot_states_over_time},
-            time::plot_state_xyz,
         },
     };
 
@@ -185,7 +184,7 @@ mod test {
             &simulation.system_states,
             sa_index,
             config.sample_rate_hz,
-            "tests/simulation_sa",
+            Path::new("tests/simulation_sa"),
             "Simulated Current Density Sinoatrial Node",
         );
 
@@ -198,7 +197,7 @@ mod test {
             &simulation.system_states,
             av_index,
             config.sample_rate_hz,
-            "tests/simulation_av",
+            Path::new("tests/simulation_av"),
             "Simulated Current Density Atrioventricular Node",
         );
 
@@ -292,7 +291,7 @@ mod test {
             &simulation.system_states,
             sa_index,
             config.sample_rate_hz,
-            "tests/simulation_sa_pathological",
+            Path::new("tests/simulation_sa_pathological"),
             "Simulated Current Density Sinoatrial Node",
         );
 
@@ -305,7 +304,7 @@ mod test {
             &simulation.system_states,
             av_index,
             config.sample_rate_hz,
-            "tests/simulation_av_pathological",
+            Path::new("tests/simulation_av_pathological"),
             "Simulated Current Density Atrioventricular Node",
         );
 
@@ -318,7 +317,7 @@ mod test {
             &simulation.system_states,
             pathology_index,
             config.sample_rate_hz,
-            "tests/simulation_pathological",
+            Path::new("tests/simulation_pathological"),
             "Simulated Current Density Pathological Voxel",
         );
 

@@ -1,6 +1,5 @@
 pub mod line;
 pub mod matrix;
-pub mod time;
 
 use plotters::style::{
     colors::{BLUE, CYAN, GREEN, MAGENTA, RED, YELLOW},
