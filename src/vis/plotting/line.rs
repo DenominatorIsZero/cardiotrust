@@ -4,7 +4,10 @@ use plotters::prelude::*;
 use std::{error::Error, io, path::Path};
 use tracing::trace;
 
-use crate::{core::data::shapes::ArraySystemStates, vis::plotting::COLORS};
+use crate::{
+    core::data::shapes::ArraySystemStates,
+    vis::plotting::{allocate_buffer, COLORS},
+};
 
 use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
 
@@ -150,19 +153,6 @@ where
     }
 
     Ok(buffer)
-}
-
-/// Allocates a buffer for storing pixel data for an image of the given width and height.
-///
-/// The buffer is allocated as a `Vec<u8>` with 3 bytes per pixel (for RGB color). The size of the
-/// buffer is calculated from the width and height.
-///
-/// This function is used to allocate image buffers before rendering to them for plotting.
-#[tracing::instrument(level = "trace")]
-fn allocate_buffer(width: u32, height: u32) -> Vec<u8> {
-    trace!("Allocating buffer.");
-    let buffer: Vec<u8> = vec![0; width as usize * height as usize * 3];
-    buffer
 }
 
 /// Generates a standard y plot from the provided y values.

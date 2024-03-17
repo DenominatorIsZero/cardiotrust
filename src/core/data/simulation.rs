@@ -134,7 +134,7 @@ mod test {
         core::model::spatial::voxels::VoxelType,
         vis::plotting::{
             line::{plot_state_xyz, standard_time_plot},
-            matrix::{plot_states_at_time, plot_states_max, plot_states_over_time},
+            matrix_old::{plot_states_at_time, plot_states_max, plot_states_over_time},
         },
     };
 

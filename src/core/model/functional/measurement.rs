@@ -174,7 +174,7 @@ impl MeasurementCovariance {
 
 #[cfg(test)]
 mod tests {
-    use crate::vis::plotting::matrix::plot_matrix_as_heatmap;
+    use crate::vis::plotting::matrix_old::plot_matrix_as_heatmap;
 
     use super::*;
 

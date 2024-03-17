@@ -277,7 +277,7 @@ mod test {
     use crate::core::model::Model;
 
     use crate::vis::plotting::line::standard_y_plot;
-    use crate::vis::plotting::matrix::{plot_states_max, plot_states_over_time};
+    use crate::vis::plotting::matrix_old::{plot_states_max, plot_states_over_time};
 
     use super::*;
 
