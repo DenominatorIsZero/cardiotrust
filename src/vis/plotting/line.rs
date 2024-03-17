@@ -98,7 +98,7 @@ where
 
         let mut chart = ChartBuilder::on(&root)
             .caption(title, CAPTION_STYLE.into_font())
-            .margin(5)
+            .margin(25)
             .x_label_area_size(50)
             .y_label_area_size(75)
             .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
