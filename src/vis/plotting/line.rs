@@ -17,7 +17,7 @@ use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
 /// returns the raw pixel buffer.
 #[allow(clippy::cast_precision_loss, clippy::too_many_arguments)]
 #[tracing::instrument(level = "trace")]
-pub fn xy_plot<A>(
+pub fn line_plot<A>(
     x: Option<&Array1<f32>>,
     ys: Vec<&ArrayBase<A, Ix1>>,
     path: Option<&Path>,
@@ -174,7 +174,7 @@ where
     A: Data<Elem = f32>,
 {
     trace!("Generating y plot.");
-    xy_plot(
+    line_plot(
         None,
         vec![y],
         Some(path),
@@ -214,7 +214,7 @@ where
         )));
     }
     let x = Array1::linspace(0.0, y.len() as f32 / sample_rate_hz, y.len());
-    xy_plot(
+    line_plot(
         Some(&x),
         vec![y],
         Some(path),
@@ -266,7 +266,7 @@ pub fn plot_state_xyz(
     let y = vec![&state_x, &state_y, &state_z];
     let labels: Vec<&str> = vec!["x", "y", "z"];
     let title = format!("{title} - State Index: {state_index}");
-    xy_plot(
+    line_plot(
         Some(&x),
         y,
         Some(path),
@@ -310,7 +310,7 @@ mod test {
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
-        xy_plot(
+        line_plot(
             Some(&x),
             vec![&y],
             Some(files[0].as_path()),
@@ -333,7 +333,7 @@ mod test {
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
-        xy_plot(
+        line_plot(
             None,
             vec![&y],
             Some(files[0].as_path()),
@@ -356,7 +356,7 @@ mod test {
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
-        xy_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
+        line_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
 
         assert!(!files[0].is_file());
     }
@@ -366,7 +366,7 @@ mod test {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
 
-        let buffer = xy_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
+        let buffer = line_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
 
         assert_eq!(
             buffer.len(),
@@ -381,7 +381,7 @@ mod test {
 
         let resolution = (400, 300);
 
-        let buffer = xy_plot(
+        let buffer = line_plot(
             None,
             vec![&y],
             None,
@@ -404,7 +404,7 @@ mod test {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = Array1::zeros(90);
 
-        assert!(xy_plot(Some(&x), vec![&y], None, None, None, None, None, None).is_err());
+        assert!(line_plot(Some(&x), vec![&y], None, None, None, None, None, None).is_err());
     }
 
     #[test]
@@ -417,7 +417,7 @@ mod test {
         let x = Array1::linspace(0.0, 10.0, 100);
         let ys_owned: Vec<Array1<f32>> = (0..10).map(|i| x.map(|x| x * x * i as f32)).collect();
         let ys: Vec<&Array1<f32>> = ys_owned.iter().collect();
-        xy_plot(
+        line_plot(
             Some(&x),
             ys,
             Some(files[0].as_path()),
@@ -448,7 +448,7 @@ mod test {
             .map(std::string::String::as_str)
             .collect();
 
-        xy_plot(
+        line_plot(
             Some(&x),
             ys,
             Some(files[0].as_path()),
@@ -479,7 +479,7 @@ mod test {
             .map(std::string::String::as_str)
             .collect();
 
-        let result = xy_plot(
+        let result = line_plot(
             Some(&x),
             ys,
             Some(files[0].as_path()),
