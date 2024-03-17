@@ -303,9 +303,9 @@ mod test {
     }
 
     #[test]
-    fn test_xy_plot() {
+    fn test_line_plot() {
         setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot.png")];
+        let files = vec![Path::new(COMMON_PATH).join("test_line_plot.png")];
         clean(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
@@ -326,9 +326,9 @@ mod test {
     }
 
     #[test]
-    fn test_xy_plot_defaults() {
+    fn test_line_plot_defaults() {
         setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot_default.png")];
+        let files = vec![Path::new(COMMON_PATH).join("test_line_plot_default.png")];
         clean(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
@@ -349,9 +349,9 @@ mod test {
     }
 
     #[test]
-    fn test_xy_plot_no_path() {
+    fn test_line_plot_no_path() {
         setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot_no_path.png")];
+        let files = vec![Path::new(COMMON_PATH).join("test_line_plot_no_path.png")];
         clean(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
@@ -362,7 +362,7 @@ mod test {
     }
 
     #[test]
-    fn test_xy_plot_default_resolution() {
+    fn test_line_plot_default_resolution() {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
 
@@ -375,7 +375,7 @@ mod test {
     }
 
     #[test]
-    fn test_xy_plot_custom_resolution() {
+    fn test_line_plot_custom_resolution() {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
 
@@ -400,7 +400,7 @@ mod test {
     }
 
     #[test]
-    fn test_xy_plot_incompatible_x_y() {
+    fn test_line_plot_incompatible_x_y() {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = Array1::zeros(90);
 
@@ -409,9 +409,9 @@ mod test {
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_xy_plot_multiple_y() {
+    fn test_line_plot_multiple_y() {
         setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot_multiple_y.png")];
+        let files = vec![Path::new(COMMON_PATH).join("test_line_plot_multiple_y.png")];
         clean(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
@@ -434,9 +434,9 @@ mod test {
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_xy_plot_with_labels() {
+    fn test_line_plot_with_labels() {
         setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot_with_labels.png")];
+        let files = vec![Path::new(COMMON_PATH).join("test_line_plot_with_labels.png")];
         clean(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
@@ -465,9 +465,9 @@ mod test {
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_xy_plot_with_invalid_labels() {
+    fn test_line_plot_with_invalid_labels() {
         setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_xy_plot_with_invalid_labels.png")];
+        let files = vec![Path::new(COMMON_PATH).join("test_line_plot_with_invalid_labels.png")];
         clean(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
