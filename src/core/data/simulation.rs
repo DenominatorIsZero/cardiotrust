@@ -186,7 +186,8 @@ mod test {
             config.sample_rate_hz,
             Path::new("tests/simulation_sa"),
             "Simulated Current Density Sinoatrial Node",
-        );
+        )
+        .unwrap();
 
         let av_index = simulation
             .model
@@ -199,7 +200,8 @@ mod test {
             config.sample_rate_hz,
             Path::new("tests/simulation_av"),
             "Simulated Current Density Atrioventricular Node",
-        );
+        )
+        .unwrap();
 
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 0]).to_owned(),
@@ -293,7 +295,8 @@ mod test {
             config.sample_rate_hz,
             Path::new("tests/simulation_sa_pathological"),
             "Simulated Current Density Sinoatrial Node",
-        );
+        )
+        .unwrap();
 
         let av_index = simulation
             .model
@@ -306,7 +309,8 @@ mod test {
             config.sample_rate_hz,
             Path::new("tests/simulation_av_pathological"),
             "Simulated Current Density Atrioventricular Node",
-        );
+        )
+        .unwrap();
 
         let pathology_index = simulation
             .model
@@ -319,7 +323,8 @@ mod test {
             config.sample_rate_hz,
             Path::new("tests/simulation_pathological"),
             "Simulated Current Density Pathological Voxel",
-        );
+        )
+        .unwrap();
 
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 0]).to_owned(),
