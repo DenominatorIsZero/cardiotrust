@@ -13,6 +13,12 @@ use crate::vis::plotting::{
 
 use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
 
+/// Generates a 2D matrix plot from the given input data array.
+///
+/// The matrix values are mapped to colors based on the viridis color map.
+/// Additional options allow customizing the axis ranges, labels, title,
+/// output resolution, etc. If a file path is provided the plot is saved
+/// to that location. The raw pixel buffer is returned.
 #[allow(
     clippy::cast_precision_loss,
     clippy::too_many_arguments,
@@ -24,7 +30,7 @@ use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
 #[tracing::instrument(level = "trace")]
 pub fn matrix_plot<A>(
     data: &ArrayBase<A, Ix2>,
-    range: Option<(&f32, &f32)>,
+    range: Option<(f32, f32)>,
     step: Option<(f32, f32)>,
     offset: Option<(f32, f32)>,
     path: Option<&Path>,
@@ -100,7 +106,7 @@ where
     let (data_min, data_max) = if let Some(range) = range {
         range
     } else {
-        (data.min()?, data.max()?)
+        (*data.min()?, *data.max()?)
     };
 
     let data_range = (data_max - data_min).max(f32::EPSILON);
@@ -422,5 +428,139 @@ mod test {
         .unwrap();
 
         assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_matrix_plot_custom_labels() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_custom_lables.png")];
+        clean(&files);
+
+        let data = Array2::zeros((4, 4));
+
+        matrix_plot(
+            &data,
+            None,
+            None,
+            None,
+            Some(files[0].as_path()),
+            Some("Custom Title"),
+            Some("Custom X"),
+            Some("Custom Y"),
+            Some("Custom Unit"),
+            None,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_matrix_plot_custom_range() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_custom_range.png")];
+        clean(&files);
+
+        let mut data = Array2::zeros((4, 4));
+        data[(0, 0)] = 5.0;
+
+        matrix_plot(
+            &data,
+            Some((0.0, 10.0)),
+            None,
+            None,
+            Some(files[0].as_path()),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_matrix_plot_custom_step() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_custom_step.png")];
+        clean(&files);
+
+        let mut data = Array2::zeros((4, 4));
+        data[(0, 0)] = 5.0;
+
+        matrix_plot(
+            &data,
+            None,
+            Some((0.25, 0.25)),
+            None,
+            Some(files[0].as_path()),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_matrix_plot_custom_offset() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_custom_offset.png")];
+        clean(&files);
+
+        let mut data = Array2::zeros((4, 4));
+        data[(0, 0)] = 5.0;
+
+        matrix_plot(
+            &data,
+            None,
+            None,
+            Some((10.0, 100.0)),
+            Some(files[0].as_path()),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_matrix_plot_invalid_step() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_invalid_step.png")];
+        clean(&files);
+
+        let mut data = Array2::zeros((4, 4));
+        data[(0, 0)] = 5.0;
+
+        let results = matrix_plot(
+            &data,
+            None,
+            Some((0.0, 1.0)),
+            None,
+            Some(files[0].as_path()),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+
+        assert!(results.is_err());
+        assert!(!files[0].is_file());
     }
 }
