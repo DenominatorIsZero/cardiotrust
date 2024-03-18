@@ -292,12 +292,14 @@ mod test {
     use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/line";
 
+    #[tracing::instrument(level = "trace")]
     fn setup() {
         if !Path::new(COMMON_PATH).exists() {
             std::fs::create_dir_all(COMMON_PATH).unwrap();
         }
     }
 
+    #[tracing::instrument(level = "trace")]
     fn clean(files: &Vec<PathBuf>) {
         for file in files {
             if file.is_file() {

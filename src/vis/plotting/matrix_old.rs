@@ -1,14 +1,10 @@
-use itertools::Itertools;
-use ndarray::{s, Array1, Array2, Array3};
-use ndarray_stats::QuantileExt;
+use ndarray::Array3;
+
 use tracing::trace;
 
 use crate::core::{
     data::shapes::ArraySystemStates,
-    model::{
-        functional::allpass::shapes::ArrayActivationTime,
-        spatial::voxels::{VoxelType, Voxels},
-    },
+    model::spatial::voxels::{VoxelType, Voxels},
 };
 
 #[tracing::instrument(level = "trace")]
@@ -297,10 +293,10 @@ pub fn plot_states_max(
     title: &str,
 ) {
     trace!("Plotting states max");
-    let mut in_x: Vec<Vec<f32>> = Vec::new();
-    let mut in_y: Vec<Vec<f32>> = Vec::new();
-    let mut in_z: Vec<Vec<f32>> = Vec::new();
-    let mut abs: Vec<Vec<f32>> = Vec::new();
+    let _in_x: Vec<Vec<f32>> = Vec::new();
+    let _in_y: Vec<Vec<f32>> = Vec::new();
+    let _in_z: Vec<Vec<f32>> = Vec::new();
+    let _abs: Vec<Vec<f32>> = Vec::new();
 
     // calculate_states_max(
     //     system_states,

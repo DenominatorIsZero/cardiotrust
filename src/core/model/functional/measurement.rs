@@ -176,8 +176,6 @@ impl MeasurementCovariance {
 mod tests {
     use std::path::Path;
 
-    use bevy::reflect::GetPath;
-
     use crate::vis::plotting::matrix::matrix_plot;
 
     use super::*;

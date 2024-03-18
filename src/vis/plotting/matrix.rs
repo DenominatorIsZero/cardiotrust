@@ -49,14 +49,14 @@ pub fn matrix_plot<A>(
 where
     A: ndarray::Data<Elem = f32>,
 {
-    trace!("Generating xy plot.");
+    trace!("Generating matrix plot.");
 
     let dim_x = data.shape()[0];
     let dim_y = data.shape()[1];
 
     let (width, height) = resolution.map_or_else(
         || {
-            let ratio = (dim_x as f32 / dim_y as f32).min(10.0).max(0.1);
+            let ratio = (dim_x as f32 / dim_y as f32).clamp(0.1, 10.0);
 
             if ratio > 1.0 {
                 (
@@ -257,6 +257,7 @@ where
     Ok(buffer)
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum PlotSlice {
     X(usize),
     Y(usize),
@@ -265,6 +266,7 @@ pub enum PlotSlice {
 
 /// Plots the activation time for a given slice (x, y or z) of the
 /// activation time matrix.
+#[tracing::instrument(level = "trace")]
 pub(crate) fn activation_time_plot(
     activation_time_ms: &ArrayActivationTime,
     voxel_positions_mm: &VoxelPositions,
@@ -272,6 +274,7 @@ pub(crate) fn activation_time_plot(
     path: &Path,
     slice: Option<PlotSlice>,
 ) -> Result<Vec<u8>, Box<dyn Error>> {
+    trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let step = Some((voxel_size_mm, voxel_size_mm));
 
@@ -356,12 +359,14 @@ mod test {
     use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/matrix";
 
+    #[tracing::instrument(level = "trace")]
     fn setup() {
         if !Path::new(COMMON_PATH).exists() {
             std::fs::create_dir_all(COMMON_PATH).unwrap();
         }
     }
 
+    #[tracing::instrument(level = "trace")]
     fn clean(files: &Vec<PathBuf>) {
         for file in files {
             if file.is_file() {
