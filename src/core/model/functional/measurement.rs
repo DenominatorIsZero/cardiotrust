@@ -174,7 +174,11 @@ impl MeasurementCovariance {
 
 #[cfg(test)]
 mod tests {
-    use crate::vis::plotting::matrix_old::plot_matrix_as_heatmap;
+    use std::path::Path;
+
+    use bevy::reflect::GetPath;
+
+    use crate::vis::plotting::matrix::matrix_plot;
 
     use super::*;
 
@@ -208,10 +212,18 @@ mod tests {
 
         assert!(!measurement_matrix.values.is_empty());
 
-        plot_matrix_as_heatmap(
+        matrix_plot(
             &measurement_matrix.values,
-            "tests/measurement_matrix_default",
-            "Measurement Matrix",
-        );
+            None,
+            None,
+            None,
+            Some(Path::new("tests/measurement_matrix_default.png")),
+            Some("Default Measurement Matrix"),
+            Some("State Index"),
+            Some("Sensor Index"),
+            Some("[pT / A / m^2]"),
+            None,
+        )
+        .unwrap();
     }
 }
