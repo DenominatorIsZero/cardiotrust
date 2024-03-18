@@ -223,6 +223,7 @@ mod tests {
             Some("Sensor Index"),
             Some("[pT / A / m^2]"),
             None,
+            None,
         )
         .unwrap();
     }

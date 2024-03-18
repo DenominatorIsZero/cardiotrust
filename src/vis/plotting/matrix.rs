@@ -1,14 +1,19 @@
-use ndarray::{ArrayBase, Data, Ix2};
+use ndarray::{ArrayBase, Axis, Ix2};
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use scarlet::colormap::{ColorMap, ListedColorMap};
 use std::{error::Error, io, path::Path};
 use tracing::trace;
 
-use crate::vis::plotting::{
-    allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN, COLORBAR_BOTTOM_MARGIN,
-    COLORBAR_COLOR_NUMBERS, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH, LABEL_AREA_RIGHT_MARGIN,
-    LABEL_AREA_WIDTH, UNIT_AREA_TOP_MARGIN,
+use crate::{
+    core::model::{
+        functional::allpass::shapes::ArrayActivationTime, spatial::voxels::VoxelPositions,
+    },
+    vis::plotting::{
+        allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN, COLORBAR_BOTTOM_MARGIN,
+        COLORBAR_COLOR_NUMBERS, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH, LABEL_AREA_RIGHT_MARGIN,
+        LABEL_AREA_WIDTH, UNIT_AREA_TOP_MARGIN,
+    },
 };
 
 use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
@@ -39,9 +44,10 @@ pub fn matrix_plot<A>(
     x_label: Option<&str>,
     unit: Option<&str>,
     resolution: Option<(u32, u32)>,
+    flip_axis: Option<(bool, bool)>,
 ) -> Result<Vec<u8>, Box<dyn Error>>
 where
-    A: Data<Elem = f32>,
+    A: ndarray::Data<Elem = f32>,
 {
     trace!("Generating xy plot.");
 
@@ -50,7 +56,8 @@ where
 
     let (width, height) = resolution.map_or_else(
         || {
-            let ratio = dim_x as f32 / dim_y as f32;
+            let ratio = (dim_x as f32 / dim_y as f32).min(10.0).max(0.1);
+
             if ratio > 1.0 {
                 (
                     STANDARD_RESOLUTION.0
@@ -97,6 +104,7 @@ where
     }
 
     let (x_offset, y_offset) = offset.map_or((0.0, 0.0), |offset| offset);
+    let (flip_x, flip_y) = flip_axis.map_or((false, false), |flip_axis| flip_axis);
 
     let title = title.unwrap_or("Plot");
     let y_label = y_label.unwrap_or("y");
@@ -115,6 +123,9 @@ where
     let x_max = (dim_x as f32).mul_add(x_step, x_offset - x_step / 2.0);
     let y_min = y_offset - y_step / 2.0;
     let y_max = (dim_y as f32).mul_add(y_step, y_offset - y_step / 2.0);
+
+    let x_range = if flip_x { x_max..x_min } else { x_min..x_max };
+    let y_range = if flip_y { y_max..y_min } else { y_min..y_max };
 
     let color_map = ListedColorMap::viridis();
 
@@ -164,7 +175,7 @@ where
             label_area.draw(&Text::new(
                 format!(
                     "{:.2}",
-                    data_max - (i as f32 / num_labels as f32 * data_range)
+                    (i as f32 / num_labels as f32).mul_add(-data_range, data_max)
                 ),
                 (5, (i * colorbar_height / num_labels) as i32),
                 AXIS_STYLE.into_font(),
@@ -195,7 +206,7 @@ where
             ) // make room for colorbar
             .x_label_area_size(AXIS_LABEL_AREA)
             .y_label_area_size(AXIS_LABEL_AREA)
-            .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
+            .build_cartesian_2d(x_range, y_range)?;
 
         chart
             .configure_mesh()
@@ -246,12 +257,101 @@ where
     Ok(buffer)
 }
 
+pub enum PlotSlice {
+    X(usize),
+    Y(usize),
+    Z(usize),
+}
+
+/// Plots the activation time for a given slice (x, y or z) of the
+/// activation time matrix.
+pub(crate) fn activation_time_plot(
+    activation_time_ms: &ArrayActivationTime,
+    voxel_positions_mm: &VoxelPositions,
+    voxel_size_mm: f32,
+    path: &Path,
+    slice: Option<PlotSlice>,
+) -> Result<Vec<u8>, Box<dyn Error>> {
+    let slice = slice.unwrap_or(PlotSlice::Z(0));
+    let step = Some((voxel_size_mm, voxel_size_mm));
+
+    let (data, offset, title, x_label, y_label, flip_axis) = match slice {
+        PlotSlice::X(index) => {
+            let data = activation_time_ms
+                .values
+                .index_axis(Axis(0), index)
+                .map(|value| value.unwrap_or(0.0));
+            let offset = Some((
+                voxel_positions_mm.values[(0, 0, 0, 1)],
+                voxel_positions_mm.values[(0, 0, 0, 2)],
+            ));
+            let x = voxel_positions_mm.values[(index, 0, 0, 0)];
+            let title = format!("Activation time x-index = {index}, x = {x} mm");
+            let x_label = Some("y [mm]");
+            let y_label = Some("z [mm]");
+            let flip_axis = Some((false, false));
+
+            (data, offset, title, x_label, y_label, flip_axis)
+        }
+        PlotSlice::Y(index) => {
+            let data = activation_time_ms
+                .values
+                .index_axis(Axis(1), index)
+                .map(|value| value.unwrap_or(0.0));
+            let offset = Some((
+                voxel_positions_mm.values[(0, 0, 0, 0)],
+                voxel_positions_mm.values[(0, 0, 0, 2)],
+            ));
+            let y = voxel_positions_mm.values[(0, index, 0, 1)];
+            let title = format!("Activation time y-index = {index}, y = {y} mm");
+            let x_label = Some("x [mm]");
+            let y_label = Some("z [mm]");
+            let flip_axis = Some((false, false));
+
+            (data, offset, title, x_label, y_label, flip_axis)
+        }
+        PlotSlice::Z(index) => {
+            let data = activation_time_ms
+                .values
+                .index_axis(Axis(2), index)
+                .map(|value| value.unwrap_or(0.0));
+            let offset = Some((
+                voxel_positions_mm.values[(0, 0, 0, 0)],
+                voxel_positions_mm.values[(0, 0, 0, 1)],
+            ));
+            let z = voxel_positions_mm.values[(0, 0, index, 2)];
+            let title = format!("Activation time z-index = {index}, z = {z} mm");
+            let x_label = Some("x [mm]");
+            let y_label = Some("y [mm]");
+            let flip_axis = Some((false, true));
+
+            (data, offset, title, x_label, y_label, flip_axis)
+        }
+    };
+
+    matrix_plot(
+        &data,
+        None,
+        step,
+        offset,
+        Some(path),
+        Some(title.as_str()),
+        y_label,
+        x_label,
+        Some("[ms]"),
+        None,
+        flip_axis,
+    )
+}
+
 #[cfg(test)]
 mod test {
 
     use std::path::PathBuf;
 
     use ndarray::Array2;
+
+    use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
 
     use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/matrix";
@@ -296,6 +396,7 @@ mod test {
             None,
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -323,6 +424,7 @@ mod test {
             None,
             None,
             Some(files[0].as_path()),
+            None,
             None,
             None,
             None,
@@ -360,6 +462,7 @@ mod test {
             None,
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -387,6 +490,7 @@ mod test {
             None,
             None,
             Some(files[0].as_path()),
+            None,
             None,
             None,
             None,
@@ -424,6 +528,7 @@ mod test {
             None,
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -450,6 +555,7 @@ mod test {
             Some("Custom Y"),
             Some("Custom Unit"),
             None,
+            None,
         )
         .unwrap();
 
@@ -472,6 +578,7 @@ mod test {
             None,
             None,
             Some(files[0].as_path()),
+            None,
             None,
             None,
             None,
@@ -504,6 +611,7 @@ mod test {
             None,
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -526,6 +634,7 @@ mod test {
             None,
             Some((10.0, 100.0)),
             Some(files[0].as_path()),
+            None,
             None,
             None,
             None,
@@ -558,9 +667,82 @@ mod test {
             None,
             None,
             None,
+            None,
         );
 
         assert!(results.is_err());
         assert!(!files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_activation_time_plot_default() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_activation_time_plot_default.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        activation_time_plot(
+            data.get_activation_time_ms(),
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            files[0].as_path(),
+            Some(PlotSlice::Z(0)),
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_activation_time_plot_x_slice() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_activation_time_plot_x_slice.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        activation_time_plot(
+            data.get_activation_time_ms(),
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            files[0].as_path(),
+            Some(PlotSlice::X(10)),
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_activation_time_plot_y_slice() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_activation_time_plot_y_slice.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        activation_time_plot(
+            data.get_activation_time_ms(),
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            files[0].as_path(),
+            Some(PlotSlice::Y(5)),
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
     }
 }
