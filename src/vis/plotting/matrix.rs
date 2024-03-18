@@ -1,20 +1,17 @@
-use ndarray::{s, Array1, ArrayBase, Data, Ix1, Ix2};
+use ndarray::{ArrayBase, Data, Ix2};
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use scarlet::colormap::{ColorMap, ListedColorMap};
 use std::{error::Error, io, path::Path};
 use tracing::trace;
 
-use crate::{
-    core::data::shapes::ArraySystemStates,
-    vis::plotting::{
-        allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN, COLORBAR_BOTTOM_MARGIN,
-        COLORBAR_COLOR_NUMBERS, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH, COLORS,
-        LABEL_AREA_RIGHT_MARGIN, LABEL_AREA_WIDTH, UNIT_AREA_TOP_MARGIN,
-    },
+use crate::vis::plotting::{
+    allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN, COLORBAR_BOTTOM_MARGIN,
+    COLORBAR_COLOR_NUMBERS, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH, LABEL_AREA_RIGHT_MARGIN,
+    LABEL_AREA_WIDTH, UNIT_AREA_TOP_MARGIN,
 };
 
-use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
+use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
 
 #[allow(
     clippy::cast_precision_loss,
