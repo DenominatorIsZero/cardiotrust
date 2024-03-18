@@ -34,6 +34,7 @@ pub fn matrix_plot<A>(
     title: Option<&str>,
     y_label: Option<&str>,
     x_label: Option<&str>,
+    unit: Option<&str>,
     resolution: Option<(u32, u32)>,
 ) -> Result<Vec<u8>, Box<dyn Error>>
 where
@@ -97,6 +98,7 @@ where
     let title = title.unwrap_or("Plot");
     let y_label = y_label.unwrap_or("y");
     let x_label = x_label.unwrap_or("x");
+    let unit = unit.unwrap_or("[a.u.]");
 
     let (data_min, data_max) = if let Some(range) = range {
         range
@@ -174,7 +176,7 @@ where
             LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
         ); // Adjust margins to align with the colorbar
         unit_area.draw(&Text::new(
-            "[a.u.]",
+            unit,
             (
                 COLORBAR_WIDTH as i32 / 2 - AXIS_STYLE.1,
                 COLORBAR_TOP_MARGIN as i32 / 2,
@@ -290,6 +292,7 @@ mod test {
             None,
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -317,6 +320,7 @@ mod test {
             None,
             None,
             Some(files[0].as_path()),
+            None,
             None,
             None,
             None,
@@ -352,6 +356,7 @@ mod test {
             None,
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -383,6 +388,7 @@ mod test {
             None,
             None,
             None,
+            None,
         )
         .unwrap();
 
@@ -410,6 +416,7 @@ mod test {
             None,
             None,
             Some(files[0].as_path()),
+            None,
             None,
             None,
             None,
