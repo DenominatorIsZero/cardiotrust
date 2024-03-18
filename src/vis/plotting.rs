@@ -1,6 +1,7 @@
 pub mod line;
 pub mod matrix;
 pub mod matrix_old;
+pub mod voxel_type;
 
 use plotters::style::{
     colors::{BLUE, CYAN, GREEN, MAGENTA, RED, YELLOW},

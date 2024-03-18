@@ -219,7 +219,7 @@ fn set_heart_voxel_colors_to_types(
 
 /// Maps `VoxelType` enum variants to RGBA colors. Used to colorize voxels in the visualization based on voxel type.
 #[must_use]
-const fn type_to_color(voxel_type: VoxelType) -> Color {
+pub const fn type_to_color(voxel_type: VoxelType) -> Color {
     let alpha = 1.0;
     match voxel_type {
         VoxelType::None => Color::Rgba {
