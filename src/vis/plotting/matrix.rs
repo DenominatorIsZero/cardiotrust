@@ -157,7 +157,10 @@ where
         let num_labels = 4; // Number of labels on the colorbar
         for i in 0..=num_labels {
             label_area.draw(&Text::new(
-                format!("{:.2}", 1.0 - i as f32 / num_labels as f32),
+                format!(
+                    "{:.2}",
+                    data_max - (i as f32 / num_labels as f32 * data_range)
+                ),
                 (5, (i * colorbar_height / num_labels) as i32),
                 AXIS_STYLE.into_font(),
             ))?;
