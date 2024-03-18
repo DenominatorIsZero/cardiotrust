@@ -7,7 +7,11 @@ use tracing::trace;
 
 use crate::{
     core::data::shapes::ArraySystemStates,
-    vis::plotting::{allocate_buffer, COLORS},
+    vis::plotting::{
+        allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN, COLORBAR_BOTTOM_MARGIN,
+        COLORBAR_COLOR_NUMBERS, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH, COLORS,
+        LABEL_AREA_RIGHT_MARGIN, LABEL_AREA_WIDTH, UNIT_AREA_TOP_MARGIN,
+    },
 };
 
 use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
@@ -45,13 +49,26 @@ where
             let ratio = dim_x as f32 / dim_y as f32;
             if ratio > 1.0 {
                 (
-                    STANDARD_RESOLUTION.0 + 250,
-                    (STANDARD_RESOLUTION.0 as f32 / ratio) as u32 + 150,
+                    STANDARD_RESOLUTION.0
+                        + AXIS_LABEL_AREA
+                        + CHART_MARGIN
+                        + COLORBAR_WIDTH
+                        + LABEL_AREA_WIDTH
+                        + LABEL_AREA_RIGHT_MARGIN,
+                    (STANDARD_RESOLUTION.0 as f32 / ratio) as u32
+                        + AXIS_LABEL_AREA
+                        + CHART_MARGIN
+                        + CAPTION_STYLE.1 as u32,
                 )
             } else {
                 (
-                    (STANDARD_RESOLUTION.0 as f32 * ratio) as u32 + 250,
-                    STANDARD_RESOLUTION.0 + 150,
+                    (STANDARD_RESOLUTION.0 as f32 * ratio) as u32
+                        + AXIS_LABEL_AREA
+                        + CHART_MARGIN
+                        + COLORBAR_WIDTH
+                        + LABEL_AREA_WIDTH
+                        + LABEL_AREA_RIGHT_MARGIN,
+                    STANDARD_RESOLUTION.0 + AXIS_LABEL_AREA + CHART_MARGIN + CAPTION_STYLE.1 as u32,
                 )
             }
         },
@@ -101,49 +118,75 @@ where
         root.fill(&WHITE)?;
         let (root_width, root_height) = root.dim_in_pixel();
 
-        let colorbar_area = root.margin(60, 75, root_width - 150, 50);
+        let colorbar_area = root.margin(
+            COLORBAR_TOP_MARGIN,
+            COLORBAR_BOTTOM_MARGIN,
+            root_width - COLORBAR_WIDTH - LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN,
+            LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
+        );
 
-        let num_colors = 100;
-        let (cb_width, cb_height) = colorbar_area.dim_in_pixel();
+        let (colorbar_width, colorbar_height) = colorbar_area.dim_in_pixel();
 
-        for i in 0..num_colors {
+        for i in 0..COLORBAR_COLOR_NUMBERS {
             let color: scarlet::color::RGBColor =
-                color_map.transform_single(1.0 - i as f64 / (num_colors - 1) as f64);
+                color_map.transform_single(1.0 - i as f64 / (COLORBAR_COLOR_NUMBERS - 1) as f64);
             let color = RGBColor(
-                (color.r * 255.0) as u8,
-                (color.g * 255.0) as u8,
-                (color.b * 255.0) as u8,
+                (color.r * u8::MAX as f64) as u8,
+                (color.g * u8::MAX as f64) as u8,
+                (color.b * u8::MAX as f64) as u8,
             );
             colorbar_area.draw(&Rectangle::new(
                 [
-                    (0, (i * cb_height / num_colors) as i32),
-                    (cb_width as i32, ((i + 1) * cb_height / num_colors) as i32),
+                    (0, (i * colorbar_height / COLORBAR_COLOR_NUMBERS) as i32),
+                    (
+                        colorbar_width as i32,
+                        ((i + 1) * colorbar_height / COLORBAR_COLOR_NUMBERS) as i32,
+                    ),
                 ],
                 color.filled(),
             ))?;
         }
 
         // Drawing labels for the colorbar
-        let label_area = root.margin(60, 75, root_width - 50, 10); // Adjust margins to align with the colorbar
+        let label_area = root.margin(
+            COLORBAR_TOP_MARGIN,
+            COLORBAR_BOTTOM_MARGIN,
+            root_width - LABEL_AREA_WIDTH,
+            LABEL_AREA_RIGHT_MARGIN,
+        ); // Adjust margins to align with the colorbar
         let num_labels = 4; // Number of labels on the colorbar
         for i in 0..=num_labels {
             label_area.draw(&Text::new(
                 format!("{:.2}", 1.0 - i as f32 / num_labels as f32),
-                (5, (i * cb_height / num_labels) as i32),
+                (5, (i * colorbar_height / num_labels) as i32),
                 AXIS_STYLE.into_font(),
             ))?;
         }
 
         // Drawing units for colorbar
-        let unit_area = root.margin(root_height - cb_height - 60 - 75, 25, root_width - 150, 50); // Adjust margins to align with the colorbar
-        unit_area.draw(&Text::new("[a.u.]", (35, 30), AXIS_STYLE.into_font()))?;
+        let unit_area = root.margin(
+            root_height - colorbar_height - COLORBAR_TOP_MARGIN - COLORBAR_BOTTOM_MARGIN,
+            UNIT_AREA_TOP_MARGIN,
+            root_width - COLORBAR_WIDTH - LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN,
+            LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
+        ); // Adjust margins to align with the colorbar
+        unit_area.draw(&Text::new(
+            "[a.u.]",
+            (
+                COLORBAR_WIDTH as i32 / 2 - AXIS_STYLE.1,
+                COLORBAR_TOP_MARGIN as i32 / 2,
+            ),
+            AXIS_STYLE.into_font(),
+        ))?;
 
         let mut chart = ChartBuilder::on(&root)
             .caption(title, CAPTION_STYLE.into_font())
-            .margin(25)
-            .margin_right(175) // make room for colorbar
-            .x_label_area_size(75)
-            .y_label_area_size(75)
+            .margin(CHART_MARGIN)
+            .margin_right(
+                CHART_MARGIN + COLORBAR_WIDTH + LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
+            ) // make room for colorbar
+            .x_label_area_size(AXIS_LABEL_AREA)
+            .y_label_area_size(AXIS_LABEL_AREA)
             .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
 
         chart
@@ -151,10 +194,10 @@ where
             .disable_mesh()
             .x_desc(x_label)
             .x_label_style(AXIS_STYLE.into_font())
-            .x_labels(dim_x.min(10))
+            .x_labels(dim_x.min(AXIS_LABEL_NUM_MAX))
             .y_desc(y_label)
             .y_label_style(AXIS_STYLE.into_font())
-            .y_labels(dim_y.min(10))
+            .y_labels(dim_y.min(AXIS_LABEL_NUM_MAX))
             .draw()?;
 
         chart.draw_series(data.indexed_iter().map(|((index_x, index_y), &value)| {
@@ -163,9 +206,9 @@ where
             let color: scarlet::color::RGBColor =
                 color_map.transform_single(f64::from(color_value));
             let color = RGBColor(
-                (color.r * 255.0) as u8,
-                (color.g * 255.0) as u8,
-                (color.b * 255.0) as u8,
+                (color.r * u8::MAX as f64) as u8,
+                (color.g * u8::MAX as f64) as u8,
+                (color.b * u8::MAX as f64) as u8,
             );
             let start = (
                 (index_x as f32).mul_add(x_step, x_offset - x_step / 2.0),

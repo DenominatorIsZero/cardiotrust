@@ -14,6 +14,24 @@ const Y_MARGIN: f32 = 0.1;
 const CAPTION_STYLE: (&str, i32) = ("Arial", 30);
 const AXIS_STYLE: (&str, i32) = ("Arial", 20);
 
+const COLORBAR_WIDTH: u32 = 100;
+const COLORBAR_TOP_MARGIN: u32 = 60;
+const COLORBAR_BOTTOM_MARGIN: u32 = 75;
+const COLORBAR_COLOR_NUMBERS: u32 = 100;
+
+const LABEL_AREA_WIDTH: u32 = 40;
+const LABEL_AREA_RIGHT_MARGIN: u32 = 10;
+
+const UNIT_AREA_TOP_MARGIN: u32 = 25;
+
+const CHART_MARGIN: u32 = 25;
+
+const AXIS_LABEL_AREA: u32 = 75;
+const AXIS_LABEL_NUM_MAX: usize = 10;
+
+const LEGEND_PATH_LENGTH: i32 = 20;
+const LEGEND_OPACITY: f64 = 0.8;
+
 const COLORS: [RGBColor; 6] = [BLUE, GREEN, RED, CYAN, MAGENTA, YELLOW];
 
 /// Allocates a buffer for storing pixel data for an image of the given width and height.

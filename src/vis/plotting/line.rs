@@ -6,7 +6,9 @@ use tracing::trace;
 
 use crate::{
     core::data::shapes::ArraySystemStates,
-    vis::plotting::{allocate_buffer, COLORS},
+    vis::plotting::{
+        allocate_buffer, AXIS_LABEL_AREA, CHART_MARGIN, COLORS, LEGEND_OPACITY, LEGEND_PATH_LENGTH,
+    },
 };
 
 use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
@@ -98,9 +100,9 @@ where
 
         let mut chart = ChartBuilder::on(&root)
             .caption(title, CAPTION_STYLE.into_font())
-            .margin(25)
-            .x_label_area_size(50)
-            .y_label_area_size(75)
+            .margin(CHART_MARGIN)
+            .x_label_area_size(AXIS_LABEL_AREA)
+            .y_label_area_size(AXIS_LABEL_AREA)
             .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
 
         chart
@@ -120,7 +122,9 @@ where
                         color,
                     ))?
                     .label(item_labels[i])
-                    .legend(move |(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], color));
+                    .legend(move |(x, y)| {
+                        PathElement::new(vec![(x, y), (x + LEGEND_PATH_LENGTH, y)], color)
+                    });
             } else {
                 chart.draw_series(LineSeries::new(
                     x.iter().zip(y.iter()).map(|(x, y)| (*x, *y)),
@@ -132,7 +136,7 @@ where
         if item_labels.is_some() {
             chart
                 .configure_series_labels()
-                .background_style(WHITE.mix(0.8))
+                .background_style(WHITE.mix(LEGEND_OPACITY))
                 .border_style(BLACK)
                 .label_font(AXIS_STYLE.into_font())
                 .draw()?;
