@@ -1,3 +1,4 @@
+use bevy::ecs::system;
 use ndarray::Dim;
 use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
@@ -6,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tracing::{debug, info, trace};
 
-use super::shapes::ArraySystemStates;
+use super::shapes::{ArraySystemStates, ArraySystemStatesSpherical, ArraySystemStatesSphericalMax};
 use crate::core::{
     algorithm::estimation::prediction::calculate_system_prediction,
     config::simulation::Simulation as SimulationConfig,
@@ -18,6 +19,8 @@ use crate::core::{
 pub struct Simulation {
     pub measurements: ArrayMeasurements,
     pub system_states: ArraySystemStates,
+    pub system_states_spherical: ArraySystemStatesSpherical,
+    pub system_states_spherical_max: ArraySystemStatesSphericalMax,
     pub model: Model,
 }
 impl Simulation {
@@ -35,6 +38,11 @@ impl Simulation {
         Self {
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
+            system_states_spherical: ArraySystemStatesSpherical::empty(
+                number_of_steps,
+                number_of_states,
+            ),
+            system_states_spherical_max: ArraySystemStatesSphericalMax::empty(number_of_states),
             model: Model::empty(
                 number_of_states,
                 number_of_sensors,
@@ -65,10 +73,15 @@ impl Simulation {
 
         let measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
         let system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
+        let system_states_spherical =
+            ArraySystemStatesSpherical::empty(number_of_steps, number_of_states);
+        let system_states_spherical_max = ArraySystemStatesSphericalMax::empty(number_of_states);
 
         Ok(Self {
             measurements,
             system_states,
+            system_states_spherical,
+            system_states_spherical_max,
             model,
         })
     }
@@ -96,6 +109,9 @@ impl Simulation {
                 time_index,
             );
         }
+        self.system_states_spherical.calculate(system_states);
+        self.system_states_spherical_max
+            .calculate(&self.system_states_spherical);
         let mut rng = ChaCha8Rng::seed_from_u64(42);
         for sensor_index in 0..measurements.values.shape()[1] {
             let dist = Normal::new(

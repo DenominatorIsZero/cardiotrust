@@ -426,6 +426,15 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         AlgorithmType::Loreta => panic!("Algorithm type not implemented"),
     }
 
+    results
+        .estimations
+        .system_states_spherical
+        .calculate(&results.estimations.system_states);
+    results
+        .estimations
+        .system_states_spherical_max
+        .calculate(&results.estimations.system_states_spherical);
+
     results.metrics.calculate_final(
         &results.estimations,
         data.get_voxel_types(),

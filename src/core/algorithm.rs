@@ -298,6 +298,14 @@ mod test {
                 epoch_index,
             );
         }
+        results
+            .estimations
+            .system_states_spherical
+            .calculate(&results.estimations.system_states);
+        results
+            .estimations
+            .system_states_spherical_max
+            .calculate(&results.estimations.system_states_spherical);
     }
 
     #[test]

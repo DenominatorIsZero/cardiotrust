@@ -8,12 +8,14 @@ use tracing::{debug, trace};
 
 use crate::core::{
     config::algorithm::Algorithm,
-    data::shapes::{ArrayMeasurements, ArraySystemStates},
+    data::shapes::{
+        ArrayMeasurements, ArraySystemStates, ArraySystemStatesSpherical,
+        ArraySystemStatesSphericalMax,
+    },
     model::functional::{
         allpass::{
-            from_coef_to_samples,
+            from_coef_to_samples, gain_index_to_offset, offset_to_gain_index,
             shapes::{ArrayDelays, ArrayGains},
-            {gain_index_to_offset, offset_to_gain_index},
         },
         measurement::MeasurementMatrix,
         FunctionalDescription,
@@ -24,6 +26,8 @@ use crate::core::{
 pub struct Estimations {
     pub ap_outputs: ArrayGains<f32>,
     pub system_states: ArraySystemStates,
+    pub system_states_spherical: ArraySystemStatesSpherical,
+    pub system_states_spherical_max: ArraySystemStatesSphericalMax,
     pub state_covariance_pred: ArrayGains<f32>,
     pub state_covariance_est: ArrayGains<f32>,
     pub measurements: ArrayMeasurements,
@@ -49,6 +53,11 @@ impl Estimations {
         Self {
             ap_outputs: ArrayGains::empty(number_of_states),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
+            system_states_spherical: ArraySystemStatesSpherical::empty(
+                number_of_steps,
+                number_of_states,
+            ),
+            system_states_spherical_max: ArraySystemStatesSphericalMax::empty(number_of_states),
             state_covariance_pred: ArrayGains::empty(number_of_states),
             state_covariance_est: ArrayGains::empty(number_of_states),
             measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),

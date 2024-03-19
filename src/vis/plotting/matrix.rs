@@ -1,4 +1,4 @@
-use ndarray::{ArrayBase, Axis, Ix2};
+use ndarray::{Array2, ArrayBase, Axis, Ix2};
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use scarlet::colormap::{ColorMap, ListedColorMap};
@@ -6,8 +6,12 @@ use std::{error::Error, io, path::Path};
 use tracing::trace;
 
 use crate::{
-    core::model::{
-        functional::allpass::shapes::ArrayActivationTime, spatial::voxels::VoxelPositions,
+    core::{
+        data::shapes::ArraySystemStates,
+        model::{
+            functional::allpass::shapes::ArrayActivationTime,
+            spatial::voxels::{VoxelNumbers, VoxelPositions},
+        },
     },
     vis::plotting::{
         allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN, COLORBAR_BOTTOM_MARGIN,
@@ -264,6 +268,13 @@ pub enum PlotSlice {
     Z(usize),
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum PlotMode {
+    X,
+    Y,
+    Z,
+}
+
 /// Plots the activation time for a given slice (x, y or z) of the
 /// activation time matrix.
 #[tracing::instrument(level = "trace")]
@@ -331,6 +342,96 @@ pub(crate) fn activation_time_plot(
             (data, offset, title, x_label, y_label, flip_axis)
         }
     };
+
+    matrix_plot(
+        &data,
+        None,
+        step,
+        offset,
+        Some(path),
+        Some(title.as_str()),
+        y_label,
+        x_label,
+        Some("[ms]"),
+        None,
+        flip_axis,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+#[tracing::instrument(level = "trace")]
+pub(crate) fn states_plot(
+    states: &ArraySystemStates,
+    voxel_positions_mm: &VoxelPositions,
+    voxel_size_mm: f32,
+    voxel_numbers: &VoxelNumbers,
+    path: &Path,
+    slice: Option<PlotSlice>,
+    mode: Option<PlotMode>,
+    time_step: usize,
+) -> Result<Vec<u8>, Box<dyn Error>> {
+    trace!("Generating activation time plot");
+    let slice = slice.unwrap_or(PlotSlice::Z(0));
+    let mode = mode.unwrap_or(PlotMode::X);
+    let step = Some((voxel_size_mm, voxel_size_mm));
+
+    let (numbers, offset, title, x_label, y_label, flip_axis) = match slice {
+        PlotSlice::X(index) => {
+            let numbers = voxel_numbers.values.index_axis(Axis(0), index);
+            let offset = Some((
+                voxel_positions_mm.values[(0, 0, 0, 1)],
+                voxel_positions_mm.values[(0, 0, 0, 2)],
+            ));
+            let x = voxel_positions_mm.values[(index, 0, 0, 0)];
+            let title = format!("Activation time x-index = {index}, x = {x} mm");
+            let x_label = Some("y [mm]");
+            let y_label = Some("z [mm]");
+            let flip_axis = Some((false, false));
+
+            (numbers, offset, title, x_label, y_label, flip_axis)
+        }
+        PlotSlice::Y(index) => {
+            let numbers = voxel_numbers.values.index_axis(Axis(1), index);
+            let offset = Some((
+                voxel_positions_mm.values[(0, 0, 0, 0)],
+                voxel_positions_mm.values[(0, 0, 0, 2)],
+            ));
+            let y = voxel_positions_mm.values[(0, index, 0, 1)];
+            let title = format!("Activation time y-index = {index}, y = {y} mm");
+            let x_label = Some("x [mm]");
+            let y_label = Some("z [mm]");
+            let flip_axis = Some((false, false));
+
+            (numbers, offset, title, x_label, y_label, flip_axis)
+        }
+        PlotSlice::Z(index) => {
+            let numbers = voxel_numbers.values.index_axis(Axis(2), index);
+            let offset = Some((
+                voxel_positions_mm.values[(0, 0, 0, 0)],
+                voxel_positions_mm.values[(0, 0, 0, 1)],
+            ));
+            let z = voxel_positions_mm.values[(0, 0, index, 2)];
+            let title = format!("Activation time z-index = {index}, z = {z} mm");
+            let x_label = Some("x [mm]");
+            let y_label = Some("y [mm]");
+            let flip_axis = Some((false, true));
+
+            (numbers, offset, title, x_label, y_label, flip_axis)
+        }
+    };
+
+    let mut data = Array2::zeros(numbers.raw_dim());
+
+    let state_offset = match mode {
+        PlotMode::X => 0,
+        PlotMode::Y => 1,
+        PlotMode::Z => 2,
+    };
+    for ((x, y), number) in numbers.indexed_iter() {
+        data[(x, y)] = number.as_ref().map_or(0.0, |number| {
+            states.values[(time_step, *number + state_offset)]
+        });
+    }
 
     matrix_plot(
         &data,
