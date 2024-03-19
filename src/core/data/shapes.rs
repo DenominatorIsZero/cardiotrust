@@ -85,7 +85,7 @@ impl ArraySystemStatesSpherical {
             .indexed_iter_mut()
             .for_each(|((time_index, state_index), value)| {
                 *value = states.values[(time_index, 3 * state_index + 1)]
-                    .atan2(states.values[(time_index, 3 * state_index)])
+                    .atan2(states.values[(time_index, 3 * state_index)]);
             });
     }
 
