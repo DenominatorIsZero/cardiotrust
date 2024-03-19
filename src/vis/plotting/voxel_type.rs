@@ -1,22 +1,18 @@
-use ndarray::{ArrayBase, Axis, Ix2};
-use ndarray_stats::QuantileExt;
+use ndarray::Axis;
 use plotters::prelude::*;
-use scarlet::colormap::{ColorMap, ListedColorMap};
-use std::{error::Error, io, path::Path};
+use scarlet::colormap::ListedColorMap;
+use std::{error::Error, path::Path};
 use strum::IntoEnumIterator;
 use tracing::trace;
 
 use crate::{
-    core::model::{
-        functional::allpass::shapes::ArrayActivationTime,
-        spatial::voxels::{VoxelPositions, VoxelType, VoxelTypes},
-    },
+    core::model::spatial::voxels::{VoxelPositions, VoxelType, VoxelTypes},
     vis::{
         heart::type_to_color,
         plotting::{
             allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN,
-            COLORBAR_BOTTOM_MARGIN, COLORBAR_COLOR_NUMBERS, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH,
-            LABEL_AREA_RIGHT_MARGIN, LABEL_AREA_WIDTH, LEGEND_PATH_LENGTH, UNIT_AREA_TOP_MARGIN,
+            COLORBAR_BOTTOM_MARGIN, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH, LABEL_AREA_RIGHT_MARGIN,
+            LABEL_AREA_WIDTH,
         },
     },
 };
@@ -88,8 +84,6 @@ pub fn voxel_type_plot(
         }
     };
 
-    let unit = "[a.u]";
-
     let dim_x = data.shape()[0];
     let dim_y = data.shape()[1];
 
@@ -140,12 +134,12 @@ pub fn voxel_type_plot(
     let x_range = if flip_x { x_max..x_min } else { x_min..x_max };
     let y_range = if flip_y { y_max..y_min } else { y_min..y_max };
 
-    let color_map = ListedColorMap::viridis();
+    let _color_map = ListedColorMap::viridis();
 
     {
         let root = BitMapBackend::with_buffer(&mut buffer[..], (width, height)).into_drawing_area();
         root.fill(&WHITE)?;
-        let (root_width, root_height) = root.dim_in_pixel();
+        let (root_width, _root_height) = root.dim_in_pixel();
 
         let legend_area = root.margin(
             COLORBAR_TOP_MARGIN,
@@ -241,8 +235,6 @@ pub fn voxel_type_plot(
 mod test {
 
     use std::path::PathBuf;
-
-    use ndarray::Array2;
 
     use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
 
