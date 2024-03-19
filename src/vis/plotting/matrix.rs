@@ -269,7 +269,7 @@ pub enum PlotSlice {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum PlotMode {
+pub enum StatePlotMode {
     X,
     Y,
     Z,
@@ -367,12 +367,12 @@ pub(crate) fn states_plot(
     voxel_numbers: &VoxelNumbers,
     path: &Path,
     slice: Option<PlotSlice>,
-    mode: Option<PlotMode>,
+    mode: Option<StatePlotMode>,
     time_step: usize,
 ) -> Result<Vec<u8>, Box<dyn Error>> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
-    let mode = mode.unwrap_or(PlotMode::X);
+    let mode = mode.unwrap_or(StatePlotMode::X);
     let step = Some((voxel_size_mm, voxel_size_mm));
 
     let (numbers, offset, title, x_label, y_label, flip_axis) = match slice {
@@ -382,8 +382,8 @@ pub(crate) fn states_plot(
                 voxel_positions_mm.values[(0, 0, 0, 1)],
                 voxel_positions_mm.values[(0, 0, 0, 2)],
             ));
-            let x = voxel_positions_mm.values[(index, 0, 0, 0)];
-            let title = format!("Activation time x-index = {index}, x = {x} mm");
+            let title =
+                format!("System States in {mode:?} (x-index = {index}, time-index = {time_step})");
             let x_label = Some("y [mm]");
             let y_label = Some("z [mm]");
             let flip_axis = Some((false, false));
@@ -396,8 +396,8 @@ pub(crate) fn states_plot(
                 voxel_positions_mm.values[(0, 0, 0, 0)],
                 voxel_positions_mm.values[(0, 0, 0, 2)],
             ));
-            let y = voxel_positions_mm.values[(0, index, 0, 1)];
-            let title = format!("Activation time y-index = {index}, y = {y} mm");
+            let title =
+                format!("System States in {mode:?} (y-index = {index}, time-index = {time_step})");
             let x_label = Some("x [mm]");
             let y_label = Some("z [mm]");
             let flip_axis = Some((false, false));
@@ -410,8 +410,8 @@ pub(crate) fn states_plot(
                 voxel_positions_mm.values[(0, 0, 0, 0)],
                 voxel_positions_mm.values[(0, 0, 0, 1)],
             ));
-            let z = voxel_positions_mm.values[(0, 0, index, 2)];
-            let title = format!("Activation time z-index = {index}, z = {z} mm");
+            let title =
+                format!("System States in {mode:?} (z-index = {index}, time-index = {time_step})");
             let x_label = Some("x [mm]");
             let y_label = Some("y [mm]");
             let flip_axis = Some((false, true));
@@ -423,9 +423,9 @@ pub(crate) fn states_plot(
     let mut data = Array2::zeros(numbers.raw_dim());
 
     let state_offset = match mode {
-        PlotMode::X => 0,
-        PlotMode::Y => 1,
-        PlotMode::Z => 2,
+        StatePlotMode::X => 0,
+        StatePlotMode::Y => 1,
+        StatePlotMode::Z => 2,
     };
     for ((x, y), number) in numbers.indexed_iter() {
         data[(x, y)] = number.as_ref().map_or(0.0, |number| {
@@ -846,6 +846,140 @@ mod test {
             data.get_model().spatial_description.voxels.size_mm,
             files[0].as_path(),
             Some(PlotSlice::Y(5)),
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_states_plot_default() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_states_plot_default.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        states_plot(
+            data.get_system_states(),
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            &data.get_model().spatial_description.voxels.numbers,
+            files[0].as_path(),
+            Some(PlotSlice::Z(0)),
+            Some(StatePlotMode::X),
+            350,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_states_plot_x_slice() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_states_plot_x_slice.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        states_plot(
+            data.get_system_states(),
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            &data.get_model().spatial_description.voxels.numbers,
+            files[0].as_path(),
+            Some(PlotSlice::X(10)),
+            Some(StatePlotMode::X),
+            350,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_states_plot_y_slice() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_states_plot_y_slice.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+        states_plot(
+            data.get_system_states(),
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            &data.get_model().spatial_description.voxels.numbers,
+            files[0].as_path(),
+            Some(PlotSlice::Y(5)),
+            Some(StatePlotMode::X),
+            350,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_states_plot_in_y() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_states_plot_in_y.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        states_plot(
+            data.get_system_states(),
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            &data.get_model().spatial_description.voxels.numbers,
+            files[0].as_path(),
+            Some(PlotSlice::Z(0)),
+            Some(StatePlotMode::Y),
+            350,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_states_plot_in_z() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_states_plot_in_z.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        states_plot(
+            data.get_system_states(),
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            &data.get_model().spatial_description.voxels.numbers,
+            files[0].as_path(),
+            Some(PlotSlice::Z(0)),
+            Some(StatePlotMode::Z),
+            350,
         )
         .unwrap();
 
