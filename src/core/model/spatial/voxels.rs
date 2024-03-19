@@ -5,6 +5,7 @@ use std::{
     fs::{self, File},
     io::BufWriter,
 };
+use strum_macros::EnumIter;
 use tracing::{debug, trace};
 
 use crate::core::config::model::Model;
@@ -386,7 +387,7 @@ impl VoxelPositions {
     }
 }
 
-#[derive(Default, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, Copy, Clone)]
+#[derive(Default, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, Copy, Clone, EnumIter)]
 pub enum VoxelType {
     #[default]
     None,

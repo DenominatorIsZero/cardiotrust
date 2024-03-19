@@ -3,19 +3,20 @@ use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use scarlet::colormap::{ColorMap, ListedColorMap};
 use std::{error::Error, io, path::Path};
+use strum::IntoEnumIterator;
 use tracing::trace;
 
 use crate::{
     core::model::{
         functional::allpass::shapes::ArrayActivationTime,
-        spatial::voxels::{VoxelPositions, VoxelTypes},
+        spatial::voxels::{VoxelPositions, VoxelType, VoxelTypes},
     },
     vis::{
         heart::type_to_color,
         plotting::{
             allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN,
             COLORBAR_BOTTOM_MARGIN, COLORBAR_COLOR_NUMBERS, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH,
-            LABEL_AREA_RIGHT_MARGIN, LABEL_AREA_WIDTH, UNIT_AREA_TOP_MARGIN,
+            LABEL_AREA_RIGHT_MARGIN, LABEL_AREA_WIDTH, LEGEND_PATH_LENGTH, UNIT_AREA_TOP_MARGIN,
         },
     },
 };
@@ -146,66 +147,41 @@ pub fn voxel_type_plot(
         root.fill(&WHITE)?;
         let (root_width, root_height) = root.dim_in_pixel();
 
-        let colorbar_area = root.margin(
+        let legend_area = root.margin(
             COLORBAR_TOP_MARGIN,
             COLORBAR_BOTTOM_MARGIN,
             root_width - COLORBAR_WIDTH - LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN,
             LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
         );
 
-        let (colorbar_width, colorbar_height) = colorbar_area.dim_in_pixel();
+        let (legend_width, legend_height) = legend_area.dim_in_pixel();
 
-        for i in 0..COLORBAR_COLOR_NUMBERS {
-            let color: scarlet::color::RGBColor =
-                color_map.transform_single(1.0 - i as f64 / (COLORBAR_COLOR_NUMBERS - 1) as f64);
-            let color = RGBColor(
-                (color.r * u8::MAX as f64) as u8,
-                (color.g * u8::MAX as f64) as u8,
-                (color.b * u8::MAX as f64) as u8,
+        let num_types = VoxelType::iter().count() as u32;
+        let single_space = (legend_height / (2 * num_types - 1)) as i32;
+
+        for (i, voxel_type) in VoxelType::iter().enumerate() {
+            let color = type_to_color(voxel_type);
+            let color = color.as_rgba_u8();
+            let color = RGBColor(color[0], color[1], color[2]);
+            let start = (
+                legend_width as i32 / 2 - single_space / 2,
+                i as i32 * (single_space + single_space),
             );
-            colorbar_area.draw(&Rectangle::new(
-                [
-                    (0, (i * colorbar_height / COLORBAR_COLOR_NUMBERS) as i32),
-                    (
-                        colorbar_width as i32,
-                        ((i + 1) * colorbar_height / COLORBAR_COLOR_NUMBERS) as i32,
-                    ),
-                ],
-                color.filled(),
-            ))?;
-        }
-
-        // Drawing labels for the colorbar
-        let label_area = root.margin(
-            COLORBAR_TOP_MARGIN,
-            COLORBAR_BOTTOM_MARGIN,
-            root_width - LABEL_AREA_WIDTH,
-            LABEL_AREA_RIGHT_MARGIN,
-        ); // Adjust margins to align with the colorbar
-        let num_labels = 4; // Number of labels on the colorbar
-        for i in 0..=num_labels {
-            label_area.draw(&Text::new(
-                format!("{:.2}", (i as f32 / num_labels as f32)),
-                (5, (i * colorbar_height / num_labels) as i32),
+            let end = (
+                legend_width as i32 / 2 + single_space / 2,
+                i as i32 * (single_space + single_space) + single_space,
+            );
+            legend_area.draw(&Rectangle::new([start, end], color.filled()))?;
+            legend_area.draw(&Rectangle::new([start, end], BLACK))?;
+            legend_area.draw(&Text::new(
+                format!("{voxel_type:?}"),
+                (
+                    legend_width as i32 / 2 + single_space * 2 / 3,
+                    i as i32 * (single_space + single_space) + single_space / 2 - AXIS_STYLE.1 / 2,
+                ),
                 AXIS_STYLE.into_font(),
             ))?;
         }
-
-        // Drawing units for colorbar
-        let unit_area = root.margin(
-            root_height - colorbar_height - COLORBAR_TOP_MARGIN - COLORBAR_BOTTOM_MARGIN,
-            UNIT_AREA_TOP_MARGIN,
-            root_width - COLORBAR_WIDTH - LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN,
-            LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
-        ); // Adjust margins to align with the colorbar
-        unit_area.draw(&Text::new(
-            unit,
-            (
-                COLORBAR_WIDTH as i32 / 2 - AXIS_STYLE.1,
-                COLORBAR_TOP_MARGIN as i32 / 2,
-            ),
-            AXIS_STYLE.into_font(),
-        ))?;
 
         let mut chart = ChartBuilder::on(&root)
             .caption(title, CAPTION_STYLE.into_font())
@@ -291,7 +267,7 @@ mod test {
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_activation_time_plot_default() {
+    fn test_voxel_type_plot_default() {
         setup();
         let files = vec![Path::new(COMMON_PATH).join("test_voxel_type_plot_default.png")];
         clean(&files);
@@ -315,7 +291,7 @@ mod test {
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_activation_time_plot_x_slice() {
+    fn test_voxel_type_plot_x_slice() {
         setup();
         let files = vec![Path::new(COMMON_PATH).join("test_voxel_type_plot_x_slice.png")];
         clean(&files);
@@ -339,7 +315,7 @@ mod test {
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_activation_time_plot_y_slice() {
+    fn test_voxel_type_plot_y_slice() {
         setup();
         let files = vec![Path::new(COMMON_PATH).join("test_voxel_type_plot_y_slice.png")];
         clean(&files);
