@@ -2,7 +2,7 @@ use ndarray::{ArrayBase, Ix2};
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use scarlet::colormap::{ColorMap, ListedColorMap};
-use std::{error::Error, io, path::Path};
+use std::{error::Error, f32::consts::PI, io, path::Path};
 use tracing::trace;
 
 use crate::vis::plotting::{
@@ -224,6 +224,233 @@ where
                 (color.g * u8::MAX as f64) as u8,
                 (color.b * u8::MAX as f64) as u8,
             );
+            let start = (
+                (index_x as f32).mul_add(x_step, x_offset - x_step / 2.0),
+                (index_y as f32).mul_add(y_step, y_offset - y_step / 2.0),
+            );
+            let end = (
+                ((index_x + 1) as f32).mul_add(x_step, x_offset - x_step / 2.0),
+                ((index_y + 1) as f32).mul_add(y_step, y_offset - y_step / 2.0),
+            );
+            Rectangle::new([start, end], color.filled())
+        }))?;
+
+        root.present()?;
+    } // dropping bitmap backend
+
+    if let Some(path) = path {
+        image::save_buffer_with_format(
+            path,
+            &buffer,
+            width,
+            height,
+            image::ColorType::Rgb8,
+            image::ImageFormat::Png,
+        )?;
+    }
+
+    Ok(buffer)
+}
+
+#[allow(
+    clippy::cast_precision_loss,
+    clippy::too_many_arguments,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
+    clippy::cast_lossless
+)]
+#[tracing::instrument(level = "trace")]
+pub fn matrix_angle_plot<A>(
+    theta: &ArrayBase<A, Ix2>,
+    phi: &ArrayBase<A, Ix2>,
+    step: Option<(f32, f32)>,
+    offset: Option<(f32, f32)>,
+    path: Option<&Path>,
+    title: Option<&str>,
+    y_label: Option<&str>,
+    x_label: Option<&str>,
+    unit: Option<&str>,
+    resolution: Option<(u32, u32)>,
+    flip_axis: Option<(bool, bool)>,
+) -> Result<Vec<u8>, Box<dyn Error>>
+where
+    A: ndarray::Data<Elem = f32>,
+{
+    trace!("Generating matrix angle plot.");
+
+    if theta.shape() != phi.shape() {
+        return Err(format!(
+            "Theta and phi arrays must have the same shape, but theta is {:?} and phi is {:?}",
+            theta.shape(),
+            phi.shape()
+        )
+        .into());
+    }
+
+    let dim_x = theta.shape()[0];
+    let dim_y = theta.shape()[1];
+
+    let (width, height) = resolution.map_or_else(
+        || {
+            let ratio = (dim_x as f32 / dim_y as f32).clamp(0.1, 10.0);
+
+            if ratio > 1.0 {
+                (
+                    STANDARD_RESOLUTION.0
+                        + AXIS_LABEL_AREA
+                        + CHART_MARGIN
+                        + COLORBAR_WIDTH
+                        + LABEL_AREA_WIDTH
+                        + LABEL_AREA_RIGHT_MARGIN,
+                    (STANDARD_RESOLUTION.0 as f32 / ratio) as u32
+                        + AXIS_LABEL_AREA
+                        + CHART_MARGIN
+                        + CAPTION_STYLE.1 as u32,
+                )
+            } else {
+                (
+                    (STANDARD_RESOLUTION.0 as f32 * ratio) as u32
+                        + AXIS_LABEL_AREA
+                        + CHART_MARGIN
+                        + COLORBAR_WIDTH
+                        + LABEL_AREA_WIDTH
+                        + LABEL_AREA_RIGHT_MARGIN,
+                    STANDARD_RESOLUTION.0 + AXIS_LABEL_AREA + CHART_MARGIN + CAPTION_STYLE.1 as u32,
+                )
+            }
+        },
+        |resolution| resolution,
+    );
+
+    let mut buffer = allocate_buffer(width, height);
+
+    let (x_step, y_step) = step.map_or((1.0, 1.0), |step| step);
+
+    if x_step <= 0.0 {
+        return Err(Box::new(std::io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "x_step must be greater than zero",
+        )));
+    }
+    if y_step <= 0.0 {
+        return Err(Box::new(std::io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "y_step must be greater than zero",
+        )));
+    }
+
+    let (x_offset, y_offset) = offset.map_or((0.0, 0.0), |offset| offset);
+    let (flip_x, flip_y) = flip_axis.map_or((false, false), |flip_axis| flip_axis);
+
+    let title = title.unwrap_or("Plot");
+    let y_label = y_label.unwrap_or("y");
+    let x_label = x_label.unwrap_or("x");
+    let unit = unit.unwrap_or("[a.u.]");
+
+    let x_min = x_offset - x_step / 2.0;
+    let x_max = (dim_x as f32).mul_add(x_step, x_offset - x_step / 2.0);
+    let y_min = y_offset - y_step / 2.0;
+    let y_max = (dim_y as f32).mul_add(y_step, y_offset - y_step / 2.0);
+
+    let x_range = if flip_x { x_max..x_min } else { x_min..x_max };
+    let y_range = if flip_y { y_max..y_min } else { y_min..y_max };
+
+    let color_map = ListedColorMap::viridis();
+
+    {
+        let root = BitMapBackend::with_buffer(&mut buffer[..], (width, height)).into_drawing_area();
+        root.fill(&WHITE)?;
+        let (root_width, root_height) = root.dim_in_pixel();
+
+        let colorbar_area = root.margin(
+            COLORBAR_TOP_MARGIN,
+            COLORBAR_BOTTOM_MARGIN,
+            root_width - COLORBAR_WIDTH - LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN,
+            LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
+        );
+
+        let (colorbar_width, colorbar_height) = colorbar_area.dim_in_pixel();
+
+        for i in 0..COLORBAR_COLOR_NUMBERS {
+            let color: scarlet::color::RGBColor =
+                color_map.transform_single(1.0 - i as f64 / (COLORBAR_COLOR_NUMBERS - 1) as f64);
+            let color = RGBColor(
+                (color.r * u8::MAX as f64) as u8,
+                (color.g * u8::MAX as f64) as u8,
+                (color.b * u8::MAX as f64) as u8,
+            );
+            colorbar_area.draw(&Rectangle::new(
+                [
+                    (0, (i * colorbar_height / COLORBAR_COLOR_NUMBERS) as i32),
+                    (
+                        colorbar_width as i32,
+                        ((i + 1) * colorbar_height / COLORBAR_COLOR_NUMBERS) as i32,
+                    ),
+                ],
+                color.filled(),
+            ))?;
+        }
+
+        // Drawing labels for the colorbar
+        let label_area = root.margin(
+            COLORBAR_TOP_MARGIN,
+            COLORBAR_BOTTOM_MARGIN,
+            root_width - LABEL_AREA_WIDTH,
+            LABEL_AREA_RIGHT_MARGIN,
+        ); // Adjust margins to align with the colorbar
+        let num_labels = 4; // Number of labels on the colorbar
+        for i in 0..=num_labels {
+            label_area.draw(&Text::new(
+                format!("{:.2}", (i as f32 / num_labels as f32)),
+                (5, (i * colorbar_height / num_labels) as i32),
+                AXIS_STYLE.into_font(),
+            ))?;
+        }
+
+        // Drawing units for colorbar
+        let unit_area = root.margin(
+            root_height - colorbar_height - COLORBAR_TOP_MARGIN - COLORBAR_BOTTOM_MARGIN,
+            UNIT_AREA_TOP_MARGIN,
+            root_width - COLORBAR_WIDTH - LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN,
+            LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
+        ); // Adjust margins to align with the colorbar
+        unit_area.draw(&Text::new(
+            unit,
+            (
+                COLORBAR_WIDTH as i32 / 2 - AXIS_STYLE.1,
+                COLORBAR_TOP_MARGIN as i32 / 2,
+            ),
+            AXIS_STYLE.into_font(),
+        ))?;
+
+        let mut chart = ChartBuilder::on(&root)
+            .caption(title, CAPTION_STYLE.into_font())
+            .margin(CHART_MARGIN)
+            .margin_right(
+                CHART_MARGIN + COLORBAR_WIDTH + LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
+            ) // make room for colorbar
+            .x_label_area_size(AXIS_LABEL_AREA)
+            .y_label_area_size(AXIS_LABEL_AREA)
+            .build_cartesian_2d(x_range, y_range)?;
+
+        chart
+            .configure_mesh()
+            .disable_mesh()
+            .x_desc(x_label)
+            .x_label_style(AXIS_STYLE.into_font())
+            .x_labels(dim_x.min(AXIS_LABEL_NUM_MAX))
+            .y_desc(y_label)
+            .y_label_style(AXIS_STYLE.into_font())
+            .y_labels(dim_y.min(AXIS_LABEL_NUM_MAX))
+            .draw()?;
+
+        chart.draw_series(theta.indexed_iter().map(|((index_x, index_y), &theta)| {
+            let h = (phi[(index_x, index_y)] + PI) / (2.0 * PI);
+            let v = theta / PI;
+            let s = 1.0;
+            // Map the value to a color
+            let color = HSLColor(h as f64, s, v as f64);
             let start = (
                 (index_x as f32).mul_add(x_step, x_offset - x_step / 2.0),
                 (index_y as f32).mul_add(y_step, y_offset - y_step / 2.0),

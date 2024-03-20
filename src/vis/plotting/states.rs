@@ -8,7 +8,10 @@ use crate::{
         data::shapes::{ArraySystemStates, ArraySystemStatesSpherical},
         model::spatial::voxels::{VoxelNumbers, VoxelPositions},
     },
-    vis::plotting::{matrix::matrix_plot, PlotSlice, StatePlotMode},
+    vis::plotting::{
+        matrix::{matrix_angle_plot, matrix_plot},
+        PlotSlice, StatePlotMode,
+    },
 };
 
 use super::StateSphericalPlotMode;
@@ -97,7 +100,7 @@ pub(crate) fn states_plot(
         Some(title.as_str()),
         y_label,
         x_label,
-        Some("[ms]"),
+        Some("[A/mm^2]"),
         None,
         flip_axis,
     )
@@ -182,13 +185,35 @@ pub(crate) fn states_spherical_plot(
                 Some(title.as_str()),
                 y_label,
                 x_label,
-                Some("[ms]"),
+                Some("[A/mm^2]"),
                 None,
                 flip_axis,
             )
         }
         StateSphericalPlotMode::ANGLE => {
-            todo!()
+            let mut theta = Array2::zeros(numbers.raw_dim());
+            let mut phi = Array2::zeros(numbers.raw_dim());
+            for ((x, y), number) in numbers.indexed_iter() {
+                theta[(x, y)] = number
+                    .as_ref()
+                    .map_or(0.0, |number| states.theta[(time_step, *number / 3)]);
+                phi[(x, y)] = number
+                    .as_ref()
+                    .map_or(0.0, |number| states.phi[(time_step, *number / 3)]);
+            }
+            matrix_angle_plot(
+                &theta,
+                &phi,
+                step,
+                offset,
+                Some(path),
+                Some(title.as_str()),
+                y_label,
+                x_label,
+                Some("[ms]"),
+                None,
+                flip_axis,
+            )
         }
     }
 }
@@ -426,6 +451,90 @@ mod test {
             files[0].as_path(),
             Some(PlotSlice::X(10)),
             Some(StateSphericalPlotMode::ABS),
+            350,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_states_spherical_plot_angle_z_slice() {
+        setup();
+        let files =
+            vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_angle_z_slice.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        states_spherical_plot(
+            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            &data.get_model().spatial_description.voxels.numbers,
+            files[0].as_path(),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ANGLE),
+            350,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_states_spherical_plot_angle_y_slice() {
+        setup();
+        let files =
+            vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_angle_y_slice.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        states_spherical_plot(
+            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            &data.get_model().spatial_description.voxels.numbers,
+            files[0].as_path(),
+            Some(PlotSlice::Y(5)),
+            Some(StateSphericalPlotMode::ANGLE),
+            350,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_states_spherical_plot_angle_x_slice() {
+        setup();
+        let files =
+            vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_angle_x_slice.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        states_spherical_plot(
+            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            &data.get_model().spatial_description.voxels.numbers,
+            files[0].as_path(),
+            Some(PlotSlice::X(10)),
+            Some(StateSphericalPlotMode::ANGLE),
             350,
         )
         .unwrap();
