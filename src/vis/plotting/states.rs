@@ -210,7 +210,6 @@ pub(crate) fn states_spherical_plot(
                 Some(title.as_str()),
                 y_label,
                 x_label,
-                Some("[ms]"),
                 None,
                 flip_axis,
             )

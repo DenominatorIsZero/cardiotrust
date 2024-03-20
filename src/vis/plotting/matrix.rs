@@ -270,7 +270,6 @@ pub fn matrix_angle_plot<A>(
     title: Option<&str>,
     y_label: Option<&str>,
     x_label: Option<&str>,
-    unit: Option<&str>,
     resolution: Option<(u32, u32)>,
     flip_axis: Option<(bool, bool)>,
 ) -> Result<Vec<u8>, Box<dyn Error>>
@@ -300,9 +299,9 @@ where
                     STANDARD_RESOLUTION.0
                         + AXIS_LABEL_AREA
                         + CHART_MARGIN
-                        + COLORBAR_WIDTH
-                        + LABEL_AREA_WIDTH
-                        + LABEL_AREA_RIGHT_MARGIN,
+                        + 2 * COLORBAR_WIDTH
+                        + 2 * LABEL_AREA_WIDTH
+                        + 2 * LABEL_AREA_RIGHT_MARGIN,
                     (STANDARD_RESOLUTION.0 as f32 / ratio) as u32
                         + AXIS_LABEL_AREA
                         + CHART_MARGIN
@@ -313,9 +312,9 @@ where
                     (STANDARD_RESOLUTION.0 as f32 * ratio) as u32
                         + AXIS_LABEL_AREA
                         + CHART_MARGIN
-                        + COLORBAR_WIDTH
-                        + LABEL_AREA_WIDTH
-                        + LABEL_AREA_RIGHT_MARGIN,
+                        + 2 * COLORBAR_WIDTH
+                        + 2 * LABEL_AREA_WIDTH
+                        + 2 * LABEL_AREA_RIGHT_MARGIN,
                     STANDARD_RESOLUTION.0 + AXIS_LABEL_AREA + CHART_MARGIN + CAPTION_STYLE.1 as u32,
                 )
             }
@@ -346,7 +345,6 @@ where
     let title = title.unwrap_or("Plot");
     let y_label = y_label.unwrap_or("y");
     let x_label = x_label.unwrap_or("x");
-    let unit = unit.unwrap_or("[a.u.]");
 
     let x_min = x_offset - x_step / 2.0;
     let x_max = (dim_x as f32).mul_add(x_step, x_offset - x_step / 2.0);
@@ -356,36 +354,32 @@ where
     let x_range = if flip_x { x_max..x_min } else { x_min..x_max };
     let y_range = if flip_y { y_max..y_min } else { y_min..y_max };
 
-    let color_map = ListedColorMap::viridis();
-
     {
         let root = BitMapBackend::with_buffer(&mut buffer[..], (width, height)).into_drawing_area();
         root.fill(&WHITE)?;
         let (root_width, root_height) = root.dim_in_pixel();
 
-        let colorbar_area = root.margin(
+        let colorbar_phi_area = root.margin(
             COLORBAR_TOP_MARGIN,
             COLORBAR_BOTTOM_MARGIN,
-            root_width - COLORBAR_WIDTH - LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN,
-            LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
+            root_width - 2 * COLORBAR_WIDTH - 2 * LABEL_AREA_WIDTH - 2 * LABEL_AREA_RIGHT_MARGIN,
+            2 * LABEL_AREA_WIDTH + 2 * LABEL_AREA_RIGHT_MARGIN + COLORBAR_WIDTH,
         );
 
-        let (colorbar_width, colorbar_height) = colorbar_area.dim_in_pixel();
+        let (colorbar_phi_width, colorbar_phi_height) = colorbar_phi_area.dim_in_pixel();
 
         for i in 0..COLORBAR_COLOR_NUMBERS {
-            let color: scarlet::color::RGBColor =
-                color_map.transform_single(1.0 - i as f64 / (COLORBAR_COLOR_NUMBERS - 1) as f64);
-            let color = RGBColor(
-                (color.r * u8::MAX as f64) as u8,
-                (color.g * u8::MAX as f64) as u8,
-                (color.b * u8::MAX as f64) as u8,
-            );
-            colorbar_area.draw(&Rectangle::new(
+            let h = (i as f64 / COLORBAR_COLOR_NUMBERS as f64 + 0.5) % 1.0;
+            let v = 0.5;
+            let s = 1.0;
+            // Map the value to a color
+            let color = HSLColor(h, s, v);
+            colorbar_phi_area.draw(&Rectangle::new(
                 [
-                    (0, (i * colorbar_height / COLORBAR_COLOR_NUMBERS) as i32),
+                    (0, (i * colorbar_phi_height / COLORBAR_COLOR_NUMBERS) as i32),
                     (
-                        colorbar_width as i32,
-                        ((i + 1) * colorbar_height / COLORBAR_COLOR_NUMBERS) as i32,
+                        colorbar_phi_width as i32,
+                        ((i + 1) * colorbar_phi_height / COLORBAR_COLOR_NUMBERS) as i32,
                     ),
                 ],
                 color.filled(),
@@ -393,30 +387,30 @@ where
         }
 
         // Drawing labels for the colorbar
-        let label_area = root.margin(
+        let label_area_phi = root.margin(
             COLORBAR_TOP_MARGIN,
             COLORBAR_BOTTOM_MARGIN,
-            root_width - LABEL_AREA_WIDTH,
+            root_width - 2 * LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN - COLORBAR_WIDTH,
             LABEL_AREA_RIGHT_MARGIN,
         ); // Adjust margins to align with the colorbar
         let num_labels = 4; // Number of labels on the colorbar
         for i in 0..=num_labels {
-            label_area.draw(&Text::new(
-                format!("{:.2}", (i as f32 / num_labels as f32)),
-                (5, (i * colorbar_height / num_labels) as i32),
+            label_area_phi.draw(&Text::new(
+                format!("{:.2}", 360.0 - (i as f32 / num_labels as f32 * 360.0)),
+                (5, (i * colorbar_phi_height / num_labels) as i32),
                 AXIS_STYLE.into_font(),
             ))?;
         }
 
         // Drawing units for colorbar
-        let unit_area = root.margin(
-            root_height - colorbar_height - COLORBAR_TOP_MARGIN - COLORBAR_BOTTOM_MARGIN,
+        let unit_area_phi = root.margin(
+            root_height - colorbar_phi_height - COLORBAR_TOP_MARGIN - COLORBAR_BOTTOM_MARGIN,
             UNIT_AREA_TOP_MARGIN,
-            root_width - COLORBAR_WIDTH - LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN,
-            LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
+            root_width - 2 * COLORBAR_WIDTH - 2 * LABEL_AREA_WIDTH - 2 * LABEL_AREA_RIGHT_MARGIN,
+            LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN + LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
         ); // Adjust margins to align with the colorbar
-        unit_area.draw(&Text::new(
-            unit,
+        unit_area_phi.draw(&Text::new(
+            "phi [°]",
             (
                 COLORBAR_WIDTH as i32 / 2 - AXIS_STYLE.1,
                 COLORBAR_TOP_MARGIN as i32 / 2,
@@ -428,11 +422,79 @@ where
             .caption(title, CAPTION_STYLE.into_font())
             .margin(CHART_MARGIN)
             .margin_right(
-                CHART_MARGIN + COLORBAR_WIDTH + LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
+                CHART_MARGIN
+                    + 2 * COLORBAR_WIDTH
+                    + 2 * LABEL_AREA_WIDTH
+                    + 2 * LABEL_AREA_RIGHT_MARGIN,
             ) // make room for colorbar
             .x_label_area_size(AXIS_LABEL_AREA)
             .y_label_area_size(AXIS_LABEL_AREA)
             .build_cartesian_2d(x_range, y_range)?;
+
+        let colorbar_theta_area = root.margin(
+            COLORBAR_TOP_MARGIN,
+            COLORBAR_BOTTOM_MARGIN,
+            root_width - COLORBAR_WIDTH - LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN,
+            LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
+        );
+
+        let (colorbar_theta_width, colorbar_theta_height) = colorbar_theta_area.dim_in_pixel();
+
+        for i in 0..COLORBAR_COLOR_NUMBERS {
+            let h = 0.5;
+            let v = i as f64 / COLORBAR_COLOR_NUMBERS as f64;
+            let s = 1.0;
+            // Map the value to a color
+            let color = HSLColor(h, s, v);
+            colorbar_theta_area.draw(&Rectangle::new(
+                [
+                    (
+                        0,
+                        (i * colorbar_theta_height / COLORBAR_COLOR_NUMBERS) as i32,
+                    ),
+                    (
+                        colorbar_theta_width as i32,
+                        ((i + 1) * colorbar_theta_height / COLORBAR_COLOR_NUMBERS) as i32,
+                    ),
+                ],
+                color.filled(),
+            ))?;
+        }
+
+        // Drawing labels for the colorbar
+        let label_area_theta = root.margin(
+            COLORBAR_TOP_MARGIN,
+            COLORBAR_BOTTOM_MARGIN,
+            root_width - LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN,
+            LABEL_AREA_RIGHT_MARGIN,
+        ); // Adjust margins to align with the colorbar
+        let num_labels = 4; // Number of labels on the colorbar
+        for i in 0..=num_labels {
+            label_area_theta.draw(&Text::new(
+                format!(
+                    "{:.2}",
+                    (i as f32 / num_labels as f32).mul_add(-180.0, 180.0)
+                ),
+                (5, (i * colorbar_theta_height / num_labels) as i32),
+                AXIS_STYLE.into_font(),
+            ))?;
+        }
+
+        // Drawing units for colorbar
+        let unit_area_theta = root.margin(
+            root_height - colorbar_theta_height - COLORBAR_TOP_MARGIN - COLORBAR_BOTTOM_MARGIN,
+            UNIT_AREA_TOP_MARGIN,
+            root_width - COLORBAR_WIDTH - LABEL_AREA_WIDTH - LABEL_AREA_RIGHT_MARGIN,
+            LABEL_AREA_WIDTH + LABEL_AREA_RIGHT_MARGIN,
+        ); // Adjust margins to align with the colorbar
+        unit_area_theta.draw(&Text::new(
+            "theta [°]",
+            (
+                COLORBAR_WIDTH as i32 / 2 - AXIS_STYLE.1,
+                COLORBAR_TOP_MARGIN as i32 / 2,
+            ),
+            AXIS_STYLE.into_font(),
+        ))?;
 
         chart
             .configure_mesh()
