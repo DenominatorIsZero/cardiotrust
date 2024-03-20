@@ -5,7 +5,9 @@ use tracing::trace;
 
 use crate::{
     core::{
-        data::shapes::{ArraySystemStates, ArraySystemStatesSpherical},
+        data::shapes::{
+            ArraySystemStates, ArraySystemStatesSpherical, ArraySystemStatesSphericalMax,
+        },
         model::spatial::voxels::{VoxelNumbers, VoxelPositions},
     },
     vis::plotting::{
@@ -110,18 +112,25 @@ pub(crate) fn states_plot(
 #[tracing::instrument(level = "trace")]
 pub(crate) fn states_spherical_plot(
     states: &ArraySystemStatesSpherical,
+    states_max: &ArraySystemStatesSphericalMax,
     voxel_positions_mm: &VoxelPositions,
     voxel_size_mm: f32,
     voxel_numbers: &VoxelNumbers,
     path: &Path,
     slice: Option<PlotSlice>,
     mode: Option<StateSphericalPlotMode>,
-    time_step: usize,
+    time_step: Option<usize>,
 ) -> Result<Vec<u8>, Box<dyn Error>> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let mode = mode.unwrap_or(StateSphericalPlotMode::ABS);
     let step = Some((voxel_size_mm, voxel_size_mm));
+
+    let title_time = if let Some(time_step) = time_step {
+        format!("time-index {time_step}")
+    } else {
+        "max".to_string()
+    };
 
     let (numbers, offset, title, x_label, y_label, flip_axis) = match slice {
         PlotSlice::X(index) => {
@@ -130,8 +139,7 @@ pub(crate) fn states_spherical_plot(
                 voxel_positions_mm.values[(0, 0, 0, 1)],
                 voxel_positions_mm.values[(0, 0, 0, 2)],
             ));
-            let title =
-                format!("System States {mode:?} (x-index = {index}, time-index = {time_step})");
+            let title = format!("System States {mode:?} (x-index = {index}, {title_time})");
             let x_label = Some("y [mm]");
             let y_label = Some("z [mm]");
             let flip_axis = Some((false, false));
@@ -144,8 +152,7 @@ pub(crate) fn states_spherical_plot(
                 voxel_positions_mm.values[(0, 0, 0, 0)],
                 voxel_positions_mm.values[(0, 0, 0, 2)],
             ));
-            let title =
-                format!("System States {mode:?} (y-index = {index}, time-index = {time_step})");
+            let title = format!("System States {mode:?} (y-index = {index}, {title_time})");
             let x_label = Some("x [mm]");
             let y_label = Some("z [mm]");
             let flip_axis = Some((false, false));
@@ -158,8 +165,7 @@ pub(crate) fn states_spherical_plot(
                 voxel_positions_mm.values[(0, 0, 0, 0)],
                 voxel_positions_mm.values[(0, 0, 0, 1)],
             ));
-            let title =
-                format!("System States {mode:?} (z-index = {index}, time-index = {time_step})");
+            let title = format!("System States {mode:?} (z-index = {index}, {title_time})");
             let x_label = Some("x [mm]");
             let y_label = Some("y [mm]");
             let flip_axis = Some((false, true));
@@ -172,9 +178,15 @@ pub(crate) fn states_spherical_plot(
         StateSphericalPlotMode::ABS => {
             let mut data = Array2::zeros(numbers.raw_dim());
             for ((x, y), number) in numbers.indexed_iter() {
-                data[(x, y)] = number
-                    .as_ref()
-                    .map_or(0.0, |number| states.magnitude[(time_step, *number / 3)]);
+                data[(x, y)] = if let Some(time_step) = time_step {
+                    number
+                        .as_ref()
+                        .map_or(0.0, |number| states.magnitude[(time_step, *number / 3)])
+                } else {
+                    number
+                        .as_ref()
+                        .map_or(0.0, |number| states_max.magnitude[*number / 3])
+                };
             }
             matrix_plot(
                 &data,
@@ -194,12 +206,24 @@ pub(crate) fn states_spherical_plot(
             let mut theta = Array2::zeros(numbers.raw_dim());
             let mut phi = Array2::zeros(numbers.raw_dim());
             for ((x, y), number) in numbers.indexed_iter() {
-                theta[(x, y)] = number
-                    .as_ref()
-                    .map_or(0.0, |number| states.theta[(time_step, *number / 3)]);
-                phi[(x, y)] = number
-                    .as_ref()
-                    .map_or(0.0, |number| states.phi[(time_step, *number / 3)]);
+                theta[(x, y)] = if let Some(time_step) = time_step {
+                    number
+                        .as_ref()
+                        .map_or(0.0, |number| states.theta[(time_step, *number / 3)])
+                } else {
+                    number
+                        .as_ref()
+                        .map_or(0.0, |number| states_max.theta[*number / 3])
+                };
+                phi[(x, y)] = if let Some(time_step) = time_step {
+                    number
+                        .as_ref()
+                        .map_or(0.0, |number| states.phi[(time_step, *number / 3)])
+                } else {
+                    number
+                        .as_ref()
+                        .map_or(0.0, |number| states_max.phi[*number / 3])
+                };
             }
             matrix_angle_plot(
                 &theta,
@@ -390,13 +414,18 @@ mod test {
 
         states_spherical_plot(
             &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data
+                .simulation
+                .as_ref()
+                .unwrap()
+                .system_states_spherical_max,
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
             files[0].as_path(),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
-            350,
+            Some(350),
         )
         .unwrap();
 
@@ -417,13 +446,18 @@ mod test {
 
         states_spherical_plot(
             &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data
+                .simulation
+                .as_ref()
+                .unwrap()
+                .system_states_spherical_max,
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
             files[0].as_path(),
             Some(PlotSlice::Y(5)),
             Some(StateSphericalPlotMode::ABS),
-            350,
+            Some(350),
         )
         .unwrap();
 
@@ -444,13 +478,18 @@ mod test {
 
         states_spherical_plot(
             &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data
+                .simulation
+                .as_ref()
+                .unwrap()
+                .system_states_spherical_max,
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
             files[0].as_path(),
             Some(PlotSlice::X(10)),
             Some(StateSphericalPlotMode::ABS),
-            350,
+            Some(350),
         )
         .unwrap();
 
@@ -472,13 +511,18 @@ mod test {
 
         states_spherical_plot(
             &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data
+                .simulation
+                .as_ref()
+                .unwrap()
+                .system_states_spherical_max,
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
             files[0].as_path(),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ANGLE),
-            350,
+            Some(350),
         )
         .unwrap();
 
@@ -500,13 +544,18 @@ mod test {
 
         states_spherical_plot(
             &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data
+                .simulation
+                .as_ref()
+                .unwrap()
+                .system_states_spherical_max,
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
             files[0].as_path(),
             Some(PlotSlice::Y(5)),
             Some(StateSphericalPlotMode::ANGLE),
-            350,
+            Some(350),
         )
         .unwrap();
 
@@ -528,13 +577,82 @@ mod test {
 
         states_spherical_plot(
             &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data
+                .simulation
+                .as_ref()
+                .unwrap()
+                .system_states_spherical_max,
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
             files[0].as_path(),
             Some(PlotSlice::X(10)),
             Some(StateSphericalPlotMode::ANGLE),
-            350,
+            Some(350),
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_states_spherical_plot_abs_max() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_abs_max.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        states_spherical_plot(
+            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data
+                .simulation
+                .as_ref()
+                .unwrap()
+                .system_states_spherical_max,
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            &data.get_model().spatial_description.voxels.numbers,
+            files[0].as_path(),
+            None,
+            Some(StateSphericalPlotMode::ABS),
+            None,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    #[allow(clippy::cast_precision_loss)]
+    fn test_states_spherical_plot_angle_max() {
+        setup();
+        let files = vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_angle_max.png")];
+        clean(&files);
+
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        states_spherical_plot(
+            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data
+                .simulation
+                .as_ref()
+                .unwrap()
+                .system_states_spherical_max,
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            &data.get_model().spatial_description.voxels.numbers,
+            files[0].as_path(),
+            None,
+            Some(StateSphericalPlotMode::ANGLE),
+            None,
         )
         .unwrap();
 
