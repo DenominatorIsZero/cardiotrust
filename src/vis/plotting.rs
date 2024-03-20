@@ -1,6 +1,8 @@
+pub mod activation_time;
 pub mod line;
 pub mod matrix;
 pub mod matrix_old;
+pub mod states;
 pub mod voxel_type;
 
 use plotters::style::{
@@ -46,4 +48,18 @@ fn allocate_buffer(width: u32, height: u32) -> Vec<u8> {
     trace!("Allocating buffer.");
     let buffer: Vec<u8> = vec![0; width as usize * height as usize * 3];
     buffer
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum PlotSlice {
+    X(usize),
+    Y(usize),
+    Z(usize),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum StatePlotMode {
+    X,
+    Y,
+    Z,
 }

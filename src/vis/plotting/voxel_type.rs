@@ -10,14 +10,14 @@ use crate::{
     vis::{
         heart::type_to_color,
         plotting::{
-            allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN,
+            allocate_buffer, PlotSlice, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN,
             COLORBAR_BOTTOM_MARGIN, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH, LABEL_AREA_RIGHT_MARGIN,
             LABEL_AREA_WIDTH,
         },
     },
 };
 
-use super::{matrix::PlotSlice, AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
+use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
 
 #[allow(
     clippy::cast_precision_loss,

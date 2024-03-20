@@ -18,11 +18,12 @@ use crate::{
         model::functional::allpass::shapes::ArrayActivationTime, scenario::Scenario,
     },
     vis::plotting::{
+        activation_time::activation_time_plot,
         line::{standard_time_plot, standard_y_plot},
-        matrix::{activation_time_plot, PlotSlice},
         matrix_old::{
             plot_states_max, plot_states_max_delta, plot_states_over_time, plot_voxel_types,
         },
+        PlotSlice,
     },
     ScenarioList, SelectedSenario,
 };
