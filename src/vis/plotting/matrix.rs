@@ -396,7 +396,10 @@ where
         let num_labels = 4; // Number of labels on the colorbar
         for i in 0..=num_labels {
             label_area_phi.draw(&Text::new(
-                format!("{:.2}", 360.0 - (i as f32 / num_labels as f32 * 360.0)),
+                format!(
+                    "{:.2}",
+                    (i as f32 / num_labels as f32).mul_add(-360.0, 360.0)
+                ),
                 (5, (i * colorbar_phi_height / num_labels) as i32),
                 AXIS_STYLE.into_font(),
             ))?;

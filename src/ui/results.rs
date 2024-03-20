@@ -22,7 +22,7 @@ use crate::{
         line::{standard_time_plot, standard_y_plot},
         matrix_old::plot_states_over_time,
         states::states_spherical_plot,
-        voxel_type::{self, voxel_type_plot},
+        voxel_type::voxel_type_plot,
         PlotSlice, StateSphericalPlotMode,
     },
     ScenarioList, SelectedSenario,
@@ -280,12 +280,13 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
     if path.is_file() {
         return Ok(());
     }
-    let file_name = path.with_extension("");
+    let _file_name = path.with_extension("");
     let estimations = &scenario.results.as_ref().unwrap().estimations;
     let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
     let data = scenario.data.as_ref().unwrap();
     let metrics = &scenario.results.as_ref().unwrap().metrics;
-    match image_type {
+    let _ = match image_type {
+        // might want to return this at some later point
         ImageType::StatesMaxAlgorithm => states_spherical_plot(
             &estimations.system_states_spherical,
             &estimations.system_states_spherical_max,

@@ -1,7 +1,5 @@
 use ndarray::Axis;
 
-use plotters::prelude::*;
-
 use std::{error::Error, path::Path};
 use tracing::trace;
 

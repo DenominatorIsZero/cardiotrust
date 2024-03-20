@@ -253,7 +253,7 @@ mod test {
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            &Path::new(&format!("tests/simulation_states_{time_index}")),
+            Path::new(&format!("tests/simulation_states_{time_index}")),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             Some(time_index),
@@ -266,7 +266,7 @@ mod test {
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            &Path::new("tests/simulation_states_max"),
+            Path::new("tests/simulation_states_max"),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             None,
@@ -299,6 +299,7 @@ mod test {
 
     #[test]
     #[ignore]
+    #[allow(clippy::too_many_lines)]
     fn run_simulation_pathological_and_plot() {
         let mut config = SimulationConfig::default();
         config.model.pathological = true;
@@ -385,7 +386,7 @@ mod test {
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            &Path::new(&format!("tests/simulation_states_{time_index}")),
+            Path::new(&format!("tests/simulation_states_{time_index}")),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             Some(time_index),
@@ -398,7 +399,7 @@ mod test {
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            &Path::new("tests/simulation_states_max"),
+            Path::new("tests/simulation_states_max"),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             None,

@@ -1,11 +1,6 @@
-use ndarray::Array3;
-
 use tracing::trace;
 
-use crate::core::{
-    data::shapes::ArraySystemStates,
-    model::spatial::voxels::{VoxelType, Voxels},
-};
+use crate::core::{data::shapes::ArraySystemStates, model::spatial::voxels::Voxels};
 
 /// .
 ///

@@ -129,11 +129,10 @@ pub(crate) fn states_spherical_plot(
     }
     let step = Some((voxel_size_mm, voxel_size_mm));
 
-    let title_time = if let Some(time_step) = time_step {
-        format!("time-index {time_step}")
-    } else {
-        "max".to_string()
-    };
+    let title_time = time_step.map_or_else(
+        || "max".to_string(),
+        |time_step| format!("time-index {time_step}"),
+    );
 
     let (numbers, offset, title, x_label, y_label, flip_axis) = match slice {
         PlotSlice::X(index) => {
@@ -181,15 +180,18 @@ pub(crate) fn states_spherical_plot(
         StateSphericalPlotMode::ABS => {
             let mut data = Array2::zeros(numbers.raw_dim());
             for ((x, y), number) in numbers.indexed_iter() {
-                data[(x, y)] = if let Some(time_step) = time_step {
-                    number
-                        .as_ref()
-                        .map_or(0.0, |number| states.magnitude[(time_step, *number / 3)])
-                } else {
-                    number
-                        .as_ref()
-                        .map_or(0.0, |number| states_max.magnitude[*number / 3])
-                };
+                data[(x, y)] = time_step.map_or_else(
+                    || {
+                        number
+                            .as_ref()
+                            .map_or(0.0, |number| states_max.magnitude[*number / 3])
+                    },
+                    |time_step| {
+                        number
+                            .as_ref()
+                            .map_or(0.0, |number| states.magnitude[(time_step, *number / 3)])
+                    },
+                );
             }
             matrix_plot(
                 &data,
@@ -209,24 +211,30 @@ pub(crate) fn states_spherical_plot(
             let mut theta = Array2::zeros(numbers.raw_dim());
             let mut phi = Array2::zeros(numbers.raw_dim());
             for ((x, y), number) in numbers.indexed_iter() {
-                theta[(x, y)] = if let Some(time_step) = time_step {
-                    number
-                        .as_ref()
-                        .map_or(0.0, |number| states.theta[(time_step, *number / 3)])
-                } else {
-                    number
-                        .as_ref()
-                        .map_or(0.0, |number| states_max.theta[*number / 3])
-                };
-                phi[(x, y)] = if let Some(time_step) = time_step {
-                    number
-                        .as_ref()
-                        .map_or(0.0, |number| states.phi[(time_step, *number / 3)])
-                } else {
-                    number
-                        .as_ref()
-                        .map_or(0.0, |number| states_max.phi[*number / 3])
-                };
+                theta[(x, y)] = time_step.map_or_else(
+                    || {
+                        number
+                            .as_ref()
+                            .map_or(0.0, |number| states_max.theta[*number / 3])
+                    },
+                    |time_step| {
+                        number
+                            .as_ref()
+                            .map_or(0.0, |number| states.theta[(time_step, *number / 3)])
+                    },
+                );
+                phi[(x, y)] = time_step.map_or_else(
+                    || {
+                        number
+                            .as_ref()
+                            .map_or(0.0, |number| states_max.phi[*number / 3])
+                    },
+                    |time_step| {
+                        number
+                            .as_ref()
+                            .map_or(0.0, |number| states.phi[(time_step, *number / 3)])
+                    },
+                );
             }
             matrix_angle_plot(
                 &theta,
