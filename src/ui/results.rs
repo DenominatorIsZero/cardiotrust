@@ -20,10 +20,10 @@ use crate::{
     vis::plotting::{
         activation_time::activation_time_plot,
         line::{standard_time_plot, standard_y_plot},
-        matrix_old::{
-            plot_states_max, plot_states_max_delta, plot_states_over_time, plot_voxel_types,
-        },
-        PlotSlice,
+        matrix_old::plot_states_over_time,
+        states::states_spherical_plot,
+        voxel_type::{self, voxel_type_plot},
+        PlotSlice, StateSphericalPlotMode,
     },
     ScenarioList, SelectedSenario,
 };
@@ -280,67 +280,78 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
     if path.is_file() {
         return Ok(());
     }
-    let _file_name = path.with_extension("");
-    let _estimations = &scenario.results.as_ref().unwrap().estimations;
-    let _model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
-    let _data = scenario.data.as_ref().unwrap();
-    let _metrics = &scenario.results.as_ref().unwrap().metrics;
+    let file_name = path.with_extension("");
+    let estimations = &scenario.results.as_ref().unwrap().estimations;
+    let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
+    let data = scenario.data.as_ref().unwrap();
+    let metrics = &scenario.results.as_ref().unwrap().metrics;
     match image_type {
-        ImageType::StatesMaxAlgorithm => {
-            todo!();
-            plot_states_max(
-                &_estimations.system_states,
-                &_model.spatial_description.voxels,
-                path.with_extension("").to_str().unwrap(),
-                "Maximum Estimated Current Densities",
-            );
-        }
-        ImageType::StatesMaxSimulation => {
-            todo!();
-            plot_states_max(
-                _data.get_system_states(),
-                &_model.spatial_description.voxels,
-                path.with_extension("").to_str().unwrap(),
-                "Maximum Simulated Current Densities",
-            );
-        }
-        ImageType::StatesMaxDelta => {
-            todo!();
-            plot_states_max_delta(
-                &_estimations.system_states,
-                _data.get_system_states(),
-                &_model.spatial_description.voxels,
-                _file_name.to_str().unwrap(),
-                "Maximum Current Densities Delta",
-            );
-        }
-        ImageType::ActivationTimeAlgorithm => {
-            activation_time_plot(
-                &_model.functional_description.ap_params.activation_time_ms,
-                &_model.spatial_description.voxels.positions_mm,
-                _model.spatial_description.voxels.size_mm,
-                &path,
-                Some(PlotSlice::Z(0)),
-            )?;
-        }
-        ImageType::ActivationTimeSimulation => {
-            activation_time_plot(
-                _data.get_activation_time_ms(),
-                &_model.spatial_description.voxels.positions_mm,
-                _model.spatial_description.voxels.size_mm,
-                &path,
-                Some(PlotSlice::Z(0)),
-            )?;
-        }
+        ImageType::StatesMaxAlgorithm => states_spherical_plot(
+            &estimations.system_states_spherical,
+            &estimations.system_states_spherical_max,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            &model.spatial_description.voxels.numbers,
+            &path,
+            None,
+            Some(StateSphericalPlotMode::ABS),
+            None,
+        ),
+        ImageType::StatesMaxSimulation => states_spherical_plot(
+            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data
+                .simulation
+                .as_ref()
+                .unwrap()
+                .system_states_spherical_max,
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            &data.get_model().spatial_description.voxels.numbers,
+            &path,
+            None,
+            Some(StateSphericalPlotMode::ABS),
+            None,
+        ),
+        ImageType::StatesMaxDelta => states_spherical_plot(
+            &(&data.simulation.as_ref().unwrap().system_states_spherical
+                - &estimations.system_states_spherical),
+            &(&data
+                .simulation
+                .as_ref()
+                .unwrap()
+                .system_states_spherical_max
+                - &estimations.system_states_spherical_max),
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            &model.spatial_description.voxels.numbers,
+            &path,
+            None,
+            Some(StateSphericalPlotMode::ABS),
+            None,
+        ),
+        ImageType::ActivationTimeAlgorithm => activation_time_plot(
+            &model.functional_description.ap_params.activation_time_ms,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            &path,
+            Some(PlotSlice::Z(0)),
+        ),
+        ImageType::ActivationTimeSimulation => activation_time_plot(
+            data.get_activation_time_ms(),
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            &path,
+            Some(PlotSlice::Z(0)),
+        ),
         ImageType::ActivationTimeDelta => {
-            let gt = &_data.get_activation_time_ms().values;
-            let estimation = &_model
+            let gt = &data.get_activation_time_ms().values;
+            let estimation = &model
                 .functional_description
                 .ap_params
                 .activation_time_ms
                 .values;
             let mut delta =
-                ArrayActivationTime::empty(_data.get_activation_time_ms().values.raw_dim());
+                ArrayActivationTime::empty(data.get_activation_time_ms().values.raw_dim());
             for x in 0..delta.values.shape()[0] {
                 for y in 0..delta.values.shape()[1] {
                     for z in 0..delta.values.shape()[2] {
@@ -353,368 +364,282 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
 
             activation_time_plot(
                 &delta,
-                &_model.spatial_description.voxels.positions_mm,
-                _model.spatial_description.voxels.size_mm,
+                &model.spatial_description.voxels.positions_mm,
+                model.spatial_description.voxels.size_mm,
                 &path,
                 Some(PlotSlice::Z(0)),
-            )?;
+            )
         }
-        ImageType::VoxelTypesAlgorithm => {
-            todo!();
-            plot_voxel_types(
-                &_model.spatial_description.voxels.types.values,
-                _file_name.to_str().unwrap(),
-                "Voxel Types Algorithm",
-            );
-        }
-        ImageType::VoxelTypesSimulation => {
-            todo!();
-            plot_voxel_types(
-                &_data.get_voxel_types().values,
-                _file_name.to_str().unwrap(),
-                "Voxel Types Simulation",
-            );
-        }
-        ImageType::VoxelTypesPrediction => {
-            todo!();
-            plot_voxel_types(
-                &predict_voxeltype(
-                    _estimations,
-                    _data.get_voxel_types(),
-                    &_model.spatial_description.voxels.numbers,
-                    scenario.summary.unwrap().threshold,
-                )
-                .values,
-                _file_name.to_str().unwrap(),
-                "Voxel Types Predictions",
-            );
-        }
-        ImageType::LossEpoch => {
-            standard_y_plot(
-                &_metrics.loss_epoch.values,
-                &path,
-                "Sum Loss Per Epoch",
-                "Loss",
-                "Epoch",
-            )?;
-        }
+        ImageType::VoxelTypesAlgorithm => voxel_type_plot(
+            &model.spatial_description.voxels.types,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            Some(&path),
+            None,
+        ),
+        ImageType::VoxelTypesSimulation => voxel_type_plot(
+            &data.get_model().spatial_description.voxels.types,
+            &data.get_model().spatial_description.voxels.positions_mm,
+            data.get_model().spatial_description.voxels.size_mm,
+            Some(&path),
+            None,
+        ),
+        ImageType::VoxelTypesPrediction => voxel_type_plot(
+            &predict_voxeltype(
+                estimations,
+                data.get_voxel_types(),
+                &model.spatial_description.voxels.numbers,
+                scenario.summary.unwrap().threshold,
+            ),
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            Some(&path),
+            None,
+        ),
+        ImageType::LossEpoch => standard_y_plot(
+            &metrics.loss_epoch.values,
+            &path,
+            "Sum Loss Per Epoch",
+            "Loss",
+            "Epoch",
+        ),
         ImageType::Loss => {
-            standard_y_plot(
-                &_metrics.loss.values,
-                &path,
-                "Loss Per Step",
-                "Loss",
-                "Step",
-            )?;
+            standard_y_plot(&metrics.loss.values, &path, "Loss Per Step", "Loss", "Step")
         }
-        ImageType::LossMseEpoch => {
-            standard_y_plot(
-                &_metrics.loss_mse_epoch.values,
-                &path,
-                "Sum MSE Loss Per Epoch",
-                "Loss",
-                "Epoch",
-            )?;
-        }
-        ImageType::LossMse => {
-            standard_y_plot(
-                &_metrics.loss_mse.values,
-                &path,
-                "MSE Loss Per Step",
-                "Loss",
-                "Step",
-            )?;
-        }
-        ImageType::LossMaximumRegularizationEpoch => {
-            standard_y_plot(
-                &_metrics.loss_maximum_regularization_epoch.values,
-                &path,
-                "Sum Max. Reg. Loss Per Epoch",
-                "Loss",
-                "Epoch",
-            )?;
-        }
-        ImageType::LossMaximumRegularization => {
-            standard_y_plot(
-                &_metrics.loss_maximum_regularization.values,
-                &path,
-                "Max. Reg. Loss Per Step",
-                "Loss",
-                "Step",
-            )?;
-        }
-        ImageType::DeltaStatesMeanEpoch => {
-            standard_y_plot(
-                &_metrics.delta_states_mean_epoch.values,
-                &path,
-                "Mean Absolute Error Of System States Per Epoch",
-                "Error",
-                "Epoch",
-            )?;
-        }
-        ImageType::DeltaStatesMean => {
-            standard_y_plot(
-                &_metrics.delta_states_mean.values,
-                &path,
-                "Mean Absolute Error Of System States Per Step",
-                "Error",
-                "Step",
-            )?;
-        }
-        ImageType::DeltaStatesMaxEpoch => {
-            standard_y_plot(
-                &_metrics.delta_states_max_epoch.values,
-                &path,
-                "Max Absolute Error Of System States Per Epoch",
-                "Error",
-                "Epoch",
-            )?;
-        }
-        ImageType::DeltaStatesMax => {
-            standard_y_plot(
-                &_metrics.delta_states_max.values,
-                &path,
-                "Max Absolute Error Of System States Per Step",
-                "Error",
-                "Step",
-            )?;
-        }
-        ImageType::DeltaMeasurementsMeanEpoch => {
-            standard_y_plot(
-                &_metrics.delta_measurements_mean_epoch.values,
-                &path,
-                "Mean Absolute Error Of Measurements Per Epoch",
-                "Error",
-                "Epoch",
-            )?;
-        }
-        ImageType::DeltaMeasurementsMean => {
-            standard_y_plot(
-                &_metrics.delta_measurements_mean.values,
-                &path,
-                "Mean Absolute Error Of Measurements Per Step",
-                "Error",
-                "Step",
-            )?;
-        }
-        ImageType::DeltaMeasurementsMaxEpoch => {
-            standard_y_plot(
-                &_metrics.delta_measurements_max_epoch.values,
-                &path,
-                "Max Absolute Error Of Measurements Per Epoch",
-                "Error",
-                "Epoch",
-            )?;
-        }
-        ImageType::DeltaMeasurementsMax => {
-            standard_y_plot(
-                &_metrics.delta_measurements_max.values,
-                &path,
-                "Max Absolute Error Of Measurements Per Step",
-                "Error",
-                "Step",
-            )?;
-        }
-        ImageType::DeltaGainsMeanEpoch => {
-            standard_y_plot(
-                &_metrics.delta_gains_mean_epoch.values,
-                &path,
-                "Final Mean Absolute Error Of Gains Per Epoch",
-                "Error",
-                "Epoch",
-            )?;
-        }
-        ImageType::DeltaGainsMean => {
-            standard_y_plot(
-                &_metrics.delta_gains_mean.values,
-                &path,
-                "Mean Absolute Error Of Gains Per Step",
-                "Error",
-                "Step",
-            )?;
-        }
-        ImageType::DeltaGainsMaxEpoch => {
-            standard_y_plot(
-                &_metrics.delta_gains_max_epoch.values,
-                &path,
-                "Final Max Absolute Error Of Gains Per Epoch",
-                "Error",
-                "Epoch",
-            )?;
-        }
-        ImageType::DeltaGainsMax => {
-            standard_y_plot(
-                &_metrics.delta_gains_max.values,
-                &path,
-                "Max Absolute Error Of Gains Per Step",
-                "Error",
-                "Step",
-            )?;
-        }
-        ImageType::DeltaDelaysMeanEpoch => {
-            standard_y_plot(
-                &_metrics.delta_delays_mean_epoch.values,
-                &path,
-                "Final Mean Absolute Error Of Delays Per Epoch",
-                "Error",
-                "Epoch",
-            )?;
-        }
-        ImageType::DeltaDelaysMean => {
-            standard_y_plot(
-                &_metrics.delta_delays_mean.values,
-                &path,
-                "Mean Absolute Error Of Delays Per Step",
-                "Error",
-                "Step",
-            )?;
-        }
-        ImageType::DeltaDelaysMaxEpoch => {
-            standard_y_plot(
-                &_metrics.delta_delays_max_epoch.values,
-                &path,
-                "Final Max Absolute Error Of Delays Per Epoch",
-                "Error",
-                "Epoch",
-            )?;
-        }
-        ImageType::DeltaDelaysMax => {
-            standard_y_plot(
-                &_metrics.delta_delays_max.values,
-                &path,
-                "Max Absolute Error Of Delays Per Step",
-                "Error",
-                "Step",
-            )?;
-        }
-        ImageType::Dice => {
-            standard_y_plot(
-                &_metrics.dice_score_over_threshold,
-                &path,
-                "Dice Score over Threshold",
-                "Dice Score",
-                "Threshold * 100",
-            )?;
-        }
-        ImageType::IoU => {
-            standard_y_plot(
-                &_metrics.iou_over_threshold,
-                &path,
-                "IoU over Threshold",
-                "IoU",
-                "Threshold * 100",
-            )?;
-        }
-        ImageType::Recall => {
-            standard_y_plot(
-                &_metrics.recall_over_threshold,
-                &path,
-                "Recall over Threshold",
-                "Recall",
-                "Threshold * 100",
-            )?;
-        }
-        ImageType::Precision => {
-            standard_y_plot(
-                &_metrics.precision_over_threshold,
-                &path,
-                "Precision over Threshold",
-                "Precision",
-                "Threshold * 100",
-            )?;
-        }
-        ImageType::ControlFunctionAlgorithm => {
-            standard_time_plot(
-                &_model.functional_description.control_function_values.values,
-                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                &path,
-                "Control Function Algorithm",
-                "u [A/mm^2]",
-            )?;
-        }
-        ImageType::ControlFunctionSimulation => {
-            standard_time_plot(
-                &_data.get_control_function_values().values,
-                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                &path,
-                "Control Function Simulation",
-                "u [A/mm^2]",
-            )?;
-        }
-        ImageType::ControlFunctionDelta => {
-            standard_time_plot(
-                &(&_model.functional_description.control_function_values.values
-                    - &_data.get_control_function_values().values),
-                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                &path,
-                "Control Function Delta",
-                "u [A/mm^2]",
-            )?;
-        }
-        ImageType::StateAlgorithm => {
-            standard_time_plot(
-                &_estimations
-                    .system_states
-                    .values
-                    .slice(s![.., 0])
-                    .to_owned(),
-                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                &path,
-                "System State 0 Algorithm",
-                "j [A/mm^2]",
-            )?;
-        }
-        ImageType::StateSimulation => {
-            standard_time_plot(
-                &_data.get_system_states().values.slice(s![.., 0]).to_owned(),
-                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                &path,
-                "System State 0 Simulation",
-                "j [A/mm^2]",
-            )?;
-        }
-        ImageType::StateDelta => {
-            standard_time_plot(
-                &(&_estimations
-                    .system_states
-                    .values
-                    .slice(s![.., 0])
-                    .to_owned()
-                    - &_data.get_system_states().values.slice(s![.., 0]).to_owned()),
-                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                &path,
-                "System State 0 Delta",
-                "j [A/mm^2]",
-            )?;
-        }
-        ImageType::MeasurementAlgorithm => {
-            standard_time_plot(
-                &_estimations.measurements.values.slice(s![.., 0]).to_owned(),
-                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                &path,
-                "Measurement 0 Algorithm",
-                "z [pT]",
-            )?;
-        }
-        ImageType::MeasurementSimulation => {
-            standard_time_plot(
-                &_data.get_measurements().values.slice(s![.., 0]).to_owned(),
-                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                &path,
-                "Measurement 0 Simulation",
-                "z [pT]",
-            )?;
-        }
-        ImageType::MeasurementDelta => {
-            standard_time_plot(
-                &(&_estimations.measurements.values.slice(s![.., 0]).to_owned()
-                    - &_data.get_measurements().values.slice(s![.., 0]).to_owned()),
-                scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
-                &path,
-                "Measurement 0 Delta",
-                "z [pT]",
-            )?;
-        }
+        ImageType::LossMseEpoch => standard_y_plot(
+            &metrics.loss_mse_epoch.values,
+            &path,
+            "Sum MSE Loss Per Epoch",
+            "Loss",
+            "Epoch",
+        ),
+        ImageType::LossMse => standard_y_plot(
+            &metrics.loss_mse.values,
+            &path,
+            "MSE Loss Per Step",
+            "Loss",
+            "Step",
+        ),
+        ImageType::LossMaximumRegularizationEpoch => standard_y_plot(
+            &metrics.loss_maximum_regularization_epoch.values,
+            &path,
+            "Sum Max. Reg. Loss Per Epoch",
+            "Loss",
+            "Epoch",
+        ),
+        ImageType::LossMaximumRegularization => standard_y_plot(
+            &metrics.loss_maximum_regularization.values,
+            &path,
+            "Max. Reg. Loss Per Step",
+            "Loss",
+            "Step",
+        ),
+        ImageType::DeltaStatesMeanEpoch => standard_y_plot(
+            &metrics.delta_states_mean_epoch.values,
+            &path,
+            "Mean Absolute Error Of System States Per Epoch",
+            "Error",
+            "Epoch",
+        ),
+        ImageType::DeltaStatesMean => standard_y_plot(
+            &metrics.delta_states_mean.values,
+            &path,
+            "Mean Absolute Error Of System States Per Step",
+            "Error",
+            "Step",
+        ),
+        ImageType::DeltaStatesMaxEpoch => standard_y_plot(
+            &metrics.delta_states_max_epoch.values,
+            &path,
+            "Max Absolute Error Of System States Per Epoch",
+            "Error",
+            "Epoch",
+        ),
+        ImageType::DeltaStatesMax => standard_y_plot(
+            &metrics.delta_states_max.values,
+            &path,
+            "Max Absolute Error Of System States Per Step",
+            "Error",
+            "Step",
+        ),
+        ImageType::DeltaMeasurementsMeanEpoch => standard_y_plot(
+            &metrics.delta_measurements_mean_epoch.values,
+            &path,
+            "Mean Absolute Error Of Measurements Per Epoch",
+            "Error",
+            "Epoch",
+        ),
+        ImageType::DeltaMeasurementsMean => standard_y_plot(
+            &metrics.delta_measurements_mean.values,
+            &path,
+            "Mean Absolute Error Of Measurements Per Step",
+            "Error",
+            "Step",
+        ),
+        ImageType::DeltaMeasurementsMaxEpoch => standard_y_plot(
+            &metrics.delta_measurements_max_epoch.values,
+            &path,
+            "Max Absolute Error Of Measurements Per Epoch",
+            "Error",
+            "Epoch",
+        ),
+        ImageType::DeltaMeasurementsMax => standard_y_plot(
+            &metrics.delta_measurements_max.values,
+            &path,
+            "Max Absolute Error Of Measurements Per Step",
+            "Error",
+            "Step",
+        ),
+        ImageType::DeltaGainsMeanEpoch => standard_y_plot(
+            &metrics.delta_gains_mean_epoch.values,
+            &path,
+            "Final Mean Absolute Error Of Gains Per Epoch",
+            "Error",
+            "Epoch",
+        ),
+        ImageType::DeltaGainsMean => standard_y_plot(
+            &metrics.delta_gains_mean.values,
+            &path,
+            "Mean Absolute Error Of Gains Per Step",
+            "Error",
+            "Step",
+        ),
+        ImageType::DeltaGainsMaxEpoch => standard_y_plot(
+            &metrics.delta_gains_max_epoch.values,
+            &path,
+            "Final Max Absolute Error Of Gains Per Epoch",
+            "Error",
+            "Epoch",
+        ),
+        ImageType::DeltaGainsMax => standard_y_plot(
+            &metrics.delta_gains_max.values,
+            &path,
+            "Max Absolute Error Of Gains Per Step",
+            "Error",
+            "Step",
+        ),
+        ImageType::DeltaDelaysMeanEpoch => standard_y_plot(
+            &metrics.delta_delays_mean_epoch.values,
+            &path,
+            "Final Mean Absolute Error Of Delays Per Epoch",
+            "Error",
+            "Epoch",
+        ),
+        ImageType::DeltaDelaysMean => standard_y_plot(
+            &metrics.delta_delays_mean.values,
+            &path,
+            "Mean Absolute Error Of Delays Per Step",
+            "Error",
+            "Step",
+        ),
+        ImageType::DeltaDelaysMaxEpoch => standard_y_plot(
+            &metrics.delta_delays_max_epoch.values,
+            &path,
+            "Final Max Absolute Error Of Delays Per Epoch",
+            "Error",
+            "Epoch",
+        ),
+        ImageType::DeltaDelaysMax => standard_y_plot(
+            &metrics.delta_delays_max.values,
+            &path,
+            "Max Absolute Error Of Delays Per Step",
+            "Error",
+            "Step",
+        ),
+        ImageType::Dice => standard_y_plot(
+            &metrics.dice_score_over_threshold,
+            &path,
+            "Dice Score over Threshold",
+            "Dice Score",
+            "Threshold * 100",
+        ),
+        ImageType::IoU => standard_y_plot(
+            &metrics.iou_over_threshold,
+            &path,
+            "IoU over Threshold",
+            "IoU",
+            "Threshold * 100",
+        ),
+        ImageType::Recall => standard_y_plot(
+            &metrics.recall_over_threshold,
+            &path,
+            "Recall over Threshold",
+            "Recall",
+            "Threshold * 100",
+        ),
+        ImageType::Precision => standard_y_plot(
+            &metrics.precision_over_threshold,
+            &path,
+            "Precision over Threshold",
+            "Precision",
+            "Threshold * 100",
+        ),
+        ImageType::ControlFunctionAlgorithm => standard_time_plot(
+            &model.functional_description.control_function_values.values,
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &path,
+            "Control Function Algorithm",
+            "u [A/mm^2]",
+        ),
+        ImageType::ControlFunctionSimulation => standard_time_plot(
+            &data.get_control_function_values().values,
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &path,
+            "Control Function Simulation",
+            "u [A/mm^2]",
+        ),
+        ImageType::ControlFunctionDelta => standard_time_plot(
+            &(&model.functional_description.control_function_values.values
+                - &data.get_control_function_values().values),
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &path,
+            "Control Function Delta",
+            "u [A/mm^2]",
+        ),
+        ImageType::StateAlgorithm => standard_time_plot(
+            &estimations.system_states.values.slice(s![.., 0]).to_owned(),
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &path,
+            "System State 0 Algorithm",
+            "j [A/mm^2]",
+        ),
+        ImageType::StateSimulation => standard_time_plot(
+            &data.get_system_states().values.slice(s![.., 0]).to_owned(),
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &path,
+            "System State 0 Simulation",
+            "j [A/mm^2]",
+        ),
+        ImageType::StateDelta => standard_time_plot(
+            &(&estimations.system_states.values.slice(s![.., 0]).to_owned()
+                - &data.get_system_states().values.slice(s![.., 0]).to_owned()),
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &path,
+            "System State 0 Delta",
+            "j [A/mm^2]",
+        ),
+        ImageType::MeasurementAlgorithm => standard_time_plot(
+            &estimations.measurements.values.slice(s![.., 0]).to_owned(),
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &path,
+            "Measurement 0 Algorithm",
+            "z [pT]",
+        ),
+        ImageType::MeasurementSimulation => standard_time_plot(
+            &data.get_measurements().values.slice(s![.., 0]).to_owned(),
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &path,
+            "Measurement 0 Simulation",
+            "z [pT]",
+        ),
+        ImageType::MeasurementDelta => standard_time_plot(
+            &(&estimations.measurements.values.slice(s![.., 0]).to_owned()
+                - &data.get_measurements().values.slice(s![.., 0]).to_owned()),
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &path,
+            "Measurement 0 Delta",
+            "z [pT]",
+        ),
     };
     Ok(())
 }

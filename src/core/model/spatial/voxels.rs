@@ -440,8 +440,6 @@ pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &V
 #[cfg(test)]
 mod tests {
 
-    use crate::vis::plotting::matrix_old::plot_voxel_types;
-
     use super::*;
 
     #[test]
@@ -601,8 +599,6 @@ mod tests {
             .count();
 
         assert_eq!(num_pathological, 0);
-
-        plot_voxel_types(&types.values, "tests/voxel_types_default", "Voxel Types");
     }
 
     #[test]
@@ -718,11 +714,5 @@ mod tests {
             .count();
 
         assert!(num_pathological > 0);
-
-        plot_voxel_types(
-            &types.values,
-            "tests/voxel_types_pathological",
-            "Voxel Types",
-        );
     }
 }

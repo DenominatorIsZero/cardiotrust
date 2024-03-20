@@ -277,7 +277,9 @@ mod test {
     use crate::core::model::Model;
 
     use crate::vis::plotting::line::standard_y_plot;
-    use crate::vis::plotting::matrix_old::{plot_states_max, plot_states_over_time};
+    use crate::vis::plotting::matrix_old::plot_states_over_time;
+    use crate::vis::plotting::states::states_spherical_plot;
+    use crate::vis::plotting::StateSphericalPlotMode;
 
     use super::*;
 
@@ -484,12 +486,18 @@ mod test {
         )
         .unwrap();
 
-        plot_states_max(
-            &results.estimations.system_states,
-            &model.spatial_description.voxels,
-            "tests/algorith_states_max",
-            "Maximum Estimated Current Densities",
-        );
+        states_spherical_plot(
+            &results.estimations.system_states_spherical,
+            &results.estimations.system_states_spherical_max,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            &model.spatial_description.voxels.numbers,
+            Path::new("tests/algorithm_states_max"),
+            None,
+            Some(StateSphericalPlotMode::ABS),
+            None,
+        )
+        .unwrap();
 
         let fps = 20;
         let playback_speed = 0.1;
@@ -656,12 +664,18 @@ mod test {
         )
         .unwrap();
 
-        plot_states_max(
-            &results.estimations.system_states,
-            &model.spatial_description.voxels,
-            "tests/algorith_no_update_states_max",
-            "Maximum Estimated Current Densities",
-        );
+        states_spherical_plot(
+            &results.estimations.system_states_spherical,
+            &results.estimations.system_states_spherical_max,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            &model.spatial_description.voxels.numbers,
+            Path::new("tests/algorithm_no_update_states_max"),
+            None,
+            Some(StateSphericalPlotMode::ABS),
+            None,
+        )
+        .unwrap();
 
         let fps = 20;
         let playback_speed = 0.1;

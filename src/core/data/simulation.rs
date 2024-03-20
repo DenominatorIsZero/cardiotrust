@@ -149,7 +149,9 @@ mod test {
         core::model::spatial::voxels::VoxelType,
         vis::plotting::{
             line::{plot_state_xyz, standard_time_plot},
-            matrix_old::{plot_states_at_time, plot_states_max, plot_states_over_time},
+            matrix_old::plot_states_over_time,
+            states::states_spherical_plot,
+            PlotSlice, StateSphericalPlotMode,
         },
     };
 
@@ -245,22 +247,31 @@ mod test {
 
         let time_index = simulation.system_states.values.shape()[0] / 3;
 
-        plot_states_at_time(
-            &simulation.system_states,
-            &simulation.model.spatial_description.voxels,
-            f32::MAX,
-            f32::MIN,
-            time_index,
-            &format!("tests/simulation_states_{time_index}"),
-            &format!("Simulated Current Densities at Time Index {time_index}"),
-        );
+        states_spherical_plot(
+            &simulation.system_states_spherical,
+            &simulation.system_states_spherical_max,
+            &simulation.model.spatial_description.voxels.positions_mm,
+            simulation.model.spatial_description.voxels.size_mm,
+            &simulation.model.spatial_description.voxels.numbers,
+            &Path::new(&format!("tests/simulation_states_{time_index}")),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            Some(time_index),
+        )
+        .unwrap();
 
-        plot_states_max(
-            &simulation.system_states,
-            &simulation.model.spatial_description.voxels,
-            "tests/simulation_states_max",
-            "Maximum Simulated Current Densities",
-        );
+        states_spherical_plot(
+            &simulation.system_states_spherical,
+            &simulation.system_states_spherical_max,
+            &simulation.model.spatial_description.voxels.positions_mm,
+            simulation.model.spatial_description.voxels.size_mm,
+            &simulation.model.spatial_description.voxels.numbers,
+            &Path::new("tests/simulation_states_max"),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            None,
+        )
+        .unwrap();
 
         let fps = 20;
         let playback_speed = 0.1;
@@ -368,22 +379,31 @@ mod test {
 
         let time_index = simulation.system_states.values.shape()[0] / 3;
 
-        plot_states_at_time(
-            &simulation.system_states,
-            &simulation.model.spatial_description.voxels,
-            f32::MAX,
-            f32::MIN,
-            time_index,
-            &format!("tests/simulation_states_{time_index}_pathological"),
-            &format!("Simulated Current Densities at Time Index {time_index}"),
-        );
+        states_spherical_plot(
+            &simulation.system_states_spherical,
+            &simulation.system_states_spherical_max,
+            &simulation.model.spatial_description.voxels.positions_mm,
+            simulation.model.spatial_description.voxels.size_mm,
+            &simulation.model.spatial_description.voxels.numbers,
+            &Path::new(&format!("tests/simulation_states_{time_index}")),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            Some(time_index),
+        )
+        .unwrap();
 
-        plot_states_max(
-            &simulation.system_states,
-            &simulation.model.spatial_description.voxels,
-            "tests/simulation_states_max_pathological",
-            "Maximum Simulated Current Densities",
-        );
+        states_spherical_plot(
+            &simulation.system_states_spherical,
+            &simulation.system_states_spherical_max,
+            &simulation.model.spatial_description.voxels.positions_mm,
+            simulation.model.spatial_description.voxels.size_mm,
+            &simulation.model.spatial_description.voxels.numbers,
+            &Path::new("tests/simulation_states_max"),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            None,
+        )
+        .unwrap();
 
         let fps = 20;
         let playback_speed = 0.1;

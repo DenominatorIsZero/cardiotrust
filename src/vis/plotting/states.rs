@@ -124,6 +124,9 @@ pub(crate) fn states_spherical_plot(
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let mode = mode.unwrap_or(StateSphericalPlotMode::ABS);
+    if voxel_size_mm <= 0.0 {
+        return Err("Voxel size must be a positive number".into());
+    }
     let step = Some((voxel_size_mm, voxel_size_mm));
 
     let title_time = if let Some(time_step) = time_step {

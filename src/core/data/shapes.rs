@@ -104,6 +104,20 @@ impl ArraySystemStatesSpherical {
     }
 }
 
+impl<'a> std::ops::Sub for &'a ArraySystemStatesSpherical {
+    type Output = ArraySystemStatesSpherical;
+
+    #[tracing::instrument(level = "trace")]
+    fn sub(self, rhs: Self) -> Self::Output {
+        trace!("Subtracting spherical states");
+        ArraySystemStatesSpherical {
+            magnitude: &self.magnitude - &rhs.magnitude,
+            theta: &self.theta - &rhs.theta,
+            phi: &self.phi - &rhs.phi,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ArraySystemStatesSphericalMax {
     pub magnitude: Array1<f32>,
@@ -151,6 +165,20 @@ impl ArraySystemStatesSphericalMax {
         self.theta.write_npy(writer).unwrap();
         let writer = BufWriter::new(File::create(path.join("system_states_phi_max.npy")).unwrap());
         self.phi.write_npy(writer).unwrap();
+    }
+}
+
+impl<'a> std::ops::Sub for &'a ArraySystemStatesSphericalMax {
+    type Output = ArraySystemStatesSphericalMax;
+
+    #[tracing::instrument(level = "trace")]
+    fn sub(self, rhs: Self) -> Self::Output {
+        trace!("Subtracting spherical states max");
+        ArraySystemStatesSphericalMax {
+            magnitude: &self.magnitude - &rhs.magnitude,
+            theta: &self.theta - &rhs.theta,
+            phi: &self.phi - &rhs.phi,
+        }
     }
 }
 
