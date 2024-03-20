@@ -1,26 +1,16 @@
-use ndarray::{Array2, ArrayBase, Axis, Ix2};
-use ndarray_stats::QuantileExt;
+use ndarray::Axis;
+
 use plotters::prelude::*;
-use scarlet::colormap::{ColorMap, ListedColorMap};
-use std::{error::Error, io, path::Path};
+
+use std::{error::Error, path::Path};
 use tracing::trace;
 
 use crate::{
-    core::{
-        data::shapes::ArraySystemStates,
-        model::{
-            functional::allpass::shapes::ArrayActivationTime,
-            spatial::voxels::{VoxelNumbers, VoxelPositions},
-        },
+    core::model::{
+        functional::allpass::shapes::ArrayActivationTime, spatial::voxels::VoxelPositions,
     },
-    vis::plotting::{
-        allocate_buffer, matrix::matrix_plot, PlotSlice, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX,
-        CHART_MARGIN, COLORBAR_BOTTOM_MARGIN, COLORBAR_COLOR_NUMBERS, COLORBAR_TOP_MARGIN,
-        COLORBAR_WIDTH, LABEL_AREA_RIGHT_MARGIN, LABEL_AREA_WIDTH, UNIT_AREA_TOP_MARGIN,
-    },
+    vis::plotting::{matrix::matrix_plot, PlotSlice},
 };
-
-use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
 
 /// Plots the activation time for a given slice (x, y or z) of the
 /// activation time matrix.
@@ -109,8 +99,6 @@ pub(crate) fn activation_time_plot(
 mod test {
 
     use std::path::PathBuf;
-
-    use ndarray::Array2;
 
     use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
 

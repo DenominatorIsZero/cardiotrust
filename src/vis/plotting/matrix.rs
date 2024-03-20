@@ -1,26 +1,17 @@
-use ndarray::{Array2, ArrayBase, Axis, Ix2};
+use ndarray::{ArrayBase, Ix2};
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use scarlet::colormap::{ColorMap, ListedColorMap};
 use std::{error::Error, io, path::Path};
 use tracing::trace;
 
-use crate::{
-    core::{
-        data::shapes::ArraySystemStates,
-        model::{
-            functional::allpass::shapes::ArrayActivationTime,
-            spatial::voxels::{VoxelNumbers, VoxelPositions},
-        },
-    },
-    vis::plotting::{
-        allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN, COLORBAR_BOTTOM_MARGIN,
-        COLORBAR_COLOR_NUMBERS, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH, LABEL_AREA_RIGHT_MARGIN,
-        LABEL_AREA_WIDTH, UNIT_AREA_TOP_MARGIN,
-    },
+use crate::vis::plotting::{
+    allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN, COLORBAR_BOTTOM_MARGIN,
+    COLORBAR_COLOR_NUMBERS, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH, LABEL_AREA_RIGHT_MARGIN,
+    LABEL_AREA_WIDTH, UNIT_AREA_TOP_MARGIN,
 };
 
-use super::{PlotSlice, StatePlotMode, AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
+use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
 
 /// Generates a 2D matrix plot from the given input data array.
 ///
@@ -266,8 +257,6 @@ mod test {
     use std::path::PathBuf;
 
     use ndarray::Array2;
-
-    use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
 
     use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/matrix";
