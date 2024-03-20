@@ -63,3 +63,9 @@ pub enum StatePlotMode {
     Y,
     Z,
 }
+
+#[derive(Debug, Clone, Copy)]
+pub enum StateSphericalPlotMode {
+    ABS,
+    ANGLE,
+}
