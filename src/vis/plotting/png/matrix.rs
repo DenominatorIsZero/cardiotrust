@@ -251,8 +251,8 @@ where
 
     Ok(PngBundle {
         data: buffer,
-        width: width,
-        height: height,
+        width,
+        height,
     })
 }
 

@@ -20,7 +20,12 @@ use crate::{
 
 use super::GifBundle;
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 #[tracing::instrument(level = "trace")]
 pub(crate) fn states_spherical_plot_over_time(
     states: &ArraySystemStatesSpherical,
@@ -61,9 +66,9 @@ pub(crate) fn states_spherical_plot_over_time(
         )));
     }
 
-    let sample_number = states.magnitude.shape()[0] as usize;
+    let sample_number = states.magnitude.shape()[0];
     let image_number = (fps as f32 / playback_speed) as usize;
-    let sample_step = sample_number / image_number as usize;
+    let sample_step = sample_number / image_number;
 
     let mut frames: Vec<Vec<u8>> = Vec::with_capacity(image_number);
 
@@ -74,7 +79,6 @@ pub(crate) fn states_spherical_plot_over_time(
 
     let range = match mode {
         Some(StateSphericalPlotMode::ABS) => Some((0.0, *states_max.magnitude.max_skipnan())),
-        Some(StateSphericalPlotMode::ANGLE) => None,
         _ => None,
     };
 
@@ -103,7 +107,7 @@ pub(crate) fn states_spherical_plot_over_time(
         encoder.set_repeat(Repeat::Infinite)?;
 
         for frame in &frames {
-            let mut frame = Frame::from_rgb(width as u16, height as u16, &frame);
+            let mut frame = Frame::from_rgb(width as u16, height as u16, frame);
             frame.delay = (100.0 / fps as f32) as u16;
             encoder.write_frame(&frame)?;
         }
@@ -111,9 +115,9 @@ pub(crate) fn states_spherical_plot_over_time(
 
     Ok(GifBundle {
         data: frames,
-        width: width,
-        height: height,
-        fps: fps,
+        width,
+        height,
+        fps,
     })
 }
 
