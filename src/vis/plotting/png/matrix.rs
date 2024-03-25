@@ -38,7 +38,7 @@ pub fn matrix_plot<A>(
     unit: Option<&str>,
     resolution: Option<(u32, u32)>,
     flip_axis: Option<(bool, bool)>,
-) -> Result<Vec<u8>, Box<dyn Error>>
+) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>>
 where
     A: ndarray::Data<Elem = f32>,
 {
@@ -247,7 +247,7 @@ where
         )?;
     }
 
-    Ok(buffer)
+    Ok((buffer, (width, height)))
 }
 
 #[allow(
@@ -270,7 +270,7 @@ pub fn matrix_angle_plot<A>(
     x_label: Option<&str>,
     resolution: Option<(u32, u32)>,
     flip_axis: Option<(bool, bool)>,
-) -> Result<Vec<u8>, Box<dyn Error>>
+) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>>
 where
     A: ndarray::Data<Elem = f32>,
 {
@@ -539,7 +539,7 @@ where
         )?;
     }
 
-    Ok(buffer)
+    Ok((buffer, (width, height)))
 }
 #[cfg(test)]
 mod test {

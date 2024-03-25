@@ -492,9 +492,10 @@ mod test {
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
             &model.spatial_description.voxels.numbers,
-            Path::new("tests/algorithm_states_max"),
+            Some(Path::new("tests/algorithm_states_max")),
             None,
             Some(StateSphericalPlotMode::ABS),
+            None,
             None,
         )
         .unwrap();
@@ -670,9 +671,10 @@ mod test {
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
             &model.spatial_description.voxels.numbers,
-            Path::new("tests/algorithm_no_update_states_max"),
+            Some(Path::new("tests/algorithm_no_update_states_max")),
             None,
             Some(StateSphericalPlotMode::ABS),
+            None,
             None,
         )
         .unwrap();

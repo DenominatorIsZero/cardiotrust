@@ -34,7 +34,7 @@ pub fn voxel_type_plot(
     voxel_size_mm: f32,
     path: Option<&Path>,
     slice: Option<PlotSlice>,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>> {
     trace!("Generating voxel type plot.");
 
     let slice = slice.unwrap_or(PlotSlice::Z(0));
@@ -228,7 +228,7 @@ pub fn voxel_type_plot(
         )?;
     }
 
-    Ok(buffer)
+    Ok((buffer, (width, height)))
 }
 
 #[cfg(test)]

@@ -28,7 +28,7 @@ pub fn line_plot<A>(
     x_label: Option<&str>,
     item_labels: Option<&Vec<&str>>,
     resolution: Option<(u32, u32)>,
-) -> Result<Vec<u8>, Box<dyn Error>>
+) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>>
 where
     A: Data<Elem = f32>,
 {
@@ -156,7 +156,7 @@ where
         )?;
     }
 
-    Ok(buffer)
+    Ok((buffer, (width, height)))
 }
 
 /// Generates a standard y plot from the provided y values.
@@ -173,7 +173,7 @@ pub fn standard_y_plot<A>(
     title: &str,
     y_label: &str,
     x_label: &str,
-) -> Result<Vec<u8>, Box<dyn Error>>
+) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>>
 where
     A: Data<Elem = f32>,
 {
@@ -206,7 +206,7 @@ pub fn standard_time_plot<A>(
     path: &Path,
     title: &str,
     y_label: &str,
-) -> Result<Vec<u8>, Box<dyn Error>>
+) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>>
 where
     A: Data<Elem = f32>,
 {
@@ -253,7 +253,7 @@ pub fn plot_state_xyz(
     sample_rate_hz: f32,
     path: &Path,
     title: &str,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>> {
     trace!("Generating state xyz plot.");
 
     if state_index >= (system_states.values.shape()[1] / 3) {
@@ -372,7 +372,7 @@ mod test {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
 
-        let buffer = line_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
+        let (buffer, _) = line_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
 
         assert_eq!(
             buffer.len(),
@@ -387,7 +387,7 @@ mod test {
 
         let resolution = (400, 300);
 
-        let buffer = line_plot(
+        let (buffer, _) = line_plot(
             None,
             vec![&y],
             None,

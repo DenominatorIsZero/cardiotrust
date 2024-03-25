@@ -1,4 +1,5 @@
 use ndarray::{Array2, Axis};
+use ndarray_stats::QuantileExt;
 
 use std::{error::Error, path::Path};
 use tracing::trace;
@@ -28,7 +29,7 @@ pub(crate) fn states_plot(
     slice: Option<PlotSlice>,
     mode: Option<StatePlotMode>,
     time_step: usize,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let mode = mode.unwrap_or(StatePlotMode::X);
@@ -115,11 +116,12 @@ pub(crate) fn states_spherical_plot(
     voxel_positions_mm: &VoxelPositions,
     voxel_size_mm: f32,
     voxel_numbers: &VoxelNumbers,
-    path: &Path,
+    path: Option<&Path>,
     slice: Option<PlotSlice>,
     mode: Option<StateSphericalPlotMode>,
     time_step: Option<usize>,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+    range: Option<(f32, f32)>,
+) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let mode = mode.unwrap_or(StateSphericalPlotMode::ABS);
@@ -194,10 +196,10 @@ pub(crate) fn states_spherical_plot(
             }
             matrix_plot(
                 &data,
-                None,
+                range,
                 step,
                 offset,
-                Some(path),
+                path,
                 Some(title.as_str()),
                 y_label,
                 x_label,
@@ -240,7 +242,7 @@ pub(crate) fn states_spherical_plot(
                 &phi,
                 step,
                 offset,
-                Some(path),
+                path,
                 Some(title.as_str()),
                 y_label,
                 x_label,
@@ -432,10 +434,11 @@ mod test {
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             Some(350),
+            None,
         )
         .unwrap();
 
@@ -464,10 +467,11 @@ mod test {
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             Some(PlotSlice::Y(5)),
             Some(StateSphericalPlotMode::ABS),
             Some(350),
+            None,
         )
         .unwrap();
 
@@ -496,10 +500,11 @@ mod test {
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             Some(PlotSlice::X(10)),
             Some(StateSphericalPlotMode::ABS),
             Some(350),
+            None,
         )
         .unwrap();
 
@@ -529,10 +534,11 @@ mod test {
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ANGLE),
             Some(350),
+            None,
         )
         .unwrap();
 
@@ -562,10 +568,11 @@ mod test {
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             Some(PlotSlice::Y(5)),
             Some(StateSphericalPlotMode::ANGLE),
             Some(350),
+            None,
         )
         .unwrap();
 
@@ -595,10 +602,11 @@ mod test {
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             Some(PlotSlice::X(10)),
             Some(StateSphericalPlotMode::ANGLE),
             Some(350),
+            None,
         )
         .unwrap();
 
@@ -627,9 +635,10 @@ mod test {
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             None,
             Some(StateSphericalPlotMode::ABS),
+            None,
             None,
         )
         .unwrap();
@@ -659,9 +668,10 @@ mod test {
             &data.get_model().spatial_description.voxels.positions_mm,
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             None,
             Some(StateSphericalPlotMode::ANGLE),
+            None,
             None,
         )
         .unwrap();

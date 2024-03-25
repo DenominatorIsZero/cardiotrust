@@ -253,10 +253,11 @@ mod test {
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            Path::new(&format!("tests/simulation_states_{time_index}")),
+            Some(Path::new(&format!("tests/simulation_states_{time_index}"))),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             Some(time_index),
+            None,
         )
         .unwrap();
 
@@ -266,9 +267,10 @@ mod test {
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            Path::new("tests/simulation_states_max"),
+            Some(Path::new("tests/simulation_states_max")),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
+            None,
             None,
         )
         .unwrap();
@@ -386,10 +388,11 @@ mod test {
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            Path::new(&format!("tests/simulation_states_{time_index}")),
+            Some(Path::new(&format!("tests/simulation_states_{time_index}"))),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             Some(time_index),
+            None,
         )
         .unwrap();
 
@@ -399,9 +402,10 @@ mod test {
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            Path::new("tests/simulation_states_max"),
+            Some(Path::new("tests/simulation_states_max")),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
+            None,
             None,
         )
         .unwrap();

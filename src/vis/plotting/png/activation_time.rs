@@ -19,7 +19,7 @@ pub(crate) fn activation_time_plot(
     voxel_size_mm: f32,
     path: &Path,
     slice: Option<PlotSlice>,
-) -> Result<Vec<u8>, Box<dyn Error>> {
+) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let step = Some((voxel_size_mm, voxel_size_mm));
