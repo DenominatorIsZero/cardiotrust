@@ -23,6 +23,8 @@ use crate::{
     },
 };
 
+use super::GifBundle;
+
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(level = "trace")]
 pub(crate) fn states_spherical_plot_over_time(
@@ -37,7 +39,7 @@ pub(crate) fn states_spherical_plot_over_time(
     mode: Option<StateSphericalPlotMode>,
     playback_speed: Option<f32>,
     fps: Option<u32>,
-) -> Result<(Vec<Vec<u8>>, (u32, u32)), Box<dyn Error>> {
+) -> Result<GifBundle, Box<dyn Error>> {
     trace!("Generating spherixal state plot over time");
 
     let playback_speed = playback_speed.unwrap_or(DEFAULT_PLAYBACK_SPEED);
@@ -82,7 +84,7 @@ pub(crate) fn states_spherical_plot_over_time(
     };
 
     for time_index in time_indices {
-        let (buffer, (this_width, this_height)) = states_spherical_plot(
+        let frame = states_spherical_plot(
             states,
             states_max,
             voxel_positions_mm,
@@ -94,10 +96,10 @@ pub(crate) fn states_spherical_plot_over_time(
             Some(time_index),
             range,
         )?;
-        frames.push(buffer);
+        frames.push(frame.data);
 
-        width = this_width;
-        height = this_height;
+        width = frame.width;
+        height = frame.height;
     }
 
     if let Some(path) = path {
@@ -112,7 +114,12 @@ pub(crate) fn states_spherical_plot_over_time(
         }
     }
 
-    Ok((frames, (width, height)))
+    Ok(GifBundle {
+        data: frames,
+        width: width,
+        height: height,
+        fps: fps,
+    })
 }
 
 #[cfg(test)]

@@ -18,6 +18,8 @@ use crate::{
     },
 };
 
+use super::PngBundle;
+
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(level = "trace")]
 pub(crate) fn states_plot(
@@ -29,7 +31,7 @@ pub(crate) fn states_plot(
     slice: Option<PlotSlice>,
     mode: Option<StatePlotMode>,
     time_step: usize,
-) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>> {
+) -> Result<PngBundle, Box<dyn Error>> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let mode = mode.unwrap_or(StatePlotMode::X);
@@ -121,7 +123,7 @@ pub(crate) fn states_spherical_plot(
     mode: Option<StateSphericalPlotMode>,
     time_step: Option<usize>,
     range: Option<(f32, f32)>,
-) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>> {
+) -> Result<PngBundle, Box<dyn Error>> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let mode = mode.unwrap_or(StateSphericalPlotMode::ABS);

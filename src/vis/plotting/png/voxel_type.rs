@@ -19,6 +19,8 @@ use crate::{
 
 use crate::vis::plotting::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
 
+use super::PngBundle;
+
 #[allow(
     clippy::cast_precision_loss,
     clippy::too_many_arguments,
@@ -34,7 +36,7 @@ pub fn voxel_type_plot(
     voxel_size_mm: f32,
     path: Option<&Path>,
     slice: Option<PlotSlice>,
-) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>> {
+) -> Result<PngBundle, Box<dyn Error>> {
     trace!("Generating voxel type plot.");
 
     let slice = slice.unwrap_or(PlotSlice::Z(0));
@@ -228,7 +230,11 @@ pub fn voxel_type_plot(
         )?;
     }
 
-    Ok((buffer, (width, height)))
+    Ok(PngBundle {
+        data: buffer,
+        width,
+        height,
+    })
 }
 
 #[cfg(test)]

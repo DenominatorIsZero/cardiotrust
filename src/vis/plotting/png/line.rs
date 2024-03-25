@@ -13,6 +13,8 @@ use crate::{
 
 use crate::vis::plotting::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
 
+use super::PngBundle;
+
 /// Generates an XY plot from the provided x and y data.
 ///
 /// Saves the plot to the optionally provided path as a PNG,
@@ -28,7 +30,7 @@ pub fn line_plot<A>(
     x_label: Option<&str>,
     item_labels: Option<&Vec<&str>>,
     resolution: Option<(u32, u32)>,
-) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>>
+) -> Result<PngBundle, Box<dyn Error>>
 where
     A: Data<Elem = f32>,
 {
@@ -156,7 +158,11 @@ where
         )?;
     }
 
-    Ok((buffer, (width, height)))
+    Ok(PngBundle {
+        data: buffer,
+        width,
+        height,
+    })
 }
 
 /// Generates a standard y plot from the provided y values.
@@ -173,7 +179,7 @@ pub fn standard_y_plot<A>(
     title: &str,
     y_label: &str,
     x_label: &str,
-) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>>
+) -> Result<PngBundle, Box<dyn Error>>
 where
     A: Data<Elem = f32>,
 {
@@ -206,7 +212,7 @@ pub fn standard_time_plot<A>(
     path: &Path,
     title: &str,
     y_label: &str,
-) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>>
+) -> Result<PngBundle, Box<dyn Error>>
 where
     A: Data<Elem = f32>,
 {
@@ -253,7 +259,7 @@ pub fn plot_state_xyz(
     sample_rate_hz: f32,
     path: &Path,
     title: &str,
-) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>> {
+) -> Result<PngBundle, Box<dyn Error>> {
     trace!("Generating state xyz plot.");
 
     if state_index >= (system_states.values.shape()[1] / 3) {
@@ -372,10 +378,10 @@ mod test {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
 
-        let (buffer, _) = line_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
+        let bundle = line_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
 
         assert_eq!(
-            buffer.len(),
+            bundle.data.len(),
             STANDARD_RESOLUTION.0 as usize * STANDARD_RESOLUTION.1 as usize * 3
         );
     }
@@ -387,7 +393,7 @@ mod test {
 
         let resolution = (400, 300);
 
-        let (buffer, _) = line_plot(
+        let bundle = line_plot(
             None,
             vec![&y],
             None,
@@ -400,7 +406,7 @@ mod test {
         .unwrap();
 
         assert_eq!(
-            buffer.len(),
+            bundle.data.len(),
             resolution.0 as usize * resolution.1 as usize * 3
         );
     }

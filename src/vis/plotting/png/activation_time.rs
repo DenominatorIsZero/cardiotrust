@@ -10,6 +10,8 @@ use crate::{
     vis::plotting::{png::matrix::matrix_plot, PlotSlice},
 };
 
+use super::PngBundle;
+
 /// Plots the activation time for a given slice (x, y or z) of the
 /// activation time matrix.
 #[tracing::instrument(level = "trace")]
@@ -19,7 +21,7 @@ pub(crate) fn activation_time_plot(
     voxel_size_mm: f32,
     path: &Path,
     slice: Option<PlotSlice>,
-) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>> {
+) -> Result<PngBundle, Box<dyn Error>> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let step = Some((voxel_size_mm, voxel_size_mm));

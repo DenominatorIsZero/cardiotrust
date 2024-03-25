@@ -11,6 +11,8 @@ use crate::vis::plotting::{
     LABEL_AREA_RIGHT_MARGIN, LABEL_AREA_WIDTH, STANDARD_RESOLUTION, UNIT_AREA_TOP_MARGIN,
 };
 
+use super::PngBundle;
+
 /// Generates a 2D matrix plot from the given input data array.
 ///
 /// The matrix values are mapped to colors based on the viridis color map.
@@ -38,7 +40,7 @@ pub fn matrix_plot<A>(
     unit: Option<&str>,
     resolution: Option<(u32, u32)>,
     flip_axis: Option<(bool, bool)>,
-) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>>
+) -> Result<PngBundle, Box<dyn Error>>
 where
     A: ndarray::Data<Elem = f32>,
 {
@@ -247,7 +249,11 @@ where
         )?;
     }
 
-    Ok((buffer, (width, height)))
+    Ok(PngBundle {
+        data: buffer,
+        width: width,
+        height: height,
+    })
 }
 
 #[allow(
@@ -270,7 +276,7 @@ pub fn matrix_angle_plot<A>(
     x_label: Option<&str>,
     resolution: Option<(u32, u32)>,
     flip_axis: Option<(bool, bool)>,
-) -> Result<(Vec<u8>, (u32, u32)), Box<dyn Error>>
+) -> Result<PngBundle, Box<dyn Error>>
 where
     A: ndarray::Data<Elem = f32>,
 {
@@ -539,7 +545,11 @@ where
         )?;
     }
 
-    Ok((buffer, (width, height)))
+    Ok(PngBundle {
+        data: buffer,
+        width,
+        height,
+    })
 }
 #[cfg(test)]
 mod test {
