@@ -1,5 +1,4 @@
 use ndarray::{Array2, Axis};
-use ndarray_stats::QuantileExt;
 
 use std::{error::Error, path::Path};
 use tracing::trace;

@@ -1,10 +1,8 @@
-use bevy::time;
 use gif::{Encoder, Frame, Repeat};
-use ndarray::{Array2, Axis};
+
 use ndarray_stats::QuantileExt;
-use plotters::prelude::*;
+
 use std::fs::File;
-use web_sys::console::time_end;
 
 use std::{error::Error, path::Path};
 use tracing::trace;
@@ -17,10 +15,7 @@ use crate::{
         data::shapes::{ArraySystemStatesSpherical, ArraySystemStatesSphericalMax},
         model::spatial::voxels::{VoxelNumbers, VoxelPositions},
     },
-    vis::plotting::{
-        png::matrix::{matrix_angle_plot, matrix_plot},
-        PlotSlice,
-    },
+    vis::plotting::PlotSlice,
 };
 
 use super::GifBundle;
