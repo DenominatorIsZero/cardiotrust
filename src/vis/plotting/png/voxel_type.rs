@@ -17,7 +17,7 @@ use crate::{
     },
 };
 
-use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
+use crate::vis::plotting::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
 
 #[allow(
     clippy::cast_precision_loss,
@@ -239,7 +239,7 @@ mod test {
     use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
 
     use super::*;
-    const COMMON_PATH: &str = "tests/vis/plotting/voxel_types";
+    const COMMON_PATH: &str = "tests/vis/plotting/png/voxel_types";
 
     #[tracing::instrument(level = "trace")]
     fn setup() {

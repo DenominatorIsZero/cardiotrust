@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-use super::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
+use crate::vis::plotting::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
 
 /// Generates an XY plot from the provided x and y data.
 ///
@@ -290,7 +290,7 @@ mod test {
     use ndarray::Array2;
 
     use super::*;
-    const COMMON_PATH: &str = "tests/vis/plotting/line";
+    const COMMON_PATH: &str = "tests/vis/plotting/png/line";
 
     #[tracing::instrument(level = "trace")]
     fn setup() {

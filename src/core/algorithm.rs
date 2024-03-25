@@ -276,9 +276,9 @@ mod test {
     use crate::core::config::simulation::Simulation as SimulationConfig;
     use crate::core::model::Model;
 
-    use crate::vis::plotting::line::standard_y_plot;
     use crate::vis::plotting::matrix_old::plot_states_over_time;
-    use crate::vis::plotting::states::states_spherical_plot;
+    use crate::vis::plotting::png::line::standard_y_plot;
+    use crate::vis::plotting::png::states::states_spherical_plot;
     use crate::vis::plotting::StateSphericalPlotMode;
 
     use super::*;

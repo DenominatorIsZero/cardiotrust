@@ -150,7 +150,7 @@ mod test {
 
     use approx::assert_relative_eq;
 
-    use crate::vis::plotting::line::standard_time_plot;
+    use crate::vis::plotting::png::line::standard_time_plot;
 
     use super::*;
 

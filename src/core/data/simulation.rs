@@ -148,9 +148,9 @@ mod test {
     use crate::{
         core::model::spatial::voxels::VoxelType,
         vis::plotting::{
-            line::{plot_state_xyz, standard_time_plot},
             matrix_old::plot_states_over_time,
-            states::states_spherical_plot,
+            png::line::{plot_state_xyz, standard_time_plot},
+            png::states::states_spherical_plot,
             PlotSlice, StateSphericalPlotMode,
         },
     };

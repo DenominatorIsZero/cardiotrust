@@ -18,11 +18,13 @@ use crate::{
         model::functional::allpass::shapes::ArrayActivationTime, scenario::Scenario,
     },
     vis::plotting::{
-        activation_time::activation_time_plot,
-        line::{standard_time_plot, standard_y_plot},
         matrix_old::plot_states_over_time,
-        states::states_spherical_plot,
-        voxel_type::voxel_type_plot,
+        png::{
+            activation_time::activation_time_plot,
+            line::{standard_time_plot, standard_y_plot},
+            states::states_spherical_plot,
+            voxel_type::voxel_type_plot,
+        },
         PlotSlice, StateSphericalPlotMode,
     },
     ScenarioList, SelectedSenario,

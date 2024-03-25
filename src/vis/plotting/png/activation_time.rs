@@ -7,7 +7,7 @@ use crate::{
     core::model::{
         functional::allpass::shapes::ArrayActivationTime, spatial::voxels::VoxelPositions,
     },
-    vis::plotting::{matrix::matrix_plot, PlotSlice},
+    vis::plotting::{png::matrix::matrix_plot, PlotSlice},
 };
 
 /// Plots the activation time for a given slice (x, y or z) of the
@@ -101,7 +101,7 @@ mod test {
     use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
 
     use super::*;
-    const COMMON_PATH: &str = "tests/vis/plotting/actovation_time";
+    const COMMON_PATH: &str = "tests/vis/plotting/png/actovation_time";
 
     #[tracing::instrument(level = "trace")]
     fn setup() {

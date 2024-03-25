@@ -3,6 +3,7 @@ use ndarray::{Array2, Axis};
 use std::{error::Error, path::Path};
 use tracing::trace;
 
+use crate::vis::plotting::StateSphericalPlotMode;
 use crate::{
     core::{
         data::shapes::{
@@ -11,12 +12,10 @@ use crate::{
         model::spatial::voxels::{VoxelNumbers, VoxelPositions},
     },
     vis::plotting::{
-        matrix::{matrix_angle_plot, matrix_plot},
+        png::matrix::{matrix_angle_plot, matrix_plot},
         PlotSlice, StatePlotMode,
     },
 };
-
-use super::StateSphericalPlotMode;
 
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(level = "trace")]
@@ -260,7 +259,7 @@ mod test {
     use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
 
     use super::*;
-    const COMMON_PATH: &str = "tests/vis/plotting/states";
+    const COMMON_PATH: &str = "tests/vis/plotting/png/states";
 
     #[tracing::instrument(level = "trace")]
     fn setup() {

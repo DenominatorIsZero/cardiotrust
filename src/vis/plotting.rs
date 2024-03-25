@@ -1,9 +1,6 @@
-pub mod activation_time;
-pub mod line;
-pub mod matrix;
+pub mod gif;
 pub mod matrix_old;
-pub mod states;
-pub mod voxel_type;
+pub mod png;
 
 use plotters::style::{
     colors::{BLUE, CYAN, GREEN, MAGENTA, RED, YELLOW},
