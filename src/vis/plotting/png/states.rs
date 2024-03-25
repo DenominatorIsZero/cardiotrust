@@ -637,7 +637,7 @@ mod test {
             data.get_model().spatial_description.voxels.size_mm,
             &data.get_model().spatial_description.voxels.numbers,
             Some(files[0].as_path()),
-            None,
+            Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             None,
             None,

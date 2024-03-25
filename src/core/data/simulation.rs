@@ -148,14 +148,30 @@ mod test {
     use crate::{
         core::model::spatial::voxels::VoxelType,
         vis::plotting::{
-            matrix_old::plot_states_over_time,
-            png::line::{plot_state_xyz, standard_time_plot},
-            png::states::states_spherical_plot,
+            gif::states::states_spherical_plot_over_time,
+            png::{
+                line::{plot_state_xyz, standard_time_plot},
+                states::states_spherical_plot,
+            },
             PlotSlice, StateSphericalPlotMode,
         },
     };
 
     use super::*;
+
+    const COMMON_PATH: &str = "tests/core/data/simulation";
+
+    #[tracing::instrument(level = "trace")]
+    fn setup(folder: Option<&str>) {
+        let path = folder.map_or_else(
+            || Path::new(COMMON_PATH).to_path_buf(),
+            |folder| Path::new(COMMON_PATH).join(folder),
+        );
+
+        if !path.exists() {
+            std::fs::create_dir_all(path).unwrap();
+        }
+    }
 
     #[test]
     fn create_simulation_no_crash() {
@@ -182,7 +198,9 @@ mod test {
 
     #[test]
     #[ignore]
+    #[allow(clippy::too_many_lines)]
     fn run_simulation_default_and_plot() {
+        setup(Some("healthy"));
         let config = &SimulationConfig::default();
         let mut simulation = Simulation::from_config(config).unwrap();
         simulation.run();
@@ -197,11 +215,12 @@ mod test {
             .voxels
             .get_first_state_of_type(VoxelType::Sinoatrial);
 
+        let path = Path::new(COMMON_PATH).join("healthy").join("sa.png");
         plot_state_xyz(
             &simulation.system_states,
             sa_index,
             config.sample_rate_hz,
-            Path::new("tests/simulation_sa"),
+            path.as_path(),
             "Simulated Current Density Sinoatrial Node",
         )
         .unwrap();
@@ -211,35 +230,48 @@ mod test {
             .spatial_description
             .voxels
             .get_first_state_of_type(VoxelType::Atrioventricular);
+
+        let path = Path::new(COMMON_PATH).join("healthy").join("av.png");
         plot_state_xyz(
             &simulation.system_states,
             av_index,
             config.sample_rate_hz,
-            Path::new("tests/simulation_av"),
+            path.as_path(),
             "Simulated Current Density Atrioventricular Node",
         )
         .unwrap();
 
+        let path = Path::new(COMMON_PATH)
+            .join("healthy")
+            .join("sensor_0_x.png");
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 0]).to_owned(),
             config.sample_rate_hz,
-            Path::new("tests/simulation_sensor_0_x"),
+            path.as_path(),
             "Simulated Measurement Sensor 0 - x",
             "H [pT]",
         )
         .unwrap();
+
+        let path = Path::new(COMMON_PATH)
+            .join("healthy")
+            .join("sensor_0_y.png");
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 1]).to_owned(),
             config.sample_rate_hz,
-            Path::new("tests/simulation_sensor_0_y"),
+            path.as_path(),
             "Simulated Measurement Sensor 0 - y",
             "H [pT]",
         )
         .unwrap();
+
+        let path = Path::new(COMMON_PATH)
+            .join("healthy")
+            .join("sensor_0_z.png");
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 2]).to_owned(),
             config.sample_rate_hz,
-            Path::new("tests/simulation_sensor_0_z"),
+            path.as_path(),
             "Simulated Measurement Sensor 0 - z",
             "H [pT]",
         )
@@ -247,27 +279,33 @@ mod test {
 
         let time_index = simulation.system_states.values.shape()[0] / 3;
 
+        let path = Path::new(COMMON_PATH)
+            .join("healthy")
+            .join(format!("states{time_index}.png"));
         states_spherical_plot(
             &simulation.system_states_spherical,
             &simulation.system_states_spherical_max,
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            Some(Path::new(&format!("tests/simulation_states_{time_index}"))),
+            Some(path.as_path()),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             Some(time_index),
-            None,
+            Some((0.0, 1.0)),
         )
         .unwrap();
 
+        let path = Path::new(COMMON_PATH)
+            .join("healthy")
+            .join("states_max.png");
         states_spherical_plot(
             &simulation.system_states_spherical,
             &simulation.system_states_spherical_max,
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            Some(Path::new("tests/simulation_states_max")),
+            Some(path.as_path()),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             None,
@@ -277,14 +315,22 @@ mod test {
 
         let fps = 20;
         let playback_speed = 0.1;
-        plot_states_over_time(
-            &simulation.system_states,
-            &simulation.model.spatial_description.voxels,
-            fps,
-            playback_speed,
-            "tests/simulation_states",
-            "Simulated Current Densities",
-        );
+
+        let path = Path::new(COMMON_PATH).join("healthy").join("states.gif");
+        states_spherical_plot_over_time(
+            &simulation.system_states_spherical,
+            &simulation.system_states_spherical_max,
+            &simulation.model.spatial_description.voxels.positions_mm,
+            simulation.model.spatial_description.voxels.size_mm,
+            config.sample_rate_hz,
+            &simulation.model.spatial_description.voxels.numbers,
+            Some(path.as_path()),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            Some(playback_speed),
+            Some(fps),
+        )
+        .unwrap();
     }
 
     #[test]
@@ -303,6 +349,7 @@ mod test {
     #[ignore]
     #[allow(clippy::too_many_lines)]
     fn run_simulation_pathological_and_plot() {
+        setup(Some("pathological"));
         let mut config = SimulationConfig::default();
         config.model.pathological = true;
         let mut simulation = Simulation::from_config(&config).unwrap();
@@ -318,11 +365,12 @@ mod test {
             .voxels
             .get_first_state_of_type(VoxelType::Sinoatrial);
 
+        let path = Path::new(COMMON_PATH).join("pathological").join("sa.png");
         plot_state_xyz(
             &simulation.system_states,
             sa_index,
             config.sample_rate_hz,
-            Path::new("tests/simulation_sa_pathological"),
+            path.as_path(),
             "Simulated Current Density Sinoatrial Node",
         )
         .unwrap();
@@ -332,49 +380,48 @@ mod test {
             .spatial_description
             .voxels
             .get_first_state_of_type(VoxelType::Atrioventricular);
+
+        let path = Path::new(COMMON_PATH).join("pathological").join("av.png");
         plot_state_xyz(
             &simulation.system_states,
             av_index,
             config.sample_rate_hz,
-            Path::new("tests/simulation_av_pathological"),
+            path.as_path(),
             "Simulated Current Density Atrioventricular Node",
         )
         .unwrap();
 
-        let pathology_index = simulation
-            .model
-            .spatial_description
-            .voxels
-            .get_first_state_of_type(VoxelType::Pathological);
-        plot_state_xyz(
-            &simulation.system_states,
-            pathology_index,
-            config.sample_rate_hz,
-            Path::new("tests/simulation_pathological"),
-            "Simulated Current Density Pathological Voxel",
-        )
-        .unwrap();
-
+        let path = Path::new(COMMON_PATH)
+            .join("pathological")
+            .join("sensor_0_x.png");
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 0]).to_owned(),
             config.sample_rate_hz,
-            Path::new("tests/simulation_sensor_0_x_pathological"),
+            path.as_path(),
             "Simulated Measurement Sensor 0 - x",
             "H [pT]",
         )
         .unwrap();
+
+        let path = Path::new(COMMON_PATH)
+            .join("pathological")
+            .join("sensor_0_y.png");
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 1]).to_owned(),
             config.sample_rate_hz,
-            Path::new("tests/simulation_sensor_0_y_pathological"),
+            path.as_path(),
             "Simulated Measurement Sensor 0 - y",
             "H [pT]",
         )
         .unwrap();
+
+        let path = Path::new(COMMON_PATH)
+            .join("pathological")
+            .join("sensor_0_z.png");
         standard_time_plot(
             &simulation.measurements.values.slice(s![.., 2]).to_owned(),
             config.sample_rate_hz,
-            Path::new("tests/simulation_sensor_0_z_pathological"),
+            path.as_path(),
             "Simulated Measurement Sensor 0 - z",
             "H [pT]",
         )
@@ -382,13 +429,16 @@ mod test {
 
         let time_index = simulation.system_states.values.shape()[0] / 3;
 
+        let path = Path::new(COMMON_PATH)
+            .join("pathological")
+            .join(format!("states{time_index}.png"));
         states_spherical_plot(
             &simulation.system_states_spherical,
             &simulation.system_states_spherical_max,
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            Some(Path::new(&format!("tests/simulation_states_{time_index}"))),
+            Some(path.as_path()),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             Some(time_index),
@@ -396,13 +446,16 @@ mod test {
         )
         .unwrap();
 
+        let path = Path::new(COMMON_PATH)
+            .join("pathological")
+            .join("states_max.png");
         states_spherical_plot(
             &simulation.system_states_spherical,
             &simulation.system_states_spherical_max,
             &simulation.model.spatial_description.voxels.positions_mm,
             simulation.model.spatial_description.voxels.size_mm,
             &simulation.model.spatial_description.voxels.numbers,
-            Some(Path::new("tests/simulation_states_max")),
+            Some(path.as_path()),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
             None,
@@ -412,13 +465,22 @@ mod test {
 
         let fps = 20;
         let playback_speed = 0.1;
-        plot_states_over_time(
-            &simulation.system_states,
-            &simulation.model.spatial_description.voxels,
-            fps,
-            playback_speed,
-            "tests/simulation_states_pathological",
-            "Simulated Current Densities",
-        );
+        let path = Path::new(COMMON_PATH)
+            .join("pathological")
+            .join("states.gif");
+        states_spherical_plot_over_time(
+            &simulation.system_states_spherical,
+            &simulation.system_states_spherical_max,
+            &simulation.model.spatial_description.voxels.positions_mm,
+            simulation.model.spatial_description.voxels.size_mm,
+            config.sample_rate_hz,
+            &simulation.model.spatial_description.voxels.numbers,
+            Some(path.as_path()),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            Some(playback_speed),
+            Some(fps),
+        )
+        .unwrap();
     }
 }

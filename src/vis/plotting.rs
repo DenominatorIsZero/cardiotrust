@@ -1,5 +1,4 @@
 pub mod gif;
-pub mod matrix_old;
 pub mod png;
 
 use plotters::style::{

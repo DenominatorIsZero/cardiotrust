@@ -262,7 +262,7 @@ pub fn plot_state_xyz(
 ) -> Result<PngBundle, Box<dyn Error>> {
     trace!("Generating state xyz plot.");
 
-    if state_index >= (system_states.values.shape()[1] / 3) {
+    if state_index >= (system_states.values.shape()[1] - 2) {
         return Err(Box::new(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "state_index out of bounds",
@@ -639,7 +639,7 @@ mod test {
         let title = "Test Plot";
         let sample_rate_hz = 10.0;
 
-        let results = plot_state_xyz(&system_states, 2, sample_rate_hz, files[0].as_path(), title);
+        let results = plot_state_xyz(&system_states, 5, sample_rate_hz, files[0].as_path(), title);
 
         assert!(results.is_err());
         assert!(!files[0].is_file());

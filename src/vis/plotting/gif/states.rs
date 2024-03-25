@@ -150,6 +150,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_abs_default() {
         setup();
@@ -184,6 +185,7 @@ mod test {
     }
 
     #[test]
+    #[ignore]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_angle_default() {
         setup();

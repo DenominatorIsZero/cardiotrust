@@ -180,6 +180,20 @@ mod tests {
 
     use super::*;
 
+    const COMMON_PATH: &str = "tests/core/model/functional/measurement/";
+
+    #[tracing::instrument(level = "trace")]
+    fn setup(folder: Option<&str>) {
+        let path = folder.map_or_else(
+            || Path::new(COMMON_PATH).to_path_buf(),
+            |folder| Path::new(COMMON_PATH).join(folder),
+        );
+
+        if !path.exists() {
+            std::fs::create_dir_all(path).unwrap();
+        }
+    }
+
     #[test]
     fn from_model_config_no_crash() {
         let config = Model {
@@ -196,8 +210,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn from_model_config_no_crash_and_plot() {
+        setup(None);
         let config = Model {
             sensors_per_axis: [3, 3, 3],
             voxel_size_mm: 20.0,
@@ -210,12 +224,13 @@ mod tests {
 
         assert!(!measurement_matrix.values.is_empty());
 
+        let path = Path::new(COMMON_PATH).join("measurement_matrix_default.png");
         matrix_plot(
             &measurement_matrix.values,
             None,
             None,
             None,
-            Some(Path::new("tests/measurement_matrix_default.png")),
+            Some(path.as_path()),
             Some("Default Measurement Matrix"),
             Some("State Index"),
             Some("Sensor Index"),

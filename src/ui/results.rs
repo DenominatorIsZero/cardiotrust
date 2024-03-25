@@ -18,7 +18,7 @@ use crate::{
         model::functional::allpass::shapes::ArrayActivationTime, scenario::Scenario,
     },
     vis::plotting::{
-        matrix_old::plot_states_over_time,
+        gif::states::states_spherical_plot_over_time,
         png::{
             activation_time::activation_time_plot,
             line::{standard_time_plot, standard_y_plot},
@@ -194,7 +194,8 @@ pub fn draw_ui_results(
                 let send_scenario = scenario.clone();
                 let send_playback_speed = playback_speed.value;
                 thread::spawn(move || {
-                    generate_gifs(send_scenario, GifType::StatesAlgorithm, send_playback_speed);
+                    generate_gifs(send_scenario, GifType::StatesAlgorithm, send_playback_speed)
+                        .unwrap();
                 });
             };
             if ui
@@ -209,7 +210,8 @@ pub fn draw_ui_results(
                         send_scenario,
                         GifType::StatesSimulation,
                         send_playback_speed,
-                    );
+                    )
+                    .unwrap();
                 });
             };
             if ui.add(egui::Button::new("Export to .npy")).clicked() {
@@ -287,7 +289,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
     let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
     let data = scenario.data.as_ref().unwrap();
     let metrics = &scenario.results.as_ref().unwrap().metrics;
-    let _ = match image_type {
+    match image_type {
         // might want to return this at some later point
         ImageType::StatesMaxAlgorithm => states_spherical_plot(
             &estimations.system_states_spherical,
@@ -646,7 +648,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "Measurement 0 Delta",
             "z [pT]",
         ),
-    };
+    }?;
     Ok(())
 }
 
@@ -661,36 +663,52 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
     clippy::useless_let_if_seq
 )]
 #[tracing::instrument(level = "debug")]
-fn generate_gifs(scenario: Scenario, gif_type: GifType, playback_speed: f32) {
+fn generate_gifs(
+    scenario: Scenario,
+    gif_type: GifType,
+    playback_speed: f32,
+) -> Result<(), Box<dyn Error>> {
     debug!("Generating GIFs for scenario {}", scenario.get_id());
     let mut path = Path::new("results").join(scenario.get_id()).join("img");
     fs::create_dir_all(&path).unwrap();
-    path = path.join(gif_type.to_string()).with_extension("png");
+    path = path.join(gif_type.to_string()).with_extension("gif");
     if path.is_file() {
-        return;
+        return Ok(());
     }
-    let file_name = path.with_extension("");
     let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
     let data = scenario.data.as_ref().unwrap();
     let estimations = &scenario.results.as_ref().unwrap().estimations;
     match gif_type {
-        GifType::StatesAlgorithm => {
-            plot_states_over_time(
-                &estimations.system_states,
-                &model.spatial_description.voxels,
-                20,
-                playback_speed,
-                file_name.to_str().unwrap(),
-                "Estimated Current Densities",
-            );
-        }
-        GifType::StatesSimulation => plot_states_over_time(
-            data.get_system_states(),
-            &model.spatial_description.voxels,
-            20,
-            playback_speed,
-            file_name.to_str().unwrap(),
-            "Estimated Current Densities",
+        GifType::StatesAlgorithm => states_spherical_plot_over_time(
+            &estimations.system_states_spherical,
+            &estimations.system_states_spherical_max,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &model.spatial_description.voxels.numbers,
+            Some(path.as_path()),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            Some(playback_speed),
+            Some(20),
         ),
-    }
+        GifType::StatesSimulation => states_spherical_plot_over_time(
+            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data
+                .simulation
+                .as_ref()
+                .unwrap()
+                .system_states_spherical_max,
+            &data.get_model().spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &model.spatial_description.voxels.numbers,
+            Some(path.as_path()),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            Some(playback_speed),
+            Some(20),
+        ),
+    }?;
+    Ok(())
 }

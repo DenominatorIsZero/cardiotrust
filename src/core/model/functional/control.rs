@@ -1,5 +1,7 @@
+use approx::RelativeEq;
 use ndarray::Array1;
 use ndarray_npy::{read_npy, WriteNpyExt};
+use rubato::{Resampler, SincFixedIn, SincInterpolationParameters};
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
@@ -103,8 +105,34 @@ impl ControlFunction {
     pub fn from_model_config(config: &Model, sample_rate_hz: f32, duration_s: f32) -> Self {
         debug!("Creating control function from model config");
         //let _sample_rate_hz_in = 2000.0;
-        let control_function_raw: Array1<f32> =
+        let mut control_function_raw: Array1<f32> =
             read_npy("assets/control_function_ohara.npy").unwrap();
+
+        let from_sample_rate_hz = 2000.0;
+
+        if !from_sample_rate_hz.relative_eq(&sample_rate_hz, 1e-3, 1e-3) {
+            let params = SincInterpolationParameters {
+                sinc_len: 256,
+                f_cutoff: 0.95,
+                oversampling_factor: 256,
+                interpolation: rubato::SincInterpolationType::Cubic,
+                window: rubato::WindowFunction::BlackmanHarris2,
+            };
+            let mut resampler = SincFixedIn::<f32>::new(
+                f64::from(sample_rate_hz) / f64::from(from_sample_rate_hz),
+                10.0,
+                params,
+                control_function_raw.len(),
+                1,
+            )
+            .unwrap();
+
+            let input_frames: Vec<Vec<f32>> = vec![control_function_raw.to_vec()];
+
+            let output_frames = resampler.process(&input_frames, None).unwrap();
+
+            control_function_raw = output_frames[0].clone().into();
+        }
 
         #[allow(
             clippy::cast_possible_truncation,
@@ -154,6 +182,20 @@ mod test {
 
     use super::*;
 
+    const COMMON_PATH: &str = "tests/core/model/functional/control/";
+
+    #[tracing::instrument(level = "trace")]
+    fn setup(folder: Option<&str>) {
+        let path = folder.map_or_else(
+            || Path::new(COMMON_PATH).to_path_buf(),
+            |folder| Path::new(COMMON_PATH).join(folder),
+        );
+
+        if !path.exists() {
+            std::fs::create_dir_all(path).unwrap();
+        }
+    }
+
     #[test]
     fn matrix_from_model_config_no_crash() {
         let config = Model::default();
@@ -182,8 +224,8 @@ mod test {
     }
 
     #[test]
-    #[ignore]
     fn function_from_model_config_no_crash_and_plot() {
+        setup(None);
         let sample_rate_hz = 3000.0;
         let duration_s = 1.5;
         #[allow(
@@ -198,10 +240,11 @@ mod test {
             ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
         assert_eq!(expected_length_samples, control_function.values.shape()[0]);
 
+        let path = Path::new(COMMON_PATH).join("control_function.png");
         standard_time_plot(
             &control_function.values,
             sample_rate_hz,
-            Path::new("tests/control_function"),
+            path.as_path(),
             "Control Function",
             "j [A/mm^2]",
         )

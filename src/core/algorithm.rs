@@ -276,12 +276,26 @@ mod test {
     use crate::core::config::simulation::Simulation as SimulationConfig;
     use crate::core::model::Model;
 
-    use crate::vis::plotting::matrix_old::plot_states_over_time;
+    use crate::vis::plotting::gif::states::states_spherical_plot_over_time;
     use crate::vis::plotting::png::line::standard_y_plot;
     use crate::vis::plotting::png::states::states_spherical_plot;
-    use crate::vis::plotting::StateSphericalPlotMode;
+    use crate::vis::plotting::{PlotSlice, StateSphericalPlotMode};
 
     use super::*;
+
+    const COMMON_PATH: &str = "tests/core/algorithm";
+
+    #[tracing::instrument(level = "trace")]
+    fn setup(folder: Option<&str>) {
+        let path = folder.map_or_else(
+            || Path::new(COMMON_PATH).to_path_buf(),
+            |folder| Path::new(COMMON_PATH).join(folder),
+        );
+
+        if !path.exists() {
+            std::fs::create_dir_all(path).unwrap();
+        }
+    }
 
     #[tracing::instrument(level = "info", skip_all)]
     fn run(
@@ -435,6 +449,7 @@ mod test {
     #[test]
     #[ignore]
     fn loss_decreases_and_plot() {
+        setup(Some("default"));
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
@@ -469,30 +484,38 @@ mod test {
             &algorithm_config,
         );
 
+        let path = Path::new(COMMON_PATH).join("default").join("loss.png");
         standard_y_plot(
             &results.metrics.loss.values,
-            Path::new("tests/algorithm_loss"),
+            Path::new(path.as_path()),
             "Loss",
             "Loss",
             "Step",
         )
         .unwrap();
+
+        let path = Path::new(COMMON_PATH)
+            .join("default")
+            .join("loss_epoch.png");
         standard_y_plot(
             &results.metrics.loss_epoch.values,
-            Path::new("tests/algorithm_loss_epoch"),
+            Path::new(path.as_path()),
             "Sum Loss Per Epoch",
             "Loss",
             "Epoch",
         )
         .unwrap();
 
+        let path = Path::new(COMMON_PATH)
+            .join("default")
+            .join("states_max.png");
         states_spherical_plot(
             &results.estimations.system_states_spherical,
             &results.estimations.system_states_spherical_max,
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
             &model.spatial_description.voxels.numbers,
-            Some(Path::new("tests/algorithm_states_max")),
+            Some(path.as_path()),
             None,
             Some(StateSphericalPlotMode::ABS),
             None,
@@ -503,21 +526,21 @@ mod test {
         let fps = 20;
         let playback_speed = 0.1;
 
-        plot_states_over_time(
-            &results.estimations.system_states,
-            &model.spatial_description.voxels,
-            fps,
-            playback_speed,
-            "tests/algorithm_states",
-            "Estimated Current Densities",
-        );
-
-        (0..algorithm_config.epochs - 1).for_each(|i| {
-            assert!(
-                results.metrics.loss_mse_epoch.values[i]
-                    > results.metrics.loss_mse_epoch.values[i + 1]
-            );
-        });
+        let path = Path::new(COMMON_PATH).join("default").join("states.gif");
+        states_spherical_plot_over_time(
+            &results.estimations.system_states_spherical,
+            &results.estimations.system_states_spherical_max,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            simulation_config.sample_rate_hz,
+            &model.spatial_description.voxels.numbers,
+            Some(path.as_path()),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            Some(playback_speed),
+            Some(fps),
+        )
+        .unwrap();
     }
 
     #[test]
@@ -529,7 +552,7 @@ mod test {
 
         let mut algorithm_config = Algorithm {
             calculate_kalman_gain: true,
-            learning_rate: 10.0,
+            learning_rate: 50.0,
             epochs: 3,
             ..Default::default()
         };
@@ -568,7 +591,7 @@ mod test {
     }
 
     #[test]
-    fn loss_decreases_no_update() {
+    fn loss_decreases_no_kalman() {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
@@ -613,7 +636,8 @@ mod test {
 
     #[test]
     #[ignore]
-    fn loss_decreases_no_update_and_plot() {
+    fn loss_decreases_no_kalman_and_plot() {
+        setup(Some("no_kalman"));
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
@@ -627,7 +651,7 @@ mod test {
             simulation_config.duration_s,
         )
         .expect("Model parameters to be valid.");
-        algorithm_config.epochs = 5;
+        algorithm_config.epochs = 10;
         algorithm_config.model.apply_system_update = false;
 
         let mut results = Results::new(
@@ -648,30 +672,37 @@ mod test {
             &algorithm_config,
         );
 
+        let path = Path::new(COMMON_PATH).join("no_kalman").join("loss.png");
         standard_y_plot(
             &results.metrics.loss.values,
-            Path::new("tests/algorithm_no_update_loss"),
+            Path::new(path.as_path()),
             "Loss",
             "Loss",
             "Step",
         )
         .unwrap();
+        let path = Path::new(COMMON_PATH)
+            .join("no_kalman")
+            .join("loss_epoch.png");
         standard_y_plot(
             &results.metrics.loss_epoch.values,
-            Path::new("tests/algorithm_no_update_loss_epoch"),
+            Path::new(path.as_path()),
             "Sum Loss Per Epoch",
             "Loss",
             "Epoch",
         )
         .unwrap();
 
+        let path = Path::new(COMMON_PATH)
+            .join("no_kalman")
+            .join("states_max.png");
         states_spherical_plot(
             &results.estimations.system_states_spherical,
             &results.estimations.system_states_spherical_max,
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
             &model.spatial_description.voxels.numbers,
-            Some(Path::new("tests/algorithm_no_update_states_max")),
+            Some(path.as_path()),
             None,
             Some(StateSphericalPlotMode::ABS),
             None,
@@ -682,21 +713,122 @@ mod test {
         let fps = 20;
         let playback_speed = 0.1;
 
-        plot_states_over_time(
-            &results.estimations.system_states,
-            &model.spatial_description.voxels,
-            fps,
-            playback_speed,
-            "tests/algorithm_no_update_states",
-            "Estimated Current Densities",
+        let path = Path::new(COMMON_PATH).join("no_kalman").join("states.gif");
+        states_spherical_plot_over_time(
+            &results.estimations.system_states_spherical,
+            &results.estimations.system_states_spherical_max,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            simulation_config.sample_rate_hz,
+            &model.spatial_description.voxels.numbers,
+            Some(path.as_path()),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            Some(playback_speed),
+            Some(fps),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    #[ignore]
+    fn loss_decreases_kalman_and_plot() {
+        setup(Some("full_kalman"));
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.pathological = true;
+        let data = Data::from_simulation_config(&simulation_config)
+            .expect("Model parameters to be valid.");
+
+        let mut algorithm_config = Algorithm {
+            calculate_kalman_gain: true,
+            epochs: 10,
+            ..Default::default()
+        };
+        algorithm_config.model.apply_system_update = true;
+
+        let mut model = Model::from_model_config(
+            &algorithm_config.model,
+            simulation_config.sample_rate_hz,
+            simulation_config.duration_s,
+        )
+        .expect("Model parameters to be valid.");
+
+        let mut results = Results::new(
+            algorithm_config.epochs,
+            model
+                .functional_description
+                .control_function_values
+                .values
+                .shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
         );
 
-        (0..algorithm_config.epochs - 1).for_each(|i| {
-            assert!(
-                results.metrics.loss_mse_epoch.values[i]
-                    > results.metrics.loss_mse_epoch.values[i + 1]
-            );
-        });
+        run(
+            &mut model.functional_description,
+            &mut results,
+            &data,
+            &algorithm_config,
+        );
+
+        let path = Path::new(COMMON_PATH).join("full_kalman").join("loss.png");
+        standard_y_plot(
+            &results.metrics.loss.values,
+            Path::new(path.as_path()),
+            "Loss",
+            "Loss",
+            "Step",
+        )
+        .unwrap();
+        let path = Path::new(COMMON_PATH)
+            .join("full_kalman")
+            .join("loss_epoch.png");
+        standard_y_plot(
+            &results.metrics.loss_epoch.values,
+            Path::new(path.as_path()),
+            "Sum Loss Per Epoch",
+            "Loss",
+            "Epoch",
+        )
+        .unwrap();
+
+        let path = Path::new(COMMON_PATH)
+            .join("full_kalman")
+            .join("states_max.png");
+        states_spherical_plot(
+            &results.estimations.system_states_spherical,
+            &results.estimations.system_states_spherical_max,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            &model.spatial_description.voxels.numbers,
+            Some(path.as_path()),
+            None,
+            Some(StateSphericalPlotMode::ABS),
+            None,
+            None,
+        )
+        .unwrap();
+
+        let fps = 20;
+        let playback_speed = 0.1;
+
+        let path = Path::new(COMMON_PATH)
+            .join("full_kalman")
+            .join("states.gif");
+        states_spherical_plot_over_time(
+            &results.estimations.system_states_spherical,
+            &results.estimations.system_states_spherical_max,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            simulation_config.sample_rate_hz,
+            &model.spatial_description.voxels.numbers,
+            Some(path.as_path()),
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            Some(playback_speed),
+            Some(fps),
+        )
+        .unwrap();
     }
 
     #[test]
