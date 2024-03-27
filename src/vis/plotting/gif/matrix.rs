@@ -31,7 +31,7 @@ use super::GifBundle;
     clippy::cast_precision_loss,
     clippy::cast_lossless
 )]
-#[tracing::instrument(level = "trace")]
+#[tracing::instrument(level = "trace", skip(data))]
 pub(crate) fn matrix_over_slices_plot<A>(
     data: &ArrayBase<A, Ix3>,
     axis: Option<Axis>,

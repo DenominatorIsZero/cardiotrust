@@ -27,7 +27,7 @@ use super::PngBundle;
     clippy::cast_possible_wrap,
     clippy::cast_lossless
 )]
-#[tracing::instrument(level = "trace")]
+#[tracing::instrument(level = "trace", skip(data))]
 pub fn matrix_plot<A>(
     data: &ArrayBase<A, Ix2>,
     range: Option<(f32, f32)>,
@@ -46,12 +46,27 @@ where
 {
     trace!("Generating matrix plot.");
 
+    let (x_step, y_step) = step.map_or((1.0, 1.0), |step| step);
+
+    if x_step <= 0.0 {
+        return Err(Box::new(std::io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "x_step must be greater than zero",
+        )));
+    }
+    if y_step <= 0.0 {
+        return Err(Box::new(std::io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "y_step must be greater than zero",
+        )));
+    }
+
     let dim_x = data.shape()[0];
     let dim_y = data.shape()[1];
 
     let (width, height) = resolution.map_or_else(
         || {
-            let ratio = (dim_x as f32 / dim_y as f32).clamp(0.1, 10.0);
+            let ratio = ((dim_x as f32 * x_step) / (dim_y as f32 * y_step)).clamp(0.1, 10.0);
 
             if ratio > 1.0 {
                 (
@@ -82,21 +97,6 @@ where
     );
 
     let mut buffer = allocate_buffer(width, height);
-
-    let (x_step, y_step) = step.map_or((1.0, 1.0), |step| step);
-
-    if x_step <= 0.0 {
-        return Err(Box::new(std::io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "x_step must be greater than zero",
-        )));
-    }
-    if y_step <= 0.0 {
-        return Err(Box::new(std::io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "y_step must be greater than zero",
-        )));
-    }
 
     let (x_offset, y_offset) = offset.map_or((0.0, 0.0), |offset| offset);
     let (flip_x, flip_y) = flip_axis.map_or((false, false), |flip_axis| flip_axis);
