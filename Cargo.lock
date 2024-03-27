@@ -1389,6 +1389,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
+name = "byteordered"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbf2cd9424f5ff404aba1959c835cbc448ee8b689b870a9981c76c0fd46280e6"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "bytes"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1430,6 +1439,7 @@ dependencies = [
  "ndarray",
  "ndarray-npy",
  "ndarray-stats",
+ "nifti",
  "ntest",
  "num-traits",
  "physical_constants",
@@ -1447,6 +1457,7 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
+ "tracing-test",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -3562,6 +3573,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb12d4e967ec485a5f71c6311fe28158e9d6f4bc4a447b474184d0f91a8fa32"
 dependencies = [
  "approx 0.4.0",
+ "approx 0.5.1",
  "matrixmultiply",
  "num-complex",
  "num-integer",
@@ -3634,6 +3646,25 @@ name = "new_debug_unreachable"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4a24736216ec316047a1fc4252e27dabb04218aa4a3f37c6e7ddbf1f9782b54"
+
+[[package]]
+name = "nifti"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f58f00fdaae1ed2032400243c60a7c98a75a2320a4fc79a588e832aafcf64045"
+dependencies = [
+ "approx 0.5.1",
+ "bytemuck",
+ "byteordered",
+ "either",
+ "flate2",
+ "ndarray",
+ "num-complex",
+ "num-derive 0.3.3",
+ "num-traits",
+ "quick-error",
+ "rgb",
+]
 
 [[package]]
 name = "nix"
@@ -3767,6 +3798,7 @@ version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23c6602fda94a57c990fe0df199a035d83576b496aa29f4e634a8ac6004e68a6"
 dependencies = [
+ "bytemuck",
  "num-traits",
  "serde",
 ]
@@ -5480,6 +5512,29 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log 0.2.0",
+]
+
+[[package]]
+name = "tracing-test"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a2c0ff408fe918a94c428a3f2ad04e4afd5c95bbc08fcf868eff750c15728a4"
+dependencies = [
+ "lazy_static",
+ "tracing-core",
+ "tracing-subscriber",
+ "tracing-test-macro",
+]
+
+[[package]]
+name = "tracing-test-macro"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "258bc1c4f8e2e73a977812ab339d503e6feeb92700f6d07a6de4d321522d5c08"
+dependencies = [
+ "lazy_static",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
