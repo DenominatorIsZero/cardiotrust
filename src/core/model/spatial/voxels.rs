@@ -48,7 +48,7 @@ impl Voxels {
         }
     }
 
-    pub fn load_from_nii(path: &str) -> Self {
+    pub fn load_from_nii(_path: &str) -> Self {
         Self::empty([1, 1, 1])
     }
 
@@ -444,15 +444,13 @@ pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &V
 #[cfg(test)]
 mod tests {
 
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
 
     use ndarray::{Axis, Ix3};
-    use nifti::{IntoNdArray, NiftiObject, NiftiVolume, ReaderOptions, Sliceable};
+    use nifti::{IntoNdArray, NiftiObject, NiftiVolume, ReaderOptions};
     use tracing::info;
-    use tracing_test::traced_test;
-    use web_sys::console::assert;
 
-    use crate::vis::plotting::{gif::matrix::matrix_over_slices_plot, png::matrix::matrix_plot};
+    use crate::vis::plotting::gif::matrix::matrix_over_slices_plot;
 
     use super::*;
 

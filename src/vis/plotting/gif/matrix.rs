@@ -1,26 +1,15 @@
-use bevy::time;
 use gif::{Encoder, Frame, Repeat};
 
 use ndarray::{ArrayBase, Axis, Ix3};
 use ndarray_stats::QuantileExt;
 
-use core::num;
 use std::fs::File;
 
 use std::{error::Error, path::Path};
 use tracing::trace;
 
-use crate::vis::plotting::gif::{DEFAULT_FPS, DEFAULT_PLAYBACK_SPEED, DEFAULT_TIME_PER_FRAME_MS};
+use crate::vis::plotting::gif::DEFAULT_TIME_PER_FRAME_MS;
 use crate::vis::plotting::png::matrix::matrix_plot;
-use crate::vis::plotting::png::states::states_spherical_plot;
-use crate::vis::plotting::StateSphericalPlotMode;
-use crate::{
-    core::{
-        data::shapes::{ArraySystemStatesSpherical, ArraySystemStatesSphericalMax},
-        model::spatial::voxels::{VoxelNumbers, VoxelPositions},
-    },
-    vis::plotting::PlotSlice,
-};
 
 use super::GifBundle;
 
