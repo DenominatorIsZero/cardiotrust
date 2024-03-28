@@ -242,33 +242,21 @@ mod test {
 
     use std::path::PathBuf;
 
-    use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
+    use crate::{
+        core::{config::simulation::Simulation as SimulationConfig, data::Data},
+        tests::{clean_files, setup_folder},
+    };
 
     use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/png/voxel_types";
 
-    #[tracing::instrument(level = "trace")]
-    fn setup() {
-        if !Path::new(COMMON_PATH).exists() {
-            std::fs::create_dir_all(COMMON_PATH).unwrap();
-        }
-    }
-
-    #[tracing::instrument(level = "trace")]
-    fn clean(files: &Vec<PathBuf>) {
-        for file in files {
-            if file.is_file() {
-                std::fs::remove_file(file).unwrap();
-            }
-        }
-    }
-
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_voxel_type_plot_default() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_voxel_type_plot_default.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("types_default.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -290,9 +278,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_voxel_type_plot_x_slice() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_voxel_type_plot_x_slice.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("types_x_slice.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -314,9 +303,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_voxel_type_plot_y_slice() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_voxel_type_plot_y_slice.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("types_y_slice.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;

@@ -295,30 +295,17 @@ mod test {
 
     use ndarray::Array2;
 
+    use crate::tests::{clean_files, setup_folder};
+
     use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/png/line";
 
-    #[tracing::instrument(level = "trace")]
-    fn setup() {
-        if !Path::new(COMMON_PATH).exists() {
-            std::fs::create_dir_all(COMMON_PATH).unwrap();
-        }
-    }
-
-    #[tracing::instrument(level = "trace")]
-    fn clean(files: &Vec<PathBuf>) {
-        for file in files {
-            if file.is_file() {
-                std::fs::remove_file(file).unwrap();
-            }
-        }
-    }
-
     #[test]
     fn test_line_plot() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_line_plot.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("line_plot.png")];
+        clean_files(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
@@ -339,9 +326,10 @@ mod test {
 
     #[test]
     fn test_line_plot_defaults() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_line_plot_default.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("line_plot_default.png")];
+        clean_files(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
@@ -362,9 +350,10 @@ mod test {
 
     #[test]
     fn test_line_plot_no_path() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_line_plot_no_path.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("line_plot_no_path.png")];
+        clean_files(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
@@ -422,9 +411,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_line_plot_multiple_y() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_line_plot_multiple_y.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("line_plot_multiple_y.png")];
+        clean_files(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let ys_owned: Vec<Array1<f32>> = (0..10).map(|i| x.map(|x| x * x * i as f32)).collect();
@@ -447,9 +437,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_line_plot_with_labels() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_line_plot_with_labels.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("line_plot_with_lables.png")];
+        clean_files(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let ys_owned: Vec<Array1<f32>> = (0..10).map(|i| x.map(|x| x * x * i as f32)).collect();
@@ -478,9 +469,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_line_plot_with_invalid_labels() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_line_plot_with_invalid_labels.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("line_plot_with_invalid_lables.png")];
+        clean_files(&files);
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let ys_owned: Vec<Array1<f32>> = (0..10).map(|i| x.map(|x| x * x * i as f32)).collect();
@@ -508,9 +500,10 @@ mod test {
 
     #[test]
     fn test_standard_y_plot_basic() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_y_plot_basic.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("y_plot_basic.png")];
+        clean_files(&files);
 
         let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 
@@ -520,9 +513,10 @@ mod test {
     }
     #[test]
     fn test_standard_y_plot_empty() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_y_plot_empty.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("y_plot_empty.png")];
+        clean_files(&files);
 
         let y = Array1::from_vec(vec![]);
 
@@ -534,9 +528,10 @@ mod test {
 
     #[test]
     fn test_standard_y_plot_invalid_path() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("invalid/test_y_plot_invalid.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("invalid/y_plot_invalid.png")];
+        clean_files(&files);
 
         let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 
@@ -548,9 +543,10 @@ mod test {
 
     #[test]
     fn test_standard_time_plot_normal() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_time_plot_normal.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("time_plot_normal.png")];
+        clean_files(&files);
 
         let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 
@@ -566,9 +562,10 @@ mod test {
 
     #[test]
     fn test_standard_time_plot_zero_sample_rate() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_time_plot_zero_sample_rate.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("time_plot_zero_sample_rate.png")];
+        clean_files(&files);
 
         let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 
@@ -585,9 +582,10 @@ mod test {
 
     #[test]
     fn test_standard_time_plot_negative_sample_rate() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_time_plot_negative_sample_rate.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("time_plot_negative_sample_rate.png")];
+        clean_files(&files);
 
         let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 
@@ -605,9 +603,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_xyz_state_plot_basic() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("xyz_state_plot_basic.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("xyz_plot_basic.png")];
+        clean_files(&files);
 
         let mut system_states = ArraySystemStates {
             values: Array2::zeros((100, 6)),
@@ -629,9 +628,10 @@ mod test {
 
     #[test]
     fn test_xyz_state_plot_invalid_index() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("xyz_state_plot_basic.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("xyz_plot_invalid.png")];
+        clean_files(&files);
 
         let system_states = ArraySystemStates {
             values: Array2::zeros((100, 6)),

@@ -1,6 +1,7 @@
 #![warn(clippy::pedantic, clippy::nursery)]
 pub mod core;
 pub mod scheduler;
+pub mod tests;
 pub mod ui;
 pub mod vis;
 pub mod websocket;

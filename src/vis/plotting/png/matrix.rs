@@ -558,31 +558,18 @@ mod test {
 
     use ndarray::Array2;
 
+    use crate::tests::{clean_files, setup_folder};
+
     use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/png/matrix";
-
-    #[tracing::instrument(level = "trace")]
-    fn setup() {
-        if !Path::new(COMMON_PATH).exists() {
-            std::fs::create_dir_all(COMMON_PATH).unwrap();
-        }
-    }
-
-    #[tracing::instrument(level = "trace")]
-    fn clean(files: &Vec<PathBuf>) {
-        for file in files {
-            if file.is_file() {
-                std::fs::remove_file(file).unwrap();
-            }
-        }
-    }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_matrix_plot_high() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_high.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("matrix_plot_high.png")];
+        clean_files(&files);
 
         let mut data = Array2::zeros((4, 8));
 
@@ -613,9 +600,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_matrix_plot_wide() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_wide.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("matrix_plot_wide.png")];
+        clean_files(&files);
 
         let mut data = Array2::zeros((8, 4));
 
@@ -646,9 +634,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_matrix_plot_single_row() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_single_row.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("matrix_plot_single_row.png")];
+        clean_files(&files);
 
         let mut data = Array2::zeros((8, 1));
 
@@ -679,9 +668,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_matrix_plot_single_column() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_single_column.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("matrix_plot_single_column.png")];
+        clean_files(&files);
 
         let mut data = Array2::zeros((1, 8));
 
@@ -712,9 +702,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_matrix_plot_large() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_large.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("matrix_plot_large.png")];
+        clean_files(&files);
 
         let mut data = Array2::zeros((1000, 1000));
 
@@ -745,9 +736,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_matrix_plot_custom_labels() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_custom_lables.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("matrix_plot_custom_lables.png")];
+        clean_files(&files);
 
         let data = Array2::zeros((4, 4));
 
@@ -772,9 +764,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_matrix_plot_custom_range() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_custom_range.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("matrix_plot_custom_range.png")];
+        clean_files(&files);
 
         let mut data = Array2::zeros((4, 4));
         data[(0, 0)] = 5.0;
@@ -800,9 +793,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_matrix_plot_custom_step() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_custom_step.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("matrix_plot_custom_step.png")];
+        clean_files(&files);
 
         let mut data = Array2::zeros((4, 4));
         data[(0, 0)] = 5.0;
@@ -828,9 +822,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_matrix_plot_custom_offset() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_custom_offset.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("matrix_plot_custom_offset.png")];
+        clean_files(&files);
 
         let mut data = Array2::zeros((4, 4));
         data[(0, 0)] = 5.0;
@@ -856,9 +851,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_matrix_plot_invalid_step() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_matrix_plot_invalid_step.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("matrix_plot_invalid_step.png")];
+        clean_files(&files);
 
         let mut data = Array2::zeros((4, 4));
         data[(0, 0)] = 5.0;

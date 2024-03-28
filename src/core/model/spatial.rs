@@ -1,4 +1,5 @@
 pub mod heart;
+pub mod nifti;
 pub mod sensors;
 pub mod voxels;
 

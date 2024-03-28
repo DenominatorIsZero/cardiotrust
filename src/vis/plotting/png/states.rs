@@ -259,32 +259,21 @@ mod test {
 
     use std::path::PathBuf;
 
-    use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
+    use crate::{
+        core::{config::simulation::Simulation as SimulationConfig, data::Data},
+        tests::{clean_files, setup_folder},
+    };
 
     use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/png/states";
 
-    #[tracing::instrument(level = "trace")]
-    fn setup() {
-        if !Path::new(COMMON_PATH).exists() {
-            std::fs::create_dir_all(COMMON_PATH).unwrap();
-        }
-    }
-
-    #[tracing::instrument(level = "trace")]
-    fn clean(files: &Vec<PathBuf>) {
-        for file in files {
-            if file.is_file() {
-                std::fs::remove_file(file).unwrap();
-            }
-        }
-    }
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_plot_default() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_plot_default.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_default.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -309,9 +298,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_plot_x_slice() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_plot_x_slice.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_x_slice.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -336,9 +326,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_plot_y_slice() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_plot_y_slice.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_y_slice.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -362,9 +353,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_plot_in_y() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_plot_in_y.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_in_y.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -389,9 +381,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_plot_in_z() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_plot_in_z.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_in_z.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -416,9 +409,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_abs_z_slice() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_abs_z_slice.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_spherical_abs_z_slice.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -449,9 +443,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_abs_y_slice() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_abs_y_slice.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_spherical_abs_y_slice.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -482,9 +477,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_abs_x_slice() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_abs_x_slice.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_spherical_abs_x_slice.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -515,10 +511,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_angle_z_slice() {
-        setup();
-        let files =
-            vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_angle_z_slice.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_spherical_angle_z_slice.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -549,10 +545,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_angle_y_slice() {
-        setup();
-        let files =
-            vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_angle_y_slice.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_spherical_angle_y_slice.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -583,10 +579,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_angle_x_slice() {
-        setup();
-        let files =
-            vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_angle_x_slice.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_spherical_angle_x_slice.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -617,9 +613,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_abs_max() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_abs_max.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_spherical_abs_max.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -650,9 +647,10 @@ mod test {
     #[test]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_angle_max() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_spherical_plot_angle_max.png")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_spherical_angle_max.png")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;

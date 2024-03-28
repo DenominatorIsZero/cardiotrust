@@ -128,34 +128,21 @@ mod test {
     use std::path::PathBuf;
 
     use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
+    use crate::tests::clean_files;
+    use crate::tests::setup_folder;
 
     use super::*;
 
     const COMMON_PATH: &str = "tests/vis/plotting/gif/states";
 
-    #[tracing::instrument(level = "trace")]
-    fn setup() {
-        if !Path::new(COMMON_PATH).exists() {
-            std::fs::create_dir_all(COMMON_PATH).unwrap();
-        }
-    }
-
-    #[tracing::instrument(level = "trace")]
-    fn clean(files: &Vec<PathBuf>) {
-        for file in files {
-            if file.is_file() {
-                std::fs::remove_file(file).unwrap();
-            }
-        }
-    }
-
     #[test]
     #[ignore]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_abs_default() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_abs_default.gif")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_abs_default.gif")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;
@@ -188,9 +175,10 @@ mod test {
     #[ignore]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_angle_default() {
-        setup();
-        let files = vec![Path::new(COMMON_PATH).join("test_states_angle_default.gif")];
-        clean(&files);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("states_angle_default.gif")];
+        clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.pathological = true;

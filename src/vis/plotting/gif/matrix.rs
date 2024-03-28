@@ -129,25 +129,12 @@ mod test {
 
     use ndarray::Array3;
 
+    use crate::tests::clean_files;
+    use crate::tests::setup_folder;
+
     use super::*;
 
     const COMMON_PATH: &str = "tests/vis/plotting/gif/matrix";
-
-    #[tracing::instrument(level = "trace")]
-    fn setup() {
-        if !Path::new(COMMON_PATH).exists() {
-            std::fs::create_dir_all(COMMON_PATH).unwrap();
-        }
-    }
-
-    #[tracing::instrument(level = "trace")]
-    fn clean(files: &Vec<PathBuf>) {
-        for file in files {
-            if file.is_file() {
-                std::fs::remove_file(file).unwrap();
-            }
-        }
-    }
 
     #[test]
     fn test_matrix_over_slices_plot_valid_input() {
@@ -201,10 +188,13 @@ mod test {
     }
 
     #[test]
+    #[allow(clippy::cast_precision_loss)]
     fn test_matrix_over_slices_plot_with_path() {
-        setup();
-        let paths = vec![Path::new(COMMON_PATH).join("test_matrix_over_slices_plot_with_path.gif")];
-        clean(&paths);
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("test_matrix_over_slices_plot_with_path.gif")];
+        clean_files(&files);
+
         let mut data = Array3::<f32>::zeros((10, 10, 10));
         for x in 0..10 {
             for y in 0..10 {
@@ -219,7 +209,7 @@ mod test {
             None,
             None,
             None,
-            Some(&paths[0]),
+            Some(&files[0]),
             None,
             None,
             None,
