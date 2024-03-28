@@ -240,8 +240,6 @@ pub fn voxel_type_plot(
 #[cfg(test)]
 mod test {
 
-    use std::path::PathBuf;
-
     use crate::{
         core::{config::simulation::Simulation as SimulationConfig, data::Data},
         tests::{clean_files, setup_folder},

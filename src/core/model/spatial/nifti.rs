@@ -1,25 +1,15 @@
 use ndarray::Ix3;
-use ndarray::{arr1, s, Array3, Array4};
-use ndarray_npy::WriteNpyExt;
-use nifti::{IntoNdArray, NiftiObject, NiftiVolume, ReaderOptions};
-use serde::{Deserialize, Serialize};
-use std::{
-    fs::{self, File},
-    io::BufWriter,
-};
-use strum_macros::EnumIter;
-use tracing::{debug, trace};
 
-use crate::core::config::model::Model;
+use nifti::{IntoNdArray, NiftiObject, NiftiVolume, ReaderOptions};
 
 pub(crate) fn load_from_nii(
     path: &str,
 ) -> ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 3]>> {
     let object = ReaderOptions::new().read_file(path).unwrap();
     let header = object.header();
-    let data_type = header.data_type().unwrap();
+    let _data_type = header.data_type().unwrap();
     let volume = object.volume();
-    let dims = volume.dim();
+    let _dims = volume.dim();
     let data = volume.into_ndarray::<f32>().unwrap();
     let data = data.into_dimensionality::<Ix3>().unwrap();
     data
@@ -30,9 +20,7 @@ mod tests {
 
     use std::path::Path;
 
-    use ndarray::{Axis, Ix3};
-    use nifti::{IntoNdArray, NiftiObject, NiftiVolume, ReaderOptions};
-    use tracing::info;
+    use ndarray::Axis;
 
     use crate::{tests::setup_folder, vis::plotting::gif::matrix::matrix_over_slices_plot};
 

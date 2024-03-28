@@ -1,7 +1,6 @@
-use ndarray::Ix3;
 use ndarray::{arr1, s, Array3, Array4};
 use ndarray_npy::WriteNpyExt;
-use nifti::{IntoNdArray, NiftiObject, NiftiVolume, ReaderOptions};
+
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
@@ -441,14 +440,6 @@ pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &V
 
 #[cfg(test)]
 mod tests {
-
-    use std::path::Path;
-
-    use ndarray::{Axis, Ix3};
-    use nifti::{IntoNdArray, NiftiObject, NiftiVolume, ReaderOptions};
-    use tracing::info;
-
-    use crate::vis::plotting::gif::matrix::matrix_over_slices_plot;
 
     use super::*;
 

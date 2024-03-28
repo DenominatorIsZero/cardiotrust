@@ -125,7 +125,6 @@ pub(crate) fn states_spherical_plot_over_time(
 mod test {
 
     use std::path::Path;
-    use std::path::PathBuf;
 
     use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
     use crate::tests::clean_files;

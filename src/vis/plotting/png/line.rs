@@ -291,8 +291,6 @@ pub fn plot_state_xyz(
 #[cfg(test)]
 mod test {
 
-    use std::path::PathBuf;
-
     use ndarray::Array2;
 
     use crate::tests::{clean_files, setup_folder};
