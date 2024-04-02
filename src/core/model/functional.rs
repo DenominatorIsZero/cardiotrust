@@ -17,7 +17,7 @@ use self::{
     measurement::{MeasurementCovariance, MeasurementMatrix},
 };
 use super::spatial::SpatialDescription;
-use crate::core::config::model::Model;
+use crate::core::config::model::{Handcrafted, Model};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
@@ -132,13 +132,13 @@ fn process_covariance_from_model_config(
     ap_params: &APParameters,
 ) -> ArrayGains<f32> {
     debug!("Creating process covariance matrix from model config");
-    let normal = if relative_eq!(config.process_covariance_std, 0.0) {
+    let normal = if relative_eq!(config.common.process_covariance_std, 0.0) {
         None
     } else {
         Some(
             Normal::<f32>::new(
-                config.process_covariance_mean,
-                config.process_covariance_std,
+                config.common.process_covariance_mean,
+                config.common.process_covariance_std,
             )
             .unwrap(),
         )
@@ -152,7 +152,7 @@ fn process_covariance_from_model_config(
             output_state_index.is_some() && index.0 == output_state_index.unwrap_or(0)
         })
         .for_each(|((_, variance), _)| {
-            *variance = normal.map_or(config.process_covariance_mean, |dist| {
+            *variance = normal.map_or(config.common.process_covariance_mean, |dist| {
                 dist.sample(&mut rand::thread_rng())
             });
         });
@@ -161,7 +161,7 @@ fn process_covariance_from_model_config(
 
 #[cfg(test)]
 mod tests {
-    use crate::core::config::model::Model;
+    use crate::core::config::model::Handcrafted;
 
     use super::*;
 

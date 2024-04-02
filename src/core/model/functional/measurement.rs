@@ -12,7 +12,7 @@ use std::{
 use tracing::{debug, trace};
 
 use crate::core::{
-    config::model::Model,
+    config::model::{Handcrafted, Model},
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
 
@@ -138,15 +138,15 @@ impl MeasurementCovariance {
         debug!("Creating measurement covariance from model config");
         let mut measurement_covariance = Self::empty(spatial_description.sensors.count());
 
-        if relative_eq!(config.measurement_covariance_std, 0.0) {
+        if relative_eq!(config.common.measurement_covariance_std, 0.0) {
             measurement_covariance
                 .values
                 .diag_mut()
-                .fill(config.measurement_covariance_mean);
+                .fill(config.common.measurement_covariance_mean);
         } else {
             let normal = Normal::<f32>::new(
-                config.measurement_covariance_mean,
-                config.measurement_covariance_std,
+                config.common.measurement_covariance_mean,
+                config.common.measurement_covariance_std,
             )
             .unwrap();
             measurement_covariance
@@ -176,7 +176,7 @@ impl MeasurementCovariance {
 mod tests {
     use std::path::Path;
 
-    use crate::vis::plotting::png::matrix::matrix_plot;
+    use crate::{core::config::model::Common, vis::plotting::png::matrix::matrix_plot};
 
     use super::*;
 
@@ -197,8 +197,11 @@ mod tests {
     #[test]
     fn from_model_config_no_crash() {
         let config = Model {
-            sensors_per_axis: [3, 3, 3],
-            voxel_size_mm: 20.0,
+            common: Common {
+                sensors_per_axis: [3, 3, 3],
+                voxel_size_mm: 20.0,
+                ..Default::default()
+            },
             ..Default::default()
         };
         let spatial_description = SpatialDescription::from_model_config(&config);
@@ -213,8 +216,11 @@ mod tests {
     fn from_model_config_no_crash_and_plot() {
         setup(None);
         let config = Model {
-            sensors_per_axis: [3, 3, 3],
-            voxel_size_mm: 20.0,
+            common: Common {
+                sensors_per_axis: [3, 3, 3],
+                voxel_size_mm: 20.0,
+                ..Default::default()
+            },
             ..Default::default()
         };
         let spatial_description = SpatialDescription::from_model_config(&config);

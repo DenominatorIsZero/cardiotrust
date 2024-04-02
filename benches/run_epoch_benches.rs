@@ -21,7 +21,7 @@ fn without_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::
         let mut config = setup_config(voxel_size);
 
         // configure run
-        config.algorithm.model.apply_system_update = false;
+        config.algorithm.model.common.apply_system_update = false;
         config.algorithm.calculate_kalman_gain = false;
 
         // setup inputs
@@ -98,9 +98,15 @@ fn with_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
 fn setup_config(voxel_size: &f32) -> Config {
     let samplerate_hz = 2000.0 * 2.5 / voxel_size;
     let mut config = Config::default();
-    config.simulation.as_mut().unwrap().model.voxel_size_mm = *voxel_size;
+    config
+        .simulation
+        .as_mut()
+        .unwrap()
+        .model
+        .common
+        .voxel_size_mm = *voxel_size;
     config.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
-    config.algorithm.model.voxel_size_mm = *voxel_size;
+    config.algorithm.model.common.voxel_size_mm = *voxel_size;
     config.algorithm.learning_rate = LEARNING_RATE;
     config.algorithm.freeze_delays = false;
     config.algorithm.freeze_gains = false;

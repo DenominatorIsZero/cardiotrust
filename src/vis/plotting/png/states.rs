@@ -274,7 +274,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -302,7 +302,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -330,7 +330,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
         states_plot(
@@ -357,7 +357,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -385,7 +385,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -413,7 +413,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -447,7 +447,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -481,7 +481,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -515,7 +515,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -549,7 +549,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -583,7 +583,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -617,7 +617,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -651,7 +651,7 @@ mod test {
         clean_files(&files);
 
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 

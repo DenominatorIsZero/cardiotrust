@@ -18,7 +18,7 @@ use self::{
     },
 };
 use crate::core::{
-    config::model::Model,
+    config::model::{Handcrafted, Model},
     model::spatial::{
         voxels::{self, VoxelType},
         SpatialDescription,
@@ -75,7 +75,7 @@ impl APParameters {
 
         let delays_samples = calculate_delay_samples_array(
             spatial_description,
-            &config.propagation_velocities_m_per_s,
+            &config.common.propagation_velocities_m_per_s,
             sample_rate_hz,
         )?;
 
@@ -301,7 +301,7 @@ fn try_to_connect(
     }
     // Skip pathologies if the propagation factor is zero
     if input_voxel_type == &VoxelType::Pathological
-        && relative_eq!(config.current_factor_in_pathology, 0.0)
+        && relative_eq!(config.common.current_factor_in_pathology, 0.0)
     {
         return false;
     }
@@ -311,6 +311,7 @@ fn try_to_connect(
     let [x_in, y_in, z_in] = input_voxel_index;
     let input_position_mm = &v_position_mm.slice(s![x_in, y_in, z_in, ..]);
     let propagation_velocity_m_per_s = config
+        .common
         .propagation_velocities_m_per_s
         .get(input_voxel_type)
         .unwrap();
@@ -332,11 +333,11 @@ fn try_to_connect(
     );
     if *input_voxel_type == VoxelType::Pathological && *output_voxel_type != VoxelType::Pathological
     {
-        gain *= config.current_factor_in_pathology;
+        gain *= config.common.current_factor_in_pathology;
     }
     if *output_voxel_type == VoxelType::Pathological && *input_voxel_type != VoxelType::Pathological
     {
-        gain *= 1.0 / config.current_factor_in_pathology;
+        gain *= 1.0 / config.common.current_factor_in_pathology;
     }
     assign_gain(
         ap_params,

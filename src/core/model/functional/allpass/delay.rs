@@ -106,7 +106,7 @@ mod test {
     use ndarray_stats::QuantileExt;
 
     use crate::core::{
-        config::model::Model,
+        config::model::{Handcrafted, Model},
         model::spatial::{voxels::VoxelType, SpatialDescription},
     };
 
@@ -150,7 +150,7 @@ mod test {
 
         let delay_samples = calculate_delay_samples_array(
             spatial_description,
-            &config.propagation_velocities_m_per_s,
+            &config.common.propagation_velocities_m_per_s,
             sample_rate_hz,
         )
         .unwrap();
@@ -158,6 +158,7 @@ mod test {
         let max = delay_samples.values.max_skipnan();
         let expected = (spatial_description.voxels.size_mm / 1000.0)
             / config
+                .common
                 .propagation_velocities_m_per_s
                 .get(&VoxelType::Atrioventricular)
                 .unwrap()

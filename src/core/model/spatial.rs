@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use self::{heart::Heart, sensors::Sensors, voxels::Voxels};
-use crate::core::config::model::Model;
+use crate::core::config::model::{Handcrafted, Model};
 
 /// Struct containing fields for the heart,
 /// voxels and sensors spatial model components.
@@ -41,9 +41,17 @@ impl SpatialDescription {
     #[tracing::instrument(level = "debug")]
     pub fn from_model_config(config: &Model) -> Self {
         debug!("Creating spatial description from model config");
-        let heart = Heart::from_model_config(config);
-        let voxels = Voxels::from_model_config(config);
-        let sensors = Sensors::from_model_config(config);
+        let (heart, voxels) = if config.handcrafted.is_some() {
+            let heart = Heart::from_handcrafted_model_config(config);
+            let voxels = Voxels::from_handcrafted_model_config(config);
+            (heart, voxels)
+        } else {
+            let heart = Heart::from_mri_model_config(config);
+            let voxels = Voxels::from_mri_model_config(config);
+            (heart, voxels)
+        };
+
+        let sensors = Sensors::from_model_config(&config.common);
 
         Self {
             heart,

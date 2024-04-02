@@ -56,11 +56,6 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                             AlgorithmType::PseudoInverse,
                                             "Pseudo Inverse",
                                         );
-                                        ui.selectable_value(
-                                            algorithm_type,
-                                            AlgorithmType::Loreta,
-                                            "Loreta",
-                                        );
                                     });
                             });
                             row.col(|ui| {
@@ -250,7 +245,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                             row.col(|ui| {
                                 ui.add(
                                     egui::Slider::new(
-                                        &mut algorithm.model.process_covariance_mean,
+                                        &mut algorithm.model.common.process_covariance_mean,
                                         1e-10..=1e10,
                                     )
                                     .logarithmic(true)
@@ -271,7 +266,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                             });
                             row.col(|ui| {
                                 ui.add(egui::Slider::new(
-                                    &mut algorithm.model.process_covariance_std,
+                                    &mut algorithm.model.common.process_covariance_std,
                                     0.0..=1.0,
                                 ));
                             });
@@ -293,7 +288,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 ui.label("Apply\nsystem update");
                             });
                             row.col(|ui| {
-                                ui.checkbox(&mut algorithm.model.apply_system_update, "");
+                                ui.checkbox(&mut algorithm.model.common.apply_system_update, "");
                             });
                             row.col(|ui| {
                                 ui.label(

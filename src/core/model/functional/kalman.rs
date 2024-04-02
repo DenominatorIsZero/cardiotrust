@@ -11,7 +11,7 @@ use std::{
 use tracing::{debug, trace};
 
 use super::measurement::MeasurementMatrix;
-use crate::core::config::model::Model;
+use crate::core::config::model::{Handcrafted, Model};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Gain {
@@ -52,14 +52,14 @@ impl Gain {
             measurement_matrix.values.shape()[0],
         ));
 
-        if relative_eq!(config.process_covariance_std, 0.0) {
+        if relative_eq!(config.common.process_covariance_std, 0.0) {
             process_covariance
                 .diag_mut()
-                .fill(config.process_covariance_mean);
+                .fill(config.common.process_covariance_mean);
         } else {
             let normal = Normal::<f32>::new(
-                config.process_covariance_mean,
-                config.process_covariance_std,
+                config.common.process_covariance_mean,
+                config.common.process_covariance_std,
             )
             .unwrap();
             process_covariance.diag_mut().iter_mut().for_each(|v| {
@@ -67,14 +67,14 @@ impl Gain {
             });
         }
 
-        if relative_eq!(config.measurement_covariance_std, 0.0) {
+        if relative_eq!(config.common.measurement_covariance_std, 0.0) {
             measurement_covariance
                 .diag_mut()
-                .fill(config.measurement_covariance_mean);
+                .fill(config.common.measurement_covariance_mean);
         } else {
             let normal = Normal::<f32>::new(
-                config.measurement_covariance_mean,
-                config.measurement_covariance_std,
+                config.common.measurement_covariance_mean,
+                config.common.measurement_covariance_std,
             )
             .unwrap();
             measurement_covariance.diag_mut().iter_mut().for_each(|v| {

@@ -2,7 +2,7 @@ use egui_extras::TableBody;
 use tracing::trace;
 
 use crate::core::{
-    config::model::{ControlFunction, Model},
+    config::model::{ControlFunction, Handcrafted, Model},
     model::spatial::voxels::VoxelType,
 };
 
@@ -18,7 +18,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
         });
         row.col(|ui| {
             ui.add(
-                egui::Slider::new(&mut model.measurement_covariance_mean, 1e-10..=1e10)
+                egui::Slider::new(&mut model.common.measurement_covariance_mean, 1e-10..=1e10)
                     .logarithmic(true)
                     .custom_formatter(|n, _| format!("{n:+.4e}")),
             );
@@ -37,7 +37,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
         });
         row.col(|ui| {
             ui.add(egui::Slider::new(
-                &mut model.measurement_covariance_std,
+                &mut model.common.measurement_covariance_std,
                 0.0..=1.0,
             ));
         });
@@ -54,7 +54,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
         });
     });
     // Control function
-    let control_function = &mut model.control_function;
+    let control_function = &mut model.common.control_function;
     body.row(30.0, |mut row| {
         row.col(|ui| {
             ui.label("Contorl function");
@@ -80,7 +80,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
             ui.label("Pathological");
         });
         row.col(|ui| {
-            ui.checkbox(&mut model.pathological, "");
+            ui.checkbox(&mut model.common.pathological, "");
         });
         row.col(|ui| {
             ui.label("Whether or not to place pathological tissue in the model.");
@@ -93,7 +93,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
         });
         row.col(|ui| {
             ui.add(egui::Slider::new(
-                &mut model.current_factor_in_pathology,
+                &mut model.common.current_factor_in_pathology,
                 0.0..=1.0,
             ));
         });
@@ -113,6 +113,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
             ui.add(
                 egui::Slider::new(
                     model
+                        .common
                         .propagation_velocities_m_per_s
                         .get_mut(&VoxelType::Sinoatrial)
                         .unwrap(),
@@ -139,6 +140,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
             ui.add(
                 egui::Slider::new(
                     model
+                        .common
                         .propagation_velocities_m_per_s
                         .get_mut(&VoxelType::Atrium)
                         .unwrap(),
@@ -165,6 +167,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
             ui.add(
                 egui::Slider::new(
                     model
+                        .common
                         .propagation_velocities_m_per_s
                         .get_mut(&VoxelType::Atrioventricular)
                         .unwrap(),
@@ -191,6 +194,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
             ui.add(
                 egui::Slider::new(
                     model
+                        .common
                         .propagation_velocities_m_per_s
                         .get_mut(&VoxelType::HPS)
                         .unwrap(),
@@ -217,6 +221,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
             ui.add(
                 egui::Slider::new(
                     model
+                        .common
                         .propagation_velocities_m_per_s
                         .get_mut(&VoxelType::Ventricle)
                         .unwrap(),
@@ -243,6 +248,7 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
             ui.add(
                 egui::Slider::new(
                     model
+                        .common
                         .propagation_velocities_m_per_s
                         .get_mut(&VoxelType::Pathological)
                         .unwrap(),
@@ -260,219 +266,224 @@ pub fn draw_ui_scenario_common(body: &mut TableBody, model: &mut Model) {
             );
         });
     });
-    // sinoatrial node x center percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("X Center\nSinoatrial Node");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.sa_x_center_percentage,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The center of the sinoatrial node \
+    if let Some(handcrafted) = model.handcrafted.as_mut() {
+        // sinoatrial node x center percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("X Center\nSinoatrial Node");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.sa_x_center_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The center of the sinoatrial node \
                                     in x-direction in percent.",
-            );
+                );
+            });
         });
-    });
-    // sinoatrial node y center percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("Y Center\nSinoatrial Node");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.sa_y_center_percentage,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The center of the sinoatrial node \
+        // sinoatrial node y center percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("Y Center\nSinoatrial Node");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.sa_y_center_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The center of the sinoatrial node \
                                     in y-direction in percent.",
-            );
+                );
+            });
         });
-    });
-    // atrium y stop percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("Y Stop\nAtrium");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.atrium_y_stop_percentage,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The end of the atrium \
+        // atrium y stop percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("Y Stop\nAtrium");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.atrium_y_stop_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The end of the atrium \
                                     / start of the ventricles
                                     in y-direction in percent.",
-            );
+                );
+            });
         });
-    });
-    // atrioventricular node x center percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("X Center\nAtrioventricular Node");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.av_x_center_percentage,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The center of the atrioventricular node \
+        // atrioventricular node x center percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("X Center\nAtrioventricular Node");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.av_x_center_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The center of the atrioventricular node \
                                     in x-direction in percent.",
-            );
+                );
+            });
         });
-    });
-    // hps y stop percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("Y Stop\nHPS");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.hps_y_stop_percentage,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The end of the His-Purkinje-System \
+        // hps y stop percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("Y Stop\nHPS");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.hps_y_stop_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The end of the His-Purkinje-System \
                                     in y-direction in percent.",
-            );
+                );
+            });
         });
-    });
-    // hps x start percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("X Start\nHPS");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.hps_x_start_percentage,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The start of the His-Purkinje-System \
+        // hps x start percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("X Start\nHPS");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.hps_x_start_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The start of the His-Purkinje-System \
                                     in x-direction in percent.",
-            );
+                );
+            });
         });
-    });
-    // hps x stop percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("X Stop\nHPS");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.hps_x_stop_percentage,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The end of the His-Purkinje-System \
+        // hps x stop percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("X Stop\nHPS");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.hps_x_stop_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The end of the His-Purkinje-System \
                                     in x-direction in percent.",
-            );
+                );
+            });
         });
-    });
-    // hps y up percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("Y Up\nHPS");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(&mut model.hps_y_up_percentage, 0.0..=1.0));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The end of the upwards portion \
+        // hps y up percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("Y Up\nHPS");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.hps_y_up_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The end of the upwards portion \
                                     of the His-Purkinje-System \
                                     in x-direction in percent.",
-            );
+                );
+            });
         });
-    });
-    // pathology x start percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("X Start\nPathology");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.pathology_x_start_percentage,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The start of the pathology \
+        // pathology x start percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("X Start\nPathology");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.pathology_x_start_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The start of the pathology \
                                     in x-direction in percent.",
-            );
+                );
+            });
         });
-    });
-    // pathology x stop percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("X Stop\nPathology");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.pathology_x_stop_percentage,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The end of the pathology \
+        // pathology x stop percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("X Stop\nPathology");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.pathology_x_stop_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The end of the pathology \
                                     in x-direction in percent.",
-            );
+                );
+            });
         });
-    });
-    // pathology y start percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("Y Start\nPathology");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.pathology_y_start_percentage,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The start of the pathology \
+        // pathology y start percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("Y Start\nPathology");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.pathology_y_start_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The start of the pathology \
                                     in y-direction in percent.",
-            );
+                );
+            });
         });
-    });
-    // pathology y stop percentage
-    body.row(30.0, |mut row| {
-        row.col(|ui| {
-            ui.label("Y Stop\nPathology");
-        });
-        row.col(|ui| {
-            ui.add(egui::Slider::new(
-                &mut model.pathology_y_stop_percentage,
-                0.0..=1.0,
-            ));
-        });
-        row.col(|ui| {
-            ui.label(
-                "The end of the pathology \
+        // pathology y stop percentage
+        body.row(30.0, |mut row| {
+            row.col(|ui| {
+                ui.label("Y Stop\nPathology");
+            });
+            row.col(|ui| {
+                ui.add(egui::Slider::new(
+                    &mut handcrafted.pathology_y_stop_percentage,
+                    0.0..=1.0,
+                ));
+            });
+            row.col(|ui| {
+                ui.label(
+                    "The end of the pathology \
                                     in y-direction in percent.",
-            );
+                );
+            });
         });
-    });
+    }
 }

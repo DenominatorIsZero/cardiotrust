@@ -9,7 +9,7 @@ use std::{
 use strum_macros::EnumIter;
 use tracing::{debug, trace};
 
-use crate::core::config::model::Model;
+use crate::core::config::model::{Handcrafted, Model};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Voxels {
@@ -36,17 +36,24 @@ impl Voxels {
     /// Creates a Voxels struct from the given Model config.
     #[must_use]
     #[tracing::instrument(level = "debug")]
-    pub fn from_model_config(config: &Model) -> Self {
-        debug!("Creating voxels from model config");
-        let types = VoxelTypes::from_simulation_config(config);
+    pub fn from_handcrafted_model_config(config: &Model) -> Self {
+        debug!("Creating voxels from handcrafted model config");
+        let types = VoxelTypes::from_handcrafted_model_config(config);
         let numbers = VoxelNumbers::from_voxel_types(&types);
         let positions = VoxelPositions::from_model_config(config, &types);
         Self {
-            size_mm: config.voxel_size_mm,
+            size_mm: config.common.voxel_size_mm,
             types,
             numbers,
             positions_mm: positions,
         }
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "debug")]
+    pub fn from_mri_model_config(config: &Model) -> Self {
+        debug!("Creating voxels from mri model config");
+        todo!();
     }
 
     /// Returns the total number of voxels.
@@ -167,11 +174,12 @@ impl VoxelTypes {
     )]
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn from_simulation_config(config: &Model) -> Self {
+    pub fn from_handcrafted_model_config(config: &Model) -> Self {
         trace!("Creating voxel types from simulation config");
+        let handcrafted = config.handcrafted.as_ref().unwrap();
         // Config Parameters
-        let voxel_size_mm = config.voxel_size_mm;
-        let heart_size_mm = config.heart_size_mm;
+        let voxel_size_mm = config.common.voxel_size_mm;
+        let heart_size_mm = handcrafted.heart_size_mm;
 
         let mut voxels_in_dims = [0, 0, 0];
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
@@ -185,30 +193,36 @@ impl VoxelTypes {
             .for_each(|v| *v = if *v == 0 { 1 } else { *v });
 
         // Derived Parameters
-        let sa_x_center_index = (voxels_in_dims[0] as f32 * config.sa_x_center_percentage) as usize;
-        let sa_y_center_index = (voxels_in_dims[1] as f32 * config.sa_y_center_percentage) as usize;
+        let sa_x_center_index =
+            (voxels_in_dims[0] as f32 * handcrafted.sa_x_center_percentage) as usize;
+        let sa_y_center_index =
+            (voxels_in_dims[1] as f32 * handcrafted.sa_y_center_percentage) as usize;
         let atrium_y_stop_index =
-            (voxels_in_dims[1] as f32 * config.atrium_y_stop_percentage) as usize;
-        let av_x_center_index = (voxels_in_dims[0] as f32 * config.av_x_center_percentage) as usize;
-        let hps_y_stop_index = (voxels_in_dims[1] as f32 * config.hps_y_stop_percentage) as usize;
-        let hps_x_start_index = (voxels_in_dims[0] as f32 * config.hps_x_start_percentage) as usize;
-        let hps_x_stop_index = (voxels_in_dims[0] as f32 * config.hps_x_stop_percentage) as usize;
-        let hps_y_up_index = (voxels_in_dims[1] as f32 * config.hps_y_up_percentage) as usize;
+            (voxels_in_dims[1] as f32 * handcrafted.atrium_y_stop_percentage) as usize;
+        let av_x_center_index =
+            (voxels_in_dims[0] as f32 * handcrafted.av_x_center_percentage) as usize;
+        let hps_y_stop_index =
+            (voxels_in_dims[1] as f32 * handcrafted.hps_y_stop_percentage) as usize;
+        let hps_x_start_index =
+            (voxels_in_dims[0] as f32 * handcrafted.hps_x_start_percentage) as usize;
+        let hps_x_stop_index =
+            (voxels_in_dims[0] as f32 * handcrafted.hps_x_stop_percentage) as usize;
+        let hps_y_up_index = (voxels_in_dims[1] as f32 * handcrafted.hps_y_up_percentage) as usize;
         let pathology_x_start_index =
-            (voxels_in_dims[0] as f32 * config.pathology_x_start_percentage) as usize;
+            (voxels_in_dims[0] as f32 * handcrafted.pathology_x_start_percentage) as usize;
         let pathology_x_stop_index =
-            (voxels_in_dims[0] as f32 * config.pathology_x_stop_percentage) as usize;
+            (voxels_in_dims[0] as f32 * handcrafted.pathology_x_stop_percentage) as usize;
         let pathology_y_start_index =
-            (voxels_in_dims[1] as f32 * config.pathology_y_start_percentage) as usize;
+            (voxels_in_dims[1] as f32 * handcrafted.pathology_y_start_percentage) as usize;
         let pathology_y_stop_index =
-            (voxels_in_dims[1] as f32 * config.pathology_y_stop_percentage) as usize;
+            (voxels_in_dims[1] as f32 * handcrafted.pathology_y_stop_percentage) as usize;
 
         let mut voxel_types = Self::empty(voxels_in_dims);
         voxel_types
             .values
             .indexed_iter_mut()
             .for_each(|((x, y, _z), voxel_type)| {
-                if (config.pathological)
+                if (config.common.pathological)
                     && (x >= pathology_x_start_index && x <= pathology_x_stop_index)
                     && (pathology_y_start_index <= y && y <= pathology_y_stop_index)
                 {
@@ -359,14 +373,14 @@ impl VoxelPositions {
         trace!("Creating voxel positions from model config and voxel types");
         let shape = types.values.raw_dim();
         let mut positions = Self::empty([shape[0], shape[1], shape[2]]);
-        let offset = config.voxel_size_mm / 2.0;
+        let offset = config.common.voxel_size_mm / 2.0;
 
         #[allow(clippy::cast_precision_loss)]
         types.values.indexed_iter().for_each(|((x, y, z), _)| {
             let position = arr1(&[
-                config.voxel_size_mm.mul_add(x as f32, offset),
-                config.voxel_size_mm.mul_add(y as f32, offset),
-                config.voxel_size_mm.mul_add(z as f32, offset),
+                config.common.voxel_size_mm.mul_add(x as f32, offset),
+                config.common.voxel_size_mm.mul_add(y as f32, offset),
+                config.common.voxel_size_mm.mul_add(z as f32, offset),
             ]);
             positions
                 .values
@@ -441,6 +455,8 @@ pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &V
 #[cfg(test)]
 mod tests {
 
+    use crate::core::config::model::Common;
+
     use super::*;
 
     const COMMON_PATH: &str = "tests/core/model/spatial/voxel/mri";
@@ -465,11 +481,17 @@ mod tests {
     #[test]
     fn no_pathology_full_states() {
         let config = Model {
-            heart_size_mm: [10.0, 10.0, 10.0],
-            voxel_size_mm: 1.0,
+            handcrafted: Some(Handcrafted {
+                heart_size_mm: [10.0, 10.0, 10.0],
+                ..Default::default()
+            }),
+            common: Common {
+                voxel_size_mm: 1.0,
+                ..Default::default()
+            },
             ..Default::default()
         };
-        let voxels = Voxels::from_model_config(&config);
+        let voxels = Voxels::from_handcrafted_model_config(&config);
 
         assert_eq!(1000, voxels.count());
         assert_eq!(3000, voxels.count_states());
@@ -498,7 +520,7 @@ mod tests {
     #[test]
     fn some_voxel_types_default() {
         let config = Model::default();
-        let types = VoxelTypes::from_simulation_config(&config);
+        let types = VoxelTypes::from_handcrafted_model_config(&config);
 
         let num_sa = types
             .values

@@ -168,7 +168,7 @@ pub fn run_epoch(
 
         derivatives.calculate(functional_description, estimations, config, time_index);
 
-        if config.model.apply_system_update {
+        if config.model.common.apply_system_update {
             if config.calculate_kalman_gain {
                 update_kalman_gain_and_check_convergence(estimations, functional_description);
             }
@@ -403,7 +403,7 @@ mod test {
     #[test]
     fn loss_decreases() {
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -412,7 +412,7 @@ mod test {
             epochs: 3,
             ..Default::default()
         };
-        algorithm_config.model.apply_system_update = true;
+        algorithm_config.model.common.apply_system_update = true;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -451,7 +451,7 @@ mod test {
     fn loss_decreases_and_plot() {
         setup(Some("default"));
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -464,7 +464,7 @@ mod test {
         )
         .expect("Model paramters to be valid");
         algorithm_config.epochs = 10;
-        algorithm_config.model.apply_system_update = true;
+        algorithm_config.model.common.apply_system_update = true;
 
         let mut results = Results::new(
             algorithm_config.epochs,
@@ -546,7 +546,7 @@ mod test {
     #[test]
     fn loss_decreases_kalman() {
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -556,7 +556,7 @@ mod test {
             epochs: 3,
             ..Default::default()
         };
-        algorithm_config.model.apply_system_update = true;
+        algorithm_config.model.common.apply_system_update = true;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -593,7 +593,7 @@ mod test {
     #[test]
     fn loss_decreases_no_kalman() {
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -606,7 +606,7 @@ mod test {
         )
         .expect("Model parameters to be valid.");
         algorithm_config.epochs = 3;
-        algorithm_config.model.apply_system_update = false;
+        algorithm_config.model.common.apply_system_update = false;
 
         let mut results = Results::new(
             algorithm_config.epochs,
@@ -639,7 +639,7 @@ mod test {
     fn loss_decreases_no_kalman_and_plot() {
         setup(Some("no_kalman"));
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -652,7 +652,7 @@ mod test {
         )
         .expect("Model parameters to be valid.");
         algorithm_config.epochs = 10;
-        algorithm_config.model.apply_system_update = false;
+        algorithm_config.model.common.apply_system_update = false;
 
         let mut results = Results::new(
             algorithm_config.epochs,
@@ -735,7 +735,7 @@ mod test {
     fn loss_decreases_kalman_and_plot() {
         setup(Some("full_kalman"));
         let mut simulation_config = SimulationConfig::default();
-        simulation_config.model.pathological = true;
+        simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -744,7 +744,7 @@ mod test {
             epochs: 10,
             ..Default::default()
         };
-        algorithm_config.model.apply_system_update = true;
+        algorithm_config.model.common.apply_system_update = true;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -847,7 +847,7 @@ mod test {
         .expect("Model parameters to be valid.");
         model.functional_description.ap_params.gains.values *= 2.0;
         algorithm_config.epochs = 1;
-        algorithm_config.model.apply_system_update = false;
+        algorithm_config.model.common.apply_system_update = false;
         algorithm_config.constrain_system_states = true;
 
         let mut results = Results::new(
@@ -892,7 +892,7 @@ mod test {
         model.functional_description.ap_params.gains.values *= 2.0;
         algorithm_config.epochs = 1;
         algorithm_config.constrain_system_states = false;
-        algorithm_config.model.apply_system_update = false;
+        algorithm_config.model.common.apply_system_update = false;
 
         let mut results = Results::new(
             algorithm_config.epochs,

@@ -9,7 +9,6 @@ pub enum AlgorithmType {
     #[default]
     ModelBased,
     PseudoInverse,
-    Loreta,
 }
 
 #[allow(clippy::struct_excessive_bools)]

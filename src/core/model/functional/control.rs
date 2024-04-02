@@ -10,7 +10,7 @@ use std::{
 use tracing::{debug, trace};
 
 use crate::core::{
-    config::model::Model,
+    config::model::{Handcrafted, Model},
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
 
@@ -178,7 +178,7 @@ mod test {
 
     use approx::assert_relative_eq;
 
-    use crate::vis::plotting::png::line::standard_time_plot;
+    use crate::{core::config::model::Model, vis::plotting::png::line::standard_time_plot};
 
     use super::*;
 

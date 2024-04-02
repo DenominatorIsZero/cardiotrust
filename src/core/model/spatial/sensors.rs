@@ -7,7 +7,7 @@ use std::{
 };
 use tracing::{debug, trace};
 
-use crate::core::config::model::Model;
+use crate::core::config::model::Common;
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -38,7 +38,7 @@ impl Sensors {
     /// The sensor orientations alternate between x, y, and z axes aligned.
     #[must_use]
     #[tracing::instrument(level = "debug")]
-    pub fn from_model_config(config: &Model) -> Self {
+    pub fn from_model_config(config: &Common) -> Self {
         debug!("Creating sensors from model config");
         #[allow(clippy::cast_precision_loss)]
         let distance = [
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn count_from_simulation() {
-        let config = Model {
+        let config = Common {
             sensors_per_axis: [10, 20, 30],
             ..Default::default()
         };

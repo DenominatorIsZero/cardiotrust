@@ -336,7 +336,7 @@ mod test {
     #[test]
     fn run_simulation_pathological() {
         let mut config = SimulationConfig::default();
-        config.model.pathological = true;
+        config.model.common.pathological = true;
         let mut simulation = Simulation::from_config(&config).unwrap();
         simulation.run();
         let max = *simulation.system_states.values.max_skipnan();
@@ -351,7 +351,7 @@ mod test {
     fn run_simulation_pathological_and_plot() {
         setup(Some("pathological"));
         let mut config = SimulationConfig::default();
-        config.model.pathological = true;
+        config.model.common.pathological = true;
         let mut simulation = Simulation::from_config(&config).unwrap();
         simulation.run();
         let max = *simulation.system_states.values.max_skipnan();

@@ -204,12 +204,15 @@ impl Scenario {
         let model = &mut self.config.algorithm.model;
         match &self.config.simulation {
             Some(simulation) => {
-                model.sensors_per_axis = simulation.model.sensors_per_axis;
-                model.sensor_array_size_mm = simulation.model.sensor_array_size_mm;
-                model.sensor_array_origin_mm = simulation.model.sensor_array_origin_mm;
-                model.voxel_size_mm = simulation.model.voxel_size_mm;
-                model.heart_size_mm = simulation.model.heart_size_mm;
-                model.heart_origin_mm = simulation.model.heart_origin_mm;
+                model.common.sensors_per_axis = simulation.model.common.sensors_per_axis;
+                model.common.sensor_array_size_mm = simulation.model.common.sensor_array_size_mm;
+                model.common.sensor_array_origin_mm =
+                    simulation.model.common.sensor_array_origin_mm;
+                model.common.voxel_size_mm = simulation.model.common.voxel_size_mm;
+                model.common.heart_offset_mm = simulation.model.common.heart_offset_mm;
+                if let Some(handcrafted) = simulation.model.handcrafted.as_ref() {
+                    model.handcrafted.as_mut().unwrap().heart_size_mm = handcrafted.heart_size_mm;
+                }
             }
             None => todo!(),
         };
@@ -423,7 +426,6 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         AlgorithmType::PseudoInverse => {
             run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary);
         }
-        AlgorithmType::Loreta => panic!("Algorithm type not implemented"),
     }
 
     results

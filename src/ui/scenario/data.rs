@@ -72,7 +72,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                         });
                         // Sensors per axis
-                        let sensors_per_axis = &mut simulation.model.sensors_per_axis;
+                        let sensors_per_axis = &mut simulation.model.common.sensors_per_axis;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Sensors per axis");
@@ -98,7 +98,8 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                         });
                         // Sensor array size
-                        let sensor_array_size_mm = &mut simulation.model.sensor_array_size_mm;
+                        let sensor_array_size_mm =
+                            &mut simulation.model.common.sensor_array_size_mm;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Sensor array size");
@@ -127,7 +128,8 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                         });
                         // Sensor array origin
-                        let sensor_array_origin_mm = &mut simulation.model.sensor_array_origin_mm;
+                        let sensor_array_origin_mm =
+                            &mut simulation.model.common.sensor_array_origin_mm;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
                                 ui.label("Sensor array origin");
@@ -166,7 +168,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             row.col(|ui| {
                                 ui.add(
                                     egui::Slider::new(
-                                        &mut simulation.model.voxel_size_mm,
+                                        &mut simulation.model.common.voxel_size_mm,
                                         1.0..=10.0,
                                     )
                                     .suffix(" mm"),
@@ -180,40 +182,11 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                                 );
                             });
                         });
-                        // Heart size
-                        let heart_size_mm = &mut simulation.model.heart_size_mm;
-                        body.row(30.0, |mut row| {
-                            row.col(|ui| {
-                                ui.label("Heart size");
-                            });
-                            row.col(|ui| {
-                                ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
-                                    ui.add(
-                                        egui::DragValue::new(&mut heart_size_mm[0])
-                                            .prefix("x: ")
-                                            .suffix(" mm"),
-                                    );
-                                    ui.add(
-                                        egui::DragValue::new(&mut heart_size_mm[1])
-                                            .prefix("y: ")
-                                            .suffix(" mm"),
-                                    );
-                                    ui.add(
-                                        egui::DragValue::new(&mut heart_size_mm[2])
-                                            .prefix("z: ")
-                                            .suffix(" mm"),
-                                    );
-                                });
-                            });
-                            row.col(|ui| {
-                                ui.label("The overall size of the heart in mm.");
-                            });
-                        });
                         // Heart origin
-                        let heart_origin_mm = &mut simulation.model.heart_origin_mm;
+                        let heart_origin_mm = &mut simulation.model.common.heart_offset_mm;
                         body.row(30.0, |mut row| {
                             row.col(|ui| {
-                                ui.label("Heart origin");
+                                ui.label("Heart offset");
                             });
                             row.col(|ui| {
                                 ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
@@ -236,11 +209,42 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
                             });
                             row.col(|ui| {
                                 ui.label(
-                                    "The origin of the sensor array with \
+                                    "The offset of the heart with \
                                 regard to the body coordinate system in mm.",
                                 );
                             });
                         });
+                        if let Some(handcrafted) = simulation.model.handcrafted.as_mut() {
+                            // Heart size
+                            let heart_size_mm = &mut handcrafted.heart_size_mm;
+                            body.row(30.0, |mut row| {
+                                row.col(|ui| {
+                                    ui.label("Heart size");
+                                });
+                                row.col(|ui| {
+                                    ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                                        ui.add(
+                                            egui::DragValue::new(&mut heart_size_mm[0])
+                                                .prefix("x: ")
+                                                .suffix(" mm"),
+                                        );
+                                        ui.add(
+                                            egui::DragValue::new(&mut heart_size_mm[1])
+                                                .prefix("y: ")
+                                                .suffix(" mm"),
+                                        );
+                                        ui.add(
+                                            egui::DragValue::new(&mut heart_size_mm[2])
+                                                .prefix("z: ")
+                                                .suffix(" mm"),
+                                        );
+                                    });
+                                });
+                                row.col(|ui| {
+                                    ui.label("The overall size of the heart in mm.");
+                                });
+                            });
+                        }
                         draw_ui_scenario_common(&mut body, &mut simulation.model);
                     });
             });

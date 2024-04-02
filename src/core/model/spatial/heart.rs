@@ -7,7 +7,7 @@ use std::{
 };
 use tracing::{debug, trace};
 
-use crate::core::config::model::Model;
+use crate::core::config::model::{Handcrafted, Model};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Heart {
@@ -34,12 +34,19 @@ impl Heart {
     /// corresponding values in the Model config.
     #[must_use]
     #[tracing::instrument(level = "debug")]
-    pub fn from_model_config(config: &Model) -> Self {
-        debug!("Creating heart from model config");
+    pub fn from_handcrafted_model_config(config: &Model) -> Self {
+        debug!("Creating heart from handcrafted model config");
         Self {
-            origin_mm: arr1(&config.heart_origin_mm),
-            size_mm: arr1(&config.heart_size_mm),
+            origin_mm: arr1(&config.common.heart_offset_mm),
+            size_mm: arr1(&config.handcrafted.as_ref().unwrap().heart_size_mm),
         }
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "debug")]
+    pub fn from_mri_model_config(config: &Model) -> Self {
+        debug!("Creating heart from mri model config");
+        todo!();
     }
 
     /// Saves the heart origin and size as .npy files in the given path.
