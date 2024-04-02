@@ -7,7 +7,7 @@ use std::{
 };
 use tracing::{debug, trace};
 
-use crate::core::config::model::{Handcrafted, Model};
+use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Heart {

@@ -18,7 +18,7 @@ use self::{
     },
 };
 use crate::core::{
-    config::model::{Handcrafted, Model},
+    config::model::Model,
     model::spatial::{
         voxels::{self, VoxelType},
         SpatialDescription,

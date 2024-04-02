@@ -11,7 +11,7 @@ use std::{
 use tracing::{debug, trace};
 
 use super::measurement::MeasurementMatrix;
-use crate::core::config::model::{Handcrafted, Model};
+use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Gain {

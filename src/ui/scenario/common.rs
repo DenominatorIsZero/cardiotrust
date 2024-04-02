@@ -2,7 +2,7 @@ use egui_extras::TableBody;
 use tracing::trace;
 
 use crate::core::{
-    config::model::{ControlFunction, Handcrafted, Model},
+    config::model::{ControlFunction, Model},
     model::spatial::voxels::VoxelType,
 };
 

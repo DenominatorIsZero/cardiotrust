@@ -106,7 +106,7 @@ mod test {
     use ndarray_stats::QuantileExt;
 
     use crate::core::{
-        config::model::{Handcrafted, Model},
+        config::model::Model,
         model::spatial::{voxels::VoxelType, SpatialDescription},
     };
 

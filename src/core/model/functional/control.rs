@@ -10,7 +10,7 @@ use std::{
 use tracing::{debug, trace};
 
 use crate::core::{
-    config::model::{Handcrafted, Model},
+    config::model::Model,
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
 

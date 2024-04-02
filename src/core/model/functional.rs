@@ -17,7 +17,7 @@ use self::{
     measurement::{MeasurementCovariance, MeasurementMatrix},
 };
 use super::spatial::SpatialDescription;
-use crate::core::config::model::{Handcrafted, Model};
+use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
@@ -161,7 +161,6 @@ fn process_covariance_from_model_config(
 
 #[cfg(test)]
 mod tests {
-    use crate::core::config::model::Handcrafted;
 
     use super::*;
 

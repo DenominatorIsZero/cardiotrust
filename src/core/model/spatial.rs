@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use self::{heart::Heart, sensors::Sensors, voxels::Voxels};
-use crate::core::config::model::{Handcrafted, Model};
+use crate::core::config::model::Model;
 
 /// Struct containing fields for the heart,
 /// voxels and sensors spatial model components.
