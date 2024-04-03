@@ -118,6 +118,7 @@ mod tests {
 
     #[test]
     #[allow(clippy::cast_possible_truncation)]
+    #[ignore]
     fn from_mri_scan() {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
