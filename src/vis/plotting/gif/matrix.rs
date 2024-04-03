@@ -8,7 +8,7 @@ use std::fs::File;
 use std::{error::Error, path::Path};
 use tracing::trace;
 
-use crate::vis::plotting::gif::DEFAULT_TIME_PER_FRAME_MS;
+use crate::vis::plotting::gif::_DEFAULT_TIME_PER_FRAME_MS;
 use crate::vis::plotting::png::matrix::matrix_plot;
 
 use super::GifBundle;
@@ -41,7 +41,7 @@ where
 {
     trace!("Generating matrix over slices plot.");
 
-    let time_per_frame_ms = time_per_frame_ms.unwrap_or(DEFAULT_TIME_PER_FRAME_MS);
+    let time_per_frame_ms = time_per_frame_ms.unwrap_or(_DEFAULT_TIME_PER_FRAME_MS);
 
     let axis = axis.unwrap_or(Axis(2));
 

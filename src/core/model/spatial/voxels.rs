@@ -2,7 +2,6 @@ use ndarray::{arr1, s, Array3, Array4, Dim};
 use ndarray_npy::WriteNpyExt;
 
 use num_derive::FromPrimitive;
-use num_traits::FromPrimitive;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
@@ -11,10 +10,7 @@ use std::{
 use strum_macros::{EnumCount, EnumIter};
 use tracing::{debug, trace};
 
-use crate::{
-    core::{config::model::Model, model::spatial::nifti::load_from_nii},
-    vis::plotting::png::voxel_type,
-};
+use crate::core::{config::model::Model, model::spatial::nifti::load_from_nii};
 
 use super::nifti::{determine_voxel_type, MriData};
 
@@ -166,6 +162,7 @@ impl Voxels {
     }
 }
 
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct VoxelTypes {
     pub values: Array3<VoxelType>,
@@ -516,16 +513,16 @@ pub enum VoxelType {
     Torso,
     Chamber,
 }
+
 impl VoxelType {
-    pub(crate) fn from_mri_data(value: usize) -> VoxelType {
+    pub(crate) const fn from_mri_data(value: usize) -> Self {
         match value {
-            0 => VoxelType::Atrium,
-            1 => VoxelType::Vessel,
-            2 => VoxelType::Torso,
-            3 => VoxelType::None,
-            4 => VoxelType::Chamber,
-            5 => VoxelType::Sinoatrial,
-            _ => VoxelType::None,
+            0 => Self::Atrium,
+            1 => Self::Vessel,
+            2 => Self::Torso,
+            4 => Self::Chamber,
+            5 => Self::Sinoatrial,
+            _ => Self::None,
         }
     }
 }
@@ -537,10 +534,7 @@ impl VoxelType {
 pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &VoxelType) -> bool {
     trace!("Checking if connection is allowed");
     match output_voxel_type {
-        VoxelType::None => false,
-        VoxelType::Vessel => false,
-        VoxelType::Torso => false,
-        VoxelType::Chamber => false,
+        VoxelType::None | VoxelType::Vessel | VoxelType::Torso | VoxelType::Chamber => false,
         VoxelType::Sinoatrial => {
             [VoxelType::Atrium, VoxelType::Pathological].contains(input_voxel_type)
         }
@@ -578,7 +572,7 @@ mod tests {
 
     use super::*;
 
-    const COMMON_PATH: &str = "tests/core/model/spatial/voxel/";
+    const _COMMON_PATH: &str = "tests/core/model/spatial/voxel/";
 
     #[test]
     fn count_states_none() {

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::Path};
+use std::path::Path;
 
 use ndarray::Ix3;
 
@@ -38,13 +38,15 @@ where
     }
 }
 
-pub fn determine_voxel_type(
+#[must_use]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+pub(crate) fn determine_voxel_type(
     config: &Model,
     position: ndarray::ArrayBase<ndarray::ViewRepr<&f32>, ndarray::Dim<[usize; 1]>>,
     mri_data: &MriData,
     sinoatrial_placed: bool,
 ) -> VoxelType {
-    let mut count = [0 as usize; VoxelType::COUNT];
+    let mut count = [0; VoxelType::COUNT];
 
     // calculate the search area
     let x_start_mm = position[0]
@@ -87,7 +89,7 @@ pub fn determine_voxel_type(
         return VoxelType::Sinoatrial;
     }
 
-    if let Some((index, &max_value)) = count.iter().enumerate().max_by_key(|&(_, &value)| value) {
+    if let Some((index, _)) = count.iter().enumerate().max_by_key(|&(_, &value)| value) {
         return num_traits::FromPrimitive::from_usize(index).unwrap();
     }
     panic!("No voxel type found");
