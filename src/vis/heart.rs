@@ -240,7 +240,7 @@ pub const fn type_to_color(voxel_type: VoxelType) -> Color {
             blue: 0.541,
             alpha,
         },
-        VoxelType::Atrioventricular => Color::Rgba {
+        VoxelType::Atrioventricular | VoxelType::Vessel => Color::Rgba {
             red: 0.0,
             green: 0.804,
             blue: 0.424,
@@ -262,6 +262,18 @@ pub const fn type_to_color(voxel_type: VoxelType) -> Color {
             red: 0.651,
             green: 0.463,
             blue: 0.114,
+            alpha,
+        },
+        VoxelType::Torso => Color::Rgba {
+            red: 0.63,
+            green: 0.69,
+            blue: 0.73,
+            alpha,
+        },
+        VoxelType::Chamber => Color::Rgba {
+            red: 0.12,
+            green: 0.35,
+            blue: 0.54,
             alpha,
         },
     }

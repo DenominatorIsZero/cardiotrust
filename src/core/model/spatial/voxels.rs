@@ -1,15 +1,22 @@
-use ndarray::{arr1, s, Array3, Array4};
+use ndarray::{arr1, s, Array3, Array4, Dim};
 use ndarray_npy::WriteNpyExt;
 
+use num_derive::FromPrimitive;
+use num_traits::FromPrimitive;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
 };
-use strum_macros::EnumIter;
+use strum_macros::{EnumCount, EnumIter};
 use tracing::{debug, trace};
 
-use crate::core::config::model::Model;
+use crate::{
+    core::{config::model::Model, model::spatial::nifti::load_from_nii},
+    vis::plotting::png::voxel_type,
+};
+
+use super::nifti::{determine_voxel_type, MriData};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Voxels {
@@ -40,7 +47,8 @@ impl Voxels {
         debug!("Creating voxels from handcrafted model config");
         let types = VoxelTypes::from_handcrafted_model_config(config);
         let numbers = VoxelNumbers::from_voxel_types(&types);
-        let positions = VoxelPositions::from_model_config(config, &types);
+        let positions =
+            VoxelPositions::from_handcrafted_model_config(config, types.values.raw_dim());
         Self {
             size_mm: config.common.voxel_size_mm,
             types,
@@ -53,7 +61,18 @@ impl Voxels {
     #[tracing::instrument(level = "debug")]
     pub fn from_mri_model_config(config: &Model) -> Self {
         debug!("Creating voxels from mri model config");
-        todo!();
+
+        let mri_data = load_from_nii(&config.mri.as_ref().unwrap().path);
+
+        let positions = VoxelPositions::from_mri_model_config(config, &mri_data);
+        let types = VoxelTypes::from_mri_model_config(config, &positions, &mri_data);
+        let numbers = VoxelNumbers::from_voxel_types(&types);
+        Self {
+            size_mm: config.common.voxel_size_mm,
+            types,
+            numbers,
+            positions_mm: positions,
+        }
     }
 
     /// Returns the total number of voxels.
@@ -255,18 +274,38 @@ impl VoxelTypes {
     fn save_npy(&self, path: &std::path::Path) {
         trace!("Saving voxel types to npy files");
         let writer = BufWriter::new(File::create(path.join("voxel_types.npy")).unwrap());
-        self.values
-            .map(|v| match v {
-                VoxelType::None => 0,
-                VoxelType::Sinoatrial => 1,
-                VoxelType::Atrium => 2,
-                VoxelType::Atrioventricular => 3,
-                VoxelType::HPS => 4,
-                VoxelType::Ventricle => 5,
-                VoxelType::Pathological => 6,
-            })
-            .write_npy(writer)
-            .unwrap();
+        self.values.map(|v| *v as u32).write_npy(writer).unwrap();
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "trace")]
+    pub fn from_mri_model_config(
+        config: &Model,
+        positions: &VoxelPositions,
+        mri_data: &MriData,
+    ) -> Self {
+        let mut voxel_types = Self::empty([
+            positions.values.raw_dim()[0],
+            positions.values.raw_dim()[1],
+            positions.values.raw_dim()[2],
+        ]);
+
+        let mut sinoatrial_placed = false;
+
+        voxel_types
+            .values
+            .indexed_iter_mut()
+            .for_each(|(index, voxel_type)| {
+                let (x, y, z) = index;
+                let position = positions.values.slice(s![x, y, z, ..]);
+
+                *voxel_type = determine_voxel_type(config, position, mri_data, sinoatrial_placed);
+                if *voxel_type == VoxelType::Sinoatrial {
+                    sinoatrial_placed = true;
+                }
+            });
+
+        voxel_types
     }
 }
 
@@ -369,24 +408,72 @@ impl VoxelPositions {
     /// size and dimensions specified in the `Model`.
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn from_model_config(config: &Model, types: &VoxelTypes) -> Self {
-        trace!("Creating voxel positions from model config and voxel types");
-        let shape = types.values.raw_dim();
+    pub fn from_handcrafted_model_config(config: &Model, shape: Dim<[usize; 3]>) -> Self {
+        trace!("Creating voxel positions from handcrafted model config");
         let mut positions = Self::empty([shape[0], shape[1], shape[2]]);
         let offset = config.common.voxel_size_mm / 2.0;
 
         #[allow(clippy::cast_precision_loss)]
-        types.values.indexed_iter().for_each(|((x, y, z), _)| {
-            let position = arr1(&[
-                config.common.voxel_size_mm.mul_add(x as f32, offset),
-                config.common.voxel_size_mm.mul_add(y as f32, offset),
-                config.common.voxel_size_mm.mul_add(z as f32, offset),
-            ]);
-            positions
-                .values
-                .slice_mut(s![x, y, z, ..])
-                .assign(&position);
-        });
+        for x in 0..shape[0] {
+            for y in 0..shape[1] {
+                for z in 0..shape[2] {
+                    let position = arr1(&[
+                        config.common.voxel_size_mm.mul_add(x as f32, offset),
+                        config.common.voxel_size_mm.mul_add(y as f32, offset),
+                        config.common.voxel_size_mm.mul_add(z as f32, offset),
+                    ]);
+                    positions
+                        .values
+                        .slice_mut(s![x, y, z, ..])
+                        .assign(&position);
+                }
+            }
+        }
+        positions
+    }
+
+    #[must_use]
+    #[allow(
+        clippy::cast_precision_loss,
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss
+    )]
+    #[tracing::instrument(level = "trace")]
+    pub fn from_mri_model_config(config: &Model, mri_data: &MriData) -> Self {
+        trace!("Creating voxel positions from mri model config");
+        let size_mm = [
+            mri_data.voxel_size_mm[0] * mri_data.segmentation.shape()[0] as f32,
+            mri_data.voxel_size_mm[1] * mri_data.segmentation.shape()[1] as f32,
+            mri_data.voxel_size_mm[2] * mri_data.segmentation.shape()[2] as f32,
+        ];
+        let num_voxels = [
+            (size_mm[0] / config.common.voxel_size_mm) as usize,
+            (size_mm[1] / config.common.voxel_size_mm) as usize,
+            (size_mm[2] / config.common.voxel_size_mm) as usize,
+        ];
+        let mut positions = Self::empty(num_voxels);
+        let offset = config.common.voxel_size_mm / 2.0;
+        let offset = [
+            offset + mri_data.offset_mm[0] + config.common.heart_offset_mm[0],
+            offset + mri_data.offset_mm[1] + config.common.heart_offset_mm[1],
+            offset + mri_data.offset_mm[2] + config.common.heart_offset_mm[2],
+        ];
+
+        for x in 0..num_voxels[0] {
+            for y in 0..num_voxels[1] {
+                for z in 0..num_voxels[2] {
+                    let position = arr1(&[
+                        config.common.voxel_size_mm.mul_add(x as f32, offset[0]),
+                        config.common.voxel_size_mm.mul_add(y as f32, offset[1]),
+                        config.common.voxel_size_mm.mul_add(z as f32, offset[2]),
+                    ]);
+                    positions
+                        .values
+                        .slice_mut(s![x, y, z, ..])
+                        .assign(&position);
+                }
+            }
+        }
         positions
     }
 
@@ -402,7 +489,20 @@ impl VoxelPositions {
     }
 }
 
-#[derive(Default, Debug, PartialEq, Eq, Hash, Deserialize, Serialize, Copy, Clone, EnumIter)]
+#[derive(
+    Default,
+    Debug,
+    PartialEq,
+    Eq,
+    Hash,
+    Deserialize,
+    Serialize,
+    Copy,
+    Clone,
+    EnumIter,
+    EnumCount,
+    FromPrimitive,
+)]
 pub enum VoxelType {
     #[default]
     None,
@@ -412,6 +512,22 @@ pub enum VoxelType {
     HPS,
     Ventricle,
     Pathological,
+    Vessel,
+    Torso,
+    Chamber,
+}
+impl VoxelType {
+    pub(crate) fn from_mri_data(value: usize) -> VoxelType {
+        match value {
+            0 => VoxelType::Atrium,
+            1 => VoxelType::Vessel,
+            2 => VoxelType::Torso,
+            3 => VoxelType::None,
+            4 => VoxelType::Chamber,
+            5 => VoxelType::Sinoatrial,
+            _ => VoxelType::None,
+        }
+    }
 }
 
 /// Checks if a connection between the given input and output voxel types is allowed
@@ -422,6 +538,9 @@ pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &V
     trace!("Checking if connection is allowed");
     match output_voxel_type {
         VoxelType::None => false,
+        VoxelType::Vessel => false,
+        VoxelType::Torso => false,
+        VoxelType::Chamber => false,
         VoxelType::Sinoatrial => {
             [VoxelType::Atrium, VoxelType::Pathological].contains(input_voxel_type)
         }
@@ -455,11 +574,11 @@ pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &V
 #[cfg(test)]
 mod tests {
 
-    use crate::core::config::model::Common;
+    use crate::core::config::model::{Common, Handcrafted};
 
     use super::*;
 
-    const COMMON_PATH: &str = "tests/core/model/spatial/voxel/mri";
+    const COMMON_PATH: &str = "tests/core/model/spatial/voxel/";
 
     #[test]
     fn count_states_none() {
