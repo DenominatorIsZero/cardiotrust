@@ -1,7 +1,6 @@
 use gif::{Encoder, Frame, Repeat};
 
-use ndarray::{ArrayBase, Axis, Ix3};
-use ndarray_stats::QuantileExt;
+use ndarray::Axis;
 
 use std::fs::File;
 
@@ -10,7 +9,6 @@ use tracing::trace;
 
 use crate::core::model::spatial::voxels::{VoxelPositions, VoxelTypes};
 use crate::vis::plotting::gif::_DEFAULT_TIME_PER_FRAME_MS;
-use crate::vis::plotting::png::matrix::matrix_plot;
 use crate::vis::plotting::png::voxel_type::voxel_type_plot;
 use crate::vis::plotting::PlotSlice;
 

@@ -1,11 +1,10 @@
 use std::path::Path;
 
-use bevy::ui::debug;
 use ndarray::Ix3;
 
 use nifti::{IntoNdArray, NiftiObject, ReaderOptions};
 use strum::EnumCount;
-use tracing::{debug, debug_span, trace};
+use tracing::{debug, trace};
 
 use crate::core::config::model::Model;
 
@@ -41,7 +40,7 @@ where
 
 #[must_use]
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-#[tracing::instrument(level = "debug", skip_all)]
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn determine_voxel_type(
     config: &Model,
     position: ndarray::ArrayBase<ndarray::ViewRepr<&f32>, ndarray::Dim<[usize; 1]>>,
@@ -49,7 +48,7 @@ pub(crate) fn determine_voxel_type(
     sinoatrial_placed: bool,
 ) -> VoxelType {
     let mut count = [0; VoxelType::COUNT];
-    debug!("Determining voxel type at position {position:?}");
+    trace!("Determining voxel type at position {position:?}");
 
     // calculate the search area
     let x_start_mm = position[0]
@@ -71,9 +70,14 @@ pub(crate) fn determine_voxel_type(
     let z_stop_mm = position[2] - config.common.heart_offset_mm[2] - mri_data.offset_mm[2]
         + config.common.voxel_size_mm / 2.0;
 
-    debug!(
+    trace!(
         "Searching for voxel type in range [{}, {}, {}, {}, {}, {}]",
-        x_start_mm, x_stop_mm, y_start_mm, y_stop_mm, z_start_mm, z_stop_mm
+        x_start_mm,
+        x_stop_mm,
+        y_start_mm,
+        y_stop_mm,
+        z_start_mm,
+        z_stop_mm
     );
 
     let x_start_index = (x_start_mm / mri_data.voxel_size_mm[0]).floor() as usize;
@@ -83,16 +87,19 @@ pub(crate) fn determine_voxel_type(
     let z_start_index = (z_start_mm / mri_data.voxel_size_mm[2]).floor() as usize;
     let z_stop_index = (z_stop_mm / mri_data.voxel_size_mm[2]).ceil() as usize;
 
-    debug!(
+    trace!(
         "Searching for voxel type in range [{}, {}, {}, {}, {}, {}]",
-        x_start_index, x_stop_index, y_start_index, y_stop_index, z_start_index, z_stop_index
+        x_start_index,
+        x_stop_index,
+        y_start_index,
+        y_stop_index,
+        z_start_index,
+        z_stop_index
     );
 
     for x in x_start_index..x_stop_index {
         for y in y_start_index..y_stop_index {
             for z in z_start_index..z_stop_index {
-                let data = mri_data.segmentation[[x, y, z]];
-                debug!("Voxel value: {data}");
                 let voxel_type =
                     VoxelType::from_mri_data(mri_data.segmentation[[x, y, z]] as usize);
                 count[voxel_type as usize] += 1;
@@ -119,7 +126,7 @@ pub(crate) fn determine_voxel_type(
             .unwrap();
         voxel_type = num_traits::FromPrimitive::from_usize(index).unwrap();
     }
-    debug!("Placing Voxel type: {index:?} ({voxel_type:?}), count: {count:?}");
+    trace!("Placing Voxel type: {index:?} ({voxel_type:?}), count: {count:?}");
     voxel_type
 }
 
