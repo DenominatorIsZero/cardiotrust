@@ -14,6 +14,7 @@ pub enum AlgorithmType {
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Algorithm {
+    pub model: Model,
     #[serde(default)]
     pub algorithm_type: AlgorithmType,
     pub epochs: usize,
@@ -31,7 +32,6 @@ pub struct Algorithm {
     pub regularization_strength: f32,
     #[serde(default)]
     pub regularization_threshold: f32,
-    pub model: Model,
     #[serde(default)]
     pub constrain_system_states: bool,
     #[serde(default)]
