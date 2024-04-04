@@ -101,7 +101,7 @@ impl Voxels {
         self.types
             .values
             .iter()
-            .filter(|voxel| **voxel != VoxelType::None)
+            .filter(|voxel| voxel.is_connectable())
             .count()
             * 3
     }
@@ -124,11 +124,12 @@ impl Voxels {
         (0 <= x && x < (i32::try_from(x_max).unwrap()))
             && (0 <= y && y < (i32::try_from(y_max).unwrap()))
             && (0 <= z && z < (i32::try_from(z_max).unwrap()))
-            && (self.types.values[(
+            && self.types.values[(
                 usize::try_from(x).unwrap(),
                 usize::try_from(y).unwrap(),
                 usize::try_from(z).unwrap(),
-            )] != VoxelType::None)
+            )]
+                .is_connectable()
     }
 
     /// Returns the index of the first voxel of type `v_type`.
@@ -342,7 +343,7 @@ impl VoxelNumbers {
     /// Other voxels will have their number set to a incrementing integer,
     /// starting from 0 and incrementing by 3 for each voxel.
     #[must_use]
-    #[tracing::instrument(level = "trace")]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn from_voxel_types(types: &VoxelTypes) -> Self {
         trace!("Creating voxel numbers from voxel types");
         let mut numbers = Self {
@@ -355,15 +356,11 @@ impl VoxelNumbers {
             .iter_mut()
             .zip(types.values.iter())
             .for_each(|(number, voxel_type)| {
-                if *voxel_type == VoxelType::None
-                    || *voxel_type == VoxelType::Torso
-                    || *voxel_type == VoxelType::Chamber
-                    || *voxel_type == VoxelType::Vessel
-                {
-                    *number = None;
-                } else {
+                if voxel_type.is_connectable() {
                     *number = Some(current_number);
                     current_number += 3;
+                } else {
+                    *number = None;
                 }
             });
         numbers
@@ -439,7 +436,7 @@ impl VoxelPositions {
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss
     )]
-    #[tracing::instrument(level = "debug")]
+    #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_mri_model_config(config: &Model, mri_data: &MriData) -> Self {
         trace!("Creating voxel positions from mri model config");
         let size_mm = [
@@ -528,6 +525,18 @@ impl VoxelType {
             6 => Self::Sinoatrial,
             _ => Self::None,
         }
+    }
+
+    pub(crate) const fn is_connectable(self) -> bool {
+        matches!(
+            self,
+            Self::Sinoatrial
+                | Self::Atrium
+                | Self::Atrioventricular
+                | Self::HPS
+                | Self::Ventricle
+                | Self::Pathological
+        )
     }
 }
 

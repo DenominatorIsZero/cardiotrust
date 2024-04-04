@@ -136,7 +136,6 @@ mod tests {
     use std::path::Path;
 
     use ndarray::Axis;
-    use tracing_test::traced_test;
 
     use crate::{tests::setup_folder, vis::plotting::gif::matrix::matrix_over_slices_plot};
 
@@ -145,7 +144,6 @@ mod tests {
     const COMMON_PATH: &str = "tests/core/model/spatial/nifti";
 
     #[test]
-    #[traced_test]
     #[allow(clippy::cast_possible_truncation)]
     fn test_load_file() {
         let _ = load_from_nii("assets/segmentation.nii");

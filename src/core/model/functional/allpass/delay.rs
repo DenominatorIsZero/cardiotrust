@@ -47,7 +47,7 @@ pub fn calculate_delay_samples_array(
 
     // Fill the delays_samples tensor
     for (input_voxel_index, v_type) in v_types.indexed_iter() {
-        if *v_type == VoxelType::None {
+        if !v_type.is_connectable() {
             continue;
         }
         let (x_in, y_in, z_in) = input_voxel_index;

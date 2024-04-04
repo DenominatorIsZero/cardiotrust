@@ -59,7 +59,7 @@ impl APParameters {
     /// # Errors
     ///
     /// Returns an error if the AP parameters cannot be created from the given config.
-    #[tracing::instrument(level = "debug")]
+    #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_model_config(
         config: &Model,
         spatial_description: &SpatialDescription,
@@ -116,7 +116,7 @@ impl APParameters {
 /// voxel and maps the input states to the corresponding output states. This
 /// allows signals to propagate from input voxels to neighboring output voxels
 /// through the allpass filter.
-#[tracing::instrument(level = "debug")]
+#[tracing::instrument(level = "debug", skip_all)]
 fn init_output_state_indicies(spatial_description: &SpatialDescription) -> ArrayIndicesGains {
     debug!("Initializing output state indices");
     let mut output_state_indices =
@@ -126,7 +126,7 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Array
     // TODO: write tests
     v_types
         .indexed_iter()
-        .filter(|(_, v_type)| **v_type != VoxelType::None)
+        .filter(|(_, v_type)| v_type.is_connectable())
         .for_each(|(input_voxel_index, _)| {
             let (x_in, y_in, z_in) = input_voxel_index;
             for ((x_offset, y_offset), z_offset) in
@@ -172,7 +172,7 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Array
 /// Connects voxels in the model based on voxel type and proximity.
 /// Iteratively activates voxels by updating `activation_time_s` and `current_directions`.
 /// Stops when no more voxels can be connected at the current time step.
-#[tracing::instrument(level = "debug")]
+#[tracing::instrument(level = "debug", skip_all)]
 fn connect_voxels(
     spatial_description: &SpatialDescription,
     config: &Model,

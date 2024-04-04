@@ -37,7 +37,7 @@ impl Sensors {
     ///
     /// The sensor orientations alternate between x, y, and z axes aligned.
     #[must_use]
-    #[tracing::instrument(level = "debug")]
+    #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_model_config(config: &Common) -> Self {
         debug!("Creating sensors from model config");
         #[allow(clippy::cast_precision_loss)]

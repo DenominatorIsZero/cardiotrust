@@ -83,7 +83,7 @@ pub fn init_voxels(
     for x in 0..voxel_count[0] {
         for y in 0..voxel_count[1] {
             for z in 0..voxel_count[2] {
-                if voxels.types.values[(x, y, z)] == VoxelType::None {
+                if !voxels.types.values[(x, y, z)].is_connectable() {
                     break;
                 }
                 let position = voxels.positions_mm.values.slice(s!(x, y, z, ..));

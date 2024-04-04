@@ -68,7 +68,6 @@ mod tests {
     use std::path::Path;
 
     use ndarray::Axis;
-    use tracing_test::traced_test;
 
     use crate::{
         core::config::model::{Common, Handcrafted, Mri},
@@ -104,7 +103,6 @@ mod tests {
     }
 
     #[test]
-    #[traced_test]
     fn from_mri_model_config_no_crash() {
         let config = Model {
             common: Common::default(),

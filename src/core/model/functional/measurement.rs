@@ -44,11 +44,11 @@ impl MeasurementMatrix {
     ///
     /// Panics if voxel numbers are not initialized correctly.
     #[must_use]
-    #[tracing::instrument(level = "debug")]
+    #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Self {
         debug!("Creating measurement matrix from model config");
         let mut measurement_matrix = Self::empty(
-            spatial_description.voxels.count() * 3,
+            spatial_description.voxels.count_states(),
             spatial_description.sensors.count(),
         );
 
@@ -66,7 +66,7 @@ impl MeasurementMatrix {
         let common_factor = (VACUUM_MAG_PERMEABILITY as f32 * voxel_volume_m3) / (4.0 * PI) * 1e12;
 
         for (index, v_type) in types.indexed_iter() {
-            if *v_type == VoxelType::None {
+            if !v_type.is_connectable() {
                 continue;
             }
 

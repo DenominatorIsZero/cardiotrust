@@ -67,7 +67,7 @@ impl FunctionalDescription {
     /// # Panics
     /// If delay cant be configured with samplerate, voxelsize and propagation speed
     #[allow(clippy::useless_let_if_seq)]
-    #[tracing::instrument(level = "debug")]
+    #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_model_config(
         config: &Model,
         spatial_description: &SpatialDescription,
@@ -83,7 +83,11 @@ impl FunctionalDescription {
         let control_matrix = ControlMatrix::from_model_config(config, spatial_description);
         let measurement_covariance =
             MeasurementCovariance::from_model_config(config, spatial_description);
-        let kalman_gain = Gain::from_model_config(config, &measurement_matrix);
+        //        let kalman_gain = Gain::from_model_config(config, &measurement_matrix);
+        let kalman_gain = Gain::empty(
+            spatial_description.voxels.count_states(),
+            spatial_description.sensors.count(),
+        );
         let control_function_values =
             ControlFunction::from_model_config(config, sample_rate_hz, duration_s);
 
@@ -125,7 +129,7 @@ impl FunctionalDescription {
 /// the model config to sample a normal distribution for the diagonal
 /// of the process covariance matrix. Filters down to only the states  
 /// that correspond to AP filter outputs based on `ap_params`.
-#[tracing::instrument(level = "debug")]
+#[tracing::instrument(level = "debug", skip_all)]
 fn process_covariance_from_model_config(
     config: &Model,
     spatial_description: &SpatialDescription,
@@ -162,6 +166,8 @@ fn process_covariance_from_model_config(
 #[cfg(test)]
 mod tests {
 
+    use crate::core::config::model::{Common, Mri};
+
     use super::*;
 
     #[test]
@@ -188,8 +194,27 @@ mod tests {
     }
 
     #[test]
-    fn from_model_config_no_crash() {
+    fn from_handcrafted_model_config_no_crash() {
         let config = Model::default();
+        let spatial_description = SpatialDescription::from_model_config(&config);
+        let sample_rate_hz = 2000.0;
+        let duration_s = 2.0;
+        let _functional_description = FunctionalDescription::from_model_config(
+            &config,
+            &spatial_description,
+            sample_rate_hz,
+            duration_s,
+        )
+        .unwrap();
+    }
+
+    #[test_log::test]
+    fn from_mri_model_config_no_crash() {
+        let config = Model {
+            common: Common::default(),
+            handcrafted: None,
+            mri: Some(Mri::default()),
+        };
         let spatial_description = SpatialDescription::from_model_config(&config);
         let sample_rate_hz = 2000.0;
         let duration_s = 2.0;

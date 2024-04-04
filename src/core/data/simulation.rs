@@ -146,7 +146,7 @@ mod test {
     use ndarray_stats::QuantileExt;
 
     use crate::{
-        core::model::spatial::voxels::VoxelType,
+        core::{config::model::Mri, model::spatial::voxels::VoxelType},
         vis::plotting::{
             gif::states::states_spherical_plot_over_time,
             png::{
@@ -482,5 +482,18 @@ mod test {
             Some(fps),
         )
         .unwrap();
+    }
+
+    #[test]
+    fn run_simulation_rmi() {
+        let mut config = SimulationConfig::default();
+        config.model.handcrafted = None;
+        config.model.mri = Some(Mri::default());
+        let mut simulation = Simulation::from_config(&config).unwrap();
+        simulation.run();
+        let max = *simulation.system_states.values.max_skipnan();
+        assert!(max.relative_eq(&1.0, 0.002, 0.002), "max: {max}");
+        let max = *simulation.measurements.values.max_skipnan();
+        assert!(max > 0.0);
     }
 }
