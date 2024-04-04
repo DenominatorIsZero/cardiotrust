@@ -79,7 +79,8 @@ impl FunctionalDescription {
             APParameters::from_model_config(config, spatial_description, sample_rate_hz)?;
         let process_covariance =
             process_covariance_from_model_config(config, spatial_description, &ap_params);
-        let measurement_matrix = MeasurementMatrix::from_model_config(config, spatial_description);
+        let measurement_matrix =
+            MeasurementMatrix::from_model_spatial_description(spatial_description);
         let control_matrix = ControlMatrix::from_model_config(config, spatial_description);
         let measurement_covariance =
             MeasurementCovariance::from_model_config(config, spatial_description);

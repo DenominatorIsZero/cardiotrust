@@ -121,7 +121,7 @@ mod tests {
         let config = Model::default();
         let spatial_description = SpatialDescription::from_model_config(&config);
         let measurement_matrix =
-            MeasurementMatrix::from_model_config(&config, &spatial_description);
+            MeasurementMatrix::from_model_spatial_description(&spatial_description);
 
         let _kalman_gain = Gain::from_model_config(&config, &measurement_matrix);
     }

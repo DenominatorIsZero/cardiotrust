@@ -11,10 +11,7 @@ use std::{
 };
 use tracing::{debug, trace};
 
-use crate::core::{
-    config::model::Model,
-    model::spatial::{voxels::VoxelType, SpatialDescription},
-};
+use crate::core::{config::model::Model, model::spatial::SpatialDescription};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions, clippy::unsafe_derive_deserialize)]
@@ -45,7 +42,7 @@ impl MeasurementMatrix {
     /// Panics if voxel numbers are not initialized correctly.
     #[must_use]
     #[tracing::instrument(level = "debug", skip_all)]
-    pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Self {
+    pub fn from_model_spatial_description(spatial_description: &SpatialDescription) -> Self {
         debug!("Creating measurement matrix from model config");
         let mut measurement_matrix = Self::empty(
             spatial_description.voxels.count_states(),
@@ -207,7 +204,7 @@ mod tests {
         let spatial_description = SpatialDescription::from_model_config(&config);
 
         let measurement_matrix =
-            MeasurementMatrix::from_model_config(&config, &spatial_description);
+            MeasurementMatrix::from_model_spatial_description(&spatial_description);
 
         assert!(!measurement_matrix.values.is_empty());
     }
@@ -226,7 +223,7 @@ mod tests {
         let spatial_description = SpatialDescription::from_model_config(&config);
 
         let measurement_matrix =
-            MeasurementMatrix::from_model_config(&config, &spatial_description);
+            MeasurementMatrix::from_model_spatial_description(&spatial_description);
 
         assert!(!measurement_matrix.values.is_empty());
 
