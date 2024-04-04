@@ -54,7 +54,7 @@ impl Voxels {
     }
 
     #[must_use]
-    #[tracing::instrument(level = "debug")]
+    #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_mri_model_config(config: &Model) -> Self {
         debug!("Creating voxels from mri model config");
 
@@ -275,7 +275,7 @@ impl VoxelTypes {
     }
 
     #[must_use]
-    #[tracing::instrument(level = "trace")]
+    #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_mri_model_config(
         config: &Model,
         positions: &VoxelPositions,
@@ -355,7 +355,11 @@ impl VoxelNumbers {
             .iter_mut()
             .zip(types.values.iter())
             .for_each(|(number, voxel_type)| {
-                if *voxel_type == VoxelType::None {
+                if *voxel_type == VoxelType::None
+                    || *voxel_type == VoxelType::Torso
+                    || *voxel_type == VoxelType::Chamber
+                    || *voxel_type == VoxelType::Vessel
+                {
                     *number = None;
                 } else {
                     *number = Some(current_number);
@@ -435,7 +439,7 @@ impl VoxelPositions {
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss
     )]
-    #[tracing::instrument(level = "trace")]
+    #[tracing::instrument(level = "debug")]
     pub fn from_mri_model_config(config: &Model, mri_data: &MriData) -> Self {
         trace!("Creating voxel positions from mri model config");
         let size_mm = [
@@ -517,11 +521,11 @@ pub enum VoxelType {
 impl VoxelType {
     pub(crate) const fn from_mri_data(value: usize) -> Self {
         match value {
-            0 => Self::Atrium,
-            1 => Self::Vessel,
-            2 => Self::Torso,
-            4 => Self::Chamber,
-            5 => Self::Sinoatrial,
+            1 => Self::Atrium,
+            2 => Self::Vessel,
+            3 => Self::Torso,
+            5 => Self::Chamber,
+            6 => Self::Sinoatrial,
             _ => Self::None,
         }
     }

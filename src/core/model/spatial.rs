@@ -35,7 +35,7 @@ impl SpatialDescription {
     /// Constructs the `heart`, `voxels`, and `sensors` fields by calling their
     /// respective `from_model_config()` methods.
     #[must_use]
-    #[tracing::instrument(level = "debug")]
+    #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_model_config(config: &Model) -> Self {
         debug!("Creating spatial description from model config");
         let voxels = if config.handcrafted.is_some() {
@@ -64,7 +64,21 @@ impl SpatialDescription {
 
 #[cfg(test)]
 mod tests {
+
+    use std::path::Path;
+
+    use ndarray::Axis;
+    use tracing_test::traced_test;
+
+    use crate::{
+        core::config::model::{Common, Handcrafted, Mri},
+        tests::setup_folder,
+        vis::plotting::gif::voxel_type::voxel_types_over_slices_plot,
+    };
+
     use super::*;
+
+    const COMMON_PATH: &str = "tests/core/model/spatial";
 
     #[test]
     fn empty_no_crash() {
@@ -77,5 +91,132 @@ mod tests {
     fn from_simulation_config_no_crash() {
         let config = Model::default();
         let _spatial_description = SpatialDescription::from_model_config(&config);
+    }
+
+    #[test]
+    fn from_handcrafted_model_config_no_crash() {
+        let config = Model {
+            common: Common::default(),
+            handcrafted: Some(Handcrafted::default()),
+            mri: None,
+        };
+        let _spatial_description = SpatialDescription::from_model_config(&config);
+    }
+
+    #[test]
+    #[traced_test]
+    fn from_mri_model_config_no_crash() {
+        let config = Model {
+            common: Common::default(),
+            handcrafted: None,
+            mri: Some(Mri::default()),
+        };
+        let _spatial_description = SpatialDescription::from_model_config(&config);
+    }
+
+    #[test]
+    #[allow(clippy::cast_possible_truncation)]
+    fn from_handcrafted_model_config_and_plot() {
+        let directory = Path::new(COMMON_PATH).join("handcrafted");
+        setup_folder(&directory);
+        let config = Model {
+            common: Common::default(),
+            handcrafted: Some(Handcrafted::default()),
+            mri: None,
+        };
+        let spatial_description = SpatialDescription::from_model_config(&config);
+
+        let duration_ms = 5000;
+        let path = directory.join("types_over_x.gif");
+        let time_per_frame_ms =
+            duration_ms / spatial_description.voxels.types.values.shape()[0] as u32;
+        voxel_types_over_slices_plot(
+            &spatial_description.voxels.types,
+            &spatial_description.voxels.positions_mm,
+            spatial_description.voxels.size_mm,
+            Some(Axis(0)),
+            Some(&path),
+            Some(time_per_frame_ms),
+        )
+        .unwrap();
+
+        let path = directory.join("types_over_y.gif");
+        let time_per_frame_ms =
+            duration_ms / spatial_description.voxels.types.values.shape()[1] as u32;
+        voxel_types_over_slices_plot(
+            &spatial_description.voxels.types,
+            &spatial_description.voxels.positions_mm,
+            spatial_description.voxels.size_mm,
+            Some(Axis(1)),
+            Some(&path),
+            Some(time_per_frame_ms),
+        )
+        .unwrap();
+
+        let path = directory.join("types_over_z.gif");
+        let time_per_frame_ms =
+            duration_ms / spatial_description.voxels.types.values.shape()[2] as u32;
+        voxel_types_over_slices_plot(
+            &spatial_description.voxels.types,
+            &spatial_description.voxels.positions_mm,
+            spatial_description.voxels.size_mm,
+            Some(Axis(2)),
+            Some(&path),
+            Some(time_per_frame_ms),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    #[allow(clippy::cast_possible_truncation)]
+    fn from_mri_model_config_and_plot() {
+        let directory = Path::new(COMMON_PATH).join("mri");
+        setup_folder(&directory);
+        let config = Model {
+            common: Common::default(),
+            handcrafted: None,
+            mri: Some(Mri::default()),
+        };
+        let spatial_description = SpatialDescription::from_model_config(&config);
+
+        let duration_ms = 5000;
+        let path = directory.join("types_over_x.gif");
+        let time_per_frame_ms =
+            duration_ms / spatial_description.voxels.types.values.shape()[0] as u32;
+        voxel_types_over_slices_plot(
+            &spatial_description.voxels.types,
+            &spatial_description.voxels.positions_mm,
+            spatial_description.voxels.size_mm,
+            Some(Axis(0)),
+            Some(&path),
+            Some(time_per_frame_ms),
+        )
+        .unwrap();
+
+        let path = directory.join("types_over_y.gif");
+        let time_per_frame_ms =
+            duration_ms / spatial_description.voxels.types.values.shape()[1] as u32;
+        voxel_types_over_slices_plot(
+            &spatial_description.voxels.types,
+            &spatial_description.voxels.positions_mm,
+            spatial_description.voxels.size_mm,
+            Some(Axis(1)),
+            Some(&path),
+            Some(time_per_frame_ms),
+        )
+        .unwrap();
+
+        let path = directory.join("types_over_z.gif");
+        let time_per_frame_ms =
+            duration_ms / spatial_description.voxels.types.values.shape()[2] as u32;
+        voxel_types_over_slices_plot(
+            &spatial_description.voxels.types,
+            &spatial_description.voxels.positions_mm,
+            spatial_description.voxels.size_mm,
+            Some(Axis(2)),
+            Some(&path),
+            Some(time_per_frame_ms),
+        )
+        .unwrap();
     }
 }

@@ -1,5 +1,6 @@
 pub mod matrix;
 pub mod states;
+pub mod voxel_type;
 
 const DEFAULT_PLAYBACK_SPEED: f32 = 0.1;
 const DEFAULT_FPS: u32 = 10;

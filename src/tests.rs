@@ -1,10 +1,11 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[tracing::instrument(level = "trace")]
-pub fn setup_folder(path: PathBuf) {
-    if !path.exists() {
-        std::fs::create_dir_all(path).unwrap();
-    }
+pub fn setup_folder<P>(path: P)
+where
+    P: AsRef<Path> + std::fmt::Debug,
+{
+    std::fs::create_dir_all(path).unwrap();
 }
 
 #[tracing::instrument(level = "trace")]

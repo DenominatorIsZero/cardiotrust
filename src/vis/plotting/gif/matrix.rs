@@ -85,7 +85,7 @@ where
             Some(range),
             step,
             offset,
-            path,
+            None,
             Some(title.as_str()),
             y_label,
             x_label,
