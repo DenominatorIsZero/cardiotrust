@@ -17,11 +17,12 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
         .show(parent, |ui| {
             ui.heading("Simulation");
             ui.separator();
+
             ui.push_id("simulation_parameter_table", |ui| {
                 TableBuilder::new(ui)
                     .column(Column::initial(125.0).resizable(true))
                     .column(Column::auto().resizable(true))
-                    .column(Column::initial(600.0).resizable(true))
+                    .column(Column::initial(200.0).resizable(true))
                     .header(20.0, |mut header| {
                         header.col(|ui| {
                             ui.heading("Parameter");
