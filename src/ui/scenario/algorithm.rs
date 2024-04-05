@@ -381,8 +381,8 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
                                 );
                             });
                         });
-                        draw_ui_scenario_common(&mut body, &mut algorithm.model);
                     });
+                draw_ui_scenario_common(ui, &mut algorithm.model);
             });
         });
 }

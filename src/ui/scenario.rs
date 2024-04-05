@@ -12,6 +12,11 @@ use crate::{
     ScenarioBundle, ScenarioList, SelectedSenario,
 };
 
+const FIRST_COLUMN_WIDTH: f32 = 150.0;
+const SECOND_COLUMN_WIDTH: f32 = 200.0;
+const PADDING: f32 = 20.0;
+const ROW_HEIGHT: f32 = 30.0;
+
 /// Draws the UI for the selected scenario.
 ///
 /// This handles:
