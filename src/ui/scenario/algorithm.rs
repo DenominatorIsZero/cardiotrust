@@ -5,10 +5,7 @@ use super::{
     common::draw_ui_scenario_common, FIRST_COLUMN_WIDTH, PADDING, ROW_HEIGHT, SECOND_COLUMN_WIDTH,
 };
 use crate::core::{
-    config::{
-        algorithm::{Algorithm, AlgorithmType},
-        model::Model,
-    },
+    config::algorithm::{Algorithm, AlgorithmType},
     scenario::{Scenario, Status},
 };
 

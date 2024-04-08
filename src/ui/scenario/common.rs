@@ -1,4 +1,4 @@
-use egui_extras::{Column, TableBody, TableBuilder};
+use egui_extras::{Column, TableBuilder};
 use tracing::trace;
 
 use crate::core::{

@@ -1,4 +1,4 @@
-use egui::{Align, Widget};
+use egui::Align;
 use egui_extras::{Column, TableBuilder};
 use tracing::trace;
 
@@ -6,7 +6,7 @@ use super::{common::draw_ui_scenario_common, ROW_HEIGHT};
 use crate::{
     core::{
         config::simulation::Simulation,
-        scenario::{self, Scenario, Status},
+        scenario::{Scenario, Status},
     },
     ui::scenario::{FIRST_COLUMN_WIDTH, PADDING, SECOND_COLUMN_WIDTH},
 };
