@@ -10,12 +10,12 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use self::{
     body::spawn_torso,
-    heart::{init_voxels, on_vis_mode_changed, update_heart_voxel_colors},
+    heart::{init_voxels, on_vis_mode_changed, update_heart_voxel_colors, MaterialAtlas},
     options::VisOptions,
     sample_tracker::{init_sample_tracker, update_sample_index, SampleTracker},
     sensors::spawn_sensors,
 };
-use crate::{core::scenario::Scenario, ui::UiState};
+use crate::{core::scenario::Scenario, ui::UiState, vis::heart::setup_material_atlas};
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
@@ -28,6 +28,7 @@ impl Plugin for VisPlugin {
         app.add_plugins(PanOrbitCameraPlugin)
             .init_resource::<SampleTracker>()
             .init_resource::<VisOptions>()
+            .add_systems(Startup, setup_material_atlas)
             .add_systems(Startup, setup_light_and_camera)
             .add_systems(Startup, spawn_torso)
             .add_systems(
@@ -75,6 +76,7 @@ pub fn setup_heart_and_sensors(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
     materials: &mut Assets<StandardMaterial>,
+    material_atlas: &Res<MaterialAtlas>,
     sample_tracker: &mut SampleTracker,
     scenario: &Scenario,
     camera: &mut Transform,
@@ -86,7 +88,7 @@ pub fn setup_heart_and_sensors(
     init_voxels(
         commands,
         meshes,
-        materials,
+        material_atlas,
         scenario,
         sample_tracker,
         camera,

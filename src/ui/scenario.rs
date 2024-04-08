@@ -8,7 +8,13 @@ use egui::Align;
 
 use self::{algorithm::draw_ui_scenario_algoriothm, data::draw_ui_scenario_data};
 use crate::{
-    core::scenario::{Scenario, Status},
+    core::{
+        config::{
+            algorithm::AlgorithmType,
+            model::{Handcrafted, Mri},
+        },
+        scenario::{Scenario, Status},
+    },
     ScenarioBundle, ScenarioList, SelectedSenario,
 };
 
@@ -60,6 +66,33 @@ fn draw_ui_scenario_topbar(
             ui.label(format!("Scenario with ID: {}", scenario.get_id()));
             ui.separator();
             ui.label(format!("Status: {}", scenario.get_status_str()));
+            ui.separator();
+            ui.vertical(|ui| {
+                let mut handcrafted = scenario.config.algorithm.model.handcrafted.is_some();
+                let simulation = scenario.config.simulation.as_mut().unwrap();
+                let last_value = handcrafted;
+                let model_type = if handcrafted { "Handcrafted" } else { "MRI" };
+                ui.label("Model Type:");
+                egui::ComboBox::new("cb_model_type", "")
+                    .selected_text(model_type)
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut handcrafted, true, "Handcrafted");
+                        ui.selectable_value(&mut handcrafted, false, "MRI");
+                    });
+                if last_value != handcrafted {
+                    if handcrafted {
+                        scenario.config.algorithm.model.handcrafted = Some(Handcrafted::default());
+                        scenario.config.algorithm.model.mri = None;
+                        simulation.model.handcrafted = Some(Handcrafted::default());
+                        simulation.model.mri = None;
+                    } else {
+                        scenario.config.algorithm.model.handcrafted = None;
+                        scenario.config.algorithm.model.mri = Some(Mri::default());
+                        simulation.model.handcrafted = None;
+                        simulation.model.mri = Some(Mri::default());
+                    }
+                }
+            });
             ui.separator();
             match scenario.get_status() {
                 Status::Planning => {

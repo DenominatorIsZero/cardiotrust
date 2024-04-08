@@ -4,6 +4,7 @@ use egui_plot::{Line, Plot, PlotPoints, VLine};
 
 use crate::{
     vis::{
+        heart::MaterialAtlas,
         options::{VisMode, VisOptions},
         sample_tracker::SampleTracker,
         setup_heart_and_sensors,
@@ -21,12 +22,13 @@ use crate::{
     clippy::too_many_arguments,
     clippy::too_many_lines
 )]
-#[tracing::instrument(skip(contexts, commands, meshes, materials), level = "trace")]
+#[tracing::instrument(skip_all, level = "trace")]
 pub fn draw_ui_volumetric(
     mut contexts: EguiContexts,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    material_atlas: Res<MaterialAtlas>,
     mut sample_tracker: ResMut<SampleTracker>,
     mut vis_options: ResMut<VisOptions>,
     mut cameras: Query<&mut Transform, With<Camera>>,
@@ -57,6 +59,7 @@ pub fn draw_ui_volumetric(
                 &mut commands,
                 &mut meshes,
                 &mut materials,
+                &material_atlas,
                 &mut sample_tracker,
                 scenario.as_ref().expect("Scenario to be some."),
                 &mut cameras.single_mut(),

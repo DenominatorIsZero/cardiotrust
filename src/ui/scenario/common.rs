@@ -1,8 +1,10 @@
+use std::path::PathBuf;
+
 use egui_extras::{Column, TableBuilder};
 use tracing::trace;
 
 use crate::core::{
-    config::model::{ControlFunction, Handcrafted, Model},
+    config::model::{ControlFunction, Handcrafted, Model, Mri},
     model::spatial::voxels::VoxelType,
 };
 
@@ -18,6 +20,9 @@ pub fn draw_ui_scenario_common(ui: &mut egui::Ui, model: &mut Model) {
     draw_velocity_settings(ui, model);
     if let Some(handcrafted) = model.handcrafted.as_mut() {
         draw_handcrafted_settings(ui, handcrafted, model.common.pathological);
+    }
+    if let Some(mri) = model.mri.as_mut() {
+        draw_mri_settings(ui, mri, model.common.pathological);
     }
 }
 
@@ -697,5 +702,48 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
         } else {
             ui.add_space(2.0 * ROW_HEIGHT);
         }
+    });
+}
+
+#[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip_all, level = "trace")]
+fn draw_mri_settings(ui: &mut egui::Ui, mri: &mut Mri, patholoical: bool) {
+    ui.label(egui::RichText::new("MRI Model Settings").underline());
+    ui.group(|ui| {
+        let width = ui.available_width();
+        TableBuilder::new(ui)
+            .column(Column::exact(FIRST_COLUMN_WIDTH))
+            .column(Column::exact(SECOND_COLUMN_WIDTH))
+            .column(Column::exact(
+                width - FIRST_COLUMN_WIDTH - SECOND_COLUMN_WIDTH - PADDING,
+            ))
+            .striped(true)
+            .header(ROW_HEIGHT, |mut header| {
+                header.col(|ui| {
+                    ui.heading("Parameter");
+                });
+                header.col(|ui| {
+                    ui.heading("Value");
+                });
+                header.col(|ui| {
+                    ui.heading("Description");
+                });
+            })
+            .body(|mut body| {
+                // Path
+                body.row(ROW_HEIGHT, |mut row| {
+                    row.col(|ui| {
+                        ui.label("Path");
+                    });
+                    row.col(|ui| {
+                        let mut path = mri.path.to_str().unwrap().to_string();
+                        ui.add(egui::TextEdit::singleline(&mut path));
+                        mri.path = PathBuf::from(path);
+                    });
+                    row.col(|ui| {
+                        ui.add(egui::Label::new("The path to the .nii file.").truncate(true));
+                    });
+                });
+            });
     });
 }
