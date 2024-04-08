@@ -106,7 +106,7 @@ fn setup_config(voxel_size: &f32) -> Config {
     config.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
     config.algorithm.model.common.voxel_size_mm = *voxel_size;
     config.algorithm.model.common.apply_system_update = true;
-    config.algorithm.calculate_kalman_gain = false;
+    config.algorithm.update_kalman_gain = false;
     config.algorithm.learning_rate = LEARNING_RATE;
     config.algorithm.freeze_delays = false;
     config.algorithm.freeze_gains = false;

@@ -169,7 +169,7 @@ pub fn run_epoch(
         derivatives.calculate(functional_description, estimations, config, time_index);
 
         if config.model.common.apply_system_update {
-            if config.calculate_kalman_gain {
+            if config.update_kalman_gain {
                 update_kalman_gain_and_check_convergence(estimations, functional_description);
             }
             calculate_system_update(estimations, time_index, functional_description, config);
@@ -551,7 +551,7 @@ mod test {
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm {
-            calculate_kalman_gain: true,
+            update_kalman_gain: true,
             learning_rate: 50.0,
             epochs: 3,
             ..Default::default()
@@ -740,7 +740,7 @@ mod test {
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm {
-            calculate_kalman_gain: true,
+            update_kalman_gain: true,
             epochs: 10,
             ..Default::default()
         };

@@ -22,7 +22,7 @@ pub fn draw_ui_scenario_common(ui: &mut egui::Ui, model: &mut Model) {
 }
 
 fn draw_measurement_settings(ui: &mut egui::Ui, model: &mut Model) {
-    ui.label(egui::RichText::new("Basic Settings").underline());
+    ui.label(egui::RichText::new("Measurement Settings").underline());
     ui.group(|ui| {
         let width = ui.available_width();
         TableBuilder::new(ui)

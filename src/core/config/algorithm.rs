@@ -38,7 +38,7 @@ pub struct Algorithm {
     pub state_clamping_threshold: f32,
     pub freeze_gains: bool,
     pub freeze_delays: bool,
-    pub calculate_kalman_gain: bool,
+    pub update_kalman_gain: bool,
 }
 impl Default for Algorithm {
     /// Returns a default `Algorithm` configuration with reasonable defaults for most use cases.
@@ -62,7 +62,7 @@ impl Default for Algorithm {
             state_clamping_threshold: 1.5,
             freeze_gains: false,
             freeze_delays: true,
-            calculate_kalman_gain: false,
+            update_kalman_gain: false,
         }
     }
 }
