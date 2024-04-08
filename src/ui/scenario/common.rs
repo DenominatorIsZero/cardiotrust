@@ -21,6 +21,7 @@ pub fn draw_ui_scenario_common(ui: &mut egui::Ui, model: &mut Model) {
     }
 }
 
+#[tracing::instrument(skip_all, level = "trace")]
 fn draw_measurement_settings(ui: &mut egui::Ui, model: &mut Model) {
     ui.label(egui::RichText::new("Measurement Settings").underline());
     ui.group(|ui| {
@@ -98,6 +99,7 @@ fn draw_measurement_settings(ui: &mut egui::Ui, model: &mut Model) {
     });
 }
 
+#[tracing::instrument(skip_all, level = "trace")]
 fn draw_functional_settings(ui: &mut egui::Ui, model: &mut Model) {
     ui.label(egui::RichText::new("Functional Settings").underline());
     ui.group(|ui| {
@@ -198,6 +200,7 @@ fn draw_functional_settings(ui: &mut egui::Ui, model: &mut Model) {
 }
 
 #[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip_all, level = "trace")]
 fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
     ui.label(egui::RichText::new("Velocity Settings").underline());
     ui.group(|ui| {
@@ -408,6 +411,7 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
 }
 
 #[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip_all, level = "trace")]
 fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, patholoical: bool) {
     ui.label(egui::RichText::new("Handcrafted Model Settings").underline());
     ui.group(|ui| {

@@ -32,6 +32,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
         });
 }
 
+#[tracing::instrument(skip_all, level = "trace")]
 fn draw_basic_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
     ui.label(egui::RichText::new("Basic Settings").underline());
     ui.group(|ui| {
@@ -98,6 +99,7 @@ fn draw_basic_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
 }
 
 #[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip_all, level = "trace")]
 fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
     ui.label(egui::RichText::new("Sensor Settings").underline());
     ui.group(|ui| {
@@ -211,6 +213,7 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
 }
 
 #[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip_all, level = "trace")]
 fn draw_general_heart_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
     ui.label(egui::RichText::new("General Heart Settings").underline());
     ui.group(|ui| {

@@ -33,6 +33,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
 }
 
 #[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip_all, level = "trace")]
 fn draw_estimation_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
     ui.label(egui::RichText::new("Estimation Settings").underline());
     ui.group(|ui| {
@@ -196,6 +197,7 @@ fn draw_estimation_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
     });
 }
 
+#[tracing::instrument(skip_all, level = "trace")]
 fn draw_regularization_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
     ui.label(egui::RichText::new("Regulariztion Settings").underline());
     ui.group(|ui| {
@@ -267,6 +269,7 @@ fn draw_regularization_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
 }
 
 #[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip_all, level = "trace")]
 fn draw_algorithm_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
     ui.label(egui::RichText::new("Algorithm Settings").underline());
     ui.group(|ui| {
@@ -398,6 +401,7 @@ fn draw_algorithm_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
     });
 }
 
+#[tracing::instrument(skip_all, level = "trace")]
 fn draw_metrics_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
     ui.label(egui::RichText::new("Metrics Settings").underline());
     ui.group(|ui| {
@@ -451,6 +455,8 @@ fn draw_metrics_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
 }
 
 #[allow(clippy::too_many_lines)]
+#[tracing::instrument(skip_all, level = "trace")]
+
 fn draw_learning_rate_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
     ui.label(egui::RichText::new("Learning Rate Settings").underline());
     ui.group(|ui| {
