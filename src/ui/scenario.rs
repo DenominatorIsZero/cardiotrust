@@ -9,10 +9,7 @@ use egui::Align;
 use self::{algorithm::draw_ui_scenario_algoriothm, data::draw_ui_scenario_data};
 use crate::{
     core::{
-        config::{
-            algorithm::AlgorithmType,
-            model::{Handcrafted, Mri},
-        },
+        config::model::{Handcrafted, Mri},
         scenario::{Scenario, Status},
     },
     ScenarioBundle, ScenarioList, SelectedSenario,

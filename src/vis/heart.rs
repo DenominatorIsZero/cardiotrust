@@ -30,7 +30,8 @@ pub struct MaterialAtlas {
     pub scalar: [Handle<StandardMaterial>; 256],
 }
 
-pub fn setup_material_atlas(
+#[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
+pub(crate) fn setup_material_atlas(
     mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
@@ -237,7 +238,7 @@ pub fn on_vis_mode_changed(
 #[tracing::instrument(level = "debug", skip_all)]
 fn set_heart_voxel_colors_to_types(
     mut query: Query<&mut VoxelData>,
-    mut materials: Res<MaterialAtlas>,
+    materials: Res<MaterialAtlas>,
     scenario: &Scenario,
     simulation_not_model: bool,
 ) {
@@ -339,7 +340,7 @@ pub const fn type_to_color(voxel_type: VoxelType) -> Color {
 /// timestep. Uses the provided scenario data or results to look up
 /// system states over time. Applies a Viridis color map to the norm
 /// values to generate RGB colors for each voxel.
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 #[tracing::instrument(level = "debug", skip_all)]
 fn set_heart_voxel_colors_to_norm(
     mut query: Query<&mut VoxelData>,
@@ -379,7 +380,7 @@ fn set_heart_voxel_colors_to_norm(
 /// (sum of absolute values) for each voxel over time. Applies a Viridis color map
 /// to the max values to generate RGB colors for each voxel. Can do relative coloring
 /// based on min/max of activation across voxels if `relative_coloring` is true.
-#[allow(clippy::cast_possible_truncation)]
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 #[tracing::instrument(level = "debug", skip_all)]
 fn set_heart_voxel_colors_to_max(
     mut query: Query<&mut VoxelData>,

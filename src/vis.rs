@@ -70,7 +70,7 @@ pub fn setup_light_and_camera(mut commands: Commands) {
 /// Sets up the heart mesh, voxel grid, and sensor transforms according
 /// to the provided scenario. Initializes the sample tracker based on the
 /// scenario as well.
-#[allow(clippy::cast_precision_loss)]
+#[allow(clippy::cast_precision_loss, clippy::too_many_arguments)]
 #[tracing::instrument(level = "info", skip_all)]
 pub fn setup_heart_and_sensors(
     commands: &mut Commands,

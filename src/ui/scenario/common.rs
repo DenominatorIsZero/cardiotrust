@@ -707,7 +707,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
 
 #[allow(clippy::too_many_lines)]
 #[tracing::instrument(skip_all, level = "trace")]
-fn draw_mri_settings(ui: &mut egui::Ui, mri: &mut Mri, patholoical: bool) {
+fn draw_mri_settings(ui: &mut egui::Ui, mri: &mut Mri, _patholoical: bool) {
     ui.label(egui::RichText::new("MRI Model Settings").underline());
     ui.group(|ui| {
         let width = ui.available_width();
