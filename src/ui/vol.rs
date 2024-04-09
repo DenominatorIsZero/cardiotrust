@@ -200,6 +200,7 @@ pub fn draw_ui_volumetric(
         ui.label("Oppacity:");
         let mut opacity = cutting_plane.opacity;
         ui.add(egui::DragValue::new(&mut opacity).speed(0.01));
+        #[allow(clippy::float_cmp)]
         if opacity != cutting_plane.opacity {
             cutting_plane.opacity = opacity;
         }

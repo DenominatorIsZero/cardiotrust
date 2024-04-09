@@ -2,6 +2,7 @@ use bevy::math::prelude::*;
 use bevy::prelude::*;
 
 #[derive(Resource, Clone)]
+#[allow(clippy::module_name_repetitions)]
 pub struct CuttingPlaneSettings {
     pub position: Vec3,
     pub normal: Vec3,
@@ -11,6 +12,7 @@ pub struct CuttingPlaneSettings {
 }
 
 #[derive(Component)]
+#[allow(clippy::module_name_repetitions)]
 pub struct CuttingPlaneComponent;
 
 #[tracing::instrument(level = "debug", skip_all)]
@@ -51,6 +53,7 @@ pub(crate) fn spawn_cutting_plane(
     ));
 }
 
+#[allow(clippy::needless_pass_by_value)]
 pub(crate) fn update_cutting_plane(
     mut cutting_planes: Query<
         (&mut Transform, &Handle<StandardMaterial>),
