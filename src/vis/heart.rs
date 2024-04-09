@@ -9,7 +9,7 @@ use scarlet::{
 use strum::EnumCount;
 
 use super::{
-    cutting_plane::{self, CuttingPlaneSettings},
+    cutting_plane::CuttingPlaneSettings,
     options::{VisMode, VisOptions},
     sample_tracker::SampleTracker,
 };

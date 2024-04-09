@@ -5,7 +5,7 @@ use egui_plot::{Line, Plot, PlotPoints, VLine};
 
 use crate::{
     vis::{
-        cutting_plane::{CuttingPlaneComponent, CuttingPlaneSettings},
+        cutting_plane::CuttingPlaneSettings,
         heart::{MaterialAtlas, MeshAtlas},
         options::{VisMode, VisOptions},
         sample_tracker::SampleTracker,

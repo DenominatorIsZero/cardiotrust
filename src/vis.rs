@@ -6,8 +6,8 @@ pub mod plotting;
 pub mod sample_tracker;
 pub mod sensors;
 
-use bevy::{ecs::query, prelude::*};
-use bevy_egui::{EguiContext, EguiContexts};
+use bevy::prelude::*;
+
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use self::{
