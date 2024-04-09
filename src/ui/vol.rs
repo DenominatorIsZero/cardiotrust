@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts};
+use bevy_panorbit_camera::PanOrbitCamera;
 use egui_plot::{Line, Plot, PlotPoints, VLine};
 
 use crate::{
     vis::{
+        cutting_plane::CuttingPlane,
         heart::MaterialAtlas,
         options::{VisMode, VisOptions},
         sample_tracker::SampleTracker,
@@ -31,12 +33,22 @@ pub fn draw_ui_volumetric(
     material_atlas: Res<MaterialAtlas>,
     mut sample_tracker: ResMut<SampleTracker>,
     mut vis_options: ResMut<VisOptions>,
-    mut cameras: Query<&mut Transform, With<Camera>>,
+    mut cameras: Query<
+        (&mut Transform, &mut PanOrbitCamera),
+        (With<Camera>, Without<CuttingPlane>),
+    >,
+    mut cutting_planes: Query<
+        (&mut Transform, &Handle<StandardMaterial>, &mut CuttingPlane),
+        Without<Camera>,
+    >,
     ass: Res<AssetServer>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
 ) {
     trace!("Running system to draw volumetric UI.");
+    for (_, mut camera) in &mut cameras {
+        camera.enabled = true;
+    }
     let scenario = if let Some(index) = selected_scenario.index {
         Some(
             &scenario_list
@@ -62,9 +74,14 @@ pub fn draw_ui_volumetric(
                 &material_atlas,
                 &mut sample_tracker,
                 scenario.as_ref().expect("Scenario to be some."),
-                &mut cameras.single_mut(),
+                &mut cameras.single_mut().0,
                 ass,
             );
+            if ui.ui_contains_pointer() {
+                for (_, mut camera) in &mut cameras {
+                    camera.enabled = false;
+                }
+            }
         };
         let mut vis_mode = vis_options.mode.clone();
         egui::ComboBox::new("cb_vis_mode", "")
@@ -149,6 +166,43 @@ pub fn draw_ui_volumetric(
                 sample_tracker.selected_sensor = selected_sensor;
             }
         }
+        cutting_planes
+            .iter_mut()
+            .for_each(|(mut transform, material, mut cutting_plane)| {
+                ui.checkbox(&mut cutting_plane.visible, "Show cutting plane");
+                ui.label("Cutting plane origin (x, y, z):");
+                ui.horizontal(|ui| {
+                    ui.add(egui::DragValue::new(&mut cutting_plane.position.x).speed(1.0));
+                    ui.add(egui::DragValue::new(&mut cutting_plane.position.y).speed(1.0));
+                    ui.add(egui::DragValue::new(&mut cutting_plane.position.z).speed(1.0));
+                });
+                ui.label("Cutting plane normal (x, y, z):");
+                ui.horizontal(|ui| {
+                    ui.add(egui::DragValue::new(&mut cutting_plane.normal.x).speed(0.01));
+                    ui.add(egui::DragValue::new(&mut cutting_plane.normal.y).speed(0.01));
+                    ui.add(egui::DragValue::new(&mut cutting_plane.normal.z).speed(0.01));
+                });
+                cutting_plane.normal = cutting_plane.normal.normalize();
+                ui.label("Oppacity:");
+                ui.add(egui::DragValue::new(&mut cutting_plane.opacity).speed(0.01));
+                let opacity = if cutting_plane.visible {
+                    cutting_plane.opacity
+                } else {
+                    0.0
+                };
+                materials.get_mut(material).unwrap().base_color =
+                    Color::rgba(1.0, 1.0, 1.0, opacity);
+
+                transform.translation = cutting_plane.position;
+                let rotation = Quat::from_rotation_arc(Vec3::Y, cutting_plane.normal);
+                transform.rotation = rotation;
+            });
+
+        if ui.ui_contains_pointer() {
+            for (_, mut camera) in &mut cameras {
+                camera.enabled = false;
+            }
+        }
     });
     if let Some(scenario) = scenario {
         egui::TopBottomPanel::bottom("Volumetric bottom panel")
@@ -190,6 +244,12 @@ pub fn draw_ui_volumetric(
                         plot_ui.line(sin_line);
                         plot_ui.vline(v_line);
                     });
+
+                if ui.ui_contains_pointer() {
+                    for (_, mut camera) in &mut cameras {
+                        camera.enabled = false;
+                    }
+                }
             });
     }
 }

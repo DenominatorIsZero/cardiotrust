@@ -1,11 +1,13 @@
 pub mod body;
+pub mod cutting_plane;
 pub mod heart;
 pub mod options;
 pub mod plotting;
 pub mod sample_tracker;
 pub mod sensors;
 
-use bevy::prelude::*;
+use bevy::{ecs::query, prelude::*};
+use bevy_egui::{EguiContext, EguiContexts};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use self::{
@@ -15,7 +17,11 @@ use self::{
     sample_tracker::{init_sample_tracker, update_sample_index, SampleTracker},
     sensors::spawn_sensors,
 };
-use crate::{core::scenario::Scenario, ui::UiState, vis::heart::setup_material_atlas};
+use crate::{
+    core::scenario::Scenario,
+    ui::UiState,
+    vis::{cutting_plane::spawn_cutting_plane, heart::setup_material_atlas},
+};
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
@@ -31,6 +37,7 @@ impl Plugin for VisPlugin {
             .add_systems(Startup, setup_material_atlas)
             .add_systems(Startup, setup_light_and_camera)
             .add_systems(Startup, spawn_torso)
+            .add_systems(Startup, spawn_cutting_plane)
             .add_systems(
                 Update,
                 update_sample_index.run_if(in_state(UiState::Volumetric)),
