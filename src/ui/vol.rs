@@ -5,8 +5,8 @@ use egui_plot::{Line, Plot, PlotPoints, VLine};
 
 use crate::{
     vis::{
-        cutting_plane::CuttingPlane,
-        heart::MaterialAtlas,
+        cutting_plane::{CuttingPlaneComponent, CuttingPlaneSettings},
+        heart::{MaterialAtlas, MeshAtlas},
         options::{VisMode, VisOptions},
         sample_tracker::SampleTracker,
         setup_heart_and_sensors,
@@ -22,7 +22,8 @@ use crate::{
 #[allow(
     clippy::needless_pass_by_value,
     clippy::too_many_arguments,
-    clippy::too_many_lines
+    clippy::too_many_lines,
+    clippy::type_complexity
 )]
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn draw_ui_volumetric(
@@ -31,16 +32,11 @@ pub fn draw_ui_volumetric(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     material_atlas: Res<MaterialAtlas>,
+    mut mesh_atlas: ResMut<MeshAtlas>,
     mut sample_tracker: ResMut<SampleTracker>,
     mut vis_options: ResMut<VisOptions>,
-    mut cameras: Query<
-        (&mut Transform, &mut PanOrbitCamera),
-        (With<Camera>, Without<CuttingPlane>),
-    >,
-    mut cutting_planes: Query<
-        (&mut Transform, &Handle<StandardMaterial>, &mut CuttingPlane),
-        Without<Camera>,
-    >,
+    mut cutting_plane: ResMut<CuttingPlaneSettings>,
+    mut cameras: Query<(&mut Transform, &mut PanOrbitCamera), With<Camera>>,
     ass: Res<AssetServer>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
@@ -72,6 +68,7 @@ pub fn draw_ui_volumetric(
                 &mut meshes,
                 &mut materials,
                 &material_atlas,
+                &mut mesh_atlas,
                 &mut sample_tracker,
                 scenario.as_ref().expect("Scenario to be some."),
                 &mut cameras.single_mut().0,
@@ -166,37 +163,46 @@ pub fn draw_ui_volumetric(
                 sample_tracker.selected_sensor = selected_sensor;
             }
         }
-        cutting_planes
-            .iter_mut()
-            .for_each(|(mut transform, material, mut cutting_plane)| {
-                ui.checkbox(&mut cutting_plane.visible, "Show cutting plane");
-                ui.label("Cutting plane origin (x, y, z):");
-                ui.horizontal(|ui| {
-                    ui.add(egui::DragValue::new(&mut cutting_plane.position.x).speed(1.0));
-                    ui.add(egui::DragValue::new(&mut cutting_plane.position.y).speed(1.0));
-                    ui.add(egui::DragValue::new(&mut cutting_plane.position.z).speed(1.0));
-                });
-                ui.label("Cutting plane normal (x, y, z):");
-                ui.horizontal(|ui| {
-                    ui.add(egui::DragValue::new(&mut cutting_plane.normal.x).speed(0.01));
-                    ui.add(egui::DragValue::new(&mut cutting_plane.normal.y).speed(0.01));
-                    ui.add(egui::DragValue::new(&mut cutting_plane.normal.z).speed(0.01));
-                });
-                cutting_plane.normal = cutting_plane.normal.normalize();
-                ui.label("Oppacity:");
-                ui.add(egui::DragValue::new(&mut cutting_plane.opacity).speed(0.01));
-                let opacity = if cutting_plane.visible {
-                    cutting_plane.opacity
-                } else {
-                    0.0
-                };
-                materials.get_mut(material).unwrap().base_color =
-                    Color::rgba(1.0, 1.0, 1.0, opacity);
+        let mut visible = cutting_plane.visible;
+        ui.checkbox(&mut visible, "Show cutting plane");
+        if visible != cutting_plane.visible {
+            cutting_plane.visible = visible;
+        }
+        let mut enabled = cutting_plane.enabled;
+        ui.checkbox(&mut enabled, "Enable cutting plane");
+        if enabled != cutting_plane.enabled {
+            cutting_plane.enabled = enabled;
+        }
+        ui.label("Cutting plane origin (x, y, z):");
 
-                transform.translation = cutting_plane.position;
-                let rotation = Quat::from_rotation_arc(Vec3::Y, cutting_plane.normal);
-                transform.rotation = rotation;
-            });
+        let mut position = cutting_plane.position;
+        ui.horizontal(|ui| {
+            ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
+            ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
+            ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
+        });
+        if position != cutting_plane.position {
+            cutting_plane.position = position;
+        }
+
+        ui.label("Cutting plane normal (x, y, z):");
+
+        let mut normal = cutting_plane.normal;
+        ui.horizontal(|ui| {
+            ui.add(egui::DragValue::new(&mut normal.x).speed(0.01));
+            ui.add(egui::DragValue::new(&mut normal.y).speed(0.01));
+            ui.add(egui::DragValue::new(&mut normal.z).speed(0.01));
+        });
+        if normal != cutting_plane.normal {
+            cutting_plane.normal = normal.normalize();
+        }
+
+        ui.label("Oppacity:");
+        let mut opacity = cutting_plane.opacity;
+        ui.add(egui::DragValue::new(&mut opacity).speed(0.01));
+        if opacity != cutting_plane.opacity {
+            cutting_plane.opacity = opacity;
+        }
 
         if ui.ui_contains_pointer() {
             for (_, mut camera) in &mut cameras {

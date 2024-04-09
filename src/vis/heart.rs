@@ -9,6 +9,7 @@ use scarlet::{
 use strum::EnumCount;
 
 use super::{
+    cutting_plane::{self, CuttingPlaneSettings},
     options::{VisMode, VisOptions},
     sample_tracker::SampleTracker,
 };
@@ -21,13 +22,19 @@ use crate::{
 pub struct VoxelData {
     index: usize,
     colors: Array1<Handle<StandardMaterial>>,
-    position: Array1<usize>,
+    position_xyz: Array1<usize>,
+    posision_mm: Vec3,
 }
 
 #[derive(Resource)]
 pub struct MaterialAtlas {
     pub voxel_types: [Handle<StandardMaterial>; VoxelType::COUNT],
     pub scalar: [Handle<StandardMaterial>; 256],
+}
+
+#[derive(Resource)]
+pub struct MeshAtlas {
+    pub voxels: Handle<Mesh>,
 }
 
 #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
@@ -66,6 +73,14 @@ pub(crate) fn setup_material_atlas(
     commands.insert_resource(atlas);
 }
 
+pub(crate) fn setup_mesh_atlas(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
+    let mesh = meshes.add(Mesh::from(Cuboid {
+        half_size: Vec3::new(1.0, 1.0, 1.0),
+    }));
+    let atlas = MeshAtlas { voxels: mesh };
+    commands.insert_resource(atlas);
+}
+
 /// Initializes voxel components by iterating through the voxel grid
 /// data and spawning a `PbrBundle` for each voxel. Sets up voxel data
 /// component with index, colors, and position. Also positions the
@@ -84,6 +99,7 @@ pub fn init_voxels(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
     materials: &Res<MaterialAtlas>,
+    mesh_atlas: &mut ResMut<MeshAtlas>,
     scenario: &Scenario,
     sample_tracker: &SampleTracker,
     camera: &mut Transform,
@@ -123,7 +139,10 @@ pub fn init_voxels(
         voxels.size_mm / 2.0,
     );
 
+    meshes.remove(mesh_atlas.voxels.clone());
+
     let mesh = meshes.add(Mesh::from(Cuboid { half_size }));
+    mesh_atlas.voxels = mesh.clone();
     for x in 0..voxel_count[0] {
         for y in 0..voxel_count[1] {
             for z in 0..voxel_count[2] {
@@ -145,7 +164,12 @@ pub fn init_voxels(
                             sample_tracker.max_sample,
                             materials.voxel_types[voxel_type as usize].clone(),
                         ),
-                        position: arr1(&[x, y, z]),
+                        position_xyz: arr1(&[x, y, z]),
+                        posision_mm: Vec3 {
+                            x: position[0],
+                            y: position[2],
+                            z: position[1],
+                        },
                     },
                 ));
             }
@@ -167,6 +191,37 @@ pub(crate) fn update_heart_voxel_colors(
     query.par_iter_mut().for_each(|(mut handle, data)| {
         *handle = data.colors[sample_tracker.current_sample].clone();
     });
+}
+
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn update_heart_voxel_visibility(
+    mut commands: Commands,
+    voxels: Query<(Entity, &VoxelData)>,
+    cutting_plane: Res<CuttingPlaneSettings>,
+    mesh_atlas: Res<MeshAtlas>,
+) {
+    if cutting_plane.is_changed() {
+        for (entity, data) in voxels.iter() {
+            if voxel_is_visible(data.posision_mm, &cutting_plane) {
+                commands.entity(entity).insert(PbrBundle {
+                    mesh: mesh_atlas.voxels.clone(),
+                    material: data.colors[0].clone(),
+                    transform: Transform::from_xyz(
+                        data.posision_mm[0],
+                        data.posision_mm[1],
+                        data.posision_mm[2],
+                    ),
+                    ..Default::default()
+                });
+            } else {
+                commands.entity(entity).remove::<PbrBundle>();
+            }
+        }
+    }
+}
+
+fn voxel_is_visible(position: Vec3, cutting_plane: &CuttingPlaneSettings) -> bool {
+    !cutting_plane.enabled || ((position - cutting_plane.position).dot(cutting_plane.normal) < 0.0)
 }
 
 /// Updates the voxel colors in the heart model based on the current
@@ -264,9 +319,9 @@ fn set_heart_voxel_colors_to_types(
 
     query.par_iter_mut().for_each(|mut data| {
         for sample in 0..data.colors.shape()[0] {
-            let x = data.position[0];
-            let y = data.position[1];
-            let z = data.position[2];
+            let x = data.position_xyz[0];
+            let y = data.position_xyz[1];
+            let z = data.position_xyz[2];
             data.colors[sample] =
                 materials.voxel_types[voxel_types.values[(x, y, z)] as usize].clone();
         }

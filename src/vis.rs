@@ -12,7 +12,9 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use self::{
     body::spawn_torso,
-    heart::{init_voxels, on_vis_mode_changed, update_heart_voxel_colors, MaterialAtlas},
+    heart::{
+        init_voxels, on_vis_mode_changed, update_heart_voxel_colors, MaterialAtlas, MeshAtlas,
+    },
     options::VisOptions,
     sample_tracker::{init_sample_tracker, update_sample_index, SampleTracker},
     sensors::spawn_sensors,
@@ -20,7 +22,10 @@ use self::{
 use crate::{
     core::scenario::Scenario,
     ui::UiState,
-    vis::{cutting_plane::spawn_cutting_plane, heart::setup_material_atlas},
+    vis::{
+        cutting_plane::{spawn_cutting_plane, update_cutting_plane},
+        heart::{setup_material_atlas, setup_mesh_atlas, update_heart_voxel_visibility},
+    },
 };
 
 #[allow(clippy::module_name_repetitions)]
@@ -35,9 +40,14 @@ impl Plugin for VisPlugin {
             .init_resource::<SampleTracker>()
             .init_resource::<VisOptions>()
             .add_systems(Startup, setup_material_atlas)
+            .add_systems(Startup, setup_mesh_atlas)
             .add_systems(Startup, setup_light_and_camera)
             .add_systems(Startup, spawn_torso)
             .add_systems(Startup, spawn_cutting_plane)
+            .add_systems(
+                Update,
+                update_cutting_plane.run_if(in_state(UiState::Volumetric)),
+            )
             .add_systems(
                 Update,
                 update_sample_index.run_if(in_state(UiState::Volumetric)),
@@ -45,6 +55,12 @@ impl Plugin for VisPlugin {
             .add_systems(
                 Update,
                 update_heart_voxel_colors
+                    .run_if(in_state(UiState::Volumetric))
+                    .after(update_sample_index),
+            )
+            .add_systems(
+                Update,
+                update_heart_voxel_visibility
                     .run_if(in_state(UiState::Volumetric))
                     .after(update_sample_index),
             )
@@ -84,6 +100,7 @@ pub fn setup_heart_and_sensors(
     meshes: &mut Assets<Mesh>,
     materials: &mut Assets<StandardMaterial>,
     material_atlas: &Res<MaterialAtlas>,
+    mesh_atlas: &mut ResMut<MeshAtlas>,
     sample_tracker: &mut SampleTracker,
     scenario: &Scenario,
     camera: &mut Transform,
@@ -96,6 +113,7 @@ pub fn setup_heart_and_sensors(
         commands,
         meshes,
         material_atlas,
+        mesh_atlas,
         scenario,
         sample_tracker,
         camera,
