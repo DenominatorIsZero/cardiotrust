@@ -6,12 +6,18 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tracing::{debug, info, trace};
 
-use super::shapes::{ArraySystemStates, ArraySystemStatesSpherical, ArraySystemStatesSphericalMax};
-use crate::core::{
-    algorithm::estimation::prediction::calculate_system_prediction,
-    config::simulation::Simulation as SimulationConfig,
-    data::ArrayMeasurements,
-    model::{functional::allpass::shapes::ArrayGains, Model},
+use super::shapes::{
+    ArrayActivationTimePerState, ArraySystemStates, ArraySystemStatesSpherical,
+    ArraySystemStatesSphericalMax,
+};
+use crate::{
+    core::{
+        algorithm::estimation::prediction::calculate_system_prediction,
+        config::simulation::Simulation as SimulationConfig,
+        data::ArrayMeasurements,
+        model::{functional::allpass::shapes::ArrayGains, Model},
+    },
+    vis::plotting::png::activation_time,
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -20,6 +26,8 @@ pub struct Simulation {
     pub system_states: ArraySystemStates,
     pub system_states_spherical: ArraySystemStatesSpherical,
     pub system_states_spherical_max: ArraySystemStatesSphericalMax,
+    pub activation_times: ArrayActivationTimePerState,
+    pub sample_rate_hz: f32,
     pub model: Model,
 }
 impl Simulation {
@@ -42,6 +50,8 @@ impl Simulation {
                 number_of_states,
             ),
             system_states_spherical_max: ArraySystemStatesSphericalMax::empty(number_of_states),
+            activation_times: ArrayActivationTimePerState::empty(number_of_states),
+            sample_rate_hz: 1.0,
             model: Model::empty(
                 number_of_states,
                 number_of_sensors,
@@ -75,12 +85,15 @@ impl Simulation {
         let system_states_spherical =
             ArraySystemStatesSpherical::empty(number_of_steps, number_of_states);
         let system_states_spherical_max = ArraySystemStatesSphericalMax::empty(number_of_states);
+        let activation_times = ArrayActivationTimePerState::empty(number_of_states);
 
         Ok(Self {
             measurements,
             system_states,
             system_states_spherical,
             system_states_spherical_max,
+            activation_times,
+            sample_rate_hz: config.sample_rate_hz,
             model,
         })
     }
@@ -111,6 +124,8 @@ impl Simulation {
         self.system_states_spherical.calculate(system_states);
         self.system_states_spherical_max
             .calculate(&self.system_states_spherical);
+        self.activation_times
+            .calculate(&self.system_states_spherical, self.sample_rate_hz);
         let mut rng = ChaCha8Rng::seed_from_u64(42);
         for sensor_index in 0..measurements.values.shape()[1] {
             let dist = Normal::new(

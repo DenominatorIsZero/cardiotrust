@@ -15,6 +15,7 @@ use super::{
 };
 use crate::{
     core::{model::spatial::voxels::VoxelType, scenario::Scenario},
+    vis::options::VisSource,
     ScenarioList, SelectedSenario,
 };
 
@@ -270,7 +271,7 @@ pub fn on_vis_mode_changed(
                 query,
                 materials,
                 scenario,
-                false,
+                VisSource::Estimation,
                 vis_options.relative_coloring,
             );
         }
@@ -279,7 +280,43 @@ pub fn on_vis_mode_changed(
                 query,
                 materials,
                 scenario,
-                true,
+                VisSource::Simulation,
+                vis_options.relative_coloring,
+            );
+        }
+        VisMode::DeltaCdeMax => {
+            set_heart_voxel_colors_to_max(
+                query,
+                materials,
+                scenario,
+                VisSource::Delta,
+                vis_options.relative_coloring,
+            );
+        }
+        VisMode::EstimatedActivationTime => {
+            set_heart_voxel_colors_to_activation_time(
+                query,
+                materials,
+                scenario,
+                VisSource::Estimation,
+                vis_options.relative_coloring,
+            );
+        }
+        VisMode::SimulatedActivationTime => {
+            set_heart_voxel_colors_to_activation_time(
+                query,
+                materials,
+                scenario,
+                VisSource::Simulation,
+                vis_options.relative_coloring,
+            );
+        }
+        VisMode::DeltaActivationTime => {
+            set_heart_voxel_colors_to_activation_time(
+                query,
+                materials,
+                scenario,
+                VisSource::Delta,
                 vis_options.relative_coloring,
             );
         }
@@ -405,26 +442,29 @@ fn set_heart_voxel_colors_to_norm(
 ) {
     debug!("Setting heart voxel colors to norm.");
     let system_states = if simulation_not_model {
-        scenario
+        &scenario
             .data
             .as_ref()
             .expect("Data to be some")
-            .get_system_states()
+            .simulation
+            .as_ref()
+            .expect("Simulation to be some")
+            .system_states_spherical
+            .magnitude
     } else {
         &scenario
             .results
             .as_ref()
             .expect("Results to be some.")
             .estimations
-            .system_states
+            .system_states_spherical
+            .magnitude
     };
 
     query.par_iter_mut().for_each(|mut data| {
         let state = data.index;
         for sample in 0..data.colors.shape()[0] {
-            let norm = system_states.values[[sample, state]].abs()
-                + system_states.values[[sample, state + 1]].abs()
-                + system_states.values[[sample, state + 2]].abs();
+            let norm = system_states[(sample, state)];
             let index = (norm * 255.0) as usize;
             data.colors[sample] = materials.scalar[index].clone();
         }
@@ -441,40 +481,48 @@ fn set_heart_voxel_colors_to_max(
     mut query: Query<&mut VoxelData>,
     materials: Res<MaterialAtlas>,
     scenario: &Scenario,
-    simulation_not_model: bool,
+    source: VisSource,
     relative_coloring: bool,
 ) {
     debug!("Setting heart voxel colors to max.");
-    let system_states = if simulation_not_model {
-        scenario
-            .data
-            .as_ref()
-            .expect("Data to be some")
-            .get_system_states()
-    } else {
-        &scenario
-            .results
-            .as_ref()
-            .expect("Results to be some.")
-            .estimations
-            .system_states
+    let system_states = match source {
+        VisSource::Simulation => {
+            &scenario
+                .data
+                .as_ref()
+                .expect("Data to be some")
+                .simulation
+                .as_ref()
+                .expect("Simulation to be some")
+                .system_states_spherical_max
+                .magnitude
+        }
+        VisSource::Estimation => {
+            &scenario
+                .results
+                .as_ref()
+                .expect("Results to be some.")
+                .estimations
+                .system_states_spherical_max
+                .magnitude
+        }
+        VisSource::Delta => {
+            &scenario
+                .results
+                .as_ref()
+                .expect("Results to be some.")
+                .estimations
+                .system_states_spherical_max_delta
+                .magnitude
+        }
     };
+
     let mut offset = 0.0;
     let mut scaling = 1.0;
 
     if relative_coloring {
-        let mut norm = Array1::zeros(system_states.values.shape()[0]);
-        let mut max: f32 = 0.0;
-        let mut min: f32 = 10000.0;
-        for state in (0..system_states.values.shape()[1]).step_by(3) {
-            for sample in 0..system_states.values.shape()[0] {
-                norm[sample] = system_states.values[[sample, state]].abs()
-                    + system_states.values[[sample, state + 1]].abs()
-                    + system_states.values[[sample, state + 2]].abs();
-            }
-            max = max.max(*norm.max_skipnan());
-            min = min.min(*norm.max_skipnan());
-        }
+        let max: f32 = *system_states.max_skipnan();
+        let min: f32 = *system_states.min_skipnan();
         if (max - min) > 0.01 {
             offset = -min;
             scaling = 1.0 / (max - min);
@@ -482,14 +530,71 @@ fn set_heart_voxel_colors_to_max(
     }
 
     query.par_iter_mut().for_each(|mut data| {
-        let mut norm = Array1::zeros(data.colors.shape()[0]);
         let state = data.index;
+        let mut max = system_states[state / 3];
+        max = (max + offset) * scaling;
+        let index = (max * 255.0) as usize;
         for sample in 0..data.colors.shape()[0] {
-            norm[sample] = system_states.values[[sample, state]].abs()
-                + system_states.values[[sample, state + 1]].abs()
-                + system_states.values[[sample, state + 2]].abs();
+            data.colors[sample] = materials.scalar[index].clone();
         }
-        let mut max = *norm.max_skipnan();
+    });
+}
+
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+#[tracing::instrument(level = "debug", skip_all)]
+fn set_heart_voxel_colors_to_activation_time(
+    mut query: Query<&mut VoxelData>,
+    materials: Res<MaterialAtlas>,
+    scenario: &Scenario,
+    source: VisSource,
+    relative_coloring: bool,
+) {
+    debug!("Setting heart voxel colors to max.");
+    let activation_time_ms = match source {
+        VisSource::Simulation => {
+            &scenario
+                .data
+                .as_ref()
+                .expect("Data to be some")
+                .simulation
+                .as_ref()
+                .expect("Simulation to be some")
+                .activation_times
+                .time_ms
+        }
+        VisSource::Estimation => {
+            &scenario
+                .results
+                .as_ref()
+                .expect("Results to be some.")
+                .estimations
+                .activation_times
+                .time_ms
+        }
+        VisSource::Delta => {
+            &scenario
+                .results
+                .as_ref()
+                .expect("Results to be some.")
+                .estimations
+                .activation_times_delta
+                .time_ms
+        }
+    };
+
+    let mut offset = 0.0;
+    let mut scaling = 1.0;
+
+    if relative_coloring {
+        let max: f32 = *activation_time_ms.max_skipnan();
+        let min: f32 = *activation_time_ms.min_skipnan();
+        offset = -min;
+        scaling = 1.0 / (max - min);
+    };
+
+    query.par_iter_mut().for_each(|mut data| {
+        let state = data.index;
+        let mut max = activation_time_ms[state / 3];
         max = (max + offset) * scaling;
         let index = (max * 255.0) as usize;
         for sample in 0..data.colors.shape()[0] {

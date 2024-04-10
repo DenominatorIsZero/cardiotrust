@@ -437,6 +437,66 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         .system_states_spherical_max
         .calculate(&results.estimations.system_states_spherical);
 
+    results
+        .estimations
+        .system_states_spherical_max_delta
+        .theta
+        .assign(
+            &(&data
+                .simulation
+                .as_ref()
+                .expect("Simulation to be some")
+                .system_states_spherical_max
+                .theta
+                - &results.estimations.system_states_spherical_max.theta),
+        );
+
+    results
+        .estimations
+        .system_states_spherical_max_delta
+        .phi
+        .assign(
+            &(&data
+                .simulation
+                .as_ref()
+                .expect("Simulation to be some")
+                .system_states_spherical_max
+                .phi
+                - &results.estimations.system_states_spherical_max.phi),
+        );
+
+    results
+        .estimations
+        .system_states_spherical_max_delta
+        .magnitude
+        .assign(
+            &(&data
+                .simulation
+                .as_ref()
+                .expect("Simulation to be some")
+                .system_states_spherical_max
+                .magnitude
+                - &results.estimations.system_states_spherical_max.magnitude),
+        );
+
+    results.estimations.activation_times.calculate(
+        &results.estimations.system_states_spherical,
+        data.simulation
+            .as_ref()
+            .expect("Simulation to be some")
+            .sample_rate_hz,
+    );
+
+    results.estimations.activation_times_delta.time_ms.assign(
+        &(&data
+            .simulation
+            .as_ref()
+            .expect("Simulation to be some")
+            .activation_times
+            .time_ms
+            - &results.estimations.activation_times.time_ms),
+    );
+
     results.metrics.calculate_final(
         &results.estimations,
         data.get_voxel_types(),

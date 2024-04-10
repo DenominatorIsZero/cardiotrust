@@ -183,6 +183,43 @@ impl<'a> std::ops::Sub for &'a ArraySystemStatesSphericalMax {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct ArrayActivationTimePerState {
+    pub time_ms: Array1<f32>,
+}
+
+impl ArrayActivationTimePerState {
+    #[must_use]
+    #[tracing::instrument(level = "trace")]
+    pub fn empty(number_of_states: usize) -> Self {
+        Self {
+            time_ms: Array1::zeros(number_of_states / 3),
+        }
+    }
+
+    #[tracing::instrument(level = "trace")]
+    pub fn calculate(&mut self, spehrical: &ArraySystemStatesSpherical, sample_rate_hz: f32) {
+        for state in 0..self.time_ms.len() {
+            let index = spehrical
+                .magnitude
+                .index_axis(Axis(1), state)
+                .argmax_skipnan()
+                .unwrap();
+            self.time_ms[state] = index as f32 / sample_rate_hz * 1000.0;
+        }
+    }
+
+    #[tracing::instrument(level = "trace")]
+    pub fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving system states spherical max");
+        fs::create_dir_all(path).unwrap();
+
+        let writer =
+            BufWriter::new(File::create(path.join("system_states_activation_time.npy")).unwrap());
+        self.time_ms.write_npy(writer).unwrap();
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ArrayMeasurements {
     pub values: Array2<f32>,
 }

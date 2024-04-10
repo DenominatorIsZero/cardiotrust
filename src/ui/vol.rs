@@ -114,6 +114,22 @@ pub fn draw_ui_volumetric(
                     VisMode::SimulatedCdeMax,
                     "Cde max (simulation)",
                 );
+                ui.selectable_value(&mut vis_mode, VisMode::DeltaCdeMax, "Cde max (delta)");
+                ui.selectable_value(
+                    &mut vis_mode,
+                    VisMode::EstimatedActivationTime,
+                    "Activation time (estimation)",
+                );
+                ui.selectable_value(
+                    &mut vis_mode,
+                    VisMode::SimulatedActivationTime,
+                    "Activation time (simulation)",
+                );
+                ui.selectable_value(
+                    &mut vis_mode,
+                    VisMode::DeltaActivationTime,
+                    "Activation time (delta)",
+                );
             });
         if vis_mode != vis_options.mode {
             vis_options.mode = vis_mode;
