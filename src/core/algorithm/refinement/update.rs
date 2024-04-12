@@ -100,16 +100,20 @@ pub fn update_delays(
         .iter_mut()
         .zip(delays.values.iter_mut())
         .for_each(|(ap_coef, delay)| {
-            if *ap_coef > 1.0 {
+            if *ap_coef > 0.99 {
                 if *delay > 0 {
-                    *ap_coef -= 1.0;
+                    *ap_coef = 0.01;
                     *delay -= 1;
                 } else {
-                    *ap_coef = 1.0;
+                    *ap_coef = 0.99;
                 }
-            } else if *ap_coef < 0.0 {
-                *ap_coef += 1.0;
-                *delay += 1;
+            } else if *ap_coef < 0.01 {
+                if *delay < 1000 {
+                    *ap_coef = 0.99;
+                    *delay += 1;
+                } else {
+                    *ap_coef = 0.01;
+                }
             }
         });
 }

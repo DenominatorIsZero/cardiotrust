@@ -149,6 +149,10 @@ impl Simulation {
         self.system_states.save_npy(path);
         self.model.save_npy(path);
     }
+
+    pub(crate) fn update_activation_time(&mut self) {
+        self.model.update_activation_time(&self.activation_times)
+    }
 }
 
 #[cfg(test)]

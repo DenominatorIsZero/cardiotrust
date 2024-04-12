@@ -9,6 +9,10 @@ use std::{
 };
 use tracing::{debug, trace};
 
+use crate::core::{
+    data::shapes::ArrayActivationTimePerState, model::spatial::voxels::VoxelNumbers,
+};
+
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ArrayActivationTime {
     pub values: Array3<Option<f32>>,

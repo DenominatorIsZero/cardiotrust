@@ -464,8 +464,9 @@ fn set_heart_voxel_colors_to_norm(
     query.par_iter_mut().for_each(|mut data| {
         let state = data.index;
         for sample in 0..data.colors.shape()[0] {
-            let norm = system_states[(sample, state)];
+            let norm = system_states[(sample, state / 3)];
             let index = (norm * 255.0) as usize;
+            let index = index.clamp(0, 255);
             data.colors[sample] = materials.scalar[index].clone();
         }
     });
@@ -534,6 +535,7 @@ fn set_heart_voxel_colors_to_max(
         let mut max = system_states[state / 3];
         max = (max + offset) * scaling;
         let index = (max * 255.0) as usize;
+        let index = index.clamp(0, 255);
         for sample in 0..data.colors.shape()[0] {
             data.colors[sample] = materials.scalar[index].clone();
         }
@@ -597,6 +599,8 @@ fn set_heart_voxel_colors_to_activation_time(
         let mut max = activation_time_ms[state / 3];
         max = (max + offset) * scaling;
         let index = (max * 255.0) as usize;
+        let index = index.clamp(0, 255);
+
         for sample in 0..data.colors.shape()[0] {
             data.colors[sample] = materials.scalar[index].clone();
         }

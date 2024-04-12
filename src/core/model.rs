@@ -79,4 +79,25 @@ impl Model {
         self.functional_description.save_npy(path);
         self.spatial_description.save_npy(path);
     }
+
+    pub(crate) fn update_activation_time(
+        &mut self,
+        activation_times: &super::data::shapes::ArrayActivationTimePerState,
+    ) {
+        let target = &mut self
+            .functional_description
+            .ap_params
+            .activation_time_ms
+            .values;
+        let numbers = &self.spatial_description.voxels.numbers.values;
+        for x in 0..target.shape()[0] {
+            for y in 0..target.shape()[1] {
+                for z in 0..target.shape()[2] {
+                    if let Some(voxel_number) = numbers[(x, y, z)] {
+                        target[(x, y, z)] = Some(activation_times.time_ms[voxel_number / 3]);
+                    }
+                }
+            }
+        }
+    }
 }

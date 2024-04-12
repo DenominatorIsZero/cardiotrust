@@ -62,6 +62,7 @@ impl Data {
         debug!("Creating data from simulation config");
         let mut simulation = Simulation::from_config(config)?;
         simulation.run();
+        simulation.update_activation_time();
         Ok(Self {
             simulation: Some(simulation),
             measurement: None,

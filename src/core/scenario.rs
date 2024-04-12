@@ -428,6 +428,46 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         }
     }
 
+    results.model = Some(model);
+    calculate_plotting_arrays(&mut results, &data);
+
+    results.metrics.calculate_final(
+        &results.estimations,
+        data.get_voxel_types(),
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .numbers,
+    );
+
+    let optimal_threshold = results
+        .metrics
+        .dice_score_over_threshold
+        .argmax_skipnan()
+        .unwrap_or_default();
+
+    #[allow(clippy::cast_precision_loss)]
+    {
+        summary.threshold = optimal_threshold as f32 / 100.0;
+    }
+    summary.dice = results.metrics.dice_score_over_threshold[optimal_threshold];
+    summary.iou = results.metrics.iou_over_threshold[optimal_threshold];
+    summary.recall = results.metrics.recall_over_threshold[optimal_threshold];
+    summary.precision = results.metrics.precision_over_threshold[optimal_threshold];
+
+    scenario.results = Some(results);
+    scenario.data = Some(data);
+    scenario.summary = Some(summary.clone());
+    scenario.status = Status::Done;
+    scenario.save().expect("Could not save scenario");
+    epoch_tx.send(scenario.config.algorithm.epochs - 1).unwrap();
+    summary_tx.send(summary).unwrap();
+}
+
+fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
     results
         .estimations
         .system_states_spherical
@@ -497,35 +537,11 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
             - &results.estimations.activation_times.time_ms),
     );
 
-    results.metrics.calculate_final(
-        &results.estimations,
-        data.get_voxel_types(),
-        &model.spatial_description.voxels.numbers,
-    );
-
-    let optimal_threshold = results
-        .metrics
-        .dice_score_over_threshold
-        .argmax_skipnan()
-        .unwrap_or_default();
-
-    #[allow(clippy::cast_precision_loss)]
-    {
-        summary.threshold = optimal_threshold as f32 / 100.0;
-    }
-    summary.dice = results.metrics.dice_score_over_threshold[optimal_threshold];
-    summary.iou = results.metrics.iou_over_threshold[optimal_threshold];
-    summary.recall = results.metrics.recall_over_threshold[optimal_threshold];
-    summary.precision = results.metrics.precision_over_threshold[optimal_threshold];
-
-    results.model = Some(model);
-    scenario.results = Some(results);
-    scenario.data = Some(data);
-    scenario.summary = Some(summary.clone());
-    scenario.status = Status::Done;
-    scenario.save().expect("Could not save scenario");
-    epoch_tx.send(scenario.config.algorithm.epochs - 1).unwrap();
-    summary_tx.send(summary).unwrap();
+    results
+        .model
+        .as_mut()
+        .unwrap()
+        .update_activation_time(&results.estimations.activation_times);
 }
 
 /// Runs the pseudo inverse algorithm on the given scenario, model, and data.
