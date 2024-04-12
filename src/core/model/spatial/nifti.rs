@@ -27,8 +27,9 @@ where
     debug!("Nifti header: {header:?}");
     let volume = object.volume();
     let data = volume.into_ndarray::<f32>().unwrap();
-    let segmentation = data.into_dimensionality::<Ix3>().unwrap();
-    let voxel_size_mm = [header.pixdim[1], header.pixdim[2], header.pixdim[3]];
+    let mut segmentation = data.into_dimensionality::<Ix3>().unwrap();
+    segmentation.swap_axes(0, 1);
+    let voxel_size_mm = [header.pixdim[2], header.pixdim[1], header.pixdim[2]];
     MriData {
         segmentation,
         voxel_size_mm,

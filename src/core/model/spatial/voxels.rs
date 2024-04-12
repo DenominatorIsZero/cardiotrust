@@ -416,9 +416,18 @@ impl VoxelPositions {
             for y in 0..shape[1] {
                 for z in 0..shape[2] {
                     let position = arr1(&[
-                        config.common.voxel_size_mm.mul_add(x as f32, offset),
-                        config.common.voxel_size_mm.mul_add(y as f32, offset),
-                        config.common.voxel_size_mm.mul_add(z as f32, offset),
+                        config
+                            .common
+                            .voxel_size_mm
+                            .mul_add(x as f32, offset + config.common.heart_offset_mm[0]),
+                        config
+                            .common
+                            .voxel_size_mm
+                            .mul_add(y as f32, offset + config.common.heart_offset_mm[1]),
+                        config
+                            .common
+                            .voxel_size_mm
+                            .mul_add(z as f32, offset + config.common.heart_offset_mm[2]),
                     ]);
                     positions
                         .values
