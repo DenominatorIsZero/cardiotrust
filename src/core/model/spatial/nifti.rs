@@ -14,7 +14,6 @@ use super::voxels::VoxelType;
 pub struct MriData {
     pub segmentation: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 3]>>,
     pub voxel_size_mm: [f32; 3],
-    pub offset_mm: [f32; 3],
 }
 
 #[tracing::instrument(level = "debug")]
@@ -30,11 +29,9 @@ where
     let data = volume.into_ndarray::<f32>().unwrap();
     let segmentation = data.into_dimensionality::<Ix3>().unwrap();
     let voxel_size_mm = [header.pixdim[1], header.pixdim[2], header.pixdim[3]];
-    let offset_mm = [header.quatern_x, header.quatern_y, header.quatern_z];
     MriData {
         segmentation,
         voxel_size_mm,
-        offset_mm,
     }
 }
 
@@ -51,24 +48,18 @@ pub(crate) fn determine_voxel_type(
     trace!("Determining voxel type at position {position:?}");
 
     // calculate the search area
-    let x_start_mm = position[0]
-        - config.common.heart_offset_mm[0]
-        - mri_data.offset_mm[0]
-        - config.common.voxel_size_mm / 2.0;
-    let x_stop_mm = position[0] - config.common.heart_offset_mm[0] - mri_data.offset_mm[0]
-        + config.common.voxel_size_mm / 2.0;
-    let y_start_mm = position[1]
-        - config.common.heart_offset_mm[1]
-        - mri_data.offset_mm[1]
-        - config.common.voxel_size_mm / 2.0;
-    let y_stop_mm = position[1] - config.common.heart_offset_mm[1] - mri_data.offset_mm[1]
-        + config.common.voxel_size_mm / 2.0;
-    let z_start_mm = position[2]
-        - config.common.heart_offset_mm[2]
-        - mri_data.offset_mm[2]
-        - config.common.voxel_size_mm / 2.0;
-    let z_stop_mm = position[2] - config.common.heart_offset_mm[2] - mri_data.offset_mm[2]
-        + config.common.voxel_size_mm / 2.0;
+    let x_start_mm =
+        position[0] - config.common.heart_offset_mm[0] - config.common.voxel_size_mm / 2.0;
+    let x_stop_mm =
+        position[0] - config.common.heart_offset_mm[0] + config.common.voxel_size_mm / 2.0;
+    let y_start_mm =
+        position[1] - config.common.heart_offset_mm[1] - config.common.voxel_size_mm / 2.0;
+    let y_stop_mm =
+        position[1] - config.common.heart_offset_mm[1] + config.common.voxel_size_mm / 2.0;
+    let z_start_mm =
+        position[2] - config.common.heart_offset_mm[2] - config.common.voxel_size_mm / 2.0;
+    let z_stop_mm =
+        position[2] - config.common.heart_offset_mm[2] + config.common.voxel_size_mm / 2.0;
 
     trace!(
         "Searching for voxel type in range [{}, {}, {}, {}, {}, {}]",

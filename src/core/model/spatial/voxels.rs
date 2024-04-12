@@ -452,9 +452,9 @@ impl VoxelPositions {
         let mut positions = Self::empty(num_voxels);
         let offset = config.common.voxel_size_mm / 2.0;
         let offset = [
-            offset + mri_data.offset_mm[0] + config.common.heart_offset_mm[0],
-            offset + mri_data.offset_mm[1] + config.common.heart_offset_mm[1],
-            offset + mri_data.offset_mm[2] + config.common.heart_offset_mm[2],
+            offset + config.common.heart_offset_mm[0],
+            offset + config.common.heart_offset_mm[1],
+            offset + config.common.heart_offset_mm[2],
         ];
 
         for x in 0..num_voxels[0] {
