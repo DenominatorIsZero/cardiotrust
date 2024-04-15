@@ -66,14 +66,24 @@ impl Plugin for UiPlugin {
 ///
 /// This allows conditional rendering of different UI components
 /// depending on the current state.
-#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash)]
 #[allow(clippy::module_name_repetitions)]
 pub enum UiState {
-    #[default]
     Explorer,
     Scenario,
     Results,
     Volumetric,
+}
+
+impl Default for UiState {
+    #[cfg(target_arch = "wasm32")]
+    fn default() -> Self {
+        UiState::Volumetric
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    fn default() -> Self {
+        UiState::Explorer
+    }
 }
 
 #[allow(clippy::module_name_repetitions)]

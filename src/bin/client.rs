@@ -22,6 +22,7 @@ fn main() {
                 .set(WindowPlugin {
                     primary_window: Some(Window {
                         present_mode: PresentMode::AutoNoVsync, // Reduces input lag.
+                        canvas: Some("#bevy".to_string()),
                         ..default()
                     }),
                     ..default()
