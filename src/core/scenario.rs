@@ -467,7 +467,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
     summary_tx.send(summary).unwrap();
 }
 
-fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
+pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
     results
         .estimations
         .system_states_spherical

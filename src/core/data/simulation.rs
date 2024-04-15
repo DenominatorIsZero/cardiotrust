@@ -121,11 +121,6 @@ impl Simulation {
                 time_index,
             );
         }
-        self.system_states_spherical.calculate(system_states);
-        self.system_states_spherical_max
-            .calculate(&self.system_states_spherical);
-        self.activation_times
-            .calculate(&self.system_states_spherical, self.sample_rate_hz);
         let mut rng = ChaCha8Rng::seed_from_u64(42);
         for sensor_index in 0..measurements.values.shape()[1] {
             let dist = Normal::new(
@@ -138,6 +133,15 @@ impl Simulation {
                 measurements.values[[time_index, sensor_index]] += dist.sample(&mut rng);
             }
         }
+    }
+
+    pub(crate) fn calculate_plotting_arrays(&mut self) {
+        let system_states = &mut self.system_states;
+        self.system_states_spherical.calculate(system_states);
+        self.system_states_spherical_max
+            .calculate(&self.system_states_spherical);
+        self.activation_times
+            .calculate(&self.system_states_spherical, self.sample_rate_hz);
     }
 
     /// Saves the simulation data (measurements, system states, model) to `NumPy` files at the given path.

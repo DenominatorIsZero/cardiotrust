@@ -16,7 +16,7 @@ use crate::{
             Data,
         },
         model::{spatial::voxels::VoxelType, Model},
-        scenario::{results::Results, Scenario},
+        scenario::{calculate_plotting_arrays, results::Results, Scenario},
     },
     vis::{options::VisOptions, sample_tracker::SampleTracker},
     ScenarioBundle, ScenarioList, SelectedSenario,
@@ -247,6 +247,7 @@ fn handle_update_sim_message(
     let measurements = &mut simulation.measurements;
 
     update_values(payload, states, measurements);
+    simulation.calculate_plotting_arrays();
 }
 
 /// Updates the estimation values from the payload of an `UPDATE_EST`
@@ -264,10 +265,13 @@ fn handle_update_est_message(
         .expect("Selected scenario to be some.")]
     .scenario;
     let results = scenario.results.as_mut().expect("Results should be some.");
+    let data = scenario.data.as_ref().expect("Data should be some");
     let states = &mut results.estimations.system_states;
     let measurements = &mut results.estimations.measurements;
 
     update_values(payload, states, measurements);
+
+    calculate_plotting_arrays(results, data);
 }
 
 /// Updates the system state and measurement values in the provided
