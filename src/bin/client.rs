@@ -1,4 +1,5 @@
 use bevy::{prelude::*, window::PresentMode};
+use bevy_embedded_assets::{EmbeddedAssetPlugin, PluginMode};
 use cardiotrust::{
     ui::ClientUiPlugin, vis::VisPlugin, websocket::WebsocketPlugin, ScenarioList, SelectedSenario,
 };
@@ -7,7 +8,10 @@ use cardiotrust::{
 fn main() {
     info!("Starting Websocket Client application.");
     App::new()
-        .add_plugins(
+        .add_plugins((
+            EmbeddedAssetPlugin {
+                mode: PluginMode::ReplaceDefault,
+            },
             DefaultPlugins
                 .set(bevy::log::LogPlugin {
                     // Uncomment this to override the default log settings:
@@ -22,7 +26,7 @@ fn main() {
                     }),
                     ..default()
                 }),
-        )
+        ))
         .init_resource::<SelectedSenario>()
         .insert_resource(ScenarioList::empty())
         .add_plugins(WebsocketPlugin)

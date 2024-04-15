@@ -13,7 +13,6 @@ pub(crate) fn spawn_torso(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     debug!("Running system to spawn torso.");
-    // note that we have to include the `Scene0` label
     let my_mesh: Handle<Mesh> = ass.load("torso.glb#Mesh0/Primitive0");
 
     // to position our 3d model, simply use the Transform
