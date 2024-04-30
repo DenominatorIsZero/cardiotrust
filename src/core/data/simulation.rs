@@ -153,7 +153,7 @@ impl Simulation {
     }
 
     pub(crate) fn update_activation_time(&mut self) {
-        self.model.update_activation_time(&self.activation_times)
+        self.model.update_activation_time(&self.activation_times);
     }
 }
 

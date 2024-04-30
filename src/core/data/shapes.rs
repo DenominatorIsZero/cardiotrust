@@ -197,6 +197,7 @@ impl ArrayActivationTimePerState {
     }
 
     #[tracing::instrument(level = "trace")]
+    #[allow(clippy::cast_precision_loss)]
     pub fn calculate(&mut self, spehrical: &ArraySystemStatesSpherical, sample_rate_hz: f32) {
         for state in 0..self.time_ms.len() {
             let index = spehrical

@@ -78,11 +78,11 @@ pub enum UiState {
 impl Default for UiState {
     #[cfg(target_arch = "wasm32")]
     fn default() -> Self {
-        UiState::Volumetric
+        Self::Volumetric
     }
     #[cfg(not(target_arch = "wasm32"))]
     fn default() -> Self {
-        UiState::Explorer
+        Self::Explorer
     }
 }
 
