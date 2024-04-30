@@ -5,7 +5,7 @@ use tracing::trace;
 use super::{common::draw_ui_scenario_common, ROW_HEIGHT};
 use crate::{
     core::{
-        config::simulation::Simulation,
+        config::{model::SensorArrayKind, simulation::Simulation},
         scenario::{Scenario, Status},
     },
     ui::scenario::{FIRST_COLUMN_WIDTH, PADDING, SECOND_COLUMN_WIDTH},
@@ -123,6 +123,90 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                 });
             })
             .body(|mut body| {
+                // sensor_type
+                let sensor_type = &mut simulation.model.common.sensor_array_type;
+                body.row(ROW_HEIGHT, |mut row| {
+                    row.col(|ui| {
+                        ui.label("Sensor Type");
+                    });
+                    row.col(|ui| {
+                        egui::ComboBox::new("cb_sensor_type", "")
+                            .selected_text(format!("{sensor_type:?}"))
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(
+                                    sensor_type,
+                                    SensorArrayKind::Cube,
+                                    "Cube",
+                                );
+                                ui.selectable_value(
+                                    sensor_type,
+                                    SensorArrayKind::Cylinder,
+                                    "Cylinder",
+                                );
+                            });
+                    });
+                    row.col(|ui| {
+                        ui.add(
+                            egui::Label::new(
+                                "The spatial geometry of the sensor array. Default: Cylinder.",
+                            )
+                            .truncate(true),
+                        );
+                    });
+                });// end row
+                    // 3D sensors?
+                body.row(ROW_HEIGHT, |mut row| {
+                    row.col(|ui| {
+                        ui.label("3D Sensors");
+                    });
+                    row.col(|ui| {
+                            ui.add(egui::Checkbox::new(&mut simulation.model.common.three_d_sensors, ""));
+                    });
+                    row.col(|ui| {
+                        ui.add(
+                            egui::Label::new(
+                                "Whether to use 3D sensors or not. Default: true.",
+                            )
+                            .truncate(true),
+                        );
+                    });
+                }); // end row
+                    // Sensor array origin
+                let sensor_array_origin_mm = &mut simulation.model.common.sensor_array_origin_mm;
+                body.row(ROW_HEIGHT, |mut row| {
+                    row.col(|ui| {
+                        ui.label("Sensors array origin");
+                    });
+                    row.col(|ui| {
+                        ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                            ui.add(
+                                egui::DragValue::new(&mut sensor_array_origin_mm[0])
+                                    .prefix("x: ")
+                                    .suffix(" mm"),
+                            );
+                            ui.add(
+                                egui::DragValue::new(&mut sensor_array_origin_mm[1])
+                                    .prefix("y: ")
+                                    .suffix(" mm"),
+                            );
+                            ui.add(
+                                egui::DragValue::new(&mut sensor_array_origin_mm[2])
+                                    .prefix("z: ")
+                                    .suffix(" mm"),
+                            );
+                        });
+                    });
+                    row.col(|ui| {
+                        ui.add(
+                            egui::Label::new(
+                                "The origin of the sensor array with regard to the body coordinate system in mm.",
+                            )
+                            .truncate(true),
+                        );
+                    });
+                }); // end row
+                match sensor_type {
+                    SensorArrayKind::Cube => {
                 // Sensors per axis
                 let sensors_per_axis = &mut simulation.model.common.sensors_per_axis;
                 body.row(ROW_HEIGHT, |mut row| {
@@ -174,40 +258,40 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                         );
                     });
                 }); // end row
-                    // Sensor array origin
-                let sensor_array_origin_mm = &mut simulation.model.common.sensor_array_origin_mm;
+                    }
+                    SensorArrayKind::Cylinder => {
+                        // number of sensors
+                let number_of_sensors = &mut simulation.model.common.number_of_sensors;
                 body.row(ROW_HEIGHT, |mut row| {
                     row.col(|ui| {
-                        ui.label("Sensors array origin");
+                        ui.label("Number of sensors");
                     });
                     row.col(|ui| {
-                        ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
-                            ui.add(
-                                egui::DragValue::new(&mut sensor_array_origin_mm[0])
-                                    .prefix("x: ")
-                                    .suffix(" mm"),
-                            );
-                            ui.add(
-                                egui::DragValue::new(&mut sensor_array_origin_mm[1])
-                                    .prefix("y: ")
-                                    .suffix(" mm"),
-                            );
-                            ui.add(
-                                egui::DragValue::new(&mut sensor_array_origin_mm[2])
-                                    .prefix("z: ")
-                                    .suffix(" mm"),
-                            );
-                        });
+                            ui.add(egui::DragValue::new(number_of_sensors));
                     });
                     row.col(|ui| {
                         ui.add(
-                            egui::Label::new(
-                                "The origin of the sensor array with regard to the body coordinate system in mm.",
-                            )
-                            .truncate(true),
+                            egui::Label::new("The number of sensors used.").truncate(true),
                         );
                     });
                 }); // end row
+                        // array radius
+                let array_radius = &mut simulation.model.common.sensor_array_radius_mm;
+                body.row(ROW_HEIGHT, |mut row| {
+                    row.col(|ui| {
+                        ui.label("Sensor array radius");
+                    });
+                    row.col(|ui| {
+                            ui.add(egui::DragValue::new(array_radius).suffix(" mm"));
+                    });
+                    row.col(|ui| {
+                        ui.add(
+                            egui::Label::new("The radius of the sensor array.").truncate(true),
+                        );
+                    });
+                }); // end row
+                    }
+                }
             });
     });
 }

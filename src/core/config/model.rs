@@ -103,13 +103,23 @@ pub enum ControlFunction {
     Ohara,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+pub enum SensorArrayKind {
+    Cube,
+    Cylinder,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Common {
     pub control_function: ControlFunction,
     pub pathological: bool,
-    pub sensors_per_axis: [usize; 3],
-    pub sensor_array_size_mm: [f32; 3],
-    pub sensor_array_origin_mm: [f32; 3],
+    pub sensor_array_type: SensorArrayKind,
+    pub three_d_sensors: bool,            // used for both kinds
+    pub number_of_sensors: usize,         // used for cylinder only
+    pub sensor_array_radius_mm: f32,      // used for cylinder only
+    pub sensors_per_axis: [usize; 3],     // used for cube only
+    pub sensor_array_size_mm: [f32; 3],   // used for cube only
+    pub sensor_array_origin_mm: [f32; 3], // used for both kinds
     pub voxel_size_mm: f32,
     pub heart_offset_mm: [f32; 3],
     pub measurement_covariance_mean: f32,
@@ -144,9 +154,13 @@ impl Default for Common {
         Self {
             control_function: ControlFunction::Ohara,
             pathological: false,
+            sensor_array_type: SensorArrayKind::Cylinder,
+            three_d_sensors: true,
+            number_of_sensors: 40,
+            sensor_array_radius_mm: 400.0,
             sensors_per_axis: [4, 4, 4],
             sensor_array_size_mm: [250.0, 250.0, 100.0],
-            sensor_array_origin_mm: [0.0, 125.0, 300.0],
+            sensor_array_origin_mm: [0.0, 0.0, 300.0],
             voxel_size_mm: 2.5,
             heart_offset_mm: [-50.0, 50.0, 70.0],
             measurement_covariance_mean: 1e-3,
