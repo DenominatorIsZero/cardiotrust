@@ -133,6 +133,7 @@ impl Simulation {
                 measurements.values[[time_index, sensor_index]] += dist.sample(&mut rng);
             }
         }
+        self.calculate_plotting_arrays();
     }
 
     pub(crate) fn calculate_plotting_arrays(&mut self) {
