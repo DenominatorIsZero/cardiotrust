@@ -154,7 +154,8 @@ pub fn draw_ui_volumetric(
         let mut current_sample = sample_tracker.current_sample;
         ui.add_enabled(
             sample_tracker.manual,
-            egui::Slider::new(&mut current_sample, 0..=sample_tracker.max_sample),
+            egui::Slider::new(&mut current_sample, 0..=sample_tracker.max_sample)
+                .drag_value_speed(1.0),
         );
         if current_sample != sample_tracker.current_sample {
             sample_tracker.current_sample = current_sample;

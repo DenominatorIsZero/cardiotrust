@@ -1,3 +1,4 @@
+use core::panic;
 use std::path::Path;
 
 use ndarray::Ix3;
@@ -29,7 +30,7 @@ where
     let data = volume.into_ndarray::<f32>().unwrap();
     let mut segmentation = data.into_dimensionality::<Ix3>().unwrap();
     segmentation.swap_axes(0, 1);
-    let voxel_size_mm = [header.pixdim[2], header.pixdim[1], header.pixdim[2]];
+    let voxel_size_mm = [header.pixdim[2], header.pixdim[1], header.pixdim[3]];
     MriData {
         segmentation,
         voxel_size_mm,
@@ -62,32 +63,12 @@ pub(crate) fn determine_voxel_type(
     let z_stop_mm =
         position[2] - config.common.heart_offset_mm[2] + config.common.voxel_size_mm / 2.0;
 
-    trace!(
-        "Searching for voxel type in range [{}, {}, {}, {}, {}, {}]",
-        x_start_mm,
-        x_stop_mm,
-        y_start_mm,
-        y_stop_mm,
-        z_start_mm,
-        z_stop_mm
-    );
-
     let x_start_index = (x_start_mm / mri_data.voxel_size_mm[0]).floor() as usize;
     let x_stop_index = (x_stop_mm / mri_data.voxel_size_mm[0]).ceil() as usize;
     let y_start_index = (y_start_mm / mri_data.voxel_size_mm[1]).floor() as usize;
     let y_stop_index = (y_stop_mm / mri_data.voxel_size_mm[1]).ceil() as usize;
     let z_start_index = (z_start_mm / mri_data.voxel_size_mm[2]).floor() as usize;
     let z_stop_index = (z_stop_mm / mri_data.voxel_size_mm[2]).ceil() as usize;
-
-    trace!(
-        "Searching for voxel type in range [{}, {}, {}, {}, {}, {}]",
-        x_start_index,
-        x_stop_index,
-        y_start_index,
-        y_stop_index,
-        z_start_index,
-        z_stop_index
-    );
 
     for x in x_start_index..x_stop_index {
         for y in y_start_index..y_stop_index {
