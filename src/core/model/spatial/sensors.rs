@@ -1,4 +1,4 @@
-use ndarray::{arr1, s, Array2};
+use ndarray::{arr1, s, Array1, Array2};
 use ndarray_npy::WriteNpyExt;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -12,6 +12,8 @@ use crate::core::config::model::Common;
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Sensors {
+    pub array_center_mm: Array1<f32>,
+    pub array_radius_mm: f32,
     pub positions_mm: Array2<f32>,
     pub orientations_xyz: Array2<f32>,
 }
@@ -24,6 +26,8 @@ impl Sensors {
     pub fn empty(number_of_sensors: usize) -> Self {
         debug!("Creating empty sensors");
         Self {
+            array_center_mm: Array1::zeros(3),
+            array_radius_mm: 100.0,
             positions_mm: Array2::zeros((number_of_sensors, 3)),
             orientations_xyz: Array2::zeros((number_of_sensors, 3)),
         }

@@ -9,6 +9,7 @@ use crate::{
         heart::{MaterialAtlas, MeshAtlas},
         options::{VisMode, VisOptions},
         sample_tracker::SampleTracker,
+        sensors::SensorBracket,
         setup_heart_and_sensors,
     },
     ScenarioList, SelectedSenario,
@@ -37,6 +38,7 @@ pub fn draw_ui_volumetric(
     mut vis_options: ResMut<VisOptions>,
     mut cutting_plane: ResMut<CuttingPlaneSettings>,
     mut cameras: Query<(&mut Transform, &mut PanOrbitCamera), With<Camera>>,
+    mut sensor_brackets: Query<&mut SensorBracket>,
     ass: Res<AssetServer>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
@@ -225,6 +227,28 @@ pub fn draw_ui_volumetric(
         if ui.ui_contains_pointer() {
             for (_, mut camera) in &mut cameras {
                 camera.enabled = false;
+            }
+        }
+
+        let sensor_bracket = sensor_brackets.get_single_mut();
+        if let Ok(mut sensor_bracket) = sensor_bracket {
+            ui.label("Sensor positon mm (x, y, z):");
+            let mut position = sensor_bracket.position_mm;
+            ui.horizontal(|ui| {
+                ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
+                ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
+                ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
+            });
+            if position != sensor_bracket.position_mm {
+                sensor_bracket.position_mm = position;
+            }
+
+            ui.label("Sensor radius mm:");
+
+            let mut radius = sensor_bracket.radius_mm;
+            ui.add(egui::DragValue::new(&mut radius).speed(1));
+            if (radius - sensor_bracket.radius_mm).abs() > 10.0 * f32::EPSILON {
+                sensor_bracket.radius_mm = radius;
             }
         }
     });

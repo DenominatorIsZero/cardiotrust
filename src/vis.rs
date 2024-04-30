@@ -25,6 +25,7 @@ use crate::{
     vis::{
         cutting_plane::{spawn_cutting_plane, update_cutting_plane},
         heart::{setup_material_atlas, setup_mesh_atlas, update_heart_voxel_visibility},
+        sensors::{spawn_sensor_bracket, update_sensor_bracket},
     },
 };
 
@@ -47,6 +48,10 @@ impl Plugin for VisPlugin {
             .add_systems(
                 Update,
                 update_cutting_plane.run_if(in_state(UiState::Volumetric)),
+            )
+            .add_systems(
+                Update,
+                update_sensor_bracket.run_if(in_state(UiState::Volumetric)),
             )
             .add_systems(
                 Update,
@@ -109,6 +114,7 @@ pub fn setup_heart_and_sensors(
     info!("Setting up heart and sensors.");
     init_sample_tracker(sample_tracker, scenario);
     spawn_sensors(commands, ass, materials, scenario);
+    spawn_sensor_bracket(commands, meshes, materials, scenario);
     init_voxels(
         commands,
         meshes,

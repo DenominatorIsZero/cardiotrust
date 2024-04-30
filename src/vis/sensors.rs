@@ -1,7 +1,9 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 use nalgebra::{Rotation3, Vector3};
 
-use crate::core::scenario::Scenario;
+use crate::core::scenario::{self, Scenario};
 
 /// Spawns sensor visualizations in the 3D scene.
 ///
@@ -65,5 +67,58 @@ pub(crate) fn spawn_sensors(
                 .with_rotation(Quat::from_euler(EulerRot::XYZ, rot_x, rot_y, rot_z)),
             ..default()
         });
+    }
+}
+
+#[derive(Component)]
+pub(crate) struct SensorBracket {
+    pub radius_mm: f32,
+    pub position_mm: Vec3,
+}
+
+#[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(level = "debug", skip_all)]
+pub(crate) fn spawn_sensor_bracket(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<StandardMaterial>,
+    scenario: &Scenario,
+) {
+    let sensors = &scenario
+        .data
+        .as_ref()
+        .unwrap()
+        .get_model()
+        .spatial_description
+        .sensors;
+    let radius = sensors.array_radius_mm;
+    let position = &sensors.array_center_mm;
+    let mesh = meshes.add(Mesh::from(Cylinder {
+        radius: 1.0,
+        half_height: 30.0,
+    }));
+    commands.spawn((
+        PbrBundle {
+            mesh,
+            material: materials.add(StandardMaterial::from(Color::rgba(1.0, 1.0, 1.0, 0.2))),
+            transform: Transform::from_xyz(position[0], position[2], position[1])
+                .with_rotation(Quat::from_euler(EulerRot::XYZ, PI / 2.0, PI, 0.0)),
+            ..default()
+        },
+        SensorBracket {
+            radius_mm: radius,
+            position_mm: Vec3::new(position[0], position[1], position[2]),
+        },
+    ));
+}
+
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn update_sensor_bracket(mut sensor_brackets: Query<(&mut Transform, &SensorBracket)>) {
+    let sensor_bracket = sensor_brackets.get_single_mut();
+
+    if let Ok((mut transform, sensor_bracket)) = sensor_bracket {
+        transform.translation = sensor_bracket.position_mm;
+        transform.scale.x = sensor_bracket.radius_mm;
+        transform.scale.z = sensor_bracket.radius_mm;
     }
 }
