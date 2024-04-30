@@ -217,4 +217,58 @@ mod tests {
         )
         .unwrap();
     }
+
+    #[test]
+    #[allow(clippy::cast_possible_truncation)]
+    fn from_mri_model_config_and_plot_coarse() {
+        let directory = Path::new(COMMON_PATH).join("mri");
+        setup_folder(&directory);
+        let mut config = Model {
+            common: Common::default(),
+            handcrafted: None,
+            mri: Some(Mri::default()),
+        };
+        config.common.voxel_size_mm = 10.0;
+        let spatial_description = SpatialDescription::from_model_config(&config);
+
+        let duration_ms = 5000;
+        let path = directory.join("types_over_x_coarse.gif");
+        let time_per_frame_ms =
+            duration_ms / spatial_description.voxels.types.values.shape()[0] as u32;
+        voxel_types_over_slices_plot(
+            &spatial_description.voxels.types,
+            &spatial_description.voxels.positions_mm,
+            spatial_description.voxels.size_mm,
+            Some(Axis(0)),
+            Some(&path),
+            Some(time_per_frame_ms),
+        )
+        .unwrap();
+
+        let path = directory.join("types_over_y_coarse.gif");
+        let time_per_frame_ms =
+            duration_ms / spatial_description.voxels.types.values.shape()[1] as u32;
+        voxel_types_over_slices_plot(
+            &spatial_description.voxels.types,
+            &spatial_description.voxels.positions_mm,
+            spatial_description.voxels.size_mm,
+            Some(Axis(1)),
+            Some(&path),
+            Some(time_per_frame_ms),
+        )
+        .unwrap();
+
+        let path = directory.join("types_over_z_coarse.gif");
+        let time_per_frame_ms =
+            duration_ms / spatial_description.voxels.types.values.shape()[2] as u32;
+        voxel_types_over_slices_plot(
+            &spatial_description.voxels.types,
+            &spatial_description.voxels.positions_mm,
+            spatial_description.voxels.size_mm,
+            Some(Axis(2)),
+            Some(&path),
+            Some(time_per_frame_ms),
+        )
+        .unwrap();
+    }
 }
