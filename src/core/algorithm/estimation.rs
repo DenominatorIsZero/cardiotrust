@@ -15,7 +15,7 @@ use crate::core::{
     model::functional::{
         allpass::{
             from_coef_to_samples, gain_index_to_offset, offset_to_gain_index,
-            shapes::{ArrayActivationTime, ArrayDelays, ArrayGains},
+            shapes::{ArrayDelays, ArrayGains},
         },
         measurement::MeasurementMatrix,
         FunctionalDescription,

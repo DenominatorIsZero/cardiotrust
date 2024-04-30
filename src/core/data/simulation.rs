@@ -10,14 +10,11 @@ use super::shapes::{
     ArrayActivationTimePerState, ArraySystemStates, ArraySystemStatesSpherical,
     ArraySystemStatesSphericalMax,
 };
-use crate::{
-    core::{
-        algorithm::estimation::prediction::calculate_system_prediction,
-        config::simulation::Simulation as SimulationConfig,
-        data::ArrayMeasurements,
-        model::{functional::allpass::shapes::ArrayGains, Model},
-    },
-    vis::plotting::png::activation_time,
+use crate::core::{
+    algorithm::estimation::prediction::calculate_system_prediction,
+    config::simulation::Simulation as SimulationConfig,
+    data::ArrayMeasurements,
+    model::{functional::allpass::shapes::ArrayGains, Model},
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
