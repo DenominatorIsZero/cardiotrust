@@ -167,6 +167,8 @@ mod tests {
     fn count_from_simulation() {
         let config = Common {
             sensors_per_axis: [10, 20, 30],
+            sensor_array_type: SensorArrayKind::Cube,
+            three_d_sensors: false,
             ..Default::default()
         };
         let sensors = Sensors::from_model_config(&config);
