@@ -5,9 +5,9 @@ use std::{
     fs::{self, File},
     io::BufWriter,
 };
-use tracing::{debug, trace};
+use tracing::{debug, info, trace};
 
-use crate::core::config::model::Common;
+use crate::core::config::model::{Common, SensorArrayKind};
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -41,40 +41,88 @@ impl Sensors {
     ///
     /// The sensor orientations alternate between x, y, and z axes aligned.
     #[must_use]
+    #[allow(clippy::cast_precision_loss)]
     #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_model_config(config: &Common) -> Self {
         debug!("Creating sensors from model config");
-        #[allow(clippy::cast_precision_loss)]
-        let distance = [
-            config.sensor_array_size_mm[0] / config.sensors_per_axis[0] as f32,
-            config.sensor_array_size_mm[1] / config.sensors_per_axis[1] as f32,
-            config.sensor_array_size_mm[2] / config.sensors_per_axis[2] as f32,
-        ];
-        let mut sensors = Self::empty(config.sensors_per_axis.iter().product());
-        let mut i: usize = 0;
-        for x in 0..config.sensors_per_axis[0] {
-            for y in 0..config.sensors_per_axis[1] {
-                for z in 0..config.sensors_per_axis[2] {
-                    #[allow(clippy::cast_precision_loss)]
-                    sensors.positions_mm.slice_mut(s![i, ..]).assign(&arr1(&[
-                        (x as f32).mul_add(distance[0], config.sensor_array_origin_mm[0]),
-                        (y as f32).mul_add(distance[1], config.sensor_array_origin_mm[1]),
-                        (z as f32).mul_add(distance[2], config.sensor_array_origin_mm[2]),
-                    ]));
-                    let orientation = match i % 3 {
-                        0 => arr1(&[1.0, 0.0, 0.0]),
-                        1 => arr1(&[0.0, 1.0, 0.0]),
-                        2 => arr1(&[0.0, 0.0, 1.0]),
-                        _ => arr1(&[0.0, 0.0, 0.0]),
-                    };
-                    sensors
-                        .orientations_xyz
-                        .slice_mut(s![i, ..])
-                        .assign(&orientation);
-                    i += 1;
+        let sensors = match config.sensor_array_type {
+            SensorArrayKind::Cube => {
+                #[allow(clippy::cast_precision_loss)]
+                let distance = [
+                    config.sensor_array_size_mm[0] / config.sensors_per_axis[0] as f32,
+                    config.sensor_array_size_mm[1] / config.sensors_per_axis[1] as f32,
+                    config.sensor_array_size_mm[2] / config.sensors_per_axis[2] as f32,
+                ];
+                let dim = if config.three_d_sensors { 3 } else { 1 };
+                let num_sensors = config.sensors_per_axis.iter().product::<usize>() * dim;
+                let mut sensors = Self::empty(num_sensors);
+                let mut i: usize = 0;
+                for x in 0..config.sensors_per_axis[0] {
+                    for y in 0..config.sensors_per_axis[1] {
+                        for z in 0..config.sensors_per_axis[2] {
+                            for _ in 0..dim {
+                                #[allow(clippy::cast_precision_loss)]
+                                sensors.positions_mm.slice_mut(s![i, ..]).assign(&arr1(&[
+                                    (x as f32)
+                                        .mul_add(distance[0], config.sensor_array_origin_mm[0]),
+                                    (y as f32)
+                                        .mul_add(distance[1], config.sensor_array_origin_mm[1]),
+                                    (z as f32)
+                                        .mul_add(distance[2], config.sensor_array_origin_mm[2]),
+                                ]));
+                                let orientation = match i % 3 {
+                                    0 => arr1(&[1.0, 0.0, 0.0]),
+                                    1 => arr1(&[0.0, 1.0, 0.0]),
+                                    2 => arr1(&[0.0, 0.0, 1.0]),
+                                    _ => arr1(&[0.0, 0.0, 0.0]),
+                                };
+                                sensors
+                                    .orientations_xyz
+                                    .slice_mut(s![i, ..])
+                                    .assign(&orientation);
+                                i += 1;
+                            }
+                        }
+                    }
                 }
+                sensors
             }
-        }
+            SensorArrayKind::Cylinder => {
+                let dim = if config.three_d_sensors { 3 } else { 1 };
+                let num = config.number_of_sensors * dim;
+                let mut sensors = Self::empty(num);
+                let radius = config.sensor_array_radius_mm;
+                let origin = &config.sensor_array_origin_mm;
+                for i in 0..config.number_of_sensors {
+                    let theta =
+                        (i as f32 / config.number_of_sensors as f32) * 2.0 * std::f32::consts::PI;
+                    let position = arr1(&[
+                        theta.sin().mul_add(radius, origin[0]),
+                        0.0 + origin[1],
+                        theta.cos().mul_add(radius, origin[2]),
+                    ]);
+                    for d in 0..dim {
+                        let orientation = match d {
+                            0 => arr1(&[theta.sin(), 0.0, theta.cos()]),
+                            1 => arr1(&[theta.cos(), 0.0, -theta.sin()]),
+                            2 => arr1(&[0.0, 1.0, 0.0]),
+                            _ => arr1(&[0.0, 0.0, 0.0]),
+                        };
+                        sensors
+                            .orientations_xyz
+                            .slice_mut(s![dim * i + d, ..])
+                            .assign(&orientation);
+                        sensors
+                            .positions_mm
+                            .slice_mut(s![dim * i + d, ..])
+                            .assign(&position);
+                    }
+                }
+                sensors.array_center_mm = arr1(&config.sensor_array_origin_mm);
+                sensors.array_radius_mm = config.sensor_array_radius_mm;
+                sensors
+            }
+        };
         sensors
     }
 

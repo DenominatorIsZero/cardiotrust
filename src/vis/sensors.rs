@@ -43,9 +43,6 @@ pub(crate) fn spawn_sensors(
 
         commands.spawn(PbrBundle {
             mesh: shaft_mesh.clone(),
-            // Notice how there is no need to set the `alpha_mode` explicitly here.
-            // When converting a color to a material using `into()`, the alpha mode is
-            // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
             material: materials.add(StandardMaterial::from(Color::rgba(
                 x_ori, z_ori, y_ori, 1.0,
             ))),
@@ -56,9 +53,6 @@ pub(crate) fn spawn_sensors(
         });
         commands.spawn(PbrBundle {
             mesh: point_mesh.clone(),
-            // Notice how there is no need to set the `alpha_mode` explicitly here.
-            // When converting a color to a material using `into()`, the alpha mode is
-            // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
             material: materials.add(StandardMaterial::from(Color::rgba(
                 x_ori, z_ori, y_ori, 1.0,
             ))),
@@ -107,7 +101,7 @@ pub(crate) fn spawn_sensor_bracket(
         },
         SensorBracket {
             radius_mm: radius,
-            position_mm: Vec3::new(position[0], position[1], position[2]),
+            position_mm: Vec3::new(position[0], position[2], position[1]),
         },
     ));
 }

@@ -160,7 +160,7 @@ impl Default for Common {
             sensor_array_radius_mm: 400.0,
             sensors_per_axis: [4, 4, 4],
             sensor_array_size_mm: [250.0, 250.0, 100.0],
-            sensor_array_origin_mm: [0.0, 0.0, 300.0],
+            sensor_array_origin_mm: [0.0, 300.0, 0.0],
             voxel_size_mm: 2.5,
             heart_offset_mm: [-50.0, 50.0, 70.0],
             measurement_covariance_mean: 1e-3,
