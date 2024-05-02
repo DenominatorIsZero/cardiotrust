@@ -128,8 +128,8 @@ pub fn init_voxels(
     camera.look_at(
         Vec3 {
             x: position[0],
-            y: position[2],
-            z: position[1],
+            y: position[1],
+            z: position[2],
         },
         Vec3::Y,
     );
@@ -156,7 +156,7 @@ pub fn init_voxels(
                     PbrBundle {
                         mesh: mesh.clone(),
                         material: materials.voxel_types[voxel_type as usize].clone(),
-                        transform: Transform::from_xyz(position[0], position[2], position[1]),
+                        transform: Transform::from_xyz(position[0], position[1], position[2]),
                         ..default()
                     },
                     VoxelData {
@@ -168,8 +168,8 @@ pub fn init_voxels(
                         position_xyz: arr1(&[x, y, z]),
                         posision_mm: Vec3 {
                             x: position[0],
-                            y: position[2],
-                            z: position[1],
+                            y: position[1],
+                            z: position[2],
                         },
                     },
                 ));

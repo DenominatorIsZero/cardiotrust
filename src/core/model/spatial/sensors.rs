@@ -103,9 +103,9 @@ impl Sensors {
                     ]);
                     for d in 0..dim {
                         let orientation = match d {
-                            0 => arr1(&[theta.sin(), 0.0, theta.cos()]),
-                            1 => arr1(&[theta.cos(), 0.0, -theta.sin()]),
-                            2 => arr1(&[0.0, 1.0, 0.0]),
+                            0 => arr1(&[0.0, theta.sin(), theta.cos()]),
+                            1 => arr1(&[0.0, theta.cos(), -theta.sin()]),
+                            2 => arr1(&[1.0, 0.0, 0.0]),
                             _ => arr1(&[0.0, 0.0, 0.0]),
                         };
                         sensors

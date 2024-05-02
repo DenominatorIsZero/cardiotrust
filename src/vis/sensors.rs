@@ -30,13 +30,13 @@ pub(crate) fn spawn_sensors(
 
     for index_sensor in 0..sensors.positions_mm.shape()[0] {
         let x_pos_mm = sensors.positions_mm[(index_sensor, 0)];
-        let y_pos_mm = sensors.positions_mm[(index_sensor, 2)];
-        let z_pos_mm = sensors.positions_mm[(index_sensor, 1)];
+        let y_pos_mm = sensors.positions_mm[(index_sensor, 1)];
+        let z_pos_mm = sensors.positions_mm[(index_sensor, 2)];
         let x_ori = sensors.orientations_xyz[(index_sensor, 0)];
-        let y_ori = sensors.orientations_xyz[(index_sensor, 2)];
-        let z_ori = sensors.orientations_xyz[(index_sensor, 1)];
+        let y_ori = sensors.orientations_xyz[(index_sensor, 1)];
+        let z_ori = sensors.orientations_xyz[(index_sensor, 2)];
 
-        let from = Vector3::new(0.0, 0.0, 1.0);
+        let from = Vector3::new(1.0, 0.0, 0.0);
         let to = Vector3::new(x_ori, y_ori, z_ori);
         let rot = Rotation3::rotation_between(&to, &from).expect("Rotation matrix to exist");
         let (rot_x, rot_y, rot_z) = rot.euler_angles();
@@ -44,7 +44,7 @@ pub(crate) fn spawn_sensors(
         commands.spawn(PbrBundle {
             mesh: shaft_mesh.clone(),
             material: materials.add(StandardMaterial::from(Color::rgba(
-                x_ori, z_ori, y_ori, 1.0,
+                x_ori, y_ori, z_ori, 1.0,
             ))),
             transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
                 .with_scale(Vec3::ONE * 10.0)
@@ -54,7 +54,7 @@ pub(crate) fn spawn_sensors(
         commands.spawn(PbrBundle {
             mesh: point_mesh.clone(),
             material: materials.add(StandardMaterial::from(Color::rgba(
-                x_ori, z_ori, y_ori, 1.0,
+                x_ori, y_ori, z_ori, 1.0,
             ))),
             transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
                 .with_scale(Vec3::ONE * 10.0)
@@ -95,13 +95,12 @@ pub(crate) fn spawn_sensor_bracket(
         PbrBundle {
             mesh,
             material: materials.add(StandardMaterial::from(Color::rgba(1.0, 1.0, 1.0, 0.2))),
-            transform: Transform::from_xyz(position[0], position[2], position[1])
-                .with_rotation(Quat::from_euler(EulerRot::XYZ, PI / 2.0, PI, 0.0)),
+            transform: Transform::from_xyz(position[0], position[1], position[2]), //                .with_rotation(Quat::from_euler(EulerRot::XYZ, PI / 2.0, PI, 0.0)),
             ..default()
         },
         SensorBracket {
             radius_mm: radius,
-            position_mm: Vec3::new(position[0], position[2], position[1]),
+            position_mm: Vec3::new(position[0], position[1], position[2]),
         },
     ));
 }

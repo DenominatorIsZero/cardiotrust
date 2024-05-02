@@ -22,7 +22,7 @@ pub(crate) fn spawn_cutting_plane(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let position = Vec3::new(0.1, 0.1, 0.1);
-    let normal = Vec3::new(0.0, 0.0, 1.0);
+    let normal = Vec3::new(0.0, 1.0, 0.0);
 
     let rotation = Quat::from_rotation_arc(Vec3::Y, normal);
 

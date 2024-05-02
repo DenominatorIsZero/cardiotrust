@@ -6,7 +6,7 @@ pub mod plotting;
 pub mod sample_tracker;
 pub mod sensors;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, render::mesh::shape::Capsule};
 
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
@@ -41,6 +41,7 @@ impl Plugin for VisPlugin {
             .init_resource::<SampleTracker>()
             .init_resource::<VisOptions>()
             .add_systems(Startup, setup_material_atlas)
+            .add_systems(Startup, setup_coordinate_system)
             .add_systems(Startup, setup_mesh_atlas)
             .add_systems(Startup, setup_light_and_camera)
             .add_systems(Startup, spawn_torso)
@@ -88,11 +89,74 @@ pub fn setup_light_and_camera(mut commands: Commands) {
 
     commands.spawn((
         Camera3dBundle {
-            transform: Transform::from_xyz(-100.0, 200.0, 50.0).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(-100.0, 200.0, 50.0).looking_at(Vec3::ZERO, Vec3::Z),
             ..default()
         },
-        PanOrbitCamera::default(),
+        PanOrbitCamera {
+            allow_upside_down: true,
+            ..default()
+        },
     ));
+}
+
+#[tracing::instrument(level = "info", skip_all)]
+pub fn setup_coordinate_system(
+    mut commands: Commands,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+) {
+    info!("Setting up coordinate system");
+    spawn_axis(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        Vec3::X,
+        Color::RED,
+        "X",
+    );
+    spawn_axis(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        Vec3::Y,
+        Color::GREEN,
+        "Y",
+    );
+    spawn_axis(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        Vec3::Z,
+        Color::BLUE,
+        "Z",
+    );
+}
+
+fn spawn_axis(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    direction: Vec3,
+    color: Color,
+    label: &str,
+) {
+    let axis_length = 400.0;
+    let thickness = 10.0;
+
+    // Shaft
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Mesh::from(Cylinder {
+            radius: thickness,
+            half_height: axis_length / 2.0,
+        })),
+        material: materials.add(StandardMaterial::from(color)),
+        transform: Transform {
+            translation: direction * (axis_length / 2.0),
+            rotation: Quat::from_rotation_arc(Vec3::Y, direction),
+            ..default()
+        },
+        ..default()
+    });
 }
 
 /// Sets up the heart mesh, voxel grid, and sensor transforms according

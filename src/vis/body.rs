@@ -30,7 +30,7 @@ pub(crate) fn spawn_torso(
         ))),
         transform: Transform::from_xyz(0.0, 0.0, 0.0)
             .with_scale(Vec3::ONE * 1000.0)
-            .with_rotation(Quat::from_euler(EulerRot::XYZ, PI / 2.0, PI, 0.0)),
+            .with_rotation(Quat::from_euler(EulerRot::XYZ, 0.0, 0.0, PI)),
         ..default()
     });
 }
