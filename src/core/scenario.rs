@@ -7,7 +7,7 @@ use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
-    io::Write,
+    io::{BufReader, BufWriter, Write},
     path::Path,
     sync::mpsc::Sender,
 };
@@ -303,7 +303,7 @@ impl Scenario {
         debug!("Saving scenario data for scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
-        let f = File::create(path.join("data.bin"))?;
+        let f = BufWriter::new(File::create(path.join("data.bin"))?);
         bincode::serialize_into(f, self.data.as_ref().unwrap()).unwrap();
         Ok(())
     }
@@ -318,7 +318,7 @@ impl Scenario {
         debug!("Saving scenario results for scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
-        let f = File::create(path.join("results.bin"))?;
+        let f = BufWriter::new(File::create(path.join("results.bin"))?);
         bincode::serialize_into(f, self.results.as_ref().unwrap()).unwrap();
         Ok(())
     }
@@ -336,7 +336,9 @@ impl Scenario {
         }
         let file_path = Path::new("./results").join(&self.id).join("data.bin");
         if file_path.is_file() {
-            self.data = Some(bincode::deserialize_from(File::open(file_path).unwrap()).unwrap());
+            self.data = Some(
+                bincode::deserialize_from(BufReader::new(File::open(file_path).unwrap())).unwrap(),
+            );
         }
     }
 
@@ -353,7 +355,9 @@ impl Scenario {
         }
         let file_path = Path::new("./results").join(&self.id).join("results.bin");
         if file_path.is_file() {
-            self.results = Some(bincode::deserialize_from(File::open(file_path).unwrap()).unwrap());
+            self.results = Some(
+                bincode::deserialize_from(BufReader::new(File::open(file_path).unwrap())).unwrap(),
+            );
         }
     }
 

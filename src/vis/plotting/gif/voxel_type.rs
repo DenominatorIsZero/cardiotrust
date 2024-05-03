@@ -4,6 +4,7 @@ use ndarray::Axis;
 
 use std::fs::File;
 
+use std::io::BufWriter;
 use std::{error::Error, path::Path};
 use tracing::trace;
 
@@ -76,7 +77,7 @@ where
     let time_per_frame = time_per_frame_ms as u16 / 10;
 
     if let Some(path) = path {
-        let mut file = File::create(path)?;
+        let mut file = BufWriter::new(File::create(path)?);
         let mut encoder = Encoder::new(&mut file, width as u16, height as u16, &[])?;
         encoder.set_repeat(Repeat::Infinite)?;
 

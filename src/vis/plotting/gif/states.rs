@@ -4,6 +4,7 @@ use ndarray_stats::QuantileExt;
 
 use std::fs::File;
 
+use std::io::BufWriter;
 use std::{error::Error, path::Path};
 use tracing::trace;
 
@@ -102,7 +103,7 @@ pub(crate) fn states_spherical_plot_over_time(
     }
 
     if let Some(path) = path {
-        let mut file = File::create(path)?;
+        let mut file = BufWriter::new(File::create(path)?);
         let mut encoder = Encoder::new(&mut file, width as u16, height as u16, &[])?;
         encoder.set_repeat(Repeat::Infinite)?;
 

@@ -29,7 +29,7 @@ where
     let data = volume.into_ndarray::<f32>().unwrap();
     let mut segmentation = data.into_dimensionality::<Ix3>().unwrap();
     segmentation.swap_axes(1, 2);
-    let segmentation = segmentation.slice(s![..;-1, .., ..;-1]).to_owned();
+    let segmentation = segmentation.slice(s![.., .., ..;-1]).to_owned();
     let voxel_size_mm = [header.pixdim[1], header.pixdim[3], header.pixdim[2]];
     MriData {
         segmentation,
