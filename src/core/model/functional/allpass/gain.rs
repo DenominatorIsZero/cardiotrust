@@ -40,13 +40,16 @@ mod test {
         let output_direction = arr1(&[1.0, 0.0, 0.0]);
         let input_direction = arr1(&[1.0, 0.0, 0.0]);
 
-        let _gain = calculate(&input_direction, output_direction.view());
+        let gain = calculate(&input_direction, output_direction.view());
 
         let mut expected_gain = Array2::<f32>::zeros((3, 3));
         expected_gain[(0, 0)] = 1.0;
 
-        // TODO: readd test.
-        //assert_close_l1!(&gain, &expected_gain, 0.01);
+        for i in 0..3 {
+            for j in 0..3 {
+                assert_relative_eq!(gain[[i, j]], expected_gain[[i, j]], epsilon = 0.01);
+            }
+        }
     }
 
     #[test]

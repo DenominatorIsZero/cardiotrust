@@ -23,6 +23,7 @@ pub fn calculate(
 
 #[cfg(test)]
 mod test {
+    use approx::assert_relative_eq;
     use ndarray::{arr1, Array1};
 
     use super::calculate;
@@ -31,23 +32,38 @@ mod test {
     fn calculate_direction_simple() {
         let output_position_mm: Array1<f32> = arr1(&[1.0, 1.0, 1.0]);
         let input_position_mm: Array1<f32> = arr1(&[2.0, 1.0, 1.0]);
-        let _expected: Array1<f32> = arr1(&[1.0, 0.0, 0.0]);
+        let expected: Array1<f32> = arr1(&[1.0, 0.0, 0.0]);
 
-        let _direction = calculate(&input_position_mm.view(), &output_position_mm.view());
+        let direction = calculate(&input_position_mm.view(), &output_position_mm.view());
 
-        //TODO: readd test
-        //assert_close_l1!(&expected, &direction, 0.001);
+        for i in 0..3 {
+            assert_relative_eq!(direction[i], expected[i], epsilon = 0.01);
+        }
     }
 
     #[test]
     fn calculate_direction_diag() {
         let output_position_mm: Array1<f32> = arr1(&[1.0, 1.0, 1.0]);
+        let input_position_mm: Array1<f32> = arr1(&[2.0, 0.0, 1.0]);
+        let expected: Array1<f32> = arr1(&[1.0 / 2.0, -1.0 / 2.0, 0.0]);
+
+        let direction = calculate(&input_position_mm.view(), &output_position_mm.view());
+
+        for i in 0..3 {
+            assert_relative_eq!(direction[i], expected[i], epsilon = 0.01);
+        }
+    }
+
+    #[test]
+    fn calculate_direction_room_diag() {
+        let output_position_mm: Array1<f32> = arr1(&[1.0, 1.0, 1.0]);
         let input_position_mm: Array1<f32> = arr1(&[2.0, 0.0, 2.0]);
-        let _expected: Array1<f32> = arr1(&[1.0 / 3.0, -1.0 / 3.0, 1.0 / 3.0]);
+        let expected: Array1<f32> = arr1(&[1.0 / 3.0, -1.0 / 3.0, 1.0 / 3.0]);
 
-        let _direction = calculate(&input_position_mm.view(), &output_position_mm.view());
+        let direction = calculate(&input_position_mm.view(), &output_position_mm.view());
 
-        //TODO: readd test
-        //assert_close_l1!(&expected, &direction, 0.001);
+        for i in 0..3 {
+            assert_relative_eq!(direction[i], expected[i], epsilon = 0.01);
+        }
     }
 }
