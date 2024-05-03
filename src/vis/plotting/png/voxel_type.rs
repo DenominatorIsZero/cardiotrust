@@ -52,7 +52,7 @@ pub fn voxel_type_plot(
             let title = format!("Voxel types x-index = {index}, x = {x} mm");
             let x_label = Some("y [mm]");
             let y_label = Some("z [mm]");
-            let flip_axis = (false, false);
+            let flip_axis = (true, false);
 
             (data, offset, title, x_label, y_label, flip_axis)
         }
@@ -80,7 +80,7 @@ pub fn voxel_type_plot(
             let title = format!("Voxel types z-index = {index}, z = {z} mm");
             let x_label = Some("x [mm]");
             let y_label = Some("y [mm]");
-            let flip_axis = (false, true);
+            let flip_axis = (false, false);
 
             (data, offset, title, x_label, y_label, flip_axis)
         }

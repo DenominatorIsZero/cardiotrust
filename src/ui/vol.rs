@@ -236,8 +236,8 @@ pub fn draw_ui_volumetric(
             let mut position = sensor_bracket.position_mm;
             ui.horizontal(|ui| {
                 ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
-                ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
                 ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
+                ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
             });
             if position != sensor_bracket.position_mm {
                 sensor_bracket.position_mm = position;

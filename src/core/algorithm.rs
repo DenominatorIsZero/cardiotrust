@@ -912,7 +912,9 @@ mod test {
             &algorithm_config,
         );
 
-        assert!(*results.estimations.system_states.values.max_skipnan() > 2.0);
+        let max = *results.estimations.system_states.values.max_skipnan();
+
+        assert!(max > 2.0, "Max was {max}");
     }
 
     #[test]

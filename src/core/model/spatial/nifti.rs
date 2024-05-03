@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use ndarray::Ix3;
+use ndarray::{s, Ix3};
 
 use nifti::{IntoNdArray, NiftiObject, ReaderOptions};
 use strum::EnumCount;
@@ -28,8 +28,9 @@ where
     let volume = object.volume();
     let data = volume.into_ndarray::<f32>().unwrap();
     let mut segmentation = data.into_dimensionality::<Ix3>().unwrap();
-    segmentation.swap_axes(0, 1);
-    let voxel_size_mm = [header.pixdim[2], header.pixdim[1], header.pixdim[3]];
+    segmentation.swap_axes(1, 2);
+    let segmentation = segmentation.slice(s![..;-1, .., ..;-1]).to_owned();
+    let voxel_size_mm = [header.pixdim[1], header.pixdim[3], header.pixdim[2]];
     MriData {
         segmentation,
         voxel_size_mm,
@@ -129,6 +130,7 @@ mod tests {
         setup_folder(path.to_path_buf());
         let mri_data = load_from_nii("assets/segmentation.nii");
         let data = &mri_data.segmentation;
+        let sizes = &mri_data.voxel_size_mm;
         let duration_ms = 5000;
         let path = Path::new(COMMON_PATH).join("slice_x.gif");
         let time_per_frame_ms = duration_ms / data.shape()[0] as u32;
@@ -136,7 +138,7 @@ mod tests {
             data,
             Some(Axis(0)),
             None,
-            Some((1.0, 2.25)),
+            Some((sizes[1], sizes[2])),
             None,
             Some(path.as_path()),
             Some("MRI scan along X-Axis. "),
@@ -154,7 +156,7 @@ mod tests {
             data,
             Some(Axis(1)),
             None,
-            Some((1.0, 2.25)),
+            Some((sizes[0], sizes[2])),
             None,
             Some(path.as_path()),
             Some("MRI scan along Y-Axis. "),
@@ -172,7 +174,7 @@ mod tests {
             data,
             Some(Axis(2)),
             None,
-            Some((1.0, 1.0)),
+            Some((sizes[0], sizes[1])),
             None,
             Some(path.as_path()),
             Some("MRI scan along Z-Axis. "),

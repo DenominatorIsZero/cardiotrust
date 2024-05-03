@@ -47,7 +47,7 @@ pub(crate) fn states_plot(
                 format!("System States in {mode:?} (x-index = {index}, time-index = {time_step})");
             let x_label = Some("y [mm]");
             let y_label = Some("z [mm]");
-            let flip_axis = Some((false, false));
+            let flip_axis = Some((true, false));
 
             (numbers, offset, title, x_label, y_label, flip_axis)
         }
@@ -75,7 +75,7 @@ pub(crate) fn states_plot(
                 format!("System States in {mode:?} (z-index = {index}, time-index = {time_step})");
             let x_label = Some("x [mm]");
             let y_label = Some("y [mm]");
-            let flip_axis = Some((false, true));
+            let flip_axis = Some((false, false));
 
             (numbers, offset, title, x_label, y_label, flip_axis)
         }
@@ -146,7 +146,7 @@ pub(crate) fn states_spherical_plot(
             let title = format!("System States {mode:?} (x-index = {index}, {title_time})");
             let x_label = Some("y [mm]");
             let y_label = Some("z [mm]");
-            let flip_axis = Some((false, false));
+            let flip_axis = Some((true, false));
 
             (numbers, offset, title, x_label, y_label, flip_axis)
         }
@@ -172,7 +172,7 @@ pub(crate) fn states_spherical_plot(
             let title = format!("System States {mode:?} (z-index = {index}, {title_time})");
             let x_label = Some("x [mm]");
             let y_label = Some("y [mm]");
-            let flip_axis = Some((false, true));
+            let flip_axis = Some((false, false));
 
             (numbers, offset, title, x_label, y_label, flip_axis)
         }

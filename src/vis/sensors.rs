@@ -36,10 +36,7 @@ pub(crate) fn spawn_sensors(
         let y_ori = sensors.orientations_xyz[(index_sensor, 1)];
         let z_ori = sensors.orientations_xyz[(index_sensor, 2)];
 
-        let from = Vector3::new(1.0, 0.0, 0.0);
-        let to = Vector3::new(x_ori, y_ori, z_ori);
-        let rot = Rotation3::rotation_between(&to, &from).expect("Rotation matrix to exist");
-        let (rot_x, rot_y, rot_z) = rot.euler_angles();
+        let rot = Vec3::new(x_ori, y_ori, z_ori);
 
         commands.spawn(PbrBundle {
             mesh: shaft_mesh.clone(),
@@ -48,7 +45,7 @@ pub(crate) fn spawn_sensors(
             ))),
             transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
                 .with_scale(Vec3::ONE * 10.0)
-                .with_rotation(Quat::from_euler(EulerRot::XYZ, rot_x, rot_y, rot_z)),
+                .with_rotation(Quat::from_rotation_arc(-Vec3::Z, rot)),
             ..default()
         });
         commands.spawn(PbrBundle {
@@ -58,7 +55,7 @@ pub(crate) fn spawn_sensors(
             ))),
             transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
                 .with_scale(Vec3::ONE * 10.0)
-                .with_rotation(Quat::from_euler(EulerRot::XYZ, rot_x, rot_y, rot_z)),
+                .with_rotation(Quat::from_rotation_arc(-Vec3::Z, rot)),
             ..default()
         });
     }

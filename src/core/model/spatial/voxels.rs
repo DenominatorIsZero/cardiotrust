@@ -214,8 +214,8 @@ impl VoxelTypes {
             (voxels_in_dims[0] as f32 * handcrafted.sa_x_center_percentage) as usize;
         let sa_y_center_index =
             (voxels_in_dims[1] as f32 * handcrafted.sa_y_center_percentage) as usize;
-        let atrium_y_stop_index =
-            (voxels_in_dims[1] as f32 * handcrafted.atrium_y_stop_percentage) as usize;
+        let atrium_y_start_index =
+            (voxels_in_dims[1] as f32 * handcrafted.atrium_y_start_percentage) as usize;
         let av_x_center_index =
             (voxels_in_dims[0] as f32 * handcrafted.av_x_center_percentage) as usize;
         let hps_y_stop_index =
@@ -246,20 +246,18 @@ impl VoxelTypes {
                     *voxel_type = VoxelType::Pathological;
                 } else if (x == sa_x_center_index) && (y == sa_y_center_index) {
                     *voxel_type = VoxelType::Sinoatrial;
-                } else if x == av_x_center_index && y == atrium_y_stop_index {
+                } else if x == av_x_center_index && y == atrium_y_start_index {
                     *voxel_type = VoxelType::Atrioventricular;
                 } else if (x == av_x_center_index
-                    && y > atrium_y_stop_index
-                    && y < hps_y_stop_index)
-                    || (x >= hps_x_start_index
-                        && x <= hps_x_stop_index
-                        && y == hps_y_stop_index - 1)
+                    && y < atrium_y_start_index
+                    && y >= hps_y_stop_index)
+                    || (x >= hps_x_start_index && x <= hps_x_stop_index && y == hps_y_stop_index)
                     || ((x == hps_x_start_index || x == hps_x_stop_index)
-                        && y >= hps_y_up_index
-                        && y < hps_y_stop_index)
+                        && y < hps_y_up_index
+                        && y >= hps_y_stop_index)
                 {
                     *voxel_type = VoxelType::HPS;
-                } else if y < atrium_y_stop_index {
+                } else if y > atrium_y_start_index {
                     *voxel_type = VoxelType::Atrium;
                 } else {
                     *voxel_type = VoxelType::Ventricle;
@@ -448,22 +446,61 @@ impl VoxelPositions {
     #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_mri_model_config(config: &Model, mri_data: &MriData) -> Self {
         trace!("Creating voxel positions from mri model config");
+
+        let mut min_heart_x = mri_data.segmentation.shape()[0];
+        let mut max_heart_x = 0;
+        let mut min_heart_y = mri_data.segmentation.shape()[1];
+        let mut max_heart_y = 1;
+        let mut min_heart_z = mri_data.segmentation.shape()[2];
+        let mut max_heart_z = 2;
+
+        for x in 0..mri_data.segmentation.shape()[0] {
+            for y in 0..mri_data.segmentation.shape()[1] {
+                for z in 0..mri_data.segmentation.shape()[2] {
+                    if (VoxelType::from_mri_data(mri_data.segmentation[[x, y, z]] as usize))
+                        .is_connectable()
+                    {
+                        min_heart_x = min_heart_x.min(x);
+                        max_heart_x = max_heart_x.max(x);
+                        min_heart_y = min_heart_y.min(y);
+                        max_heart_y = max_heart_y.max(y);
+                        min_heart_z = min_heart_z.min(z);
+                        max_heart_z = max_heart_z.max(z);
+                    }
+                }
+            }
+        }
+
+        let range_heart_x = max_heart_x - min_heart_x;
+        let range_heart_y = max_heart_y - min_heart_y;
+        let range_heart_z = max_heart_z - min_heart_z;
+
         let size_mm = [
-            mri_data.voxel_size_mm[0] * mri_data.segmentation.shape()[0] as f32,
-            mri_data.voxel_size_mm[1] * mri_data.segmentation.shape()[1] as f32,
-            mri_data.voxel_size_mm[2] * mri_data.segmentation.shape()[2] as f32,
+            range_heart_x as f32 * mri_data.voxel_size_mm[0],
+            range_heart_y as f32 * mri_data.voxel_size_mm[1],
+            range_heart_z as f32 * mri_data.voxel_size_mm[2],
         ];
         let num_voxels = [
             (size_mm[0] / config.common.voxel_size_mm) as usize,
             (size_mm[1] / config.common.voxel_size_mm) as usize,
             (size_mm[2] / config.common.voxel_size_mm) as usize,
         ];
+
         let mut positions = Self::empty(num_voxels);
         let offset = config.common.voxel_size_mm / 2.0;
         let offset = [
-            offset + config.common.heart_offset_mm[0],
-            offset + config.common.heart_offset_mm[1],
-            offset + config.common.heart_offset_mm[2],
+            (min_heart_x as f32).mul_add(
+                mri_data.voxel_size_mm[0],
+                offset + config.common.heart_offset_mm[0],
+            ),
+            (min_heart_y as f32).mul_add(
+                mri_data.voxel_size_mm[1],
+                offset + config.common.heart_offset_mm[1],
+            ),
+            (min_heart_z as f32).mul_add(
+                mri_data.voxel_size_mm[2],
+                offset + config.common.heart_offset_mm[2],
+            ),
         ];
 
         for x in 0..num_voxels[0] {

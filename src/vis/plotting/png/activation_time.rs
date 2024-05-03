@@ -40,7 +40,7 @@ pub(crate) fn activation_time_plot(
             let title = format!("Activation time x-index = {index}, x = {x} mm");
             let x_label = Some("y [mm]");
             let y_label = Some("z [mm]");
-            let flip_axis = Some((false, false));
+            let flip_axis = Some((true, false));
 
             (data, offset, title, x_label, y_label, flip_axis)
         }
@@ -74,7 +74,7 @@ pub(crate) fn activation_time_plot(
             let title = format!("Activation time z-index = {index}, z = {z} mm");
             let x_label = Some("x [mm]");
             let y_label = Some("y [mm]");
-            let flip_axis = Some((false, true));
+            let flip_axis = Some((false, false));
 
             (data, offset, title, x_label, y_label, flip_axis)
         }

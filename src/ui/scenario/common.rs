@@ -489,7 +489,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                     });
                     row.col(|ui| {
                         ui.add(egui::Slider::new(
-                            &mut handcrafted.atrium_y_stop_percentage,
+                            &mut handcrafted.atrium_y_start_percentage,
                             0.0..=1.0,
                         ));
                     });
