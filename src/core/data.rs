@@ -37,6 +37,7 @@ impl Data {
         number_of_states: usize,
         number_of_steps: usize,
         voxels_in_dims: Dim<[usize; 3]>,
+        sensor_motion_steps: usize,
     ) -> Self {
         debug!("Creating empty data");
         Self {
@@ -45,6 +46,7 @@ impl Data {
                 number_of_states,
                 number_of_steps,
                 voxels_in_dims,
+                sensor_motion_steps,
             )),
             measurement: None,
         }

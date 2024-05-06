@@ -25,6 +25,7 @@ impl Model {
         number_of_sensors: usize,
         number_of_steps: usize,
         voxels_in_dims: Dim<[usize; 3]>,
+        sensor_motion_steps: usize,
     ) -> Self {
         debug!("Creating empty model");
         Self {
@@ -37,6 +38,7 @@ impl Model {
             spatial_description: SpatialDescription::empty(
                 number_of_sensors,
                 [voxels_in_dims[0], voxels_in_dims[1], voxels_in_dims[2]],
+                sensor_motion_steps,
             ),
         }
     }

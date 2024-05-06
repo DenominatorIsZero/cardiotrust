@@ -37,6 +37,7 @@ impl Simulation {
         number_of_states: usize,
         number_of_steps: usize,
         voxels_in_dims: Dim<[usize; 3]>,
+        sensor_motion_steps: usize,
     ) -> Self {
         debug!("Creating empty simulation");
         Self {
@@ -54,6 +55,7 @@ impl Simulation {
                 number_of_sensors,
                 number_of_steps,
                 voxels_in_dims,
+                sensor_motion_steps,
             ),
         }
     }

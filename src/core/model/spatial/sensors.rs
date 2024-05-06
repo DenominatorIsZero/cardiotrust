@@ -51,7 +51,7 @@ impl Sensors {
             SensorArrayMotion::Static => 1,
             SensorArrayMotion::Grid => config.sensor_array_motion_steps.iter().product(),
         };
-        let sensors = match config.sensor_array_geometry {
+        let mut sensors = match config.sensor_array_geometry {
             SensorArrayGeometry::Cube => {
                 #[allow(clippy::cast_precision_loss)]
                 let distance = [
@@ -184,7 +184,8 @@ mod tests {
     #[test]
     fn count_empty() {
         let number_of_sensors = 300;
-        let sensors = Sensors::empty(number_of_sensors);
+        let sensor_motion_steps = 10;
+        let sensors = Sensors::empty(number_of_sensors, sensor_motion_steps);
 
         assert_eq!(number_of_sensors, sensors.count());
     }

@@ -573,6 +573,7 @@ fn init_scenario(
         number_of_states,
         number_of_steps,
         voxels_in_dims,
+        1,
     );
     let mut results = Results::new(
         number_of_epochs,
@@ -585,6 +586,7 @@ fn init_scenario(
         number_of_sensors,
         number_of_steps,
         voxels_in_dims,
+        1,
     );
 
     scenario.data = Some(data);

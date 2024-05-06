@@ -22,11 +22,15 @@ impl SpatialDescription {
     /// sensors and voxel dimensions.
     #[must_use]
     #[tracing::instrument(level = "debug")]
-    pub fn empty(number_of_sensors: usize, voxels_in_dims: [usize; 3]) -> Self {
+    pub fn empty(
+        number_of_sensors: usize,
+        voxels_in_dims: [usize; 3],
+        sensor_motion_steps: usize,
+    ) -> Self {
         debug!("Creating empty spatial description");
         Self {
             voxels: Voxels::empty(voxels_in_dims),
-            sensors: Sensors::empty(number_of_sensors),
+            sensors: Sensors::empty(number_of_sensors, sensor_motion_steps),
         }
     }
 
@@ -83,7 +87,9 @@ mod tests {
     fn empty_no_crash() {
         let number_of_sensors = 300;
         let voxels_in_dims = [1000, 1, 1];
-        let _spatial_description = SpatialDescription::empty(number_of_sensors, voxels_in_dims);
+        let sensor_motion_steps = 10;
+        let _spatial_description =
+            SpatialDescription::empty(number_of_sensors, voxels_in_dims, sensor_motion_steps);
     }
 
     #[test]

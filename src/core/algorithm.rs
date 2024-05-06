@@ -333,6 +333,7 @@ mod test {
         let config = AlgorithmConfig::default();
         let epoch_index = 3;
         let voxels_in_dims = Dim([1000, 1, 1]);
+        let sensor_motion_steps = 10;
 
         let mut functional_description = FunctionalDescription::empty(
             number_of_states,
@@ -351,6 +352,7 @@ mod test {
             number_of_states,
             number_of_steps,
             voxels_in_dims,
+            sensor_motion_steps,
         );
 
         run_epoch(
@@ -368,6 +370,7 @@ mod test {
         let number_of_sensors = 300;
         let number_of_steps = 3;
         let voxels_in_dims = Dim([1000, 1, 1]);
+        let sensor_motion_steps = 10;
 
         let algorithm_config = AlgorithmConfig {
             epochs: 3,
@@ -390,6 +393,7 @@ mod test {
             number_of_states,
             number_of_steps,
             voxels_in_dims,
+            sensor_motion_steps,
         );
 
         run(
