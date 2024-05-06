@@ -12,6 +12,7 @@ pub struct SampleTracker {
     pub sample_rate: f32,
     pub manual: bool,
     pub selected_sensor: usize,
+    pub selected_motion_step: usize,
 }
 
 impl Default for SampleTracker {
@@ -24,6 +25,7 @@ impl Default for SampleTracker {
             sample_rate: 1.0,
             manual: false,
             selected_sensor: 0,
+            selected_motion_step: 0,
         }
     }
 }

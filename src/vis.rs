@@ -8,6 +8,7 @@ pub mod sensors;
 
 use bevy::prelude::*;
 
+use bevy_obj::ObjPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
 use self::{
@@ -25,7 +26,7 @@ use crate::{
     vis::{
         cutting_plane::{spawn_cutting_plane, update_cutting_plane},
         heart::{setup_material_atlas, setup_mesh_atlas, update_heart_voxel_visibility},
-        sensors::{spawn_sensor_bracket, update_sensor_bracket},
+        sensors::{spawn_sensor_bracket, update_sensor_bracket, update_sensors},
     },
 };
 
@@ -38,6 +39,7 @@ impl Plugin for VisPlugin {
     fn build(&self, app: &mut App) {
         info!("Initializing visualization plugin.");
         app.add_plugins(PanOrbitCameraPlugin)
+            .add_plugins(ObjPlugin)
             .init_resource::<SampleTracker>()
             .init_resource::<VisOptions>()
             .add_systems(Startup, setup_material_atlas)
@@ -50,6 +52,7 @@ impl Plugin for VisPlugin {
                 Update,
                 update_cutting_plane.run_if(in_state(UiState::Volumetric)),
             )
+            .add_systems(Update, update_sensors.run_if(in_state(UiState::Volumetric)))
             .add_systems(
                 Update,
                 update_sensor_bracket.run_if(in_state(UiState::Volumetric)),

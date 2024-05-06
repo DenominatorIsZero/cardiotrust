@@ -183,6 +183,29 @@ pub fn draw_ui_volumetric(
             if selected_sensor != sample_tracker.selected_sensor {
                 sample_tracker.selected_sensor = selected_sensor;
             }
+            ui.label("Motion Step:");
+            let mut motion_step = sample_tracker.selected_motion_step;
+            #[allow(clippy::range_minus_one)]
+            ui.add(egui::Slider::new(
+                &mut motion_step,
+                0..=scenario
+                    .as_ref()
+                    .expect("Scenario to be some")
+                    .results
+                    .as_ref()
+                    .expect("Results to be some.")
+                    .model
+                    .as_ref()
+                    .expect("Model to be some.")
+                    .spatial_description
+                    .sensors
+                    .array_offsets_mm
+                    .shape()[0]
+                    - 1,
+            ));
+            if motion_step != sample_tracker.selected_motion_step {
+                sample_tracker.selected_motion_step = motion_step;
+            }
         }
         let mut visible = cutting_plane.visible;
         ui.checkbox(&mut visible, "Show cutting plane");
