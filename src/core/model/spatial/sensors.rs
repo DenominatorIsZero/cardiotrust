@@ -7,7 +7,7 @@ use std::{
 };
 use tracing::{debug, trace};
 
-use crate::core::config::model::{Common, SensorArrayKind};
+use crate::core::config::model::{Common, SensorArrayGeometry};
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -45,8 +45,8 @@ impl Sensors {
     #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_model_config(config: &Common) -> Self {
         debug!("Creating sensors from model config");
-        let sensors = match config.sensor_array_type {
-            SensorArrayKind::Cube => {
+        let sensors = match config.sensor_array_geometry {
+            SensorArrayGeometry::Cube => {
                 #[allow(clippy::cast_precision_loss)]
                 let distance = [
                     config.sensor_array_size_mm[0] / config.sensors_per_axis[0] as f32,
@@ -87,7 +87,7 @@ impl Sensors {
                 }
                 sensors
             }
-            SensorArrayKind::Cylinder => {
+            SensorArrayGeometry::Cylinder => {
                 let dim = if config.three_d_sensors { 3 } else { 1 };
                 let num = config.number_of_sensors * dim;
                 let mut sensors = Self::empty(num);
@@ -167,7 +167,7 @@ mod tests {
     fn count_from_simulation() {
         let config = Common {
             sensors_per_axis: [10, 20, 30],
-            sensor_array_type: SensorArrayKind::Cube,
+            sensor_array_geometry: SensorArrayGeometry::Cube,
             three_d_sensors: false,
             ..Default::default()
         };

@@ -102,7 +102,7 @@ pub enum ControlFunction {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
-pub enum SensorArrayKind {
+pub enum SensorArrayGeometry {
     Cube,
     Cylinder,
 }
@@ -111,7 +111,7 @@ pub enum SensorArrayKind {
 pub struct Common {
     pub control_function: ControlFunction,
     pub pathological: bool,
-    pub sensor_array_type: SensorArrayKind,
+    pub sensor_array_geometry: SensorArrayGeometry,
     pub three_d_sensors: bool,            // used for both kinds
     pub number_of_sensors: usize,         // used for cylinder only
     pub sensor_array_radius_mm: f32,      // used for cylinder only
@@ -152,7 +152,7 @@ impl Default for Common {
         Self {
             control_function: ControlFunction::Ohara,
             pathological: false,
-            sensor_array_type: SensorArrayKind::Cylinder,
+            sensor_array_geometry: SensorArrayGeometry::Cylinder,
             three_d_sensors: true,
             number_of_sensors: 40,
             sensor_array_radius_mm: 400.0,

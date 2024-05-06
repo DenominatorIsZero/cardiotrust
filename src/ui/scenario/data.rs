@@ -5,7 +5,7 @@ use tracing::trace;
 use super::{common::draw_ui_scenario_common, ROW_HEIGHT};
 use crate::{
     core::{
-        config::{model::SensorArrayKind, simulation::Simulation},
+        config::{model::SensorArrayGeometry, simulation::Simulation},
         scenario::{Scenario, Status},
     },
     ui::scenario::{FIRST_COLUMN_WIDTH, PADDING, SECOND_COLUMN_WIDTH},
@@ -124,7 +124,7 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
             })
             .body(|mut body| {
                 // sensor_type
-                let sensor_type = &mut simulation.model.common.sensor_array_type;
+                let sensor_type = &mut simulation.model.common.sensor_array_geometry;
                 body.row(ROW_HEIGHT, |mut row| {
                     row.col(|ui| {
                         ui.label("Sensor Type");
@@ -135,12 +135,12 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                             .show_ui(ui, |ui| {
                                 ui.selectable_value(
                                     sensor_type,
-                                    SensorArrayKind::Cube,
+                                    SensorArrayGeometry::Cube,
                                     "Cube",
                                 );
                                 ui.selectable_value(
                                     sensor_type,
-                                    SensorArrayKind::Cylinder,
+                                    SensorArrayGeometry::Cylinder,
                                     "Cylinder",
                                 );
                             });
@@ -206,7 +206,7 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                     });
                 }); // end row
                 match sensor_type {
-                    SensorArrayKind::Cube => {
+                    SensorArrayGeometry::Cube => {
                 // Sensors per axis
                 let sensors_per_axis = &mut simulation.model.common.sensors_per_axis;
                 body.row(ROW_HEIGHT, |mut row| {
@@ -259,7 +259,7 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                     });
                 }); // end row
                     }
-                    SensorArrayKind::Cylinder => {
+                    SensorArrayGeometry::Cylinder => {
                         // number of sensors
                 let number_of_sensors = &mut simulation.model.common.number_of_sensors;
                 body.row(ROW_HEIGHT, |mut row| {
