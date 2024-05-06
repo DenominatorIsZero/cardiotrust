@@ -1,9 +1,6 @@
-use std::f32::consts::PI;
-
 use bevy::prelude::*;
-use nalgebra::{Rotation3, Vector3};
 
-use crate::core::scenario::{self, Scenario};
+use crate::core::scenario::Scenario;
 
 /// Spawns sensor visualizations in the 3D scene.
 ///
@@ -92,7 +89,7 @@ pub(crate) fn spawn_sensor_bracket(
         PbrBundle {
             mesh,
             material: materials.add(StandardMaterial::from(Color::rgba(1.0, 1.0, 1.0, 0.2))),
-            transform: Transform::from_xyz(position[0], position[1], position[2]), //                .with_rotation(Quat::from_euler(EulerRot::XYZ, PI / 2.0, PI, 0.0)),
+            transform: Transform::from_xyz(position[0], position[1], position[2]),
             ..default()
         },
         SensorBracket {

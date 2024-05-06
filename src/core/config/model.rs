@@ -81,7 +81,6 @@ impl Default for Handcrafted {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Mri {
-    pub common: Common,
     pub path: PathBuf,
 }
 
@@ -91,7 +90,6 @@ impl Default for Mri {
         debug!("Creating MriScan model");
 
         Self {
-            common: Common::default(),
             path: Path::new("assets/segmentation.nii").to_path_buf(),
         }
     }

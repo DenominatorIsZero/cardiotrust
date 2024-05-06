@@ -165,6 +165,7 @@ pub fn draw_ui_volumetric(
         if scenario.is_some() {
             ui.label("Sensor:");
             let mut selected_sensor = sample_tracker.selected_sensor; // TODO: This needs to live in something like plot options.
+            #[allow(clippy::range_minus_one)]
             ui.add(egui::Slider::new(
                 &mut selected_sensor,
                 0..=scenario
@@ -176,7 +177,8 @@ pub fn draw_ui_volumetric(
                     .estimations
                     .measurements
                     .values
-                    .shape()[1],
+                    .shape()[1]
+                    - 1,
             ));
             if selected_sensor != sample_tracker.selected_sensor {
                 sample_tracker.selected_sensor = selected_sensor;
@@ -264,7 +266,7 @@ pub fn draw_ui_volumetric(
                         .expect("Simulation to be some.")
                         .sample_rate_hz,
                 );
-                let sin: PlotPoints = (0..sample_tracker.max_sample)
+                let signal: PlotPoints = (0..sample_tracker.max_sample)
                     .map(|i| {
                         #[allow(clippy::cast_precision_loss)]
                         let x = i as f64 / samplerate_hz;
@@ -282,7 +284,7 @@ pub fn draw_ui_volumetric(
                         ]
                     })
                     .collect();
-                let sin_line = Line::new(sin);
+                let sin_line = Line::new(signal);
                 #[allow(clippy::cast_precision_loss)]
                 let v_line = VLine::new(sample_tracker.current_sample as f64 / samplerate_hz);
                 Plot::new("my_plot")

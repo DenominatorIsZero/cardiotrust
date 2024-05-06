@@ -6,7 +6,7 @@ pub mod plotting;
 pub mod sample_tracker;
 pub mod sensors;
 
-use bevy::{prelude::*, render::mesh::shape::Capsule};
+use bevy::prelude::*;
 
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 
@@ -112,7 +112,6 @@ pub fn setup_coordinate_system(
         &mut materials,
         Vec3::X,
         Color::RED,
-        "X",
     );
     spawn_axis(
         &mut commands,
@@ -120,7 +119,6 @@ pub fn setup_coordinate_system(
         &mut materials,
         Vec3::Y,
         Color::GREEN,
-        "Y",
     );
     spawn_axis(
         &mut commands,
@@ -128,7 +126,6 @@ pub fn setup_coordinate_system(
         &mut materials,
         Vec3::Z,
         Color::BLUE,
-        "Z",
     );
 }
 
@@ -138,7 +135,6 @@ fn spawn_axis(
     materials: &mut ResMut<Assets<StandardMaterial>>,
     direction: Vec3,
     color: Color,
-    label: &str,
 ) {
     let axis_length = 400.0;
     let thickness = 10.0;

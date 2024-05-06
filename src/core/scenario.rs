@@ -204,6 +204,11 @@ impl Scenario {
         let model = &mut self.config.algorithm.model;
         match &self.config.simulation {
             Some(simulation) => {
+                model.common.sensor_array_type = simulation.model.common.sensor_array_type.clone();
+                model.common.three_d_sensors = simulation.model.common.three_d_sensors;
+                model.common.number_of_sensors = simulation.model.common.number_of_sensors;
+                model.common.sensor_array_radius_mm =
+                    simulation.model.common.sensor_array_radius_mm;
                 model.common.sensors_per_axis = simulation.model.common.sensors_per_axis;
                 model.common.sensor_array_size_mm = simulation.model.common.sensor_array_size_mm;
                 model.common.sensor_array_origin_mm =

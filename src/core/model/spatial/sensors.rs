@@ -5,7 +5,7 @@ use std::{
     fs::{self, File},
     io::BufWriter,
 };
-use tracing::{debug, info, trace};
+use tracing::{debug, trace};
 
 use crate::core::config::model::{Common, SensorArrayKind};
 
