@@ -216,6 +216,12 @@ impl Scenario {
                     simulation.model.common.sensor_array_origin_mm;
                 model.common.voxel_size_mm = simulation.model.common.voxel_size_mm;
                 model.common.heart_offset_mm = simulation.model.common.heart_offset_mm;
+                model.common.sensor_array_motion =
+                    simulation.model.common.sensor_array_motion.clone();
+                model.common.sensor_array_motion_range_mm =
+                    simulation.model.common.sensor_array_motion_range_mm;
+                model.common.sensor_array_motion_steps =
+                    simulation.model.common.sensor_array_motion_steps;
                 if let Some(handcrafted) = simulation.model.handcrafted.as_ref() {
                     model.handcrafted.as_mut().unwrap().heart_size_mm = handcrafted.heart_size_mm;
                 }

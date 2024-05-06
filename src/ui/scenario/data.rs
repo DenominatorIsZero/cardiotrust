@@ -5,7 +5,10 @@ use tracing::trace;
 use super::{common::draw_ui_scenario_common, ROW_HEIGHT};
 use crate::{
     core::{
-        config::{model::SensorArrayGeometry, simulation::Simulation},
+        config::{
+            model::{SensorArrayGeometry, SensorArrayMotion},
+            simulation::Simulation,
+        },
         scenario::{Scenario, Status},
     },
     ui::scenario::{FIRST_COLUMN_WIDTH, PADDING, SECOND_COLUMN_WIDTH},
@@ -124,22 +127,22 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
             })
             .body(|mut body| {
                 // sensor_type
-                let sensor_type = &mut simulation.model.common.sensor_array_geometry;
+                let sensor_geometry = &mut simulation.model.common.sensor_array_geometry;
                 body.row(ROW_HEIGHT, |mut row| {
                     row.col(|ui| {
-                        ui.label("Sensor Type");
+                        ui.label("Sensor Geometry");
                     });
                     row.col(|ui| {
-                        egui::ComboBox::new("cb_sensor_type", "")
-                            .selected_text(format!("{sensor_type:?}"))
+                        egui::ComboBox::new("cb_sensor_geometry", "")
+                            .selected_text(format!("{sensor_geometry:?}"))
                             .show_ui(ui, |ui| {
                                 ui.selectable_value(
-                                    sensor_type,
+                                    sensor_geometry,
                                     SensorArrayGeometry::Cube,
                                     "Cube",
                                 );
                                 ui.selectable_value(
-                                    sensor_type,
+                                    sensor_geometry,
                                     SensorArrayGeometry::Cylinder,
                                     "Cylinder",
                                 );
@@ -149,6 +152,37 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                         ui.add(
                             egui::Label::new(
                                 "The spatial geometry of the sensor array. Default: Cylinder.",
+                            )
+                            .truncate(true),
+                        );
+                    });
+                });// end row
+                // sensor_motion
+                let sensor_motion = &mut simulation.model.common.sensor_array_motion;
+                body.row(ROW_HEIGHT, |mut row| {
+                    row.col(|ui| {
+                        ui.label("Sensor Motion");
+                    });
+                    row.col(|ui| {
+                        egui::ComboBox::new("cb_sensor_motion", "")
+                            .selected_text(format!("{sensor_motion:?}"))
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(
+                                    sensor_motion,
+                                    SensorArrayMotion::Static,
+                                    "Static",
+                                );
+                                ui.selectable_value(
+                                    sensor_motion,
+                                    SensorArrayMotion::Grid,
+                                    "Grid",
+                                );
+                            });
+                    });
+                    row.col(|ui| {
+                        ui.add(
+                            egui::Label::new(
+                                "Whether the sensor array is static or moving along a grid. Default: Grid.",
                             )
                             .truncate(true),
                         );
@@ -205,7 +239,7 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                         );
                     });
                 }); // end row
-                match sensor_type {
+                match sensor_geometry {
                     SensorArrayGeometry::Cube => {
                 // Sensors per axis
                 let sensors_per_axis = &mut simulation.model.common.sensors_per_axis;
@@ -291,6 +325,44 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                     });
                 }); // end row
                     }
+                }
+                if sensor_motion == &SensorArrayMotion::Grid {
+                let motion_range = &mut simulation.model.common.sensor_array_motion_range_mm;
+                body.row(ROW_HEIGHT, |mut row| {
+                    row.col(|ui| {
+                        ui.label("Motion range");
+                    });
+                    row.col(|ui| {
+                        ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                            ui.add(egui::DragValue::new(&mut motion_range[0]).prefix("x: "));
+                            ui.add(egui::DragValue::new(&mut motion_range[1]).prefix("y: "));
+                            ui.add(egui::DragValue::new(&mut motion_range[2]).prefix("z: "));
+                        });
+                    });
+                    row.col(|ui| {
+                        ui.add(
+                            egui::Label::new("The maximum offset of the grid to the sensor origin.").truncate(true),
+                        );
+                    });
+                }); // end row
+                let motion_steps = &mut simulation.model.common.sensor_array_motion_steps;
+                body.row(ROW_HEIGHT, |mut row| {
+                    row.col(|ui| {
+                        ui.label("Motion steps");
+                    });
+                    row.col(|ui| {
+                        ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                            ui.add(egui::DragValue::new(&mut motion_steps[0]).prefix("x: "));
+                            ui.add(egui::DragValue::new(&mut motion_steps[1]).prefix("y: "));
+                            ui.add(egui::DragValue::new(&mut motion_steps[2]).prefix("z: "));
+                        });
+                    });
+                    row.col(|ui| {
+                        ui.add(
+                            egui::Label::new("The number of steps in the grid along each axis.").truncate(true),
+                        );
+                    });
+                }); // end row
                 }
             });
     });

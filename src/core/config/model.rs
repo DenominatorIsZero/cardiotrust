@@ -73,8 +73,8 @@ impl Default for Handcrafted {
             hps_y_up_percentage: 0.5,
             pathology_x_start_percentage: 0.0,
             pathology_x_stop_percentage: 0.2,
-            pathology_y_start_percentage: 0.3,
-            pathology_y_stop_percentage: 0.5,
+            pathology_y_start_percentage: 0.5,
+            pathology_y_stop_percentage: 0.7,
         }
     }
 }
@@ -107,17 +107,26 @@ pub enum SensorArrayGeometry {
     Cylinder,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
+pub enum SensorArrayMotion {
+    Static,
+    Grid,
+}
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Common {
     pub control_function: ControlFunction,
     pub pathological: bool,
     pub sensor_array_geometry: SensorArrayGeometry,
+    pub sensor_array_motion: SensorArrayMotion,
     pub three_d_sensors: bool,            // used for both kinds
     pub number_of_sensors: usize,         // used for cylinder only
     pub sensor_array_radius_mm: f32,      // used for cylinder only
     pub sensors_per_axis: [usize; 3],     // used for cube only
     pub sensor_array_size_mm: [f32; 3],   // used for cube only
     pub sensor_array_origin_mm: [f32; 3], // used for both kinds
+    pub sensor_array_motion_range_mm: [f32; 3],
+    pub sensor_array_motion_steps: [usize; 3],
     pub voxel_size_mm: f32,
     pub heart_offset_mm: [f32; 3],
     pub measurement_covariance_mean: f32,
@@ -153,12 +162,15 @@ impl Default for Common {
             control_function: ControlFunction::Ohara,
             pathological: false,
             sensor_array_geometry: SensorArrayGeometry::Cylinder,
+            sensor_array_motion: SensorArrayMotion::Grid,
             three_d_sensors: true,
             number_of_sensors: 40,
             sensor_array_radius_mm: 400.0,
             sensors_per_axis: [4, 4, 4],
             sensor_array_size_mm: [250.0, 250.0, 100.0],
-            sensor_array_origin_mm: [0.0, -200.0, 0.0],
+            sensor_array_origin_mm: [-50.0, -200.0, -50.0],
+            sensor_array_motion_range_mm: [100.0, 200.0, 100.0],
+            sensor_array_motion_steps: [10, 20, 10],
             voxel_size_mm: 2.5,
             heart_offset_mm: [25.0, -250.0, 100.0],
             measurement_covariance_mean: 1e-3,
