@@ -7,12 +7,13 @@ use std::{
 };
 use tracing::{debug, trace};
 
-use crate::core::config::model::{Common, SensorArrayGeometry};
+use crate::core::config::model::{Common, SensorArrayGeometry, SensorArrayMotion};
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Sensors {
     pub array_center_mm: Array1<f32>,
+    pub array_offsets_mm: Array2<f32>,
     pub array_radius_mm: f32,
     pub positions_mm: Array2<f32>,
     pub orientations_xyz: Array2<f32>,
@@ -23,10 +24,11 @@ impl Sensors {
     /// all position and orientation values to 0.
     #[must_use]
     #[tracing::instrument(level = "debug")]
-    pub fn empty(number_of_sensors: usize) -> Self {
+    pub fn empty(number_of_sensors: usize, number_of_motion_steps: usize) -> Self {
         debug!("Creating empty sensors");
         Self {
             array_center_mm: Array1::zeros(3),
+            array_offsets_mm: Array2::zeros((number_of_motion_steps, 3)),
             array_radius_mm: 100.0,
             positions_mm: Array2::zeros((number_of_sensors, 3)),
             orientations_xyz: Array2::zeros((number_of_sensors, 3)),
@@ -45,6 +47,10 @@ impl Sensors {
     #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_model_config(config: &Common) -> Self {
         debug!("Creating sensors from model config");
+        let number_of_motion_steps = match config.sensor_array_motion {
+            SensorArrayMotion::Static => 1,
+            SensorArrayMotion::Grid => config.sensor_array_motion_steps.iter().product(),
+        };
         let sensors = match config.sensor_array_geometry {
             SensorArrayGeometry::Cube => {
                 #[allow(clippy::cast_precision_loss)]
@@ -55,7 +61,7 @@ impl Sensors {
                 ];
                 let dim = if config.three_d_sensors { 3 } else { 1 };
                 let num_sensors = config.sensors_per_axis.iter().product::<usize>() * dim;
-                let mut sensors = Self::empty(num_sensors);
+                let mut sensors = Self::empty(num_sensors, number_of_motion_steps);
                 let mut i: usize = 0;
                 for x in 0..config.sensors_per_axis[0] {
                     for y in 0..config.sensors_per_axis[1] {
@@ -90,7 +96,7 @@ impl Sensors {
             SensorArrayGeometry::Cylinder => {
                 let dim = if config.three_d_sensors { 3 } else { 1 };
                 let num = config.number_of_sensors * dim;
-                let mut sensors = Self::empty(num);
+                let mut sensors = Self::empty(num, number_of_motion_steps);
                 let radius = config.sensor_array_radius_mm;
                 let origin = &config.sensor_array_origin_mm;
                 for i in 0..config.number_of_sensors {
@@ -123,6 +129,26 @@ impl Sensors {
                 sensors
             }
         };
+        if config.sensor_array_motion == SensorArrayMotion::Grid {
+            let step_size_mm_x =
+                config.sensor_array_motion_range_mm[0] / config.sensor_array_motion_steps[0] as f32;
+            let step_size_mm_y =
+                config.sensor_array_motion_range_mm[1] / config.sensor_array_motion_steps[1] as f32;
+            let step_size_mm_z =
+                config.sensor_array_motion_range_mm[2] / config.sensor_array_motion_steps[2] as f32;
+
+            let mut motion_index = 0;
+            for x in 0..config.sensor_array_motion_steps[0] {
+                for y in 0..config.sensor_array_motion_steps[1] {
+                    for z in 0..config.sensor_array_motion_steps[2] {
+                        sensors.array_offsets_mm[(motion_index, 0)] = step_size_mm_x * x as f32;
+                        sensors.array_offsets_mm[(motion_index, 1)] = step_size_mm_y * y as f32;
+                        sensors.array_offsets_mm[(motion_index, 2)] = step_size_mm_z * z as f32;
+                        motion_index += 1;
+                    }
+                }
+            }
+        }
         sensors
     }
 
