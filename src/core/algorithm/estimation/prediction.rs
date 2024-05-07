@@ -24,6 +24,7 @@ pub fn calculate_system_prediction(
     measurements: &mut ArrayMeasurements,
     functional_description: &FunctionalDescription,
     time_index: usize,
+    beat_index: usize,
 ) {
     trace!("Calculating system prediction");
     innovate_system_states_v1(
@@ -36,6 +37,7 @@ pub fn calculate_system_prediction(
     predict_measurements(
         measurements,
         time_index,
+        beat_index,
         &functional_description.measurement_matrix,
         system_states,
     );
@@ -133,14 +135,18 @@ pub fn add_control_function(
 pub fn predict_measurements(
     measurements: &mut ArrayMeasurements,
     time_index: usize,
+    beat_index: usize,
     measurement_matrix: &MeasurementMatrix,
     system_states: &ArraySystemStates,
 ) {
     trace!("Predicting measurements");
     // Prediction of measurements H * x
-    measurements.values.slice_mut(s![time_index, ..]).assign(
-        &measurement_matrix
-            .values
-            .dot(&system_states.values.slice(s![time_index, ..])),
-    );
+    measurements
+        .values
+        .slice_mut(s![beat_index, time_index, ..])
+        .assign(
+            &measurement_matrix
+                .values
+                .dot(&system_states.values.slice(s![time_index, ..])),
+        );
 }

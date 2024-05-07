@@ -80,7 +80,7 @@ pub(crate) fn update_sensors(
 ) {
     if sample_tracker.is_changed() {
         sensors.par_iter_mut().for_each(|(mut transform, sensor)| {
-            let sample_index = sample_tracker.selected_motion_step;
+            let sample_index = sample_tracker.selected_beat;
             let position = Vec3 {
                 x: sensor.positions_mm[(sample_index, 0)],
                 y: sensor.positions_mm[(sample_index, 1)],

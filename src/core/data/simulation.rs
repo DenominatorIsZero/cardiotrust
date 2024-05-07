@@ -12,7 +12,7 @@ use super::shapes::{
 };
 use crate::core::{
     algorithm::estimation::prediction::calculate_system_prediction,
-    config::simulation::Simulation as SimulationConfig,
+    config::{model::SensorArrayMotion, simulation::Simulation as SimulationConfig},
     data::ArrayMeasurements,
     model::{functional::allpass::shapes::ArrayGains, Model},
 };
@@ -41,7 +41,11 @@ impl Simulation {
     ) -> Self {
         debug!("Creating empty simulation");
         Self {
-            measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
+            measurements: ArrayMeasurements::empty(
+                sensor_motion_steps,
+                number_of_steps,
+                number_of_sensors,
+            ),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
             system_states_spherical: ArraySystemStatesSpherical::empty(
                 number_of_steps,
@@ -78,8 +82,18 @@ impl Simulation {
         let number_of_states = model.spatial_description.voxels.count_states();
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let number_of_steps = (config.sample_rate_hz * config.duration_s) as usize;
+        let number_of_beats = match config.model.common.sensor_array_motion {
+            SensorArrayMotion::Static => 1,
+            SensorArrayMotion::Grid => config
+                .model
+                .common
+                .sensor_array_motion_steps
+                .iter()
+                .product(),
+        };
 
-        let measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
+        let measurements =
+            ArrayMeasurements::empty(number_of_beats, number_of_steps, number_of_sensors);
         let system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
         let system_states_spherical =
             ArraySystemStatesSpherical::empty(number_of_steps, number_of_states);
@@ -111,25 +125,33 @@ impl Simulation {
         let model = &self.model;
 
         let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(system_states.values.shape()[1]);
-        for time_index in 0..system_states.values.shape()[0] {
-            calculate_system_prediction(
-                &mut ap_outputs,
-                system_states,
-                measurements,
-                &model.functional_description,
-                time_index,
-            );
+        for beat_index in 0..measurements.values.shape()[0] {
+            ap_outputs.values.fill(0.0);
+            system_states.values.fill(0.0);
+            for time_index in 0..system_states.values.shape()[0] {
+                calculate_system_prediction(
+                    &mut ap_outputs,
+                    system_states,
+                    measurements,
+                    &model.functional_description,
+                    time_index,
+                    beat_index,
+                );
+            }
         }
         let mut rng = ChaCha8Rng::seed_from_u64(42);
-        for sensor_index in 0..measurements.values.shape()[1] {
+        for sensor_index in 0..measurements.values.shape()[2] {
             let dist = Normal::new(
                 0.0,
                 model.functional_description.measurement_covariance.values
                     [[sensor_index, sensor_index]],
             )
             .unwrap();
-            for time_index in 0..measurements.values.shape()[0] {
-                measurements.values[[time_index, sensor_index]] += dist.sample(&mut rng);
+            for beat_index in 0..measurements.values.shape()[0] {
+                for time_index in 0..measurements.values.shape()[1] {
+                    measurements.values[[beat_index, time_index, sensor_index]] +=
+                        dist.sample(&mut rng);
+                }
             }
         }
         self.calculate_plotting_arrays();
@@ -256,7 +278,11 @@ mod test {
 
         let path = folder.join("sensor_0_x.png");
         standard_time_plot(
-            &simulation.measurements.values.slice(s![.., 0]).to_owned(),
+            &simulation
+                .measurements
+                .values
+                .slice(s![0, .., 0])
+                .to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - x",
@@ -266,7 +292,11 @@ mod test {
 
         let path = folder.join("sensor_0_y.png");
         standard_time_plot(
-            &simulation.measurements.values.slice(s![.., 1]).to_owned(),
+            &simulation
+                .measurements
+                .values
+                .slice(s![0, .., 1])
+                .to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - y",
@@ -276,7 +306,11 @@ mod test {
 
         let path = folder.join("sensor_0_z.png");
         standard_time_plot(
-            &simulation.measurements.values.slice(s![.., 2]).to_owned(),
+            &simulation
+                .measurements
+                .values
+                .slice(s![0, .., 2])
+                .to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - z",
@@ -397,7 +431,11 @@ mod test {
 
         let path = folder.join("sensor_0_x.png");
         standard_time_plot(
-            &simulation.measurements.values.slice(s![.., 0]).to_owned(),
+            &simulation
+                .measurements
+                .values
+                .slice(s![0, .., 0])
+                .to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - x",
@@ -407,7 +445,11 @@ mod test {
 
         let path = folder.join("sensor_0_y.png");
         standard_time_plot(
-            &simulation.measurements.values.slice(s![.., 1]).to_owned(),
+            &simulation
+                .measurements
+                .values
+                .slice(s![0, .., 1])
+                .to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - y",
@@ -417,7 +459,11 @@ mod test {
 
         let path = folder.join("sensor_0_z.png");
         standard_time_plot(
-            &simulation.measurements.values.slice(s![.., 2]).to_owned(),
+            &simulation
+                .measurements
+                .values
+                .slice(s![0, .., 2])
+                .to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - z",
@@ -523,7 +569,11 @@ mod test {
 
         let path = folder.join("sensor_0_x.png");
         standard_time_plot(
-            &simulation.measurements.values.slice(s![.., 0]).to_owned(),
+            &simulation
+                .measurements
+                .values
+                .slice(s![0, .., 0])
+                .to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - x",
@@ -533,7 +583,11 @@ mod test {
 
         let path = folder.join("sensor_0_y.png");
         standard_time_plot(
-            &simulation.measurements.values.slice(s![.., 1]).to_owned(),
+            &simulation
+                .measurements
+                .values
+                .slice(s![0, .., 1])
+                .to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - y",
@@ -543,7 +597,11 @@ mod test {
 
         let path = folder.join("sensor_0_z.png");
         standard_time_plot(
-            &simulation.measurements.values.slice(s![.., 2]).to_owned(),
+            &simulation
+                .measurements
+                .values
+                .slice(s![0, .., 2])
+                .to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - z",

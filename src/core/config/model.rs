@@ -170,7 +170,7 @@ impl Default for Common {
             sensor_array_size_mm: [250.0, 250.0, 100.0],
             sensor_array_origin_mm: [-50.0, -200.0, -50.0],
             sensor_array_motion_range_mm: [100.0, 200.0, 100.0],
-            sensor_array_motion_steps: [10, 20, 10],
+            sensor_array_motion_steps: [2, 2, 2],
             voxel_size_mm: 2.5,
             heart_offset_mm: [25.0, -250.0, 100.0],
             measurement_covariance_mean: 1e-3,

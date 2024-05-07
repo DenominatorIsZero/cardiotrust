@@ -323,7 +323,7 @@ fn update_values(
             let state = pf_measurement_buffer[index_state]
                 .as_f64()
                 .expect("Measurement should be a float");
-            measurements[(index_sample, index_state)] = state as f32;
+            measurements[(0, index_sample, index_state)] = state as f32;
         }
     }
 }
@@ -580,6 +580,7 @@ fn init_scenario(
         number_of_steps,
         number_of_sensors,
         number_of_states,
+        1,
     );
     let est_model = Model::empty(
         number_of_states,

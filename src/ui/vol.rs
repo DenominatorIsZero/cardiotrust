@@ -184,7 +184,7 @@ pub fn draw_ui_volumetric(
                 sample_tracker.selected_sensor = selected_sensor;
             }
             ui.label("Motion Step:");
-            let mut motion_step = sample_tracker.selected_motion_step;
+            let mut motion_step = sample_tracker.selected_beat;
             #[allow(clippy::range_minus_one)]
             ui.add(egui::Slider::new(
                 &mut motion_step,
@@ -203,8 +203,8 @@ pub fn draw_ui_volumetric(
                     .shape()[0]
                     - 1,
             ));
-            if motion_step != sample_tracker.selected_motion_step {
-                sample_tracker.selected_motion_step = motion_step;
+            if motion_step != sample_tracker.selected_beat {
+                sample_tracker.selected_beat = motion_step;
             }
         }
         let mut visible = cutting_plane.visible;
@@ -302,7 +302,11 @@ pub fn draw_ui_volumetric(
                                     .expect("Results to be some")
                                     .estimations
                                     .measurements
-                                    .values[(i, sample_tracker.selected_sensor)],
+                                    .values[(
+                                    sample_tracker.selected_beat,
+                                    i,
+                                    sample_tracker.selected_sensor,
+                                )],
                             ),
                         ]
                     })

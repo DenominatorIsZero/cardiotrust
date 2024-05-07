@@ -263,7 +263,7 @@ impl Derivatives {
         self.mapped_residuals.values = measurement_matrix
             .values
             .t()
-            .dot(&residuals.values.slice(s![0, ..]));
+            .dot(&residuals.values.slice(s![0, 0, ..]));
     }
 }
 
@@ -360,6 +360,7 @@ mod tests {
         let number_of_states = 1500;
         let number_of_sensors = 300;
         let number_of_steps = 2000;
+        let number_of_beats = 10;
         let time_index = 333;
         let voxels_in_dims = Dim([1000, 1, 1]);
         let config = Algorithm {
@@ -374,7 +375,12 @@ mod tests {
             number_of_steps,
             voxels_in_dims,
         );
-        let estimations = Estimations::empty(number_of_states, number_of_sensors, number_of_steps);
+        let estimations = Estimations::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            number_of_beats,
+        );
 
         derivates.calculate(&functional_description, &estimations, &config, time_index);
     }

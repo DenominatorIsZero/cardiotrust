@@ -627,22 +627,38 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "j [A/mm^2]",
         ),
         ImageType::MeasurementAlgorithm => standard_time_plot(
-            &estimations.measurements.values.slice(s![.., 0]).to_owned(),
+            &estimations
+                .measurements
+                .values
+                .slice(s![0, .., 0])
+                .to_owned(),
             scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             &path,
             "Measurement 0 Algorithm",
             "z [pT]",
         ),
         ImageType::MeasurementSimulation => standard_time_plot(
-            &data.get_measurements().values.slice(s![.., 0]).to_owned(),
+            &data
+                .get_measurements()
+                .values
+                .slice(s![0, .., 0])
+                .to_owned(),
             scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             &path,
             "Measurement 0 Simulation",
             "z [pT]",
         ),
         ImageType::MeasurementDelta => standard_time_plot(
-            &(&estimations.measurements.values.slice(s![.., 0]).to_owned()
-                - &data.get_measurements().values.slice(s![.., 0]).to_owned()),
+            &(&estimations
+                .measurements
+                .values
+                .slice(s![0, .., 0])
+                .to_owned()
+                - &data
+                    .get_measurements()
+                    .values
+                    .slice(s![0, .., 0])
+                    .to_owned()),
             scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             &path,
             "Measurement 0 Delta",

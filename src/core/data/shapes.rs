@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array2, Axis};
+use ndarray::{Array1, Array2, Array3, Axis};
 use ndarray_npy::WriteNpyExt;
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
@@ -222,17 +222,17 @@ impl ArrayActivationTimePerState {
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct ArrayMeasurements {
-    pub values: Array2<f32>,
+    pub values: Array3<f32>,
 }
 
 impl ArrayMeasurements {
     #[must_use]
     #[tracing::instrument(level = "trace")]
     /// Creates an empty `ArrayMeasurements` with the given dimensions.
-    pub fn empty(number_of_steps: usize, number_of_sensors: usize) -> Self {
+    pub fn empty(beats: usize, steps: usize, sensors: usize) -> Self {
         trace!("Creating empty measurements");
         Self {
-            values: Array2::zeros((number_of_steps, number_of_sensors)),
+            values: Array3::zeros((beats, steps, sensors)),
         }
     }
 

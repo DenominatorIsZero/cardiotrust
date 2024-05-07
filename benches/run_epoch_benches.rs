@@ -128,9 +128,10 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
     .unwrap();
     let results = Results::new(
         config.algorithm.epochs,
-        data.get_measurements().values.shape()[0],
+        data.get_measurements().values.shape()[1],
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
+        model.spatial_description.sensors.count_beats(),
     );
     (data, model, results)
 }

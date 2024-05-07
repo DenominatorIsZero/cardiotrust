@@ -163,6 +163,13 @@ impl Sensors {
         self.positions_mm.shape()[0]
     }
 
+    #[must_use]
+    #[tracing::instrument(level = "trace")]
+    pub fn count_beats(&self) -> usize {
+        trace!("Retrieving number of beats");
+        self.array_offsets_mm.shape()[0]
+    }
+
     /// Saves the sensor positions and orientations to .npy files in the given path.
     /// Creates the directory if it does not exist.
     #[tracing::instrument(level = "trace")]

@@ -23,11 +23,12 @@ impl APParameters {
         derivatives: &Derivatives,
         config: &Algorithm,
         number_of_steps: usize,
+        number_of_beats: usize,
     ) {
         debug!("Updating allpass filter parameters");
         let batch_size = match config.batch_size {
-            0 => number_of_steps,
-            _ => config.batch_size,
+            0 => number_of_steps * number_of_beats,
+            _ => number_of_steps * config.batch_size,
         };
         if !config.freeze_gains {
             update_gains(

@@ -55,13 +55,13 @@ pub fn calculate_pseudo_inverse(
     let derivatives = &mut results.derivatives;
 
     for time_index in 0..estimations.system_states.values.shape()[0] {
-        let rows = data.get_measurements().values.shape()[1];
+        let rows = data.get_measurements().values.shape()[2];
         let measurements = DMatrix::from_row_slice(
             rows,
             1,
             data.get_measurements()
                 .values
-                .slice(s![time_index, ..])
+                .slice(s![0, time_index, ..])
                 .as_slice()
                 .expect("Slice to be some."),
         );
@@ -81,7 +81,7 @@ pub fn calculate_pseudo_inverse(
         estimations
             .measurements
             .values
-            .slice_mut(s![time_index, ..])
+            .slice_mut(s![0, time_index, ..])
             .assign(
                 &functional_description
                     .measurement_matrix
@@ -94,6 +94,7 @@ pub fn calculate_pseudo_inverse(
             &estimations.measurements,
             data.get_measurements(),
             time_index,
+            0,
         );
 
         derivatives.calculate(functional_description, estimations, config, time_index);
@@ -104,6 +105,7 @@ pub fn calculate_pseudo_inverse(
             &estimations.system_states,
             data.get_measurements(),
             time_index,
+            0,
         );
         calculate_system_states_delta(
             &mut estimations.system_states_delta,
@@ -134,64 +136,73 @@ pub fn run_epoch(
     epoch_index: usize,
 ) {
     debug!("Running epoch {}", epoch_index);
-    results.estimations.reset();
     results.derivatives.reset();
     let num_steps = results.estimations.system_states.values.shape()[0];
+    let num_beats = data.get_measurements().values.shape()[0];
+
     let mut batch = match config.batch_size {
         0 => None,
-        _ => Some((epoch_index * num_steps) % config.batch_size),
+        _ => Some((epoch_index * num_beats) % config.batch_size),
     };
 
-    for time_index in 0..num_steps {
+    for beat_index in 0..num_beats {
+        results.estimations.reset();
         let estimations = &mut results.estimations;
         let derivatives = &mut results.derivatives;
-        calculate_system_prediction(
-            &mut estimations.ap_outputs,
-            &mut estimations.system_states,
-            &mut estimations.measurements,
-            functional_description,
-            time_index,
-        );
-        calculate_residuals(
-            &mut estimations.residuals,
-            &estimations.measurements,
-            data.get_measurements(),
-            time_index,
-        );
-        if config.constrain_system_states {
-            constrain_system_states(
+        for time_index in 0..num_steps {
+            calculate_system_prediction(
+                &mut estimations.ap_outputs,
                 &mut estimations.system_states,
+                &mut estimations.measurements,
+                functional_description,
                 time_index,
-                config.state_clamping_threshold,
+                beat_index,
+            );
+            calculate_residuals(
+                &mut estimations.residuals,
+                &estimations.measurements,
+                data.get_measurements(),
+                time_index,
+                beat_index,
+            );
+            if config.constrain_system_states {
+                constrain_system_states(
+                    &mut estimations.system_states,
+                    time_index,
+                    config.state_clamping_threshold,
+                );
+            }
+
+            derivatives.calculate(functional_description, estimations, config, time_index);
+
+            if config.model.common.apply_system_update {
+                if config.update_kalman_gain {
+                    update_kalman_gain_and_check_convergence(estimations, functional_description);
+                }
+                calculate_system_update(estimations, time_index, functional_description, config);
+            }
+
+            calculate_deltas(
+                estimations,
+                functional_description,
+                data,
+                time_index,
+                beat_index,
+            );
+
+            results.metrics.calculate_step(
+                estimations,
+                derivatives,
+                config.regularization_strength,
+                time_index,
             );
         }
-
-        derivatives.calculate(functional_description, estimations, config, time_index);
-
-        if config.model.common.apply_system_update {
-            if config.update_kalman_gain {
-                update_kalman_gain_and_check_convergence(estimations, functional_description);
-            }
-            calculate_system_update(estimations, time_index, functional_description, config);
-        }
-
-        calculate_deltas(estimations, functional_description, data, time_index);
-
-        results.metrics.calculate_step(
-            estimations,
-            derivatives,
-            config.regularization_strength,
-            time_index,
-        );
-
         if let Some(n) = batch.as_mut() {
             *n += 1;
             if *n == config.batch_size {
-                functional_description.ap_params.update(
-                    derivatives,
-                    config,
-                    estimations.system_states.values.shape()[0],
-                );
+                functional_description
+                    .ap_params
+                    .update(derivatives, config, num_steps, num_beats);
                 derivatives.reset();
                 estimations.kalman_gain_converged = false;
                 *n = 0;
@@ -199,11 +210,11 @@ pub fn run_epoch(
         }
     }
     if batch.is_none() {
-        functional_description.ap_params.update(
-            &results.derivatives,
-            config,
-            results.estimations.system_states.values.shape()[0],
-        );
+        functional_description
+            .ap_params
+            .update(&results.derivatives, config, num_steps, num_beats);
+        results.derivatives.reset();
+        results.estimations.kalman_gain_converged = false;
     }
     results.metrics.calculate_epoch(epoch_index);
 }
@@ -214,6 +225,7 @@ pub fn calculate_deltas(
     functional_description: &FunctionalDescription,
     data: &Data,
     time_index: usize,
+    beat_index: usize,
 ) {
     trace!("Calculating deltas");
     calculate_post_update_residuals(
@@ -222,6 +234,7 @@ pub fn calculate_deltas(
         &estimations.system_states,
         data.get_measurements(),
         time_index,
+        beat_index,
     );
     calculate_system_states_delta(
         &mut estimations.system_states_delta,
@@ -329,11 +342,12 @@ mod test {
         let number_of_states = 3000;
         let number_of_sensors = 300;
         let number_of_steps = 3;
+        let number_of_beats = 7;
         let number_of_epochs = 10;
         let config = AlgorithmConfig::default();
         let epoch_index = 3;
         let voxels_in_dims = Dim([1000, 1, 1]);
-        let sensor_motion_steps = 10;
+        let number_of_beats = 10;
 
         let mut functional_description = FunctionalDescription::empty(
             number_of_states,
@@ -346,13 +360,14 @@ mod test {
             number_of_steps,
             number_of_sensors,
             number_of_states,
+            number_of_beats,
         );
         let data = Data::empty(
             number_of_sensors,
             number_of_states,
             number_of_steps,
             voxels_in_dims,
-            sensor_motion_steps,
+            number_of_beats,
         );
 
         run_epoch(
@@ -369,8 +384,8 @@ mod test {
         let number_of_states = 3000;
         let number_of_sensors = 300;
         let number_of_steps = 3;
+        let number_of_beats = 7;
         let voxels_in_dims = Dim([1000, 1, 1]);
-        let sensor_motion_steps = 10;
 
         let algorithm_config = AlgorithmConfig {
             epochs: 3,
@@ -387,13 +402,14 @@ mod test {
             number_of_steps,
             number_of_sensors,
             number_of_states,
+            number_of_beats,
         );
         let data = Data::empty(
             number_of_sensors,
             number_of_states,
             number_of_steps,
             voxels_in_dims,
-            sensor_motion_steps,
+            number_of_beats,
         );
 
         run(
@@ -434,6 +450,12 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            simulation_config
+                .model
+                .common
+                .sensor_array_motion_steps
+                .iter()
+                .product(),
         );
 
         run(
@@ -479,6 +501,12 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            simulation_config
+                .model
+                .common
+                .sensor_array_motion_steps
+                .iter()
+                .product(),
         );
 
         run(
@@ -578,6 +606,12 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            simulation_config
+                .model
+                .common
+                .sensor_array_motion_steps
+                .iter()
+                .product(),
         );
 
         run(
@@ -621,6 +655,12 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            simulation_config
+                .model
+                .common
+                .sensor_array_motion_steps
+                .iter()
+                .product(),
         );
 
         run(
@@ -630,6 +670,7 @@ mod test {
             &algorithm_config,
         );
 
+        println!("{:?}", results.metrics.loss_mse_epoch.values);
         (0..algorithm_config.epochs - 1).for_each(|i| {
             assert!(
                 results.metrics.loss_mse_epoch.values[i]
@@ -667,6 +708,12 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            simulation_config
+                .model
+                .common
+                .sensor_array_motion_steps
+                .iter()
+                .product(),
         );
 
         run(
@@ -766,6 +813,12 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            simulation_config
+                .model
+                .common
+                .sensor_array_motion_steps
+                .iter()
+                .product(),
         );
 
         run(
@@ -863,6 +916,12 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            simulation_config
+                .model
+                .common
+                .sensor_array_motion_steps
+                .iter()
+                .product(),
         );
 
         run(
@@ -907,6 +966,12 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            simulation_config
+                .model
+                .common
+                .sensor_array_motion_steps
+                .iter()
+                .product(),
         );
 
         run(
@@ -945,6 +1010,12 @@ mod test {
                 .shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
+            simulation_config
+                .model
+                .common
+                .sensor_array_motion_steps
+                .iter()
+                .product(),
         );
 
         calculate_pseudo_inverse(

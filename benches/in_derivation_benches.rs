@@ -11,6 +11,7 @@ use std::time::Duration;
 const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
 const LEARNING_RATE: f32 = 1e-3;
 const TIME_INDEX: usize = 42;
+const BEAT_INDEX: usize = 0;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Derivation");
@@ -185,9 +186,10 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
     .unwrap();
     let mut results = Results::new(
         config.algorithm.epochs,
-        data.get_measurements().values.shape()[0],
+        data.get_measurements().values.shape()[1],
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
+        model.spatial_description.sensors.count_beats(),
     );
     let estimations = &mut results.estimations;
     calculate_system_prediction(
@@ -196,12 +198,14 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         &mut estimations.measurements,
         &model.functional_description,
         TIME_INDEX,
+        BEAT_INDEX,
     );
     calculate_residuals(
         &mut estimations.residuals,
         &estimations.measurements,
         data.get_measurements(),
         TIME_INDEX,
+        BEAT_INDEX,
     );
     (data, model, results)
 }

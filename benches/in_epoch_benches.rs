@@ -17,6 +17,7 @@ use std::time::Duration;
 const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
 const LEARNING_RATE: f32 = 1e-3;
 const TIME_INDEX: usize = 42;
+const BEAT_INDEX: usize = 0;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Epoch");
@@ -76,6 +77,7 @@ fn bench_system_prediction(
                     &mut results.estimations.measurements,
                     &model.functional_description,
                     TIME_INDEX,
+                    BEAT_INDEX,
                 )
             })
         });
@@ -99,6 +101,7 @@ fn bench_residuals(group: &mut criterion::BenchmarkGroup<criterion::measurement:
                     &results.estimations.measurements,
                     data.get_measurements(),
                     TIME_INDEX,
+                    BEAT_INDEX,
                 );
             })
         });
@@ -215,6 +218,7 @@ fn bench_deltas(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
                     &model.functional_description,
                     &data,
                     TIME_INDEX,
+                    BEAT_INDEX,
                 );
             })
         });
@@ -262,6 +266,7 @@ fn bench_update_parameters(
                     &results.derivatives,
                     &config.algorithm,
                     results.estimations.system_states.values.shape()[0],
+                    model.spatial_description.sensors.count_beats(),
                 );
             })
         });
@@ -302,9 +307,10 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
     .unwrap();
     let results = Results::new(
         config.algorithm.epochs,
-        data.get_measurements().values.shape()[0],
+        data.get_measurements().values.shape()[1],
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
+        model.spatial_description.sensors.count_beats(),
     );
     (data, model, results)
 }

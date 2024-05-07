@@ -51,6 +51,7 @@ impl Estimations {
         number_of_states: usize,
         number_of_sensors: usize,
         number_of_steps: usize,
+        number_of_beats: usize,
     ) -> Self {
         debug!("Creating empty estimations");
         Self {
@@ -64,9 +65,13 @@ impl Estimations {
             activation_times: ArrayActivationTimePerState::empty(number_of_states),
             state_covariance_pred: ArrayGains::empty(number_of_states),
             state_covariance_est: ArrayGains::empty(number_of_states),
-            measurements: ArrayMeasurements::empty(number_of_steps, number_of_sensors),
-            residuals: ArrayMeasurements::empty(1, number_of_sensors),
-            post_update_residuals: ArrayMeasurements::empty(1, number_of_sensors),
+            measurements: ArrayMeasurements::empty(
+                number_of_beats,
+                number_of_steps,
+                number_of_sensors,
+            ),
+            residuals: ArrayMeasurements::empty(1, 1, number_of_sensors),
+            post_update_residuals: ArrayMeasurements::empty(1, 1, number_of_sensors),
             system_states_delta: ArraySystemStates::empty(1, number_of_states),
             system_states_spherical_max_delta: ArraySystemStatesSphericalMax::empty(
                 number_of_states,
@@ -89,13 +94,11 @@ impl Estimations {
         self.system_states.values.fill(0.0);
         self.state_covariance_pred.values.fill(0.0);
         self.state_covariance_est.values.fill(0.0);
-        self.measurements.values.fill(0.0);
         self.residuals.values.fill(0.0);
         self.post_update_residuals.values.fill(0.0);
         self.system_states_delta.values.fill(0.0);
         self.gains_delta.values.fill(0.0);
         self.delays_delta.values.fill(0.0);
-        self.kalman_gain_converged = false;
     }
 
     /// Saves the system states and measurements to .npy files at the given path.
@@ -117,11 +120,16 @@ pub fn calculate_residuals(
     predicted_measurements: &ArrayMeasurements,
     actual_measurements: &ArrayMeasurements,
     time_index: usize,
+    beat_index: usize,
 ) {
     trace!("Calculating residuals");
-    residuals.values.slice_mut(s![0, ..]).assign(
-        &(&predicted_measurements.values.slice(s![time_index, ..])
-            - &actual_measurements.values.slice(s![time_index, ..])),
+    residuals.values.slice_mut(s![0, 0, ..]).assign(
+        &(&predicted_measurements
+            .values
+            .slice(s![beat_index, time_index, ..])
+            - &actual_measurements
+                .values
+                .slice(s![beat_index, time_index, ..])),
     );
 }
 
@@ -136,13 +144,16 @@ pub fn calculate_post_update_residuals(
     estimated_system_states: &ArraySystemStates,
     actual_measurements: &ArrayMeasurements,
     time_index: usize,
+    beat_index: usize,
 ) {
     trace!("Calculating post update residuals");
-    post_update_residuals.values.slice_mut(s![0, ..]).assign(
+    post_update_residuals.values.slice_mut(s![0, 0, ..]).assign(
         &(measurement_matrix
             .values
             .dot(&estimated_system_states.values.slice(s![time_index, ..]))
-            - actual_measurements.values.slice(s![time_index, ..])),
+            - actual_measurements
+                .values
+                .slice(s![beat_index, time_index, ..])),
     );
 }
 
@@ -222,7 +233,7 @@ pub fn calculate_system_update(
             + functional_description
                 .kalman_gain
                 .values
-                .dot(&estimations.residuals.values.slice(s![0, ..]))),
+                .dot(&estimations.residuals.values.slice(s![0, 0, ..]))),
     );
 }
 
@@ -533,12 +544,15 @@ mod tests {
         let number_of_states = 3000;
         let number_of_sensors = 300;
         let number_of_steps = 2000;
+        let number_of_beats = 10;
         let time_index = 333;
+        let beat_index = 4;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
         let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(number_of_states);
         let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
-        let mut measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
+        let mut measurements =
+            ArrayMeasurements::empty(number_of_beats, number_of_steps, number_of_sensors);
         let functional_description = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,
@@ -552,6 +566,7 @@ mod tests {
             &mut measurements,
             &functional_description,
             time_index,
+            beat_index,
         );
     }
 
@@ -560,11 +575,16 @@ mod tests {
         let number_of_states = 3000;
         let number_of_sensors = 300;
         let number_of_steps = 2000;
+        let number_of_beats = 10;
         let time_index = 333;
         let config = Algorithm::default();
 
-        let mut estimations =
-            Estimations::empty(number_of_states, number_of_sensors, number_of_steps);
+        let mut estimations = Estimations::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            number_of_beats,
+        );
         let mut functional_desrciption = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,
@@ -584,17 +604,22 @@ mod tests {
     fn residuals_no_crash() {
         let number_of_sensors = 300;
         let number_of_steps = 2000;
+        let number_of_beats = 10;
         let time_index = 333;
+        let beat_index = 2;
 
-        let mut residuals = ArrayMeasurements::empty(1, number_of_sensors);
-        let predicted_measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
-        let actual_measurements = ArrayMeasurements::empty(number_of_steps, number_of_sensors);
+        let mut residuals = ArrayMeasurements::empty(1, 1, number_of_sensors);
+        let predicted_measurements =
+            ArrayMeasurements::empty(number_of_beats, number_of_steps, number_of_sensors);
+        let actual_measurements =
+            ArrayMeasurements::empty(number_of_beats, number_of_steps, number_of_sensors);
 
         calculate_residuals(
             &mut residuals,
             &predicted_measurements,
             &actual_measurements,
             time_index,
+            beat_index,
         );
     }
 }

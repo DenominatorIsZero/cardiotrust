@@ -32,9 +32,15 @@ impl Results {
         number_of_steps: usize,
         number_of_sensors: usize,
         number_of_states: usize,
+        number_of_beats: usize,
     ) -> Self {
         debug!("Creating results with empty estimations, derivatives, snapshots, and model");
-        let estimations = Estimations::empty(number_of_states, number_of_sensors, number_of_steps);
+        let estimations = Estimations::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            number_of_beats,
+        );
         let derivatives = Derivatives::new(number_of_states);
         let snapshots = Vec::new();
 
