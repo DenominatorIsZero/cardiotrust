@@ -112,7 +112,6 @@ fn setup_config(voxel_size: &f32) -> Config {
     config.algorithm.freeze_gains = false;
     config.algorithm.batch_size = 0;
     config.algorithm.update_kalman_gain = true;
-    config.algorithm.constrain_system_states = true;
     config
 }
 

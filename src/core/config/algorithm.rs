@@ -23,8 +23,6 @@ pub struct Algorithm {
     pub snapshots_interval: usize,
     pub learning_rate: f32,
     #[serde(default)]
-    pub gradient_clamping_threshold: f32,
-    #[serde(default)]
     pub learning_rate_reduction_factor: f32,
     #[serde(default)]
     pub learning_rate_reduction_interval: usize,
@@ -33,9 +31,6 @@ pub struct Algorithm {
     #[serde(default)]
     pub regularization_threshold: f32,
     #[serde(default)]
-    pub constrain_system_states: bool,
-    #[serde(default)]
-    pub state_clamping_threshold: f32,
     pub freeze_gains: bool,
     pub freeze_delays: bool,
     pub update_kalman_gain: bool,
@@ -52,14 +47,11 @@ impl Default for Algorithm {
             batch_size: 0,
             snapshots_interval: 0,
             learning_rate: 200.0,
-            gradient_clamping_threshold: 1.0,
             learning_rate_reduction_factor: 0.0,
             learning_rate_reduction_interval: 0,
             regularization_strength: 1.0,
             regularization_threshold: 1.01,
             model: Model::default(),
-            constrain_system_states: false,
-            state_clamping_threshold: 1.5,
             freeze_gains: false,
             freeze_delays: true,
             update_kalman_gain: false,

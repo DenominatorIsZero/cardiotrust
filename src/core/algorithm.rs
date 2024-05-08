@@ -169,13 +169,6 @@ pub fn run_epoch(
                 time_index,
                 beat_index,
             );
-            if config.constrain_system_states {
-                constrain_system_states(
-                    &mut estimations.system_states,
-                    time_index,
-                    config.state_clamping_threshold,
-                );
-            }
 
             derivatives.calculate(
                 functional_description,
@@ -902,104 +895,6 @@ mod test {
             Some(fps),
         )
         .unwrap();
-    }
-
-    #[test]
-    fn current_density_constrained() {
-        let simulation_config = SimulationConfig::default();
-        let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
-
-        let mut algorithm_config = Algorithm::default();
-
-        let mut model = Model::from_model_config(
-            &algorithm_config.model,
-            simulation_config.sample_rate_hz,
-            simulation_config.duration_s,
-        )
-        .expect("Model parameters to be valid.");
-        model.functional_description.ap_params.gains.values *= 2.0;
-        algorithm_config.epochs = 1;
-        algorithm_config.model.common.apply_system_update = false;
-        algorithm_config.constrain_system_states = true;
-
-        let mut results = Results::new(
-            algorithm_config.epochs,
-            model
-                .functional_description
-                .control_function_values
-                .values
-                .shape()[0],
-            model.spatial_description.sensors.count(),
-            model.spatial_description.voxels.count_states(),
-            simulation_config
-                .model
-                .common
-                .sensor_array_motion_steps
-                .iter()
-                .product(),
-        );
-
-        run(
-            &mut model.functional_description,
-            &mut results,
-            &data,
-            &algorithm_config,
-        );
-
-        results
-            .estimations
-            .system_states
-            .values
-            .for_each(|v| assert!(*v <= 2.0, "{v} was greater than 2."));
-    }
-
-    #[test]
-    fn current_density_not_constrained() {
-        let simulation_config = SimulationConfig::default();
-        let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
-
-        let mut algorithm_config = Algorithm::default();
-
-        let mut model = Model::from_model_config(
-            &algorithm_config.model,
-            simulation_config.sample_rate_hz,
-            simulation_config.duration_s,
-        )
-        .expect("Model params to be valid.");
-        model.functional_description.ap_params.gains.values *= 2.0;
-        algorithm_config.epochs = 1;
-        algorithm_config.constrain_system_states = false;
-        algorithm_config.model.common.apply_system_update = false;
-
-        let mut results = Results::new(
-            algorithm_config.epochs,
-            model
-                .functional_description
-                .control_function_values
-                .values
-                .shape()[0],
-            model.spatial_description.sensors.count(),
-            model.spatial_description.voxels.count_states(),
-            simulation_config
-                .model
-                .common
-                .sensor_array_motion_steps
-                .iter()
-                .product(),
-        );
-
-        run(
-            &mut model.functional_description,
-            &mut results,
-            &data,
-            &algorithm_config,
-        );
-
-        let max = *results.estimations.system_states.values.max_skipnan();
-
-        assert!(max > 2.0, "Max was {max}");
     }
 
     #[test]

@@ -57,50 +57,6 @@ fn draw_estimation_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                 });
             })
             .body(|mut body| {
-                // Constrain Current Density
-                body.row(ROW_HEIGHT, |mut row| {
-                    row.col(|ui| {
-                        ui.label("Constrain\ncurrent density");
-                    });
-                    row.col(|ui| {
-                        ui.checkbox(&mut algorithm.constrain_system_states, "");
-                    });
-                    row.col(|ui| {
-                        ui.add(
-                            egui::Label::new(
-                                "Wether or not to constrain the current\
-                                     density to a maximum value. Doing so\
-                                     prevents fast divergence of the system.",
-                            )
-                            .truncate(true),
-                        );
-                    });
-                });
-                if algorithm.constrain_system_states {
-                    // State Clamping Threshold
-                    body.row(ROW_HEIGHT, |mut row| {
-                        row.col(|ui| {
-                            ui.label("State Clamping\nthreshold");
-                        });
-                        row.col(|ui| {
-                            ui.add(egui::Slider::new(
-                                &mut algorithm.state_clamping_threshold,
-                                0.0..=10.0,
-                            ));
-                        });
-                        row.col(|ui| {
-                            ui.add(
-                                egui::Label::new(
-                                    "The absolute value of\
-                                    current density that has to be\
-                                    exceeded before the constrain\
-                                    starts havin an effect. Default: 1.5.",
-                                )
-                                .truncate(true),
-                            );
-                        });
-                    });
-                }
                 // Apply system update
                 body.row(ROW_HEIGHT, |mut row| {
                     row.col(|ui| {
@@ -555,31 +511,6 @@ fn draw_learning_rate_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                             });
                         });
                     }
-                    // Gradient Clamping Threshold
-                    body.row(ROW_HEIGHT, |mut row| {
-                        row.col(|ui| {
-                            ui.label("Gradient clamping\nthreshold");
-                        });
-                        row.col(|ui| {
-                            ui.add(
-                                egui::Slider::new(
-                                    &mut algorithm.gradient_clamping_threshold,
-                                    1e-6..=1e3,
-                                )
-                                .logarithmic(true)
-                                .custom_formatter(|n, _| format!("{n:+.4e}")),
-                            );
-                        });
-                        row.col(|ui| {
-                            ui.add(
-                                egui::Label::new(
-                                    "The maximum value to which the gradients/
-                                    are clamped",
-                                )
-                                .truncate(true),
-                            );
-                        });
-                    });
                 }
             });
     });

@@ -38,7 +38,6 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
                     &results.derivatives.gains,
                     config.algorithm.learning_rate,
                     2000,
-                    config.algorithm.gradient_clamping_threshold,
                 );
             })
         });
@@ -63,7 +62,6 @@ fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
                     &results.derivatives.coefs,
                     config.algorithm.learning_rate,
                     2000,
-                    config.algorithm.gradient_clamping_threshold,
                 );
             })
         });
@@ -88,7 +86,6 @@ fn setup_config(voxel_size: &f32) -> Config {
     config.algorithm.freeze_delays = false;
     config.algorithm.freeze_gains = false;
     config.algorithm.batch_size = 0;
-    config.algorithm.constrain_system_states = true;
     config
 }
 

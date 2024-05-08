@@ -24,7 +24,6 @@ fn run_benches(c: &mut Criterion) {
     bench_resetting(&mut group);
     bench_system_prediction(&mut group);
     bench_residuals(&mut group);
-    bench_constrain(&mut group);
     bench_kalman(&mut group);
     bench_system_update(&mut group);
     bench_derivation(&mut group);
@@ -102,28 +101,6 @@ fn bench_residuals(group: &mut criterion::BenchmarkGroup<criterion::measurement:
                     data.get_measurements(),
                     TIME_INDEX,
                     BEAT_INDEX,
-                );
-            })
-        });
-    }
-}
-
-fn bench_constrain(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
-    for voxel_size in VOXEL_SIZES.iter() {
-        let config = setup_config(voxel_size);
-
-        // setup inputs
-        let (_, model, mut results) = setup_inputs(&config);
-
-        // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
-        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        group.bench_function(BenchmarkId::new("constrain", voxel_size), |b| {
-            b.iter(|| {
-                constrain_system_states(
-                    &mut results.estimations.system_states,
-                    TIME_INDEX,
-                    config.algorithm.state_clamping_threshold,
                 );
             })
         });
@@ -293,7 +270,6 @@ fn setup_config(voxel_size: &f32) -> Config {
     config.algorithm.freeze_delays = false;
     config.algorithm.freeze_gains = false;
     config.algorithm.batch_size = 0;
-    config.algorithm.constrain_system_states = true;
     config
 }
 

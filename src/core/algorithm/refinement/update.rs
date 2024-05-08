@@ -36,7 +36,6 @@ impl APParameters {
                 &derivatives.gains,
                 config.learning_rate,
                 batch_size,
-                config.gradient_clamping_threshold,
             );
         }
         if !config.freeze_delays {
@@ -46,7 +45,6 @@ impl APParameters {
                 &derivatives.coefs,
                 config.learning_rate,
                 batch_size,
-                config.gradient_clamping_threshold,
             );
         }
     }
@@ -63,11 +61,9 @@ pub fn update_gains(
     derivatives: &ArrayGains<f32>,
     learning_rate: f32,
     batch_size: usize,
-    clamping_threshold: f32,
 ) {
     debug!("Updating gains");
-    gains.values -= &(learning_rate / batch_size as f32 * &derivatives.values)
-        .map(|v| v.clamp(-clamping_threshold, clamping_threshold));
+    gains.values -= &(learning_rate / batch_size as f32 * &derivatives.values);
 }
 
 /// Updates the all-pass coefficients and integer delays
@@ -89,11 +85,9 @@ pub fn update_delays(
     derivatives: &ArrayDelays<f32>,
     learning_rate: f32,
     batch_size: usize,
-    clamping_threshold: f32,
 ) {
     debug!("Updating coefficients and delays");
-    ap_coefs.values -= &(learning_rate / batch_size as f32 * &derivatives.values)
-        .map(|v| v.clamp(-clamping_threshold, clamping_threshold));
+    ap_coefs.values -= &(learning_rate / batch_size as f32 * &derivatives.values);
     // make sure to keep the all pass coefficients between 0 and 1 by
     // wrapping them around and adjusting the delays accordingly.
     ap_coefs
@@ -132,7 +126,7 @@ mod tests {
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
-        update_gains(&mut gains, &derivatives, learning_rate, 1, 1.0);
+        update_gains(&mut gains, &derivatives, learning_rate, 1);
 
         assert_eq!(-derivatives.values, gains.values);
     }
@@ -146,14 +140,7 @@ mod tests {
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
-        update_delays(
-            &mut ap_coefs,
-            &mut delays,
-            &derivatives,
-            learning_rate,
-            1,
-            1.0,
-        );
+        update_delays(&mut ap_coefs, &mut delays, &derivatives, learning_rate, 1);
 
         assert_eq!(-derivatives.values, ap_coefs.values);
     }
