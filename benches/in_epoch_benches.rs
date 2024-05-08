@@ -234,7 +234,7 @@ fn bench_update_parameters(
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, mut model, results) = setup_inputs(&config);
+        let (_, mut model, mut results) = setup_inputs(&config);
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -242,7 +242,7 @@ fn bench_update_parameters(
         group.bench_function(BenchmarkId::new("update_parameters", voxel_size), |b| {
             b.iter(|| {
                 model.functional_description.ap_params.update(
-                    &results.derivatives,
+                    &mut results.derivatives,
                     &config.algorithm,
                     results.estimations.system_states.values.shape()[0],
                     model.spatial_description.sensors.count_beats(),
@@ -289,6 +289,7 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),
+        config.algorithm.optimizer,
     );
     (data, model, results)
 }

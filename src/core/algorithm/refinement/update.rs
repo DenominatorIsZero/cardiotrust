@@ -2,6 +2,7 @@ use tracing::debug;
 
 use super::derivation::Derivatives;
 use crate::core::{
+    algorithm::refinement::Optimizer,
     config::algorithm::Algorithm,
     model::functional::allpass::{
         shapes::{ArrayDelays, ArrayGains},
@@ -20,7 +21,7 @@ impl APParameters {
     #[tracing::instrument(level = "debug")]
     pub fn update(
         &mut self,
-        derivatives: &Derivatives,
+        derivatives: &mut Derivatives,
         config: &Algorithm,
         number_of_steps: usize,
         number_of_beats: usize,
@@ -30,23 +31,52 @@ impl APParameters {
             0 => number_of_steps * number_of_beats,
             _ => number_of_steps * config.batch_size,
         };
+
         if !config.freeze_gains {
-            update_gains(
-                &mut self.gains,
-                &derivatives.gains,
-                config.learning_rate,
-                batch_size,
-            );
+            match config.optimizer {
+                Optimizer::Sgd => {
+                    update_gains_sgd(
+                        &mut self.gains,
+                        &derivatives.gains,
+                        config.learning_rate,
+                        batch_size,
+                    );
+                }
+                Optimizer::Adam => {
+                    update_gains_adam(
+                        &mut self.gains,
+                        &derivatives.gains,
+                        derivatives.gains_first_moment.as_mut().unwrap(),
+                        derivatives.gains_second_moment.as_mut().unwrap(),
+                        derivatives.step,
+                        config.learning_rate,
+                        batch_size,
+                    );
+                }
+            }
         }
+
         if !config.freeze_delays {
-            update_delays(
-                &mut self.coefs,
-                &derivatives.coefs,
-                config.learning_rate,
-                batch_size,
-            );
+            match config.optimizer {
+                Optimizer::Sgd => update_delays_sgd(
+                    &mut self.coefs,
+                    &derivatives.coefs,
+                    config.learning_rate,
+                    batch_size,
+                ),
+                Optimizer::Adam => update_delays_adam(
+                    &mut self.coefs,
+                    &derivatives.coefs,
+                    derivatives.coefs_first_moment.as_mut().unwrap(),
+                    derivatives.coefs_second_moment.as_mut().unwrap(),
+                    derivatives.step,
+                    config.learning_rate,
+                    batch_size,
+                ),
+            };
             roll_delays(&mut self.coefs, &mut self.delays);
         }
+        derivatives.step += 1;
     }
 }
 
@@ -56,7 +86,7 @@ impl APParameters {
 #[allow(clippy::cast_precision_loss)]
 #[inline]
 #[tracing::instrument(level = "debug")]
-pub fn update_gains(
+pub fn update_gains_sgd(
     gains: &mut ArrayGains<f32>,
     derivatives: &ArrayGains<f32>,
     learning_rate: f32,
@@ -66,6 +96,31 @@ pub fn update_gains(
     gains.values -= &(learning_rate / batch_size as f32 * &derivatives.values);
 }
 
+#[allow(clippy::cast_precision_loss)]
+#[inline]
+#[tracing::instrument(level = "debug")]
+pub fn update_gains_adam(
+    gains: &mut ArrayGains<f32>,
+    derivatives: &ArrayGains<f32>,
+    first_moment: &mut ArrayGains<f32>,
+    second_moment: &mut ArrayGains<f32>,
+    step: usize,
+    learning_rate: f32,
+    batch_size: usize,
+) {
+    debug!("Updating gains");
+    first_moment.values = &first_moment.values * 0.9 + (0.1 * &derivatives.values);
+    second_moment.values =
+        &second_moment.values * 0.999 + (0.001 * &derivatives.values * &derivatives.values);
+
+    let first_moment_cor = &first_moment.values / (1. - 0.9_f32.powf(step as f32));
+    let second_moment_cor = &second_moment.values / (1. - 0.999_f32.powf(step as f32));
+
+    let factor = first_moment_cor / (second_moment_cor.mapv(f32::sqrt) + 1e-8);
+
+    gains.values -= &(learning_rate / batch_size as f32 * factor);
+}
+
 /// Updates the all-pass coefficients and integer delays
 /// based on the provided derivatives and specified
 /// learning rate, batch size, and gradient clamping threshold.
@@ -73,13 +128,10 @@ pub fn update_gains(
 /// The all-pass coefficients are updated by subtracting the
 /// scaled and clamped derivatives. The coefficients are kept
 /// between 0 and 1 by adjusting the integer delays accordingly.
-///
-/// When a step would place a coefficient outside this range,
-/// the integer delay is adjusted to "roll" the coefficient.
 #[allow(clippy::cast_precision_loss)]
 #[inline]
 #[tracing::instrument(level = "debug")]
-pub fn update_delays(
+pub fn update_delays_sgd(
     ap_coefs: &mut ArrayDelays<f32>,
     derivatives: &ArrayDelays<f32>,
     learning_rate: f32,
@@ -87,6 +139,31 @@ pub fn update_delays(
 ) {
     debug!("Updating coefficients and delays");
     ap_coefs.values -= &(learning_rate / batch_size as f32 * &derivatives.values);
+}
+
+#[allow(clippy::cast_precision_loss)]
+#[inline]
+#[tracing::instrument(level = "debug")]
+pub fn update_delays_adam(
+    ap_coefs: &mut ArrayDelays<f32>,
+    derivatives: &ArrayDelays<f32>,
+    first_moment: &mut ArrayDelays<f32>,
+    second_moment: &mut ArrayDelays<f32>,
+    step: usize,
+    learning_rate: f32,
+    batch_size: usize,
+) {
+    debug!("Updating coefficients and delays");
+    first_moment.values = &first_moment.values * 0.9 + (0.1 * &derivatives.values);
+    second_moment.values =
+        &second_moment.values * 0.999 + (0.001 * &derivatives.values * &derivatives.values);
+
+    let first_moment_cor = &first_moment.values / (1. - 0.9_f32.powf(step as f32));
+    let second_moment_cor = &second_moment.values / (1. - 0.999_f32.powf(step as f32));
+
+    let factor = first_moment_cor / (second_moment_cor.mapv(f32::sqrt) + 1e-8);
+
+    ap_coefs.values -= &(learning_rate / batch_size as f32 * factor);
 }
 
 // make sure to keep the all pass coefficients between 0 and 1 by
@@ -130,7 +207,7 @@ mod tests {
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
-        update_gains(&mut gains, &derivatives, learning_rate, 1);
+        update_gains_sgd(&mut gains, &derivatives, learning_rate, 1);
 
         assert_eq!(-derivatives.values, gains.values);
     }
@@ -144,7 +221,7 @@ mod tests {
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
-        update_delays(&mut ap_coefs, &derivatives, learning_rate, 1);
+        update_delays_sgd(&mut ap_coefs, &derivatives, learning_rate, 1);
         roll_delays(&mut ap_coefs, &mut delays);
 
         assert_eq!(-derivatives.values, ap_coefs.values);

@@ -11,6 +11,7 @@ use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 
 use crate::{
     core::{
+        algorithm::refinement::Optimizer,
         data::{
             shapes::{ArrayMeasurements, ArraySystemStates},
             Data,
@@ -581,6 +582,7 @@ fn init_scenario(
         number_of_sensors,
         number_of_states,
         1,
+        Optimizer::Sgd,
     );
     let est_model = Model::empty(
         number_of_states,

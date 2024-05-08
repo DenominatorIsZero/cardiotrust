@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
+use crate::core::algorithm::refinement::Optimizer;
+
 use super::model::Model;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Default)]
@@ -17,6 +19,8 @@ pub struct Algorithm {
     pub model: Model,
     #[serde(default)]
     pub algorithm_type: AlgorithmType,
+    #[serde(default)]
+    pub optimizer: Optimizer,
     pub epochs: usize,
     #[serde(default)]
     pub batch_size: usize,
@@ -43,6 +47,7 @@ impl Default for Algorithm {
         debug!("Creating default algorithm");
         Self {
             algorithm_type: AlgorithmType::ModelBased,
+            optimizer: Optimizer::Sgd,
             epochs: 1,
             batch_size: 0,
             snapshots_interval: 0,

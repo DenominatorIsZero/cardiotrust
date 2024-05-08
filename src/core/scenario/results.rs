@@ -3,7 +3,10 @@ use tracing::{debug, trace};
 
 use super::algorithm::metrics::Metrics;
 use crate::core::{
-    algorithm::{estimation::Estimations, refinement::derivation::Derivatives},
+    algorithm::{
+        estimation::Estimations,
+        refinement::{derivation::Derivatives, Optimizer},
+    },
     model::{functional::FunctionalDescription, Model},
 };
 
@@ -33,6 +36,7 @@ impl Results {
         number_of_sensors: usize,
         number_of_states: usize,
         number_of_beats: usize,
+        optimizer: Optimizer,
     ) -> Self {
         debug!("Creating results with empty estimations, derivatives, snapshots, and model");
         let estimations = Estimations::empty(
@@ -41,7 +45,7 @@ impl Results {
             number_of_steps,
             number_of_beats,
         );
-        let derivatives = Derivatives::new(number_of_states);
+        let derivatives = Derivatives::new(number_of_states, optimizer);
         let snapshots = Vec::new();
 
         Self {

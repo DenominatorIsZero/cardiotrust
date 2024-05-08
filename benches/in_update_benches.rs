@@ -1,6 +1,6 @@
 use cardiotrust::core::{
     algorithm::{
-        refinement::update::{roll_delays, update_delays, update_gains},
+        refinement::update::{roll_delays, update_delays_sgd, update_gains_sgd},
         run_epoch,
     },
     config::Config,
@@ -33,7 +33,7 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("gains", voxel_size), |b| {
             b.iter(|| {
-                update_gains(
+                update_gains_sgd(
                     &mut model.functional_description.ap_params.gains,
                     &results.derivatives.gains,
                     config.algorithm.learning_rate,
@@ -56,7 +56,7 @@ fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("delays", voxel_size), |b| {
             b.iter(|| {
-                update_delays(
+                update_delays_sgd(
                     &mut model.functional_description.ap_params.coefs,
                     &results.derivatives.coefs,
                     config.algorithm.learning_rate,
@@ -108,6 +108,7 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),
+        config.algorithm.optimizer,
     );
 
     run_epoch(

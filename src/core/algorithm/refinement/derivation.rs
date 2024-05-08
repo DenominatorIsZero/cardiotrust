@@ -16,6 +16,8 @@ use crate::core::{
     },
 };
 
+use super::Optimizer;
+
 /// Stuct to calculate and store the derivatives
 /// of the model parameters with regards to the
 /// Loss function.
@@ -24,8 +26,17 @@ use crate::core::{
 pub struct Derivatives {
     /// Derivatives of the All-pass gains
     pub gains: ArrayGains<f32>,
+    /// First moment of the gains derivatives
+    pub gains_first_moment: Option<ArrayGains<f32>>,
+    /// second moment of the gains derivatives
+    pub gains_second_moment: Option<ArrayGains<f32>>,
     /// Derivatives of the All-pass coeficients
     pub coefs: ArrayDelays<f32>,
+    /// First moment of the coeficients derivatives
+    pub coefs_first_moment: Option<ArrayDelays<f32>>,
+    /// Second moment of the coeficients derivatives
+    pub coefs_second_moment: Option<ArrayDelays<f32>>,
+    pub step: usize,
     /// IIR component of the coeficients derivatives
     /// only used for internal computation
     coefs_iir: ArrayGains<f32>,
@@ -45,11 +56,32 @@ impl Derivatives {
     /// the given number of states.
     #[must_use]
     #[tracing::instrument(level = "debug")]
-    pub fn new(number_of_states: usize) -> Self {
+    pub fn new(number_of_states: usize, optimizer: Optimizer) -> Self {
         debug!("Creating empty derivatives");
+        let gains_first_moment = match optimizer {
+            Optimizer::Sgd => None,
+            Optimizer::Adam => Some(ArrayGains::empty(number_of_states)),
+        };
+        let gains_second_moment = match optimizer {
+            Optimizer::Sgd => None,
+            Optimizer::Adam => Some(ArrayGains::empty(number_of_states)),
+        };
+        let coefs_first_moment = match optimizer {
+            Optimizer::Sgd => None,
+            Optimizer::Adam => Some(ArrayDelays::empty(number_of_states)),
+        };
+        let coefs_second_moment = match optimizer {
+            Optimizer::Sgd => None,
+            Optimizer::Adam => Some(ArrayDelays::empty(number_of_states)),
+        };
         Self {
             gains: ArrayGains::empty(number_of_states),
+            gains_first_moment,
+            gains_second_moment,
             coefs: ArrayDelays::empty(number_of_states),
+            coefs_first_moment,
+            coefs_second_moment,
+            step: 1,
             coefs_iir: ArrayGains::empty(number_of_states),
             coefs_fir: ArrayGains::empty(number_of_states),
             mapped_residuals: ArrayMappedResiduals::new(number_of_states),
@@ -348,7 +380,7 @@ mod tests {
         output_state_indices.values.fill(Some(3));
         let time_index = 10;
 
-        let mut derivatives = Derivatives::new(number_of_states);
+        let mut derivatives = Derivatives::new(number_of_states, Optimizer::Sgd);
 
         derivatives.calculate_derivatives_coefs(
             &ap_outputs,
@@ -373,7 +405,7 @@ mod tests {
             ..Default::default()
         };
 
-        let mut derivates = Derivatives::new(number_of_states);
+        let mut derivates = Derivatives::new(number_of_states, config.optimizer);
         let functional_description = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,

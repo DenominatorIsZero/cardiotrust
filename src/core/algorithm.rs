@@ -217,9 +217,12 @@ pub fn run_epoch(
         }
     }
     if batch.is_none() {
-        functional_description
-            .ap_params
-            .update(&results.derivatives, config, num_steps, num_beats);
+        functional_description.ap_params.update(
+            &mut results.derivatives,
+            config,
+            num_steps,
+            num_beats,
+        );
         results.derivatives.reset();
         results.estimations.kalman_gain_converged = false;
     }
@@ -369,6 +372,7 @@ mod test {
             number_of_sensors,
             number_of_states,
             number_of_beats,
+            config.optimizer,
         );
         let data = Data::empty(
             number_of_sensors,
@@ -412,6 +416,7 @@ mod test {
             number_of_sensors,
             number_of_states,
             number_of_beats,
+            algorithm_config.optimizer,
         );
         let data = Data::empty(
             number_of_sensors,
@@ -465,6 +470,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.optimizer,
         );
 
         run(
@@ -516,6 +522,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.optimizer,
         );
 
         run(
@@ -621,6 +628,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.optimizer,
         );
 
         run(
@@ -670,6 +678,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.optimizer,
         );
 
         run(
@@ -723,6 +732,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.optimizer,
         );
 
         run(
@@ -828,6 +838,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.optimizer,
         );
 
         run(
@@ -927,6 +938,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.optimizer,
         );
 
         calculate_pseudo_inverse(

@@ -5,6 +5,7 @@ use super::{
     common::draw_ui_scenario_common, FIRST_COLUMN_WIDTH, PADDING, ROW_HEIGHT, SECOND_COLUMN_WIDTH,
 };
 use crate::core::{
+    algorithm::refinement::Optimizer,
     config::algorithm::{Algorithm, AlgorithmType},
     scenario::{Scenario, Status},
 };
@@ -23,7 +24,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
             ui.separator();
             draw_algorithm_settings(ui, algorithm);
             if algorithm.algorithm_type == AlgorithmType::ModelBased {
-                draw_learning_rate_settings(ui, algorithm);
+                draw_optimizer_settings(ui, algorithm);
                 draw_estimation_settings(ui, algorithm);
                 draw_regularization_settings(ui, algorithm);
                 draw_metrics_settings(ui, algorithm);
@@ -413,8 +414,8 @@ fn draw_metrics_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
 #[allow(clippy::too_many_lines)]
 #[tracing::instrument(skip_all, level = "trace")]
 
-fn draw_learning_rate_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
-    ui.label(egui::RichText::new("Learning Rate Settings").underline());
+fn draw_optimizer_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
+    ui.label(egui::RichText::new("Optimizer Settings").underline());
     ui.group(|ui| {
         let width = ui.available_width();
         TableBuilder::new(ui)
@@ -437,6 +438,37 @@ fn draw_learning_rate_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
             })
             .body(|mut body| {
                 if algorithm.algorithm_type == AlgorithmType::ModelBased {
+                    // Optimizer
+                    body.row(ROW_HEIGHT, |mut row| {
+                        row.col(|ui| {
+                            ui.label("Optimizer");
+                        });
+                        row.col(|ui| {
+                let optimzer = &mut algorithm.optimizer;
+                        egui::ComboBox::new("cb_optimizer", "")
+                            .selected_text(format!("{optimzer:?}"))
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(
+                                    optimzer,
+                                    Optimizer::Sgd,
+                                    "SGD",
+                                );
+                                ui.selectable_value(
+                                    optimzer,
+                                    Optimizer::Adam,
+                                    "ADAM",
+                                );
+                            });
+                        });
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new(
+                                    "The optimization algorithm used to update the model parameters."
+                                )
+                                .truncate(true),
+                            );
+                        });
+                    });
                     // Learning rate
                     body.row(ROW_HEIGHT, |mut row| {
                         row.col(|ui| {

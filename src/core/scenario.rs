@@ -424,6 +424,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),
+        scenario.config.algorithm.optimizer,
     );
 
     let mut summary = Summary::default();
