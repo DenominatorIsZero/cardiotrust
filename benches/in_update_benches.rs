@@ -1,6 +1,6 @@
 use cardiotrust::core::{
     algorithm::{
-        refinement::update::{update_delays, update_gains},
+        refinement::update::{roll_delays, update_delays, update_gains},
         run_epoch,
     },
     config::Config,
@@ -58,10 +58,13 @@ fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
             b.iter(|| {
                 update_delays(
                     &mut model.functional_description.ap_params.coefs,
-                    &mut model.functional_description.ap_params.delays,
                     &results.derivatives.coefs,
                     config.algorithm.learning_rate,
                     2000,
+                );
+                roll_delays(
+                    &mut model.functional_description.ap_params.coefs,
+                    &mut model.functional_description.ap_params.delays,
                 );
             })
         });

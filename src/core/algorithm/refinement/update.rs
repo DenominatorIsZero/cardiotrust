@@ -41,11 +41,11 @@ impl APParameters {
         if !config.freeze_delays {
             update_delays(
                 &mut self.coefs,
-                &mut self.delays,
                 &derivatives.coefs,
                 config.learning_rate,
                 batch_size,
             );
+            roll_delays(&mut self.coefs, &mut self.delays);
         }
     }
 }
@@ -81,15 +81,19 @@ pub fn update_gains(
 #[tracing::instrument(level = "debug")]
 pub fn update_delays(
     ap_coefs: &mut ArrayDelays<f32>,
-    delays: &mut ArrayDelays<usize>,
     derivatives: &ArrayDelays<f32>,
     learning_rate: f32,
     batch_size: usize,
 ) {
     debug!("Updating coefficients and delays");
     ap_coefs.values -= &(learning_rate / batch_size as f32 * &derivatives.values);
-    // make sure to keep the all pass coefficients between 0 and 1 by
-    // wrapping them around and adjusting the delays accordingly.
+}
+
+// make sure to keep the all pass coefficients between 0 and 1 by
+// wrapping them around and adjusting the delays accordingly.
+#[inline]
+#[tracing::instrument(level = "debug")]
+pub fn roll_delays(ap_coefs: &mut ArrayDelays<f32>, delays: &mut ArrayDelays<usize>) {
     ap_coefs
         .values
         .iter_mut()
@@ -140,7 +144,8 @@ mod tests {
         derivatives.values.fill(-0.5);
         let learning_rate = 1.0;
 
-        update_delays(&mut ap_coefs, &mut delays, &derivatives, learning_rate, 1);
+        update_delays(&mut ap_coefs, &derivatives, learning_rate, 1);
+        roll_delays(&mut ap_coefs, &mut delays);
 
         assert_eq!(-derivatives.values, ap_coefs.values);
     }
