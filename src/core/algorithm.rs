@@ -3,7 +3,7 @@ pub mod metrics;
 pub mod refinement;
 
 use nalgebra::{DMatrix, SVD};
-use ndarray::{s, Array1};
+use ndarray::{s, Array1, ArrayBase, Dim, ViewRepr};
 use tracing::{debug, trace};
 
 use crate::core::algorithm::estimation::update_kalman_gain_and_check_convergence;
@@ -37,16 +37,16 @@ pub fn calculate_pseudo_inverse(
     config: &Algorithm,
 ) {
     debug!("Calculating pseudo inverse");
-    let rows = functional_description.measurement_matrix.values.shape()[0];
-    let columns = functional_description.measurement_matrix.values.shape()[1];
+    let rows = functional_description.measurement_matrix.values.shape()[1];
+    let columns = functional_description.measurement_matrix.values.shape()[2];
+    let measurement_matrix = functional_description
+        .measurement_matrix
+        .values
+        .slice(s![0, .., ..]);
     let measurement_matrix = DMatrix::from_row_slice(
         rows,
         columns,
-        functional_description
-            .measurement_matrix
-            .values
-            .as_slice()
-            .expect("Slice to be some"),
+        measurement_matrix.as_slice().expect("Slice to be some."),
     );
 
     let decomposition = SVD::new_unordered(measurement_matrix, true, true);
@@ -78,14 +78,17 @@ pub fn calculate_pseudo_inverse(
             .slice_mut(s![time_index, ..])
             .assign(&system_states);
 
+        let measurement_matrix: ArrayBase<ViewRepr<&f32>, Dim<[usize; 2]>> = functional_description
+            .measurement_matrix
+            .values
+            .slice(s![0, .., ..]);
+
         estimations
             .measurements
             .values
             .slice_mut(s![0, time_index, ..])
             .assign(
-                &functional_description
-                    .measurement_matrix
-                    .values
+                &measurement_matrix
                     .dot(&estimations.system_states.values.slice(s![time_index, ..])),
             );
 
@@ -97,7 +100,7 @@ pub fn calculate_pseudo_inverse(
             0,
         );
 
-        derivatives.calculate(functional_description, estimations, config, time_index);
+        derivatives.calculate(functional_description, estimations, config, time_index, 0);
 
         calculate_post_update_residuals(
             &mut estimations.post_update_residuals,
@@ -147,6 +150,7 @@ pub fn run_epoch(
 
     for beat_index in 0..num_beats {
         results.estimations.reset();
+        results.estimations.kalman_gain_converged = false;
         let estimations = &mut results.estimations;
         let derivatives = &mut results.derivatives;
         for time_index in 0..num_steps {
@@ -173,11 +177,21 @@ pub fn run_epoch(
                 );
             }
 
-            derivatives.calculate(functional_description, estimations, config, time_index);
+            derivatives.calculate(
+                functional_description,
+                estimations,
+                config,
+                time_index,
+                beat_index,
+            );
 
             if config.model.common.apply_system_update {
                 if config.update_kalman_gain {
-                    update_kalman_gain_and_check_convergence(estimations, functional_description);
+                    update_kalman_gain_and_check_convergence(
+                        estimations,
+                        functional_description,
+                        beat_index,
+                    );
                 }
                 calculate_system_update(estimations, time_index, functional_description, config);
             }
@@ -353,6 +367,7 @@ mod test {
             number_of_states,
             number_of_sensors,
             number_of_steps,
+            number_of_beats,
             voxels_in_dims,
         );
         let mut results = Results::new(
@@ -395,6 +410,7 @@ mod test {
             number_of_states,
             number_of_sensors,
             number_of_steps,
+            number_of_beats,
             voxels_in_dims,
         );
         let mut results = Results::new(

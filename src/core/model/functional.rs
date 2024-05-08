@@ -42,12 +42,17 @@ impl FunctionalDescription {
         number_of_states: usize,
         number_of_sensors: usize,
         number_of_steps: usize,
+        number_of_motion_steps: usize,
         voxels_in_dims: Dim<[usize; 3]>,
     ) -> Self {
         debug!("Creating empty functional description");
         Self {
             ap_params: APParameters::empty(number_of_states, voxels_in_dims),
-            measurement_matrix: MeasurementMatrix::empty(number_of_states, number_of_sensors),
+            measurement_matrix: MeasurementMatrix::empty(
+                number_of_motion_steps,
+                number_of_states,
+                number_of_sensors,
+            ),
             control_matrix: ControlMatrix::empty(number_of_states),
             process_covariance: ArrayGains::empty(number_of_states),
             measurement_covariance: MeasurementCovariance::empty(number_of_sensors),
@@ -184,12 +189,14 @@ mod tests {
         let number_of_states = 3000;
         let number_of_sensors = 300;
         let number_of_steps = 2000;
+        let number_of_motion_steps = 2000;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
         let _functional_description = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,
             number_of_steps,
+            number_of_motion_steps,
             voxels_in_dims,
         );
     }

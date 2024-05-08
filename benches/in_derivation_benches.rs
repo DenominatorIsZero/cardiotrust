@@ -37,6 +37,7 @@ fn bench_residual_mapping(group: &mut criterion::BenchmarkGroup<criterion::measu
                 results.derivatives.calculate_mapped_residuals(
                     &model.functional_description.measurement_matrix,
                     &results.estimations.residuals,
+                    BEAT_INDEX,
                 );
             })
         });
@@ -56,6 +57,7 @@ fn bench_maximum_regularization(
         results.derivatives.calculate_mapped_residuals(
             &model.functional_description.measurement_matrix,
             &results.estimations.residuals,
+            BEAT_INDEX,
         );
 
         // run bench
@@ -87,6 +89,7 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         results.derivatives.calculate_mapped_residuals(
             &model.functional_description.measurement_matrix,
             &results.estimations.residuals,
+            BEAT_INDEX,
         );
         results.derivatives.calculate_maximum_regularization(
             &results.estimations.system_states,
@@ -124,6 +127,7 @@ fn bench_coefs(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         results.derivatives.calculate_mapped_residuals(
             &model.functional_description.measurement_matrix,
             &results.estimations.residuals,
+            BEAT_INDEX,
         );
         results.derivatives.calculate_maximum_regularization(
             &results.estimations.system_states,

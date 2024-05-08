@@ -90,11 +90,13 @@ impl Derivatives {
         estimations: &Estimations,
         config: &Algorithm,
         time_index: usize,
+        beat_index: usize,
     ) {
         debug!("Calculating derivatives");
         self.calculate_mapped_residuals(
             &functional_description.measurement_matrix,
             &estimations.residuals,
+            beat_index,
         );
         self.calculate_maximum_regularization(
             &estimations.system_states,
@@ -258,12 +260,14 @@ impl Derivatives {
         &mut self,
         measurement_matrix: &MeasurementMatrix,
         residuals: &ArrayMeasurements,
+        beat: usize,
     ) {
         trace!("Calculating mapped residuals");
-        self.mapped_residuals.values = measurement_matrix
-            .values
-            .t()
-            .dot(&residuals.values.slice(s![0, 0, ..]));
+        let measurement_matrix = measurement_matrix.values.slice(s![beat, .., ..]);
+        self.mapped_residuals.values =
+            measurement_matrix
+                .t()
+                .dot(&residuals.values.slice(s![0, 0, ..]));
     }
 }
 
@@ -362,6 +366,7 @@ mod tests {
         let number_of_steps = 2000;
         let number_of_beats = 10;
         let time_index = 333;
+        let beat_index = 0;
         let voxels_in_dims = Dim([1000, 1, 1]);
         let config = Algorithm {
             regularization_strength: 0.0,
@@ -373,6 +378,7 @@ mod tests {
             number_of_states,
             number_of_sensors,
             number_of_steps,
+            number_of_beats,
             voxels_in_dims,
         );
         let estimations = Estimations::empty(
@@ -382,6 +388,12 @@ mod tests {
             number_of_beats,
         );
 
-        derivates.calculate(&functional_description, &estimations, &config, time_index);
+        derivates.calculate(
+            &functional_description,
+            &estimations,
+            &config,
+            time_index,
+            beat_index,
+        );
     }
 }

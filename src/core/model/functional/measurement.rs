@@ -1,5 +1,5 @@
 use approx::relative_eq;
-use ndarray::{s, Array2};
+use ndarray::{s, Array2, Array3};
 use ndarray_npy::WriteNpyExt;
 use physical_constants::VACUUM_MAG_PERMEABILITY;
 use rand_distr::{Distribution, Normal};
@@ -16,7 +16,7 @@ use crate::core::{config::model::Model, model::spatial::SpatialDescription};
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions, clippy::unsafe_derive_deserialize)]
 pub struct MeasurementMatrix {
-    pub values: Array2<f32>,
+    pub values: Array3<f32>,
 }
 
 impl MeasurementMatrix {
@@ -24,10 +24,14 @@ impl MeasurementMatrix {
     /// and number of sensors, initializing all values to 0.
     #[must_use]
     #[tracing::instrument(level = "debug")]
-    pub fn empty(number_of_states: usize, number_of_sensors: usize) -> Self {
+    pub fn empty(
+        number_of_beats: usize,
+        number_of_states: usize,
+        number_of_sensors: usize,
+    ) -> Self {
         debug!("Creating empty measurement matrix");
         Self {
-            values: Array2::zeros((number_of_sensors, number_of_states)),
+            values: Array3::zeros((number_of_beats, number_of_sensors, number_of_states)),
         }
     }
 
@@ -45,6 +49,7 @@ impl MeasurementMatrix {
     pub fn from_model_spatial_description(spatial_description: &SpatialDescription) -> Self {
         debug!("Creating measurement matrix from model config");
         let mut measurement_matrix = Self::empty(
+            spatial_description.sensors.count_beats(),
             spatial_description.voxels.count_states(),
             spatial_description.sensors.count(),
         );
@@ -55,6 +60,7 @@ impl MeasurementMatrix {
         let voxel_numbers = &spatial_description.voxels.numbers.values;
         let voxel_positions_mm = &spatial_description.voxels.positions_mm.values;
         let sensor_positions = &spatial_description.sensors.positions_mm;
+        let sensor_offsets = &spatial_description.sensors.array_offsets_mm;
         let sensor_orientations = &spatial_description.sensors.orientations_xyz;
 
         let voxel_volume_m3 = (spatial_description.voxels.size_mm / 1000.0).powi(3);
@@ -62,30 +68,33 @@ impl MeasurementMatrix {
         #[allow(clippy::cast_possible_truncation)]
         let common_factor = (VACUUM_MAG_PERMEABILITY as f32 * voxel_volume_m3) / (4.0 * PI) * 1e12;
 
-        for (index, v_type) in types.indexed_iter() {
-            if !v_type.is_connectable() {
-                continue;
-            }
+        for beat in 0..spatial_description.sensors.count_beats() {
+            for (index, v_type) in types.indexed_iter() {
+                if !v_type.is_connectable() {
+                    continue;
+                }
 
-            let v_num = voxel_numbers[index].unwrap();
-            let v_pos_mm = voxel_positions_mm.slice(s![index.0, index.1, index.2, ..]);
+                let v_num = voxel_numbers[index].unwrap();
+                let v_pos_mm = voxel_positions_mm.slice(s![index.0, index.1, index.2, ..]);
 
-            for s_num in 0..spatial_description.sensors.count() {
-                let s_pos_mm = sensor_positions.slice(s![s_num, ..]);
-                let s_ori = sensor_orientations.slice(s![s_num, ..]);
+                for s_num in 0..spatial_description.sensors.count() {
+                    let s_pos_mm = &sensor_positions.slice(s![s_num, ..])
+                        + &sensor_offsets.slice(s![beat, ..]);
+                    let s_ori = sensor_orientations.slice(s![s_num, ..]);
 
-                let distace_m = (&s_pos_mm - &v_pos_mm) / 1000.0;
-                let distance_cubed_m3 = distace_m.mapv(|v| v.powi(2)).sum().sqrt().powi(3);
+                    let distace_m = (&s_pos_mm - &v_pos_mm) / 1000.0;
+                    let distance_cubed_m3 = distace_m.mapv(|v| v.powi(2)).sum().sqrt().powi(3);
 
-                m[(s_num, v_num)] = common_factor
-                    * s_ori[2].mul_add(distace_m[1], -s_ori[1] * distace_m[2])
-                    / distance_cubed_m3;
-                m[(s_num, v_num + 1)] = common_factor
-                    * s_ori[0].mul_add(distace_m[2], -s_ori[2] * distace_m[0])
-                    / distance_cubed_m3;
-                m[(s_num, v_num + 2)] = common_factor
-                    * s_ori[1].mul_add(distace_m[0], -s_ori[0] * distace_m[1])
-                    / distance_cubed_m3;
+                    m[(beat, s_num, v_num)] = common_factor
+                        * s_ori[2].mul_add(distace_m[1], -s_ori[1] * distace_m[2])
+                        / distance_cubed_m3;
+                    m[(beat, s_num, v_num + 1)] = common_factor
+                        * s_ori[0].mul_add(distace_m[2], -s_ori[2] * distace_m[0])
+                        / distance_cubed_m3;
+                    m[(beat, s_num, v_num + 2)] = common_factor
+                        * s_ori[1].mul_add(distace_m[0], -s_ori[0] * distace_m[1])
+                        / distance_cubed_m3;
+                }
             }
         }
 
@@ -229,7 +238,7 @@ mod tests {
 
         let path = Path::new(COMMON_PATH).join("measurement_matrix_default.png");
         matrix_plot(
-            &measurement_matrix.values,
+            &measurement_matrix.values.slice(s![0, .., ..]),
             None,
             None,
             None,

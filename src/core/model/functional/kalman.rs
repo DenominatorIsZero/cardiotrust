@@ -1,6 +1,6 @@
 use approx::relative_eq;
 use nalgebra::DMatrix;
-use ndarray::Array2;
+use ndarray::{s, Array2, ArrayBase, Dim, ViewRepr};
 use ndarray_npy::WriteNpyExt;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
@@ -44,12 +44,12 @@ impl Gain {
     pub fn from_model_config(config: &Model, measurement_matrix: &MeasurementMatrix) -> Self {
         debug!("Creating gain matrix from model config");
         let mut process_covariance = Array2::<f32>::zeros((
-            measurement_matrix.values.shape()[1],
-            measurement_matrix.values.shape()[1],
+            measurement_matrix.values.shape()[2],
+            measurement_matrix.values.shape()[2],
         ));
         let mut measurement_covariance = Array2::<f32>::zeros((
-            measurement_matrix.values.shape()[0],
-            measurement_matrix.values.shape()[0],
+            measurement_matrix.values.shape()[1],
+            measurement_matrix.values.shape()[1],
         ));
 
         if relative_eq!(config.common.process_covariance_std, 0.0) {
@@ -82,7 +82,8 @@ impl Gain {
             });
         }
 
-        let h = &measurement_matrix.values;
+        let h: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 2]>> =
+            &measurement_matrix.values.slice(s![0, .., ..]);
 
         let s = h.dot(&process_covariance).dot(&h.t()) + measurement_covariance;
         let mut s = DMatrix::from_row_slice(

@@ -147,6 +147,7 @@ fn bench_derivation(group: &mut criterion::BenchmarkGroup<criterion::measurement
                     &results.estimations,
                     &config.algorithm,
                     TIME_INDEX,
+                    BEAT_INDEX,
                 );
             })
         });
@@ -170,6 +171,7 @@ fn bench_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
                     update_kalman_gain_and_check_convergence(
                         &mut results.estimations,
                         &mut model.functional_description,
+                        BEAT_INDEX,
                     );
                     results.estimations.kalman_gain_converged = false;
                 })

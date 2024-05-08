@@ -147,10 +147,9 @@ pub fn calculate_post_update_residuals(
     beat_index: usize,
 ) {
     trace!("Calculating post update residuals");
+    let measurement_matrix = measurement_matrix.values.slice(s![beat_index, .., ..]);
     post_update_residuals.values.slice_mut(s![0, 0, ..]).assign(
-        &(measurement_matrix
-            .values
-            .dot(&estimated_system_states.values.slice(s![time_index, ..]))
+        &(measurement_matrix.dot(&estimated_system_states.values.slice(s![time_index, ..]))
             - actual_measurements
                 .values
                 .slice(s![beat_index, time_index, ..])),
@@ -248,11 +247,12 @@ pub fn calculate_system_update(
 pub fn update_kalman_gain_and_check_convergence(
     estimations: &mut Estimations,
     functional_description: &mut FunctionalDescription,
+    beat: usize,
 ) {
     trace!("Updating Kalman gain and checking convergence");
     if !estimations.kalman_gain_converged {
         let kalman_gain_old = functional_description.kalman_gain.values.clone();
-        calculate_kalman_gain(estimations, functional_description);
+        calculate_kalman_gain(estimations, functional_description, beat);
         let difference = (kalman_gain_old - &functional_description.kalman_gain.values)
             .mapv(|v| v.powi(2))
             .sum();
@@ -269,12 +269,13 @@ pub fn update_kalman_gain_and_check_convergence(
 pub fn calculate_kalman_gain(
     estimations: &mut Estimations,
     functional_description: &mut FunctionalDescription,
+    beat: usize,
 ) {
     trace!("Calculating Kalman gain");
     predict_state_covariance(estimations, functional_description);
-    calculate_s_inv(estimations, functional_description);
-    calculate_k(estimations, functional_description);
-    estimate_state_covariance(estimations, functional_description);
+    calculate_s_inv(estimations, functional_description, beat);
+    calculate_k(estimations, functional_description, beat);
+    estimate_state_covariance(estimations, functional_description, beat);
 }
 
 /// Estimates the state covariance matrix based on the Kalman gain and
@@ -284,6 +285,7 @@ pub fn calculate_kalman_gain(
 pub fn estimate_state_covariance(
     estimations: &mut Estimations,
     functional_description: &FunctionalDescription,
+    beat: usize,
 ) {
     trace!("Estimating state covariance");
     estimations
@@ -318,7 +320,7 @@ pub fn estimate_state_covariance(
                 let mut sum = 0.0;
                 for m in 0..functional_description.measurement_matrix.values.raw_dim()[0] {
                     sum += functional_description.kalman_gain.values[[index.0, m]]
-                        * functional_description.measurement_matrix.values[[m, k.unwrap()]];
+                        * functional_description.measurement_matrix.values[[beat, m, k.unwrap()]];
                 }
                 let i = if index.0 == k.unwrap() { 1.0 } else { 0.0 };
                 *variance += estimations.state_covariance_pred.values[[
@@ -336,7 +338,11 @@ pub fn estimate_state_covariance(
 /// elements from the state covariance and measurement matrices.
 #[inline]
 #[tracing::instrument(level = "trace")]
-pub fn calculate_k(estimations: &Estimations, functional_description: &mut FunctionalDescription) {
+pub fn calculate_k(
+    estimations: &Estimations,
+    functional_description: &mut FunctionalDescription,
+    beat: usize,
+) {
     trace!("Calculating Kalman gain");
     functional_description
         .kalman_gain
@@ -364,7 +370,8 @@ pub fn calculate_k(estimations: &Estimations, functional_description: &mut Funct
                     sum += estimations.state_covariance_pred.values[[
                         index.0,
                         offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid."),
-                    ]] * functional_description.measurement_matrix.values[[k, m.unwrap()]];
+                    ]] * functional_description.measurement_matrix.values
+                        [[beat, k, m.unwrap()]];
                 }
                 *value += unsafe { estimations.s.get_unchecked((k, index.1)) } * sum;
             }
@@ -383,6 +390,7 @@ pub fn calculate_k(estimations: &Estimations, functional_description: &mut Funct
 pub fn calculate_s_inv(
     estimations: &mut Estimations,
     functional_description: &FunctionalDescription,
+    beat: usize,
 ) {
     trace!("Calculating S^-1");
     for i in 0..estimations.s.shape().0 {
@@ -413,7 +421,7 @@ pub fn calculate_s_inv(
                     if m.is_none() {
                         continue;
                     }
-                    sum += functional_description.measurement_matrix.values[[i, m.unwrap()]]
+                    sum += functional_description.measurement_matrix.values[[beat, i, m.unwrap()]]
                         * estimations.state_covariance_pred.values[[
                             m.unwrap(),
                             offset_to_gain_index(-m_x, -m_y, -m_z, k % 3)
@@ -422,7 +430,7 @@ pub fn calculate_s_inv(
                 }
                 unsafe {
                     *estimations.s.get_unchecked_mut((i, j)) +=
-                        functional_description.measurement_matrix.values[[j, k]] * sum;
+                        functional_description.measurement_matrix.values[[beat, j, k]] * sum;
                 };
             }
         }
@@ -557,6 +565,7 @@ mod tests {
             number_of_states,
             number_of_sensors,
             number_of_steps,
+            number_of_beats,
             voxels_in_dims,
         );
 
@@ -589,6 +598,7 @@ mod tests {
             number_of_states,
             number_of_sensors,
             number_of_steps,
+            number_of_beats,
             Dim([number_of_states / 3, 1, 1]),
         );
 
