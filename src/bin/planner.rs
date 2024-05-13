@@ -98,7 +98,7 @@ fn plan_scenarios() {
         algorithm_config.epochs = (steps as f32 / y_step as f32).round() as usize;
         simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Grid;
         let mut scenario = Scenario::build(Some(format!(
-            "{experiment_name} - (II) - Move Along Y - {y_step} Steps"
+            "{experiment_name} - (II) - Move Along Y - {y_step:0>4} Steps"
         )));
         scenario.config.algorithm = algorithm_config.clone();
         scenario.config.simulation = Some(simulation_config.clone());
@@ -114,7 +114,7 @@ fn plan_scenarios() {
         algorithm_config.epochs = (steps as f32 / total_steps as f32).round() as usize;
         simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Grid;
         let mut scenario = Scenario::build(Some(format!(
-            "{experiment_name} - (III) - Move Along XYZ - {total_steps} Steps"
+            "{experiment_name} - (III) - Move Along XYZ - {total_steps:0>4} Steps"
         )));
         scenario.config.algorithm = algorithm_config.clone();
         scenario.config.simulation = Some(simulation_config.clone());
