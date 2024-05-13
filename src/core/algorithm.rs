@@ -292,7 +292,6 @@ mod test {
     use std::path::Path;
 
     use ndarray::Dim;
-    use ndarray_stats::QuantileExt;
     use tracing::info;
 
     use crate::core::config::algorithm::Algorithm as AlgorithmConfig;
@@ -352,7 +351,6 @@ mod test {
         let number_of_states = 3000;
         let number_of_sensors = 300;
         let number_of_steps = 3;
-        let number_of_beats = 7;
         let number_of_epochs = 10;
         let config = AlgorithmConfig::default();
         let epoch_index = 3;

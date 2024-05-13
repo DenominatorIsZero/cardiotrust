@@ -8,7 +8,7 @@ use super::sample_tracker::SampleTracker;
 #[derive(Component)]
 pub(crate) struct Sensor {
     pub positions_mm: Array2<f32>,
-    pub orientation: Vec3,
+    pub _orientation: Vec3,
 }
 
 /// Spawns sensor visualizations in the 3D scene.
@@ -67,7 +67,7 @@ pub(crate) fn spawn_sensors(
             },
             Sensor {
                 positions_mm,
-                orientation: rot,
+                _orientation: rot,
             },
         ));
     }

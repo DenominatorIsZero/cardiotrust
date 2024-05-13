@@ -1,6 +1,6 @@
 use cardiotrust::core::{
     algorithm::{
-        calculate_deltas, constrain_system_states,
+        calculate_deltas,
         estimation::{
             calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
             update_kalman_gain_and_check_convergence,

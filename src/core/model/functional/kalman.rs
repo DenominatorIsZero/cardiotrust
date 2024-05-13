@@ -13,6 +13,7 @@ use tracing::{debug, trace};
 use super::measurement::MeasurementMatrix;
 use crate::core::config::model::Model;
 
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Gain {
     pub values: Array2<f32>,

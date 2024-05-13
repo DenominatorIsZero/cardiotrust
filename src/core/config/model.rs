@@ -79,7 +79,7 @@ impl Default for Handcrafted {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct Mri {
     pub path: PathBuf,
 }
