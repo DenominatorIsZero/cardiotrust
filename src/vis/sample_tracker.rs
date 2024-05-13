@@ -54,7 +54,7 @@ pub fn init_sample_tracker(sample_tracker: &mut SampleTracker, scenario: &Scenar
         .expect("Data to be some")
         .get_measurements()
         .values
-        .shape()[0];
+        .shape()[1];
     sample_tracker.sample_rate = scenario
         .config
         .simulation
