@@ -4,6 +4,8 @@ pub mod refinement;
 
 use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1, ArrayBase, Dim, ViewRepr};
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use tracing::{debug, trace};
 
 use crate::core::algorithm::estimation::update_kalman_gain_and_check_convergence;
@@ -148,7 +150,11 @@ pub fn run_epoch(
         _ => Some((epoch_index * num_beats) % config.batch_size),
     };
 
-    for beat_index in 0..num_beats {
+    let mut beat_indices: Vec<usize> = (0..num_beats).collect();
+    let mut rng = thread_rng();
+    beat_indices.shuffle(&mut rng);
+
+    for beat_index in beat_indices {
         results.estimations.reset();
         results.estimations.kalman_gain_converged = false;
         let estimations = &mut results.estimations;
