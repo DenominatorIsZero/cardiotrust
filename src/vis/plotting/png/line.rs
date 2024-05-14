@@ -235,12 +235,11 @@ where
     }
 
     let x_range = x_max - x_min;
-    let y_range = y_max - y_min;
 
     let x_min = x_min - x_range * X_MARGIN;
     let x_max = x_max + x_range * X_MARGIN;
-    let y_min = y_range.mul_add(-Y_MARGIN, y_min);
-    let y_max = y_range.mul_add(Y_MARGIN, y_max);
+    let y_min = (y_min * 0.1).max(1e-20);
+    let y_max = y_max * 10.0;
 
     {
         let root = BitMapBackend::with_buffer(&mut buffer[..], (width, height)).into_drawing_area();
@@ -259,6 +258,7 @@ where
             .x_label_style(AXIS_STYLE.into_font())
             .y_desc(y_label)
             .y_label_style(AXIS_STYLE.into_font())
+            .y_label_formatter(&|y| format!("{y:e}"))
             .draw()?;
 
         for (i, y) in ys.iter().enumerate() {
@@ -478,6 +478,30 @@ mod test {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
         line_plot(
+            Some(&x),
+            vec![&y],
+            Some(files[0].as_path()),
+            Some("y=x^2"),
+            Some("x [a.u.]"),
+            Some("y [a.u.]"),
+            None,
+            None,
+        )
+        .unwrap();
+
+        assert!(files[0].is_file());
+    }
+
+    #[test]
+    fn test_log_y_plot() {
+        let path = Path::new(COMMON_PATH);
+        setup_folder(path.to_path_buf());
+        let files = vec![path.join("log_y_plot.png")];
+        clean_files(&files);
+
+        let x = Array1::linspace(1.0, 10.0, 100);
+        let y = x.map(|x| x * x);
+        log_y_plot(
             Some(&x),
             vec![&y],
             Some(files[0].as_path()),
