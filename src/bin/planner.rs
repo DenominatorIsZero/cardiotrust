@@ -55,7 +55,7 @@ fn main() {
 
 #[tracing::instrument(level = "info")]
 fn plan_scenarios() {
-    let learning_rate = 200.0;
+    let learning_rate = 100.0;
     let steps = 100;
     let batch_size = 1;
     let experiment_name = "Moving_Sensors_2023_05_13";
@@ -95,7 +95,7 @@ fn plan_scenarios() {
         simulation_config.model.common.sensor_array_motion_steps = [1, y_step, 1];
         simulation_config.model.common.sensor_array_origin_mm = [100.0, -400.0, 325.0];
         simulation_config.model.common.sensor_array_motion_range_mm = [0.0, 600.0, 0.0];
-        algorithm_config.epochs = (steps as f32 / y_step as f32).round() as usize;
+        algorithm_config.epochs = (steps as f32 / y_step as f32).ceil() as usize;
         simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Grid;
         let mut scenario = Scenario::build(Some(format!(
             "{experiment_name} - (II) - Move Along Y - {y_step:0>4} Steps"
