@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
+    ops::{Deref, DerefMut},
 };
 use tracing::trace;
 
@@ -221,9 +222,7 @@ impl ArrayActivationTimePerState {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArrayMeasurements {
-    pub values: Array3<f32>,
-}
+pub struct ArrayMeasurements(Array3<f32>);
 
 impl ArrayMeasurements {
     #[must_use]
@@ -231,9 +230,7 @@ impl ArrayMeasurements {
     /// Creates an empty `ArrayMeasurements` with the given dimensions.
     pub fn empty(beats: usize, steps: usize, sensors: usize) -> Self {
         trace!("Creating empty measurements");
-        Self {
-            values: Array3::zeros((beats, steps, sensors)),
-        }
+        Self(Array3::zeros((beats, steps, sensors)))
     }
 
     /// Panics if file or directory can't be written.
@@ -250,6 +247,35 @@ impl ArrayMeasurements {
         trace!("Saving measurements");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("measurements.npy")).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+
+    #[must_use]
+    pub fn num_beats(&self) -> usize {
+        self.shape()[0]
+    }
+
+    #[must_use]
+    pub fn num_steps(&self) -> usize {
+        self.shape()[1]
+    }
+
+    #[must_use]
+    pub fn num_sensors(&self) -> usize {
+        self.shape()[2]
+    }
+}
+
+impl Deref for ArrayMeasurements {
+    type Target = Array3<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ArrayMeasurements {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

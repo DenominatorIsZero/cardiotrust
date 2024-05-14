@@ -57,12 +57,11 @@ pub fn calculate_pseudo_inverse(
     let derivatives = &mut results.derivatives;
 
     for time_index in 0..estimations.system_states.values.shape()[0] {
-        let rows = data.get_measurements().values.shape()[2];
+        let rows = data.get_measurements().num_sensors();
         let measurements = DMatrix::from_row_slice(
             rows,
             1,
             data.get_measurements()
-                .values
                 .slice(s![0, time_index, ..])
                 .as_slice()
                 .expect("Slice to be some."),
@@ -87,7 +86,6 @@ pub fn calculate_pseudo_inverse(
 
         estimations
             .measurements
-            .values
             .slice_mut(s![0, time_index, ..])
             .assign(
                 &measurement_matrix
@@ -143,7 +141,7 @@ pub fn run_epoch(
     debug!("Running epoch {}", epoch_index);
     results.derivatives.reset();
     let num_steps = results.estimations.system_states.values.shape()[0];
-    let num_beats = data.get_measurements().values.shape()[0];
+    let num_beats = data.get_measurements().num_beats();
 
     let mut batch = match config.batch_size {
         0 => None,
@@ -446,7 +444,7 @@ mod test {
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm {
-            learning_rate: 10.0,
+            learning_rate: 1.0,
             epochs: 3,
             ..Default::default()
         };

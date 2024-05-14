@@ -143,7 +143,6 @@ pub fn predict_measurements(
     // Prediction of measurements H * x
     let measurement_matrix = measurement_matrix.values.slice(s![beat_index, .., ..]);
     measurements
-        .values
         .slice_mut(s![beat_index, time_index, ..])
         .assign(&measurement_matrix.dot(&system_states.values.slice(s![time_index, ..])));
 }

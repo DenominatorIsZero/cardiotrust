@@ -125,7 +125,7 @@ impl Simulation {
         let model = &self.model;
 
         let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(system_states.values.shape()[1]);
-        for beat_index in 0..measurements.values.shape()[0] {
+        for beat_index in 0..measurements.num_beats() {
             ap_outputs.values.fill(0.0);
             system_states.values.fill(0.0);
             for time_index in 0..system_states.values.shape()[0] {
@@ -140,17 +140,16 @@ impl Simulation {
             }
         }
         let mut rng = ChaCha8Rng::seed_from_u64(42);
-        for sensor_index in 0..measurements.values.shape()[2] {
+        for sensor_index in 0..measurements.num_sensors() {
             let dist = Normal::new(
                 0.0,
                 model.functional_description.measurement_covariance.values
                     [[sensor_index, sensor_index]],
             )
             .unwrap();
-            for beat_index in 0..measurements.values.shape()[0] {
-                for time_index in 0..measurements.values.shape()[1] {
-                    measurements.values[[beat_index, time_index, sensor_index]] +=
-                        dist.sample(&mut rng);
+            for beat_index in 0..measurements.num_beats() {
+                for time_index in 0..measurements.num_sensors() {
+                    measurements[[beat_index, time_index, sensor_index]] += dist.sample(&mut rng);
                 }
             }
         }
@@ -215,7 +214,7 @@ mod test {
         let simulation = simulation.unwrap();
         let max = *simulation.system_states.values.max_skipnan();
         assert_relative_eq!(max, 0.0);
-        let max = *simulation.measurements.values.max_skipnan();
+        let max = *simulation.measurements.max_skipnan();
         assert_relative_eq!(max, 0.0);
     }
 
@@ -226,7 +225,7 @@ mod test {
         simulation.run();
         let max = *simulation.system_states.values.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.001, 0.001));
-        let max = *simulation.measurements.values.max_skipnan();
+        let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
     }
 
@@ -241,7 +240,7 @@ mod test {
         simulation.run();
         let max = *simulation.system_states.values.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.001, 0.001));
-        let max = *simulation.measurements.values.max_skipnan();
+        let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
 
         let sa_index = simulation
@@ -278,11 +277,7 @@ mod test {
 
         let path = folder.join("sensor_0_x.png");
         standard_time_plot(
-            &simulation
-                .measurements
-                .values
-                .slice(s![0, .., 0])
-                .to_owned(),
+            &simulation.measurements.slice(s![0, .., 0]).to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - x",
@@ -292,11 +287,7 @@ mod test {
 
         let path = folder.join("sensor_0_y.png");
         standard_time_plot(
-            &simulation
-                .measurements
-                .values
-                .slice(s![0, .., 1])
-                .to_owned(),
+            &simulation.measurements.slice(s![0, .., 1]).to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - y",
@@ -306,11 +297,7 @@ mod test {
 
         let path = folder.join("sensor_0_z.png");
         standard_time_plot(
-            &simulation
-                .measurements
-                .values
-                .slice(s![0, .., 2])
-                .to_owned(),
+            &simulation.measurements.slice(s![0, .., 2]).to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - z",
@@ -378,7 +365,7 @@ mod test {
         simulation.run();
         let max = *simulation.system_states.values.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.001, 0.001));
-        let max = *simulation.measurements.values.max_skipnan();
+        let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
     }
 
@@ -394,7 +381,7 @@ mod test {
         simulation.run();
         let max = *simulation.system_states.values.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.001, 0.001));
-        let max = *simulation.measurements.values.max_skipnan();
+        let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
 
         let sa_index = simulation
@@ -431,11 +418,7 @@ mod test {
 
         let path = folder.join("sensor_0_x.png");
         standard_time_plot(
-            &simulation
-                .measurements
-                .values
-                .slice(s![0, .., 0])
-                .to_owned(),
+            &simulation.measurements.slice(s![0, .., 0]).to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - x",
@@ -445,11 +428,7 @@ mod test {
 
         let path = folder.join("sensor_0_y.png");
         standard_time_plot(
-            &simulation
-                .measurements
-                .values
-                .slice(s![0, .., 1])
-                .to_owned(),
+            &simulation.measurements.slice(s![0, .., 1]).to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - y",
@@ -459,11 +438,7 @@ mod test {
 
         let path = folder.join("sensor_0_z.png");
         standard_time_plot(
-            &simulation
-                .measurements
-                .values
-                .slice(s![0, .., 2])
-                .to_owned(),
+            &simulation.measurements.slice(s![0, .., 2]).to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - z",
@@ -531,7 +506,7 @@ mod test {
         simulation.run();
         let max = *simulation.system_states.values.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.002, 0.002), "max: {max}");
-        let max = *simulation.measurements.values.max_skipnan();
+        let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
     }
 
@@ -548,7 +523,7 @@ mod test {
         simulation.run();
         let max = *simulation.system_states.values.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.002, 0.002));
-        let max = *simulation.measurements.values.max_skipnan();
+        let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
 
         let sa_index = simulation
@@ -569,11 +544,7 @@ mod test {
 
         let path = folder.join("sensor_0_x.png");
         standard_time_plot(
-            &simulation
-                .measurements
-                .values
-                .slice(s![0, .., 0])
-                .to_owned(),
+            &simulation.measurements.slice(s![0, .., 0]).to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - x",
@@ -583,11 +554,7 @@ mod test {
 
         let path = folder.join("sensor_0_y.png");
         standard_time_plot(
-            &simulation
-                .measurements
-                .values
-                .slice(s![0, .., 1])
-                .to_owned(),
+            &simulation.measurements.slice(s![0, .., 1]).to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - y",
@@ -597,11 +564,7 @@ mod test {
 
         let path = folder.join("sensor_0_z.png");
         standard_time_plot(
-            &simulation
-                .measurements
-                .values
-                .slice(s![0, .., 2])
-                .to_owned(),
+            &simulation.measurements.slice(s![0, .., 2]).to_owned(),
             config.sample_rate_hz,
             path.as_path(),
             "Simulated Measurement Sensor 0 - z",

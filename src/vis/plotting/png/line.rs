@@ -105,7 +105,7 @@ where
             .margin(CHART_MARGIN)
             .x_label_area_size(AXIS_LABEL_AREA)
             .y_label_area_size(AXIS_LABEL_AREA)
-            .build_cartesian_2d(x_min..x_max, (y_min..y_max))?;
+            .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
 
         chart
             .configure_mesh()

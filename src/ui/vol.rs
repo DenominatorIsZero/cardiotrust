@@ -176,8 +176,7 @@ pub fn draw_ui_volumetric(
                     .expect("Results to be some.")
                     .estimations
                     .measurements
-                    .values
-                    .shape()[1]
+                    .num_sensors()
                     - 1,
             ));
             if selected_sensor != sample_tracker.selected_sensor {
@@ -301,8 +300,7 @@ pub fn draw_ui_volumetric(
                                     .as_ref()
                                     .expect("Results to be some")
                                     .estimations
-                                    .measurements
-                                    .values[(
+                                    .measurements[(
                                     sample_tracker.selected_beat,
                                     i,
                                     sample_tracker.selected_sensor,

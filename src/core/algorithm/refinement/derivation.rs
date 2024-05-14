@@ -296,10 +296,7 @@ impl Derivatives {
     ) {
         trace!("Calculating mapped residuals");
         let measurement_matrix = measurement_matrix.values.slice(s![beat, .., ..]);
-        self.mapped_residuals.values =
-            measurement_matrix
-                .t()
-                .dot(&residuals.values.slice(s![0, 0, ..]));
+        self.mapped_residuals.values = measurement_matrix.t().dot(&residuals.slice(s![0, 0, ..]));
     }
 }
 

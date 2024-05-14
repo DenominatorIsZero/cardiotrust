@@ -309,7 +309,6 @@ fn update_values(
             states[(index_sample, index_state)] = state as f32;
         }
     }
-    let measurements = &mut measurements.values;
     let key = "ppfMeasurementsToExoBuffer";
     let ppf_measurement_buffer = payload
         .get(key)

@@ -94,8 +94,8 @@ impl Estimations {
         self.system_states.values.fill(0.0);
         self.state_covariance_pred.values.fill(0.0);
         self.state_covariance_est.values.fill(0.0);
-        self.residuals.values.fill(0.0);
-        self.post_update_residuals.values.fill(0.0);
+        self.residuals.fill(0.0);
+        self.post_update_residuals.fill(0.0);
         self.system_states_delta.values.fill(0.0);
         self.gains_delta.values.fill(0.0);
         self.delays_delta.values.fill(0.0);
@@ -123,13 +123,9 @@ pub fn calculate_residuals(
     beat_index: usize,
 ) {
     trace!("Calculating residuals");
-    residuals.values.slice_mut(s![0, 0, ..]).assign(
-        &(&predicted_measurements
-            .values
-            .slice(s![beat_index, time_index, ..])
-            - &actual_measurements
-                .values
-                .slice(s![beat_index, time_index, ..])),
+    residuals.slice_mut(s![0, 0, ..]).assign(
+        &(&predicted_measurements.slice(s![beat_index, time_index, ..])
+            - &actual_measurements.slice(s![beat_index, time_index, ..])),
     );
 }
 
@@ -148,11 +144,9 @@ pub fn calculate_post_update_residuals(
 ) {
     trace!("Calculating post update residuals");
     let measurement_matrix = measurement_matrix.values.slice(s![beat_index, .., ..]);
-    post_update_residuals.values.slice_mut(s![0, 0, ..]).assign(
+    post_update_residuals.slice_mut(s![0, 0, ..]).assign(
         &(measurement_matrix.dot(&estimated_system_states.values.slice(s![time_index, ..]))
-            - actual_measurements
-                .values
-                .slice(s![beat_index, time_index, ..])),
+            - actual_measurements.slice(s![beat_index, time_index, ..])),
     );
 }
 
@@ -232,7 +226,7 @@ pub fn calculate_system_update(
             + functional_description
                 .kalman_gain
                 .values
-                .dot(&estimations.residuals.values.slice(s![0, 0, ..]))),
+                .dot(&estimations.residuals.slice(s![0, 0, ..]))),
     );
 }
 

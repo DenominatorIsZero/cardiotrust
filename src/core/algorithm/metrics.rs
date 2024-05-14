@@ -125,8 +125,8 @@ impl Metrics {
         trace!("Calculating metrics for step {}", time_index);
         let index = time_index;
 
-        self.loss_mse.values[index] = estimations.residuals.values.mapv(|v| v.powi(2)).sum()
-            / estimations.residuals.values.raw_dim()[0] as f32;
+        self.loss_mse.values[index] = estimations.residuals.mapv(|v| v.powi(2)).sum()
+            / estimations.residuals.num_sensors() as f32;
         self.loss_maximum_regularization.values[index] = derivatives.maximum_regularization_sum;
         self.loss.values[index] = regularization_strength.mul_add(
             self.loss_maximum_regularization.values[index],
@@ -137,7 +137,7 @@ impl Metrics {
         self.delta_states_mean.values[index] = states_delta_abs.mean().unwrap();
         self.delta_states_max.values[index] = *states_delta_abs.max_skipnan();
 
-        let measurements_delta_abs = estimations.post_update_residuals.values.mapv(f32::abs);
+        let measurements_delta_abs = estimations.post_update_residuals.mapv(f32::abs);
         self.delta_measurements_mean.values[index] = measurements_delta_abs.mean().unwrap();
         self.delta_measurements_max.values[index] = *measurements_delta_abs.max_skipnan();
 
