@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use ndarray::{s, Array1};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -298,7 +296,7 @@ impl Derivatives {
     ) {
         trace!("Calculating mapped residuals");
         let measurement_matrix = measurement_matrix.values.slice(s![beat, .., ..]);
-        self.mapped_residuals.values = measurement_matrix.t().dot(residuals.deref());
+        self.mapped_residuals.values = measurement_matrix.t().dot(&**residuals);
     }
 }
 
