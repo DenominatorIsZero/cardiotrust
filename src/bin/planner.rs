@@ -56,7 +56,7 @@ fn main() {
 #[tracing::instrument(level = "info")]
 fn plan_scenarios() {
     let learning_rate = 100.0;
-    let steps = 100;
+    let steps = 6_000;
     let batch_size = 1;
     let experiment_name = "Moving_Sensors_2023_05_13";
     let regularization_strength = 1.0;
@@ -83,6 +83,7 @@ fn plan_scenarios() {
     simulation_config.model.common.pathological = true;
     simulation_config.model.common.sensor_array_origin_mm = [100.0, -100.0, 325.0];
     simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
+    simulation_config.model.common.measurement_covariance_mean = 1e-20;
 
     let mut scenario = Scenario::build(Some(format!("{experiment_name} - (I) - Static Array")));
     scenario.config.algorithm = algorithm_config.clone();
