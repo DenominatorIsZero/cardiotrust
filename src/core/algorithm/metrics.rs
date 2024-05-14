@@ -126,7 +126,7 @@ impl Metrics {
         let index = time_index;
 
         self.loss_mse.values[index] = estimations.residuals.mapv(|v| v.powi(2)).sum()
-            / estimations.residuals.num_sensors() as f32;
+            / estimations.measurements.num_sensors() as f32;
         self.loss_maximum_regularization.values[index] = derivatives.maximum_regularization_sum;
         self.loss.values[index] = regularization_strength.mul_add(
             self.loss_maximum_regularization.values[index],

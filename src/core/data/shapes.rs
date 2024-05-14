@@ -279,3 +279,47 @@ impl DerefMut for ArrayMeasurements {
         &mut self.0
     }
 }
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct ArrayResiduals(Array1<f32>);
+
+impl ArrayResiduals {
+    #[must_use]
+    #[tracing::instrument(level = "trace")]
+    /// Creates an empty `ArrayMeasurements` with the given dimensions.
+    pub fn empty(sensors: usize) -> Self {
+        trace!("Creating empty measurements");
+        Self(Array1::zeros(sensors))
+    }
+
+    /// Panics if file or directory can't be written.
+    /// Saves the `ArrayMeasurements` to a .npy file at the given path.
+    ///
+    /// Creates any missing directories in the path, opens a file at that path,
+    /// and writes the underlying `values` array to it in .npy format.
+    ///
+    /// # Panics
+    ///
+    /// Panics if directory of file cant be created.
+    #[tracing::instrument(level = "trace")]
+    pub fn save_npy(&self, path: &std::path::Path) {
+        trace!("Saving measurements");
+        fs::create_dir_all(path).unwrap();
+        let writer = BufWriter::new(File::create(path.join("measurements.npy")).unwrap());
+        self.write_npy(writer).unwrap();
+    }
+}
+
+impl Deref for ArrayResiduals {
+    type Target = Array1<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ArrayResiduals {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}

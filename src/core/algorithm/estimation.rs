@@ -1,5 +1,7 @@
 pub mod prediction;
 
+use std::ops::Deref;
+
 use itertools::Itertools;
 use nalgebra::DMatrix;
 use ndarray::s;
@@ -9,7 +11,7 @@ use tracing::{debug, trace};
 use crate::core::{
     config::algorithm::Algorithm,
     data::shapes::{
-        ArrayActivationTimePerState, ArrayMeasurements, ArraySystemStates,
+        ArrayActivationTimePerState, ArrayMeasurements, ArrayResiduals, ArraySystemStates,
         ArraySystemStatesSpherical, ArraySystemStatesSphericalMax,
     },
     model::functional::{
@@ -32,8 +34,8 @@ pub struct Estimations {
     pub state_covariance_pred: ArrayGains<f32>,
     pub state_covariance_est: ArrayGains<f32>,
     pub measurements: ArrayMeasurements,
-    pub residuals: ArrayMeasurements,
-    pub post_update_residuals: ArrayMeasurements,
+    pub residuals: ArrayResiduals,
+    pub post_update_residuals: ArrayResiduals,
     pub system_states_delta: ArraySystemStates,
     pub system_states_spherical_max_delta: ArraySystemStatesSphericalMax,
     pub activation_times_delta: ArrayActivationTimePerState,
@@ -70,8 +72,8 @@ impl Estimations {
                 number_of_steps,
                 number_of_sensors,
             ),
-            residuals: ArrayMeasurements::empty(1, 1, number_of_sensors),
-            post_update_residuals: ArrayMeasurements::empty(1, 1, number_of_sensors),
+            residuals: ArrayResiduals::empty(number_of_sensors),
+            post_update_residuals: ArrayResiduals::empty(number_of_sensors),
             system_states_delta: ArraySystemStates::empty(1, number_of_states),
             system_states_spherical_max_delta: ArraySystemStatesSphericalMax::empty(
                 number_of_states,
@@ -116,14 +118,14 @@ impl Estimations {
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn calculate_residuals(
-    residuals: &mut ArrayMeasurements,
+    residuals: &mut ArrayResiduals,
     predicted_measurements: &ArrayMeasurements,
     actual_measurements: &ArrayMeasurements,
     time_index: usize,
     beat_index: usize,
 ) {
     trace!("Calculating residuals");
-    residuals.slice_mut(s![0, 0, ..]).assign(
+    residuals.assign(
         &(&predicted_measurements.slice(s![beat_index, time_index, ..])
             - &actual_measurements.slice(s![beat_index, time_index, ..])),
     );
@@ -135,7 +137,7 @@ pub fn calculate_residuals(
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn calculate_post_update_residuals(
-    post_update_residuals: &mut ArrayMeasurements,
+    post_update_residuals: &mut ArrayResiduals,
     measurement_matrix: &MeasurementMatrix,
     estimated_system_states: &ArraySystemStates,
     actual_measurements: &ArrayMeasurements,
@@ -144,7 +146,7 @@ pub fn calculate_post_update_residuals(
 ) {
     trace!("Calculating post update residuals");
     let measurement_matrix = measurement_matrix.values.slice(s![beat_index, .., ..]);
-    post_update_residuals.slice_mut(s![0, 0, ..]).assign(
+    post_update_residuals.assign(
         &(measurement_matrix.dot(&estimated_system_states.values.slice(s![time_index, ..]))
             - actual_measurements.slice(s![beat_index, time_index, ..])),
     );
@@ -217,7 +219,10 @@ pub fn calculate_system_update(
     config: &Algorithm,
 ) {
     trace!("Calculating system update");
-    let mut states = estimations
+    let mut states: ndarray::prelude::ArrayBase<
+        ndarray::ViewRepr<&mut f32>,
+        ndarray::prelude::Dim<[usize; 1]>,
+    > = estimations
         .system_states
         .values
         .slice_mut(s![time_index, ..]);
@@ -226,7 +231,7 @@ pub fn calculate_system_update(
             + functional_description
                 .kalman_gain
                 .values
-                .dot(&estimations.residuals.slice(s![0, 0, ..]))),
+                .dot(&*estimations.residuals)),
     );
 }
 
@@ -532,7 +537,7 @@ mod tests {
 
     use crate::core::{
         config::algorithm::Algorithm,
-        data::shapes::{ArrayMeasurements, ArraySystemStates},
+        data::shapes::{ArrayMeasurements, ArrayResiduals, ArraySystemStates},
         model::functional::{allpass::shapes::ArrayGains, FunctionalDescription},
     };
 
@@ -612,7 +617,7 @@ mod tests {
         let time_index = 333;
         let beat_index = 2;
 
-        let mut residuals = ArrayMeasurements::empty(1, 1, number_of_sensors);
+        let mut residuals = ArrayResiduals::empty(number_of_sensors);
         let predicted_measurements =
             ArrayMeasurements::empty(number_of_beats, number_of_steps, number_of_sensors);
         let actual_measurements =

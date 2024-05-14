@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use ndarray::{s, Array1};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -5,7 +7,7 @@ use tracing::{debug, trace};
 use crate::core::{
     algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
-    data::shapes::{ArrayMeasurements, ArraySystemStates},
+    data::shapes::{ArrayMeasurements, ArrayResiduals, ArraySystemStates},
     model::functional::{
         allpass::{
             shapes::{ArrayDelays, ArrayGains},
@@ -291,12 +293,12 @@ impl Derivatives {
     pub fn calculate_mapped_residuals(
         &mut self,
         measurement_matrix: &MeasurementMatrix,
-        residuals: &ArrayMeasurements,
+        residuals: &ArrayResiduals,
         beat: usize,
     ) {
         trace!("Calculating mapped residuals");
         let measurement_matrix = measurement_matrix.values.slice(s![beat, .., ..]);
-        self.mapped_residuals.values = measurement_matrix.t().dot(&residuals.slice(s![0, 0, ..]));
+        self.mapped_residuals.values = measurement_matrix.t().dot(residuals.deref());
     }
 }
 

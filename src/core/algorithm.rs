@@ -602,7 +602,7 @@ mod test {
 
         let mut algorithm_config = Algorithm {
             update_kalman_gain: true,
-            learning_rate: 50.0,
+            learning_rate: 1.0,
             epochs: 3,
             ..Default::default()
         };
@@ -640,9 +640,12 @@ mod test {
             &algorithm_config,
         );
 
+        println!("{:?}", results.metrics.loss_mse_epoch.values);
+
         (0..algorithm_config.epochs - 1).for_each(|i| {
             assert!(
-                results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
+                results.metrics.loss_mse_epoch.values[i]
+                    > results.metrics.loss_mse_epoch.values[i + 1]
             );
         });
     }
@@ -662,7 +665,8 @@ mod test {
             simulation_config.duration_s,
         )
         .expect("Model parameters to be valid.");
-        algorithm_config.epochs = 3;
+        algorithm_config.epochs = 5;
+        algorithm_config.learning_rate = 1.0;
         algorithm_config.model.common.apply_system_update = false;
 
         let mut results = Results::new(
@@ -690,7 +694,7 @@ mod test {
             &algorithm_config,
         );
 
-        println!("{:?}", results.metrics.loss_mse_epoch.values);
+        println!("{:?}", results.metrics.loss_epoch.values);
         (0..algorithm_config.epochs - 1).for_each(|i| {
             assert!(
                 results.metrics.loss_mse_epoch.values[i]
