@@ -1,21 +1,15 @@
 use std::process::Command;
 
-use bevy::{log::LogPlugin, prelude::*, utils::petgraph::algo};
-use js_sys::Math::exp;
+use bevy::prelude::*;
+
 use tracing::info;
 use tracing_subscriber::fmt;
 use tracing_subscriber::layer::SubscriberExt;
 
-use cardiotrust::{
-    core::{
-        algorithm::refinement::Optimizer,
-        config::{algorithm::Algorithm, model::SensorArrayMotion, simulation::Simulation},
-        scenario::{self, Scenario},
-    },
-    scheduler::SchedulerPlugin,
-    ui::UiPlugin,
-    vis::VisPlugin,
-    ScenarioList, SelectedSenario,
+use cardiotrust::core::{
+    algorithm::refinement::Optimizer,
+    config::{algorithm::Algorithm, model::SensorArrayMotion, simulation::Simulation},
+    scenario::Scenario,
 };
 
 fn main() {

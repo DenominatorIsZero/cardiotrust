@@ -1,7 +1,5 @@
 pub mod prediction;
 
-use std::ops::Deref;
-
 use itertools::Itertools;
 use nalgebra::DMatrix;
 use ndarray::s;

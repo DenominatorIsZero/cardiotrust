@@ -7,7 +7,7 @@ use tracing::{debug, trace};
 use crate::core::{
     algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
-    data::shapes::{ArrayMeasurements, ArrayResiduals, ArraySystemStates},
+    data::shapes::{ArrayResiduals, ArraySystemStates},
     model::functional::{
         allpass::{
             shapes::{ArrayDelays, ArrayGains},
