@@ -20,7 +20,6 @@ use crate::core::{
         },
         kalman::KalmanGain,
         measurement::{MeasurementCovariance, MeasurementMatrix, MeasurementMatrixAtBeat},
-        FunctionalDescription,
     },
 };
 
@@ -610,7 +609,7 @@ mod tests {
             number_of_steps,
             number_of_beats,
         );
-        let mut functional_desrciption = FunctionalDescription::empty(
+        let functional_desrciption = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,
             number_of_steps,

@@ -1,5 +1,5 @@
 use approx::relative_eq;
-use ndarray::{s, Array2, Array3, ArrayView1, ArrayView2};
+use ndarray::{s, Array2, Array3, ArrayView2};
 use ndarray_npy::WriteNpyExt;
 use physical_constants::VACUUM_MAG_PERMEABILITY;
 use rand_distr::{Distribution, Normal};

@@ -6,15 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tracing::{debug, trace};
 
-use self::{shapes::SystemStates, simulation::Simulation};
-use super::model::{
-    functional::{
-        allpass::shapes::{ActivationTimeMs, Coefs, Gains, UnitDelays},
-        control::ControlFunction,
-    },
-    spatial::voxels::VoxelTypes,
-    Model,
-};
+use self::simulation::Simulation;
+
 use crate::core::{config::simulation::Simulation as SimulationConfig, data::shapes::Measurements};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

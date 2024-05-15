@@ -6,8 +6,7 @@ use crate::core::{
     model::functional::{
         allpass::{shapes::Gains, APParameters},
         control::{ControlFunction, ControlMatrix},
-        measurement::{self, MeasurementMatrix, MeasurementMatrixAtBeat},
-        FunctionalDescription,
+        measurement::MeasurementMatrixAtBeat,
     },
 };
 
