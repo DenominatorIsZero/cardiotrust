@@ -244,7 +244,7 @@ fn bench_update_parameters(
                 model.functional_description.ap_params.update(
                     &mut results.derivatives,
                     &config.algorithm,
-                    results.estimations.system_states.values.shape()[0],
+                    results.estimations.system_states.num_steps(),
                     model.spatial_description.sensors.count_beats(),
                 );
             })

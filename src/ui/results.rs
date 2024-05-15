@@ -605,22 +605,22 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "u [A/mm^2]",
         ),
         ImageType::StateAlgorithm => standard_time_plot(
-            &estimations.system_states.values.slice(s![.., 0]).to_owned(),
+            &estimations.system_states.slice(s![.., 0]).to_owned(),
             scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             &path,
             "System State 0 Algorithm",
             "j [A/mm^2]",
         ),
         ImageType::StateSimulation => standard_time_plot(
-            &data.get_system_states().values.slice(s![.., 0]).to_owned(),
+            &data.get_system_states().slice(s![.., 0]).to_owned(),
             scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             &path,
             "System State 0 Simulation",
             "j [A/mm^2]",
         ),
         ImageType::StateDelta => standard_time_plot(
-            &(&estimations.system_states.values.slice(s![.., 0]).to_owned()
-                - &data.get_system_states().values.slice(s![.., 0]).to_owned()),
+            &(&estimations.system_states.slice(s![.., 0]).to_owned()
+                - &data.get_system_states().slice(s![.., 0]).to_owned()),
             scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             &path,
             "System State 0 Delta",

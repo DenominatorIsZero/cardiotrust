@@ -7,23 +7,22 @@ use std::error::Error;
 use tracing::{debug, info, trace};
 
 use super::shapes::{
-    ArrayActivationTimePerState, ArraySystemStates, ArraySystemStatesSpherical,
-    ArraySystemStatesSphericalMax,
+    ActivationTimePerStateMs, ArraySystemStates, SystemStatesSpherical, SystemStatesSphericalMax,
 };
 use crate::core::{
     algorithm::estimation::prediction::calculate_system_prediction,
     config::{model::SensorArrayMotion, simulation::Simulation as SimulationConfig},
-    data::ArrayMeasurements,
+    data::Measurements,
     model::{functional::allpass::shapes::ArrayGains, Model},
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Simulation {
-    pub measurements: ArrayMeasurements,
+    pub measurements: Measurements,
     pub system_states: ArraySystemStates,
-    pub system_states_spherical: ArraySystemStatesSpherical,
-    pub system_states_spherical_max: ArraySystemStatesSphericalMax,
-    pub activation_times: ArrayActivationTimePerState,
+    pub system_states_spherical: SystemStatesSpherical,
+    pub system_states_spherical_max: SystemStatesSphericalMax,
+    pub activation_times: ActivationTimePerStateMs,
     pub sample_rate_hz: f32,
     pub model: Model,
 }
@@ -41,18 +40,18 @@ impl Simulation {
     ) -> Self {
         debug!("Creating empty simulation");
         Self {
-            measurements: ArrayMeasurements::empty(
+            measurements: Measurements::empty(
                 sensor_motion_steps,
                 number_of_steps,
                 number_of_sensors,
             ),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
-            system_states_spherical: ArraySystemStatesSpherical::empty(
+            system_states_spherical: SystemStatesSpherical::empty(
                 number_of_steps,
                 number_of_states,
             ),
-            system_states_spherical_max: ArraySystemStatesSphericalMax::empty(number_of_states),
-            activation_times: ArrayActivationTimePerState::empty(number_of_states),
+            system_states_spherical_max: SystemStatesSphericalMax::empty(number_of_states),
+            activation_times: ActivationTimePerStateMs::empty(number_of_states),
             sample_rate_hz: 1.0,
             model: Model::empty(
                 number_of_states,
@@ -92,13 +91,12 @@ impl Simulation {
                 .product(),
         };
 
-        let measurements =
-            ArrayMeasurements::empty(number_of_beats, number_of_steps, number_of_sensors);
+        let measurements = Measurements::empty(number_of_beats, number_of_steps, number_of_sensors);
         let system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
         let system_states_spherical =
-            ArraySystemStatesSpherical::empty(number_of_steps, number_of_states);
-        let system_states_spherical_max = ArraySystemStatesSphericalMax::empty(number_of_states);
-        let activation_times = ArrayActivationTimePerState::empty(number_of_states);
+            SystemStatesSpherical::empty(number_of_steps, number_of_states);
+        let system_states_spherical_max = SystemStatesSphericalMax::empty(number_of_states);
+        let activation_times = ActivationTimePerStateMs::empty(number_of_states);
 
         Ok(Self {
             measurements,
@@ -124,11 +122,11 @@ impl Simulation {
         let system_states = &mut self.system_states;
         let model = &self.model;
 
-        let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(system_states.values.shape()[1]);
+        let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(system_states.shape()[1]);
         for beat_index in 0..measurements.num_beats() {
             ap_outputs.values.fill(0.0);
-            system_states.values.fill(0.0);
-            for time_index in 0..system_states.values.shape()[0] {
+            system_states.fill(0.0);
+            for time_index in 0..system_states.shape()[0] {
                 calculate_system_prediction(
                     &mut ap_outputs,
                     system_states,
@@ -212,7 +210,7 @@ mod test {
         let simulation = Simulation::from_config(config);
         assert!(simulation.is_ok());
         let simulation = simulation.unwrap();
-        let max = *simulation.system_states.values.max_skipnan();
+        let max = *simulation.system_states.max_skipnan();
         assert_relative_eq!(max, 0.0);
         let max = *simulation.measurements.max_skipnan();
         assert_relative_eq!(max, 0.0);
@@ -223,7 +221,7 @@ mod test {
         let config = &SimulationConfig::default();
         let mut simulation = Simulation::from_config(config).unwrap();
         simulation.run();
-        let max = *simulation.system_states.values.max_skipnan();
+        let max = *simulation.system_states.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.001, 0.001));
         let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
@@ -238,7 +236,7 @@ mod test {
         let config = &SimulationConfig::default();
         let mut simulation = Simulation::from_config(config).unwrap();
         simulation.run();
-        let max = *simulation.system_states.values.max_skipnan();
+        let max = *simulation.system_states.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.001, 0.001));
         let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
@@ -305,7 +303,7 @@ mod test {
         )
         .unwrap();
 
-        let time_index = simulation.system_states.values.shape()[0] / 3;
+        let time_index = simulation.system_states.shape()[0] / 3;
 
         let path = folder.join(format!("states{time_index}.png"));
         states_spherical_plot(
@@ -363,7 +361,7 @@ mod test {
         config.model.common.pathological = true;
         let mut simulation = Simulation::from_config(&config).unwrap();
         simulation.run();
-        let max = *simulation.system_states.values.max_skipnan();
+        let max = *simulation.system_states.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.001, 0.001));
         let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
@@ -379,7 +377,7 @@ mod test {
         config.model.common.pathological = true;
         let mut simulation = Simulation::from_config(&config).unwrap();
         simulation.run();
-        let max = *simulation.system_states.values.max_skipnan();
+        let max = *simulation.system_states.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.001, 0.001));
         let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
@@ -446,7 +444,7 @@ mod test {
         )
         .unwrap();
 
-        let time_index = simulation.system_states.values.shape()[0] / 3;
+        let time_index = simulation.system_states.shape()[0] / 3;
 
         let path = folder.join(format!("states{time_index}.png"));
         states_spherical_plot(
@@ -504,7 +502,7 @@ mod test {
         config.model.mri = Some(Mri::default());
         let mut simulation = Simulation::from_config(&config).unwrap();
         simulation.run();
-        let max = *simulation.system_states.values.max_skipnan();
+        let max = *simulation.system_states.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.002, 0.002), "max: {max}");
         let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
@@ -521,7 +519,7 @@ mod test {
         config.model.mri = Some(Mri::default());
         let mut simulation = Simulation::from_config(&config).unwrap();
         simulation.run();
-        let max = *simulation.system_states.values.max_skipnan();
+        let max = *simulation.system_states.max_skipnan();
         assert!(max.relative_eq(&1.0, 0.002, 0.002));
         let max = *simulation.measurements.max_skipnan();
         assert!(max > 0.0);
@@ -572,7 +570,7 @@ mod test {
         )
         .unwrap();
 
-        let time_index = simulation.system_states.values.shape()[0] / 3;
+        let time_index = simulation.system_states.shape()[0] / 3;
 
         let path = folder.join(format!("states{time_index}.png"));
         states_spherical_plot(

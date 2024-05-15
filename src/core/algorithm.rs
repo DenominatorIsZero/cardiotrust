@@ -56,7 +56,7 @@ pub fn calculate_pseudo_inverse(
     let estimations = &mut results.estimations;
     let derivatives = &mut results.derivatives;
 
-    for time_index in 0..estimations.system_states.values.shape()[0] {
+    for time_index in 0..estimations.system_states.num_steps() {
         let rows = data.get_measurements().num_sensors();
         let measurements = DMatrix::from_row_slice(
             rows,
@@ -75,7 +75,6 @@ pub fn calculate_pseudo_inverse(
 
         estimations
             .system_states
-            .values
             .slice_mut(s![time_index, ..])
             .assign(&system_states);
 
@@ -87,10 +86,7 @@ pub fn calculate_pseudo_inverse(
         estimations
             .measurements
             .slice_mut(s![0, time_index, ..])
-            .assign(
-                &measurement_matrix
-                    .dot(&estimations.system_states.values.slice(s![time_index, ..])),
-            );
+            .assign(&measurement_matrix.dot(&estimations.system_states.slice(s![time_index, ..])));
 
         calculate_residuals(
             &mut estimations.residuals,
@@ -140,7 +136,7 @@ pub fn run_epoch(
 ) {
     debug!("Running epoch {}", epoch_index);
     results.derivatives.reset();
-    let num_steps = results.estimations.system_states.values.shape()[0];
+    let num_steps = results.estimations.system_states.num_steps();
     let num_beats = data.get_measurements().num_beats();
 
     let mut batch = match config.batch_size {
@@ -277,15 +273,15 @@ pub fn constrain_system_states(
     clamping_threshold: f32,
 ) {
     trace!("Constraining system states");
-    for state_index in (0..system_states.values.raw_dim()[1]).step_by(3) {
-        let sum = system_states.values[[time_index, state_index]].abs()
-            + system_states.values[[time_index, state_index + 1]].abs()
-            + system_states.values[[time_index, state_index + 2]].abs();
+    for state_index in (0..system_states.num_states()).step_by(3) {
+        let sum = system_states[[time_index, state_index]].abs()
+            + system_states[[time_index, state_index + 1]].abs()
+            + system_states[[time_index, state_index + 2]].abs();
         if sum > clamping_threshold {
             let factor = clamping_threshold / sum;
-            system_states.values[[time_index, state_index]] *= factor;
-            system_states.values[[time_index, state_index + 1]] *= factor;
-            system_states.values[[time_index, state_index + 2]] *= factor;
+            system_states[[time_index, state_index]] *= factor;
+            system_states[[time_index, state_index + 1]] *= factor;
+            system_states[[time_index, state_index + 2]] *= factor;
         }
     }
 }
@@ -295,10 +291,12 @@ mod test {
 
     use std::path::Path;
 
+    use bevy::utils::petgraph::algo;
     use ndarray::Dim;
     use tracing::info;
 
     use crate::core::config::algorithm::Algorithm as AlgorithmConfig;
+    use crate::core::config::model::{SensorArrayGeometry, SensorArrayMotion};
     use crate::core::config::simulation::Simulation as SimulationConfig;
     use crate::core::model::Model;
 
@@ -440,6 +438,8 @@ mod test {
     fn loss_decreases() {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
+        simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -449,6 +449,8 @@ mod test {
             ..Default::default()
         };
         algorithm_config.model.common.apply_system_update = true;
+        algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -495,10 +497,14 @@ mod test {
         setup(Some("default"));
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
+        simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -597,6 +603,8 @@ mod test {
     fn loss_decreases_kalman() {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
+        simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -607,6 +615,8 @@ mod test {
             ..Default::default()
         };
         algorithm_config.model.common.apply_system_update = true;
+        algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -654,10 +664,14 @@ mod test {
     fn loss_decreases_no_kalman() {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
+        simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -709,10 +723,14 @@ mod test {
         setup(Some("no_kalman"));
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
+        simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -812,6 +830,8 @@ mod test {
         setup(Some("full_kalman"));
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
+        simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
@@ -821,6 +841,8 @@ mod test {
             ..Default::default()
         };
         algorithm_config.model.common.apply_system_update = true;
+        algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
         let mut model = Model::from_model_config(
             &algorithm_config.model,
@@ -916,7 +938,9 @@ mod test {
 
     #[test]
     fn pseudo_inverse_success() {
-        let simulation_config = SimulationConfig::default();
+        let mut simulation_config = SimulationConfig::default();
+        simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 

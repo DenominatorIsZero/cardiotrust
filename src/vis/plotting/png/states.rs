@@ -6,9 +6,7 @@ use tracing::trace;
 use crate::vis::plotting::StateSphericalPlotMode;
 use crate::{
     core::{
-        data::shapes::{
-            ArraySystemStates, ArraySystemStatesSpherical, ArraySystemStatesSphericalMax,
-        },
+        data::shapes::{ArraySystemStates, SystemStatesSpherical, SystemStatesSphericalMax},
         model::spatial::voxels::{VoxelNumbers, VoxelPositions},
     },
     vis::plotting::{
@@ -89,9 +87,9 @@ pub(crate) fn states_plot(
         StatePlotMode::Z => 2,
     };
     for ((x, y), number) in numbers.indexed_iter() {
-        data[(x, y)] = number.as_ref().map_or(0.0, |number| {
-            states.values[(time_step, *number + state_offset)]
-        });
+        data[(x, y)] = number
+            .as_ref()
+            .map_or(0.0, |number| states[(time_step, *number + state_offset)]);
     }
 
     matrix_plot(
@@ -112,8 +110,8 @@ pub(crate) fn states_plot(
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(level = "trace")]
 pub(crate) fn states_spherical_plot(
-    states: &ArraySystemStatesSpherical,
-    states_max: &ArraySystemStatesSphericalMax,
+    states: &SystemStatesSpherical,
+    states_max: &SystemStatesSphericalMax,
     voxel_positions_mm: &VoxelPositions,
     voxel_size_mm: f32,
     voxel_numbers: &VoxelNumbers,

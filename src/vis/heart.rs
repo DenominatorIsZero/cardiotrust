@@ -562,7 +562,6 @@ fn set_heart_voxel_colors_to_activation_time(
                 .as_ref()
                 .expect("Simulation to be some")
                 .activation_times
-                .time_ms
         }
         VisSource::Estimation => {
             &scenario
@@ -571,7 +570,6 @@ fn set_heart_voxel_colors_to_activation_time(
                 .expect("Results to be some.")
                 .estimations
                 .activation_times
-                .time_ms
         }
         VisSource::Delta => {
             &scenario
@@ -580,7 +578,6 @@ fn set_heart_voxel_colors_to_activation_time(
                 .expect("Results to be some.")
                 .estimations
                 .activation_times_delta
-                .time_ms
         }
     };
 

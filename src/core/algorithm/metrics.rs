@@ -133,7 +133,7 @@ impl Metrics {
             self.loss_mse.values[index],
         );
 
-        let states_delta_abs = estimations.system_states_delta.values.mapv(f32::abs);
+        let states_delta_abs = estimations.system_states_delta.mapv(f32::abs);
         self.delta_states_mean.values[index] = states_delta_abs.mean().unwrap();
         self.delta_states_max.values[index] = *states_delta_abs.max_skipnan();
 
@@ -458,8 +458,8 @@ pub fn predict_voxeltype(
         ground_truth.values.shape()[2],
     ]);
 
-    let mut abs = Array1::zeros(estimations.system_states.values.shape()[0]);
-    let system_states = &estimations.system_states.values;
+    let mut abs = Array1::zeros(estimations.system_states.shape()[0]);
+    let system_states = &estimations.system_states;
 
     predictions
         .values

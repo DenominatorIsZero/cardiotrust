@@ -85,7 +85,7 @@ impl Model {
 
     pub(crate) fn update_activation_time(
         &mut self,
-        activation_times: &super::data::shapes::ArrayActivationTimePerState,
+        activation_times: &super::data::shapes::ActivationTimePerStateMs,
     ) {
         let target = &mut self
             .functional_description
@@ -97,7 +97,7 @@ impl Model {
             for y in 0..target.shape()[1] {
                 for z in 0..target.shape()[2] {
                     if let Some(voxel_number) = numbers[(x, y, z)] {
-                        target[(x, y, z)] = Some(activation_times.time_ms[voxel_number / 3]);
+                        target[(x, y, z)] = Some(activation_times[voxel_number / 3]);
                     }
                 }
             }

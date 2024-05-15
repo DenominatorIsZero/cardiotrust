@@ -432,16 +432,16 @@ pub fn plot_state_xyz(
 ) -> Result<PngBundle, Box<dyn Error>> {
     trace!("Generating state xyz plot.");
 
-    if state_index >= (system_states.values.shape()[1] - 2) {
+    if state_index >= (system_states.num_states() - 2) {
         return Err(Box::new(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "state_index out of bounds",
         )));
     }
 
-    let state_x = system_states.values.slice(s![.., state_index]);
-    let state_y = system_states.values.slice(s![.., state_index + 1]);
-    let state_z = system_states.values.slice(s![.., state_index + 2]);
+    let state_x = system_states.slice(s![.., state_index]);
+    let state_y = system_states.slice(s![.., state_index + 1]);
+    let state_z = system_states.slice(s![.., state_index + 2]);
     let x = Array1::linspace(0.0, state_x.len() as f32 / sample_rate_hz, state_x.len());
     let y = vec![&state_x, &state_y, &state_z];
     let labels: Vec<&str> = vec!["x", "y", "z"];
@@ -800,13 +800,11 @@ mod test {
         let files = vec![path.join("xyz_plot_basic.png")];
         clean_files(&files);
 
-        let mut system_states = ArraySystemStates {
-            values: Array2::zeros((100, 6)),
-        };
+        let mut system_states = ArraySystemStates::empty(100, 6);
 
         for i in 0..100 {
             for j in 0..6 {
-                system_states.values[(i, j)] = i as f32 * j as f32;
+                system_states[(i, j)] = i as f32 * j as f32;
             }
         }
 
@@ -825,9 +823,7 @@ mod test {
         let files = vec![path.join("xyz_plot_invalid.png")];
         clean_files(&files);
 
-        let system_states = ArraySystemStates {
-            values: Array2::zeros((100, 6)),
-        };
+        let system_states = ArraySystemStates::empty(100, 6);
         let title = "Test Plot";
         let sample_rate_hz = 10.0;
 

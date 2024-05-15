@@ -9,8 +9,8 @@ use tracing::{debug, trace};
 use crate::core::{
     config::algorithm::Algorithm,
     data::shapes::{
-        ArrayActivationTimePerState, ArrayMeasurements, ArrayResiduals, ArraySystemStates,
-        ArraySystemStatesSpherical, ArraySystemStatesSphericalMax,
+        ActivationTimePerStateMs, ArraySystemStates, Measurements, Residuals,
+        SystemStatesSpherical, SystemStatesSphericalMax,
     },
     model::functional::{
         allpass::{
@@ -26,17 +26,17 @@ use crate::core::{
 pub struct Estimations {
     pub ap_outputs: ArrayGains<f32>,
     pub system_states: ArraySystemStates,
-    pub system_states_spherical: ArraySystemStatesSpherical,
-    pub system_states_spherical_max: ArraySystemStatesSphericalMax,
-    pub activation_times: ArrayActivationTimePerState,
+    pub system_states_spherical: SystemStatesSpherical,
+    pub system_states_spherical_max: SystemStatesSphericalMax,
+    pub activation_times: ActivationTimePerStateMs,
     pub state_covariance_pred: ArrayGains<f32>,
     pub state_covariance_est: ArrayGains<f32>,
-    pub measurements: ArrayMeasurements,
-    pub residuals: ArrayResiduals,
-    pub post_update_residuals: ArrayResiduals,
+    pub measurements: Measurements,
+    pub residuals: Residuals,
+    pub post_update_residuals: Residuals,
     pub system_states_delta: ArraySystemStates,
-    pub system_states_spherical_max_delta: ArraySystemStatesSphericalMax,
-    pub activation_times_delta: ArrayActivationTimePerState,
+    pub system_states_spherical_max_delta: SystemStatesSphericalMax,
+    pub activation_times_delta: ActivationTimePerStateMs,
     pub gains_delta: ArrayGains<f32>,
     pub delays_delta: ArrayDelays<f32>,
     pub s: DMatrix<f32>,
@@ -57,26 +57,20 @@ impl Estimations {
         Self {
             ap_outputs: ArrayGains::empty(number_of_states),
             system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
-            system_states_spherical: ArraySystemStatesSpherical::empty(
+            system_states_spherical: SystemStatesSpherical::empty(
                 number_of_steps,
                 number_of_states,
             ),
-            system_states_spherical_max: ArraySystemStatesSphericalMax::empty(number_of_states),
-            activation_times: ArrayActivationTimePerState::empty(number_of_states),
+            system_states_spherical_max: SystemStatesSphericalMax::empty(number_of_states),
+            activation_times: ActivationTimePerStateMs::empty(number_of_states),
             state_covariance_pred: ArrayGains::empty(number_of_states),
             state_covariance_est: ArrayGains::empty(number_of_states),
-            measurements: ArrayMeasurements::empty(
-                number_of_beats,
-                number_of_steps,
-                number_of_sensors,
-            ),
-            residuals: ArrayResiduals::empty(number_of_sensors),
-            post_update_residuals: ArrayResiduals::empty(number_of_sensors),
+            measurements: Measurements::empty(number_of_beats, number_of_steps, number_of_sensors),
+            residuals: Residuals::empty(number_of_sensors),
+            post_update_residuals: Residuals::empty(number_of_sensors),
             system_states_delta: ArraySystemStates::empty(1, number_of_states),
-            system_states_spherical_max_delta: ArraySystemStatesSphericalMax::empty(
-                number_of_states,
-            ),
-            activation_times_delta: ArrayActivationTimePerState::empty(number_of_states),
+            system_states_spherical_max_delta: SystemStatesSphericalMax::empty(number_of_states),
+            activation_times_delta: ActivationTimePerStateMs::empty(number_of_states),
             gains_delta: ArrayGains::empty(number_of_states),
             delays_delta: ArrayDelays::empty(number_of_states),
             s: DMatrix::zeros(number_of_sensors, number_of_sensors),
@@ -91,12 +85,12 @@ impl Estimations {
     pub fn reset(&mut self) {
         debug!("Resetting estimations");
         self.ap_outputs.values.fill(0.0);
-        self.system_states.values.fill(0.0);
+        self.system_states.fill(0.0);
         self.state_covariance_pred.values.fill(0.0);
         self.state_covariance_est.values.fill(0.0);
         self.residuals.fill(0.0);
         self.post_update_residuals.fill(0.0);
-        self.system_states_delta.values.fill(0.0);
+        self.system_states_delta.fill(0.0);
         self.gains_delta.values.fill(0.0);
         self.delays_delta.values.fill(0.0);
     }
@@ -116,9 +110,9 @@ impl Estimations {
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn calculate_residuals(
-    residuals: &mut ArrayResiduals,
-    predicted_measurements: &ArrayMeasurements,
-    actual_measurements: &ArrayMeasurements,
+    residuals: &mut Residuals,
+    predicted_measurements: &Measurements,
+    actual_measurements: &Measurements,
     time_index: usize,
     beat_index: usize,
 ) {
@@ -135,17 +129,17 @@ pub fn calculate_residuals(
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn calculate_post_update_residuals(
-    post_update_residuals: &mut ArrayResiduals,
+    post_update_residuals: &mut Residuals,
     measurement_matrix: &MeasurementMatrix,
     estimated_system_states: &ArraySystemStates,
-    actual_measurements: &ArrayMeasurements,
+    actual_measurements: &Measurements,
     time_index: usize,
     beat_index: usize,
 ) {
     trace!("Calculating post update residuals");
     let measurement_matrix = measurement_matrix.values.slice(s![beat_index, .., ..]);
     post_update_residuals.assign(
-        &(measurement_matrix.dot(&estimated_system_states.values.slice(s![time_index, ..]))
+        &(measurement_matrix.dot(&estimated_system_states.slice(s![time_index, ..]))
             - actual_measurements.slice(s![beat_index, time_index, ..])),
     );
 }
@@ -161,9 +155,9 @@ pub fn calculate_system_states_delta(
     time_index: usize,
 ) {
     trace!("Calculating system states delta");
-    system_states_delta.values.slice_mut(s![0, ..]).assign(
-        &(&estimated_system_states.values.slice(s![time_index, ..])
-            - &actual_system_states.values.slice(s![time_index, ..])),
+    system_states_delta.slice_mut(s![0, ..]).assign(
+        &(&estimated_system_states.slice(s![time_index, ..])
+            - &actual_system_states.slice(s![time_index, ..])),
     );
 }
 
@@ -220,10 +214,7 @@ pub fn calculate_system_update(
     let mut states: ndarray::prelude::ArrayBase<
         ndarray::ViewRepr<&mut f32>,
         ndarray::prelude::Dim<[usize; 1]>,
-    > = estimations
-        .system_states
-        .values
-        .slice_mut(s![time_index, ..]);
+    > = estimations.system_states.slice_mut(s![time_index, ..]);
     states.assign(
         &(&states
             + functional_description
@@ -535,7 +526,7 @@ mod tests {
 
     use crate::core::{
         config::algorithm::Algorithm,
-        data::shapes::{ArrayMeasurements, ArrayResiduals, ArraySystemStates},
+        data::shapes::{ArraySystemStates, Measurements, Residuals},
         model::functional::{allpass::shapes::ArrayGains, FunctionalDescription},
     };
 
@@ -557,7 +548,7 @@ mod tests {
         let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(number_of_states);
         let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
         let mut measurements =
-            ArrayMeasurements::empty(number_of_beats, number_of_steps, number_of_sensors);
+            Measurements::empty(number_of_beats, number_of_steps, number_of_sensors);
         let functional_description = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,
@@ -615,11 +606,11 @@ mod tests {
         let time_index = 333;
         let beat_index = 2;
 
-        let mut residuals = ArrayResiduals::empty(number_of_sensors);
+        let mut residuals = Residuals::empty(number_of_sensors);
         let predicted_measurements =
-            ArrayMeasurements::empty(number_of_beats, number_of_steps, number_of_sensors);
+            Measurements::empty(number_of_beats, number_of_steps, number_of_sensors);
         let actual_measurements =
-            ArrayMeasurements::empty(number_of_beats, number_of_steps, number_of_sensors);
+            Measurements::empty(number_of_beats, number_of_steps, number_of_sensors);
 
         calculate_residuals(
             &mut residuals,

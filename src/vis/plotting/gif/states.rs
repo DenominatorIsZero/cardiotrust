@@ -13,7 +13,7 @@ use crate::vis::plotting::png::states::states_spherical_plot;
 use crate::vis::plotting::StateSphericalPlotMode;
 use crate::{
     core::{
-        data::shapes::{ArraySystemStatesSpherical, ArraySystemStatesSphericalMax},
+        data::shapes::{SystemStatesSpherical, SystemStatesSphericalMax},
         model::spatial::voxels::{VoxelNumbers, VoxelPositions},
     },
     vis::plotting::PlotSlice,
@@ -29,8 +29,8 @@ use super::GifBundle;
 )]
 #[tracing::instrument(level = "trace")]
 pub(crate) fn states_spherical_plot_over_time(
-    states: &ArraySystemStatesSpherical,
-    states_max: &ArraySystemStatesSphericalMax,
+    states: &SystemStatesSpherical,
+    states_max: &SystemStatesSphericalMax,
     voxel_positions_mm: &VoxelPositions,
     voxel_size_mm: f32,
     sample_rate_hz: f32,

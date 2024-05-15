@@ -18,9 +18,7 @@ use super::model::{
     spatial::voxels::VoxelTypes,
     Model,
 };
-use crate::core::{
-    config::simulation::Simulation as SimulationConfig, data::shapes::ArrayMeasurements,
-};
+use crate::core::{config::simulation::Simulation as SimulationConfig, data::shapes::Measurements};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Data {
@@ -76,7 +74,7 @@ impl Data {
     /// Panics if simulation and measurement are both None.
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn get_measurements(&self) -> &ArrayMeasurements {
+    pub fn get_measurements(&self) -> &Measurements {
         trace!("Getting measurements");
         self.simulation.as_ref().map_or_else(
             || {

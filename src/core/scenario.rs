@@ -545,14 +545,13 @@ pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
             .sample_rate_hz,
     );
 
-    results.estimations.activation_times_delta.time_ms.assign(
-        &(&data
+    results.estimations.activation_times_delta.assign(
+        &(&*data
             .simulation
             .as_ref()
             .expect("Simulation to be some")
             .activation_times
-            .time_ms
-            - &results.estimations.activation_times.time_ms),
+            - &*results.estimations.activation_times),
     );
 
     results

@@ -3,6 +3,7 @@ use ndarray_npy::WriteNpyExt;
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 use std::{
+    alloc::System,
     fs::{self, File},
     io::BufWriter,
     ops::{Deref, DerefMut},
@@ -13,9 +14,7 @@ use tracing::trace;
 ///
 /// Has dimensions (`number_of_steps` `number_of_states`)
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArraySystemStates {
-    pub values: Array2<f32>,
-}
+pub struct ArraySystemStates(Array2<f32>);
 
 impl ArraySystemStates {
     /// Creates an empty `ArraySystemStates` with the given dimensions.
@@ -23,9 +22,7 @@ impl ArraySystemStates {
     #[tracing::instrument(level = "trace")]
     pub fn empty(number_of_steps: usize, number_of_states: usize) -> Self {
         trace!("Creating empty system states");
-        Self {
-            values: Array2::zeros((number_of_steps, number_of_states)),
-        }
+        Self(Array2::zeros((number_of_steps, number_of_states)))
     }
 
     /// Saves the `ArraySystemStates` to a .npy file at the given path.
@@ -42,18 +39,42 @@ impl ArraySystemStates {
         fs::create_dir_all(path).unwrap();
 
         let writer = BufWriter::new(File::create(path.join("system_states.npy")).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+
+    #[must_use]
+    pub fn num_steps(&self) -> usize {
+        self.raw_dim()[0]
+    }
+
+    #[must_use]
+    pub fn num_states(&self) -> usize {
+        self.raw_dim()[1]
+    }
+}
+
+impl Deref for ArraySystemStates {
+    type Target = Array2<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ArraySystemStates {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArraySystemStatesSpherical {
+pub struct SystemStatesSpherical {
     pub magnitude: Array2<f32>,
     pub theta: Array2<f32>,
     pub phi: Array2<f32>,
 }
 
-impl ArraySystemStatesSpherical {
+impl SystemStatesSpherical {
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn empty(number_of_steps: usize, number_of_states: usize) -> Self {
@@ -71,22 +92,22 @@ impl ArraySystemStatesSpherical {
         self.magnitude
             .indexed_iter_mut()
             .for_each(|((time_index, state_index), value)| {
-                *value = states.values[(time_index, 3 * state_index)].abs()
-                    + states.values[(time_index, 3 * state_index + 1)].abs()
-                    + states.values[(time_index, 3 * state_index + 2)].abs();
+                *value = states[(time_index, 3 * state_index)].abs()
+                    + states[(time_index, 3 * state_index + 1)].abs()
+                    + states[(time_index, 3 * state_index + 2)].abs();
             });
         self.theta
             .indexed_iter_mut()
             .for_each(|((time_index, state_index), value)| {
-                *value = (states.values[(time_index, 3 * state_index + 2)]
+                *value = (states[(time_index, 3 * state_index + 2)]
                     / self.magnitude[(time_index, state_index)])
                     .acos();
             });
         self.phi
             .indexed_iter_mut()
             .for_each(|((time_index, state_index), value)| {
-                *value = states.values[(time_index, 3 * state_index + 1)]
-                    .atan2(states.values[(time_index, 3 * state_index)]);
+                *value = states[(time_index, 3 * state_index + 1)]
+                    .atan2(states[(time_index, 3 * state_index)]);
             });
     }
 
@@ -105,13 +126,13 @@ impl ArraySystemStatesSpherical {
     }
 }
 
-impl<'a> std::ops::Sub for &'a ArraySystemStatesSpherical {
-    type Output = ArraySystemStatesSpherical;
+impl<'a> std::ops::Sub for &'a SystemStatesSpherical {
+    type Output = SystemStatesSpherical;
 
     #[tracing::instrument(level = "trace")]
     fn sub(self, rhs: Self) -> Self::Output {
         trace!("Subtracting spherical states");
-        ArraySystemStatesSpherical {
+        SystemStatesSpherical {
             magnitude: &self.magnitude - &rhs.magnitude,
             theta: &self.theta - &rhs.theta,
             phi: &self.phi - &rhs.phi,
@@ -120,13 +141,13 @@ impl<'a> std::ops::Sub for &'a ArraySystemStatesSpherical {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArraySystemStatesSphericalMax {
+pub struct SystemStatesSphericalMax {
     pub magnitude: Array1<f32>,
     pub theta: Array1<f32>,
     pub phi: Array1<f32>,
 }
 
-impl ArraySystemStatesSphericalMax {
+impl SystemStatesSphericalMax {
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn empty(number_of_states: usize) -> Self {
@@ -139,7 +160,7 @@ impl ArraySystemStatesSphericalMax {
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn calculate(&mut self, spehrical: &ArraySystemStatesSpherical) {
+    pub fn calculate(&mut self, spehrical: &SystemStatesSpherical) {
         trace!("Calculating max spherical states");
         for state in 0..self.magnitude.len() {
             let index = spehrical
@@ -169,13 +190,13 @@ impl ArraySystemStatesSphericalMax {
     }
 }
 
-impl<'a> std::ops::Sub for &'a ArraySystemStatesSphericalMax {
-    type Output = ArraySystemStatesSphericalMax;
+impl<'a> std::ops::Sub for &'a SystemStatesSphericalMax {
+    type Output = SystemStatesSphericalMax;
 
     #[tracing::instrument(level = "trace")]
     fn sub(self, rhs: Self) -> Self::Output {
         trace!("Subtracting spherical states max");
-        ArraySystemStatesSphericalMax {
+        SystemStatesSphericalMax {
             magnitude: &self.magnitude - &rhs.magnitude,
             theta: &self.theta - &rhs.theta,
             phi: &self.phi - &rhs.phi,
@@ -184,29 +205,25 @@ impl<'a> std::ops::Sub for &'a ArraySystemStatesSphericalMax {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArrayActivationTimePerState {
-    pub time_ms: Array1<f32>,
-}
+pub struct ActivationTimePerStateMs(Array1<f32>);
 
-impl ArrayActivationTimePerState {
+impl ActivationTimePerStateMs {
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn empty(number_of_states: usize) -> Self {
-        Self {
-            time_ms: Array1::zeros(number_of_states / 3),
-        }
+        Self(Array1::zeros(number_of_states / 3))
     }
 
     #[tracing::instrument(level = "trace")]
     #[allow(clippy::cast_precision_loss)]
-    pub fn calculate(&mut self, spehrical: &ArraySystemStatesSpherical, sample_rate_hz: f32) {
-        for state in 0..self.time_ms.len() {
+    pub fn calculate(&mut self, spehrical: &SystemStatesSpherical, sample_rate_hz: f32) {
+        for state in 0..self.len() {
             let index = spehrical
                 .magnitude
                 .index_axis(Axis(1), state)
                 .argmax_skipnan()
                 .unwrap();
-            self.time_ms[state] = index as f32 / sample_rate_hz * 1000.0;
+            self[state] = index as f32 / sample_rate_hz * 1000.0;
         }
     }
 
@@ -217,14 +234,28 @@ impl ArrayActivationTimePerState {
 
         let writer =
             BufWriter::new(File::create(path.join("system_states_activation_time.npy")).unwrap());
-        self.time_ms.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+}
+
+impl Deref for ActivationTimePerStateMs {
+    type Target = Array1<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ActivationTimePerStateMs {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArrayMeasurements(Array3<f32>);
+pub struct Measurements(Array3<f32>);
 
-impl ArrayMeasurements {
+impl Measurements {
     #[must_use]
     #[tracing::instrument(level = "trace")]
     /// Creates an empty `ArrayMeasurements` with the given dimensions.
@@ -252,21 +283,21 @@ impl ArrayMeasurements {
 
     #[must_use]
     pub fn num_beats(&self) -> usize {
-        self.shape()[0]
+        self.raw_dim()[0]
     }
 
     #[must_use]
     pub fn num_steps(&self) -> usize {
-        self.shape()[1]
+        self.raw_dim()[1]
     }
 
     #[must_use]
     pub fn num_sensors(&self) -> usize {
-        self.shape()[2]
+        self.raw_dim()[2]
     }
 }
 
-impl Deref for ArrayMeasurements {
+impl Deref for Measurements {
     type Target = Array3<f32>;
 
     fn deref(&self) -> &Self::Target {
@@ -274,16 +305,16 @@ impl Deref for ArrayMeasurements {
     }
 }
 
-impl DerefMut for ArrayMeasurements {
+impl DerefMut for Measurements {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArrayResiduals(Array1<f32>);
+pub struct Residuals(Array1<f32>);
 
-impl ArrayResiduals {
+impl Residuals {
     #[must_use]
     #[tracing::instrument(level = "trace")]
     /// Creates an empty `ArrayMeasurements` with the given dimensions.
@@ -310,7 +341,7 @@ impl ArrayResiduals {
     }
 }
 
-impl Deref for ArrayResiduals {
+impl Deref for Residuals {
     type Target = Array1<f32>;
 
     fn deref(&self) -> &Self::Target {
@@ -318,7 +349,7 @@ impl Deref for ArrayResiduals {
     }
 }
 
-impl DerefMut for ArrayResiduals {
+impl DerefMut for Residuals {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

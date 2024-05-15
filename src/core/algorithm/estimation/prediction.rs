@@ -2,7 +2,7 @@ use ndarray::s;
 use tracing::trace;
 
 use crate::core::{
-    data::shapes::{ArrayMeasurements, ArraySystemStates},
+    data::shapes::{ArraySystemStates, Measurements},
     model::functional::{
         allpass::{shapes::ArrayGains, APParameters},
         measurement::MeasurementMatrix,
@@ -21,7 +21,7 @@ use crate::core::{
 pub fn calculate_system_prediction(
     ap_outputs: &mut ArrayGains<f32>,
     system_states: &mut ArraySystemStates,
-    measurements: &mut ArrayMeasurements,
+    measurements: &mut Measurements,
     functional_description: &FunctionalDescription,
     time_index: usize,
     beat_index: usize,
@@ -76,20 +76,12 @@ pub fn innovate_system_states_v1(
             let coef = unsafe { *ap_params.coefs.values.uget(coef_index) };
             let delay = unsafe { *ap_params.delays.values.uget(coef_index) };
             let input = if delay <= time_index {
-                unsafe {
-                    *system_states
-                        .values
-                        .uget((time_index - delay, output_state_index))
-                }
+                unsafe { *system_states.uget((time_index - delay, output_state_index)) }
             } else {
                 0.0
             };
             let input_delayed = if delay < time_index {
-                *unsafe {
-                    system_states
-                        .values
-                        .uget((time_index - delay - 1, output_state_index))
-                }
+                *unsafe { system_states.uget((time_index - delay - 1, output_state_index)) }
             } else {
                 0.0
             };
@@ -97,7 +89,7 @@ pub fn innovate_system_states_v1(
             *ap_output = coef.mul_add(input - *ap_output, input_delayed);
             let gain = unsafe { *ap_params.gains.values.uget((index_state, index_offset)) };
             unsafe {
-                *system_states.values.uget_mut((time_index, index_state)) +=
+                *system_states.uget_mut((time_index, index_state)) +=
                     gain * ap_outputs.values.uget((index_state, index_offset));
             };
         }
@@ -118,7 +110,6 @@ pub fn add_control_function(
     // Add control function
     let control_function_value = functional_description.control_function_values.values[time_index];
     system_states
-        .values
         .slice_mut(s![time_index, ..])
         .iter_mut()
         .zip(functional_description.control_matrix.values.iter())
@@ -133,7 +124,7 @@ pub fn add_control_function(
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn predict_measurements(
-    measurements: &mut ArrayMeasurements,
+    measurements: &mut Measurements,
     time_index: usize,
     beat_index: usize,
     measurement_matrix: &MeasurementMatrix,
@@ -144,5 +135,5 @@ pub fn predict_measurements(
     let measurement_matrix = measurement_matrix.values.slice(s![beat_index, .., ..]);
     measurements
         .slice_mut(s![beat_index, time_index, ..])
-        .assign(&measurement_matrix.dot(&system_states.values.slice(s![time_index, ..])));
+        .assign(&measurement_matrix.dot(&system_states.slice(s![time_index, ..])));
 }

@@ -5,7 +5,7 @@ use tracing::{debug, trace};
 use crate::core::{
     algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
-    data::shapes::{ArrayResiduals, ArraySystemStates},
+    data::shapes::{ArraySystemStates, Residuals},
     model::functional::{
         allpass::{
             shapes::{ArrayDelays, ArrayGains},
@@ -220,7 +220,7 @@ impl Derivatives {
                     if time_index >= ap_params.delays.values[coef_index] {
                         *derivative = ap_params.coefs.values[coef_index].mul_add(
                             *derivative,
-                            estimated_system_states.values[(
+                            estimated_system_states[(
                                 time_index - ap_params.delays.values[coef_index],
                                 output_state_index.unwrap(),
                             )],
@@ -265,19 +265,19 @@ impl Derivatives {
     ) {
         trace!("Calculating maximum regularization");
         // self.maximum_regularization_sum = 0.0; // This is probably wrong, no?
-        for state_index in (0..system_states.values.raw_dim()[1]).step_by(3) {
-            let sum = system_states.values[[time_index, state_index]].abs()
-                + system_states.values[[time_index, state_index + 1]].abs()
-                + system_states.values[[time_index, state_index + 2]].abs();
+        for state_index in (0..system_states.raw_dim()[1]).step_by(3) {
+            let sum = system_states[[time_index, state_index]].abs()
+                + system_states[[time_index, state_index + 1]].abs()
+                + system_states[[time_index, state_index + 2]].abs();
             if sum > regularization_threshold {
                 let factor = sum - regularization_threshold;
                 self.maximum_regularization_sum += factor.powi(2);
                 self.maximum_regularization.values[state_index] =
-                    factor * system_states.values[[time_index, state_index]].signum();
+                    factor * system_states[[time_index, state_index]].signum();
                 self.maximum_regularization.values[state_index + 1] =
-                    factor * system_states.values[[time_index, state_index + 1]].signum();
+                    factor * system_states[[time_index, state_index + 1]].signum();
                 self.maximum_regularization.values[state_index + 2] =
-                    factor * system_states.values[[time_index, state_index + 2]].signum();
+                    factor * system_states[[time_index, state_index + 2]].signum();
             } else {
                 self.maximum_regularization.values[state_index] = 0.0;
                 self.maximum_regularization.values[state_index + 1] = 0.0;
@@ -291,7 +291,7 @@ impl Derivatives {
     pub fn calculate_mapped_residuals(
         &mut self,
         measurement_matrix: &MeasurementMatrix,
-        residuals: &ArrayResiduals,
+        residuals: &Residuals,
         beat: usize,
     ) {
         trace!("Calculating mapped residuals");

@@ -13,7 +13,7 @@ use crate::{
     core::{
         algorithm::refinement::Optimizer,
         data::{
-            shapes::{ArrayMeasurements, ArraySystemStates},
+            shapes::{ArraySystemStates, Measurements},
             Data,
         },
         model::{spatial::voxels::VoxelType, Model},
@@ -285,13 +285,8 @@ fn handle_update_est_message(
     clippy::cast_possible_truncation
 )]
 #[tracing::instrument(level = "debug")]
-fn update_values(
-    payload: &Value,
-    states: &mut ArraySystemStates,
-    measurements: &mut ArrayMeasurements,
-) {
+fn update_values(payload: &Value, states: &mut ArraySystemStates, measurements: &mut Measurements) {
     debug!("Updating values.");
-    let states = &mut states.values;
     let key = "ppfStatesToExoBuffer";
     let ppf_state_buffer = payload
         .get(key)
