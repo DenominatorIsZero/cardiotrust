@@ -280,14 +280,7 @@ pub fn draw_ui_volumetric(
         egui::TopBottomPanel::bottom("Volumetric bottom panel")
             .exact_height(400.0)
             .show(contexts.ctx_mut(), |ui| {
-                let samplerate_hz = f64::from(
-                    scenario
-                        .config
-                        .simulation
-                        .as_ref()
-                        .expect("Simulation to be some.")
-                        .sample_rate_hz,
-                );
+                let samplerate_hz = f64::from(scenario.config.simulation.sample_rate_hz);
                 let signal: PlotPoints = (0..sample_tracker.max_sample)
                     .map(|i| {
                         #[allow(clippy::cast_precision_loss)]

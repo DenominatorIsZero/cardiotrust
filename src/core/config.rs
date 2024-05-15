@@ -3,7 +3,6 @@ pub mod model;
 pub mod simulation;
 
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 use tracing::info;
 
 use self::{algorithm::Algorithm, simulation::Simulation};
@@ -17,8 +16,7 @@ use self::{algorithm::Algorithm, simulation::Simulation};
 /// - `algorithm`: Algorithm parameters.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Config {
-    pub measurement: Option<Box<Path>>,
-    pub simulation: Option<Simulation>,
+    pub simulation: Simulation,
     pub algorithm: Algorithm,
 }
 
@@ -29,8 +27,7 @@ impl Default for Config {
     fn default() -> Self {
         info!("Creating default config");
         Self {
-            measurement: None,
-            simulation: Some(Simulation::default()),
+            simulation: Simulation::default(),
             algorithm: Algorithm::default(),
         }
     }

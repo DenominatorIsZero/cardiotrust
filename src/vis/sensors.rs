@@ -27,7 +27,7 @@ pub(crate) fn spawn_sensors(
 ) {
     debug!("Running system to spawn sensors.");
     let data = scenario.data.as_ref().expect("Data to be some");
-    let model = data.get_model();
+    let model = &data.simulation.model;
     let sensors = &model.spatial_description.sensors;
 
     // note that we have to include the `Scene0` label
@@ -108,7 +108,8 @@ pub(crate) fn spawn_sensor_bracket(
         .data
         .as_ref()
         .unwrap()
-        .get_model()
+        .simulation
+        .model
         .spatial_description
         .sensors;
     let radius = sensors.array_radius_mm;

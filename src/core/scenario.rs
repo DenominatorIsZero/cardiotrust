@@ -202,32 +202,23 @@ impl Scenario {
     fn unify_configs(&mut self) {
         debug!("Unifying algorithm and simulation configs");
         let model = &mut self.config.algorithm.model;
-        match &self.config.simulation {
-            Some(simulation) => {
-                model.common.sensor_array_geometry =
-                    simulation.model.common.sensor_array_geometry.clone();
-                model.common.three_d_sensors = simulation.model.common.three_d_sensors;
-                model.common.number_of_sensors = simulation.model.common.number_of_sensors;
-                model.common.sensor_array_radius_mm =
-                    simulation.model.common.sensor_array_radius_mm;
-                model.common.sensors_per_axis = simulation.model.common.sensors_per_axis;
-                model.common.sensor_array_size_mm = simulation.model.common.sensor_array_size_mm;
-                model.common.sensor_array_origin_mm =
-                    simulation.model.common.sensor_array_origin_mm;
-                model.common.voxel_size_mm = simulation.model.common.voxel_size_mm;
-                model.common.heart_offset_mm = simulation.model.common.heart_offset_mm;
-                model.common.sensor_array_motion =
-                    simulation.model.common.sensor_array_motion.clone();
-                model.common.sensor_array_motion_range_mm =
-                    simulation.model.common.sensor_array_motion_range_mm;
-                model.common.sensor_array_motion_steps =
-                    simulation.model.common.sensor_array_motion_steps;
-                if let Some(handcrafted) = simulation.model.handcrafted.as_ref() {
-                    model.handcrafted.as_mut().unwrap().heart_size_mm = handcrafted.heart_size_mm;
-                }
-            }
-            None => todo!(),
-        };
+        let simulation = &self.config.simulation;
+        model.common.sensor_array_geometry = simulation.model.common.sensor_array_geometry.clone();
+        model.common.three_d_sensors = simulation.model.common.three_d_sensors;
+        model.common.number_of_sensors = simulation.model.common.number_of_sensors;
+        model.common.sensor_array_radius_mm = simulation.model.common.sensor_array_radius_mm;
+        model.common.sensors_per_axis = simulation.model.common.sensors_per_axis;
+        model.common.sensor_array_size_mm = simulation.model.common.sensor_array_size_mm;
+        model.common.sensor_array_origin_mm = simulation.model.common.sensor_array_origin_mm;
+        model.common.voxel_size_mm = simulation.model.common.voxel_size_mm;
+        model.common.heart_offset_mm = simulation.model.common.heart_offset_mm;
+        model.common.sensor_array_motion = simulation.model.common.sensor_array_motion.clone();
+        model.common.sensor_array_motion_range_mm =
+            simulation.model.common.sensor_array_motion_range_mm;
+        model.common.sensor_array_motion_steps = simulation.model.common.sensor_array_motion_steps;
+        if let Some(handcrafted) = simulation.model.handcrafted.as_ref() {
+            model.handcrafted.as_mut().unwrap().heart_size_mm = handcrafted.heart_size_mm;
+        }
         if self.config.algorithm.algorithm_type == AlgorithmType::PseudoInverse {
             self.config.algorithm.epochs = 1;
         }
@@ -402,9 +393,8 @@ impl Scenario {
 #[tracing::instrument(level = "info", skip_all, fields(id = %scenario.id))]
 pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender<Summary>) {
     debug!("Running scenario with id {}", scenario.id);
-    let Some(simulation) = &scenario.config.simulation else {
-        panic!("Non-simulation case not yet implemented.")
-    };
+
+    let simulation = &scenario.config.simulation;
 
     let data = Data::from_simulation_config(simulation).expect("Model parametrs to be valid.");
     let mut model = Model::from_model_config(
@@ -447,7 +437,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
 
     results.metrics.calculate_final(
         &results.estimations,
-        data.get_voxel_types(),
+        &data.simulation.model.spatial_description.voxels.types,
         &results
             .model
             .as_ref()
@@ -496,12 +486,7 @@ pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
         .system_states_spherical_max_delta
         .theta
         .assign(
-            &(&data
-                .simulation
-                .as_ref()
-                .expect("Simulation to be some")
-                .system_states_spherical_max
-                .theta
+            &(&data.simulation.system_states_spherical_max.theta
                 - &results.estimations.system_states_spherical_max.theta),
         );
 
@@ -510,12 +495,7 @@ pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
         .system_states_spherical_max_delta
         .phi
         .assign(
-            &(&data
-                .simulation
-                .as_ref()
-                .expect("Simulation to be some")
-                .system_states_spherical_max
-                .phi
+            &(&data.simulation.system_states_spherical_max.phi
                 - &results.estimations.system_states_spherical_max.phi),
         );
 
@@ -524,31 +504,19 @@ pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
         .system_states_spherical_max_delta
         .magnitude
         .assign(
-            &(&data
-                .simulation
-                .as_ref()
-                .expect("Simulation to be some")
-                .system_states_spherical_max
-                .magnitude
+            &(&data.simulation.system_states_spherical_max.magnitude
                 - &results.estimations.system_states_spherical_max.magnitude),
         );
 
     results.estimations.activation_times.calculate(
         &results.estimations.system_states_spherical,
-        data.simulation
-            .as_ref()
-            .expect("Simulation to be some")
-            .sample_rate_hz,
+        data.simulation.sample_rate_hz,
     );
 
-    results.estimations.activation_times_delta.assign(
-        &(&*data
-            .simulation
-            .as_ref()
-            .expect("Simulation to be some")
-            .activation_times
-            - &*results.estimations.activation_times),
-    );
+    results
+        .estimations
+        .activation_times_delta
+        .assign(&(&*data.simulation.activation_times - &*results.estimations.activation_times));
 
     results
         .model

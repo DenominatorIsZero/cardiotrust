@@ -52,14 +52,10 @@ pub fn init_sample_tracker(sample_tracker: &mut SampleTracker, scenario: &Scenar
         .data
         .as_ref()
         .expect("Data to be some")
-        .get_measurements()
-        .num_steps();
-    sample_tracker.sample_rate = scenario
-        .config
         .simulation
-        .as_ref()
-        .expect("Simultaion to be some")
-        .sample_rate_hz;
+        .measurements
+        .num_steps();
+    sample_tracker.sample_rate = scenario.config.simulation.sample_rate_hz;
 }
 /// If not in manual mode, calculates a new sample index based on the elapsed
 /// time, sample rate, and playback speed. Takes the result modulo the max sample

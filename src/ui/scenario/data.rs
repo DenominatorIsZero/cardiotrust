@@ -20,7 +20,7 @@ use crate::{
 pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
     trace!("Running system to draw scenario data UI.");
     parent.set_enabled(*scenario.get_status() == Status::Planning);
-    let simulation = scenario.config.simulation.as_mut().unwrap();
+    let simulation = &mut scenario.config.simulation;
     egui::ScrollArea::vertical()
         .id_source("simulation")
         .vscroll(true)

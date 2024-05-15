@@ -1,4 +1,3 @@
-pub mod measurement;
 pub mod shapes;
 pub mod simulation;
 
@@ -7,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tracing::{debug, trace};
 
-use self::{measurement::Measurement, shapes::SystemStates, simulation::Simulation};
+use self::{shapes::SystemStates, simulation::Simulation};
 use super::model::{
     functional::{
         allpass::shapes::{ActivationTimeMs, Coefs, Gains, UnitDelays},
@@ -20,8 +19,7 @@ use crate::core::{config::simulation::Simulation as SimulationConfig, data::shap
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Data {
-    pub simulation: Option<Simulation>,
-    pub measurement: Option<Measurement>,
+    pub simulation: Simulation,
 }
 
 impl Data {
@@ -37,14 +35,13 @@ impl Data {
     ) -> Self {
         debug!("Creating empty data");
         Self {
-            simulation: Some(Simulation::empty(
+            simulation: Simulation::empty(
                 number_of_sensors,
                 number_of_states,
                 number_of_steps,
                 voxels_in_dims,
                 number_of_beats,
-            )),
-            measurement: None,
+            ),
         }
     }
 
@@ -61,144 +58,7 @@ impl Data {
         let mut simulation = Simulation::from_config(config)?;
         simulation.run();
         simulation.update_activation_time();
-        Ok(Self {
-            simulation: Some(simulation),
-            measurement: None,
-        })
-    }
-
-    /// # Panics
-    ///
-    /// Panics if simulation and measurement are both None.
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn get_measurements(&self) -> &Measurements {
-        trace!("Getting measurements");
-        self.simulation.as_ref().map_or_else(
-            || {
-                &(self
-                    .measurement
-                    .as_ref()
-                    .expect("Measurement to be some")
-                    .measurements)
-            },
-            |simulation| &(simulation.measurements),
-        )
-    }
-
-    /// # Panics
-    ///
-    /// Panics if simulation is None
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn get_system_states(&self) -> &SystemStates {
-        trace!("Getting system states");
-        self.simulation.as_ref().map_or_else(
-            || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.system_states,
-        )
-    }
-
-    /// # Panics
-    ///
-    /// Panics if simulation is None
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn get_control_function_values(&self) -> &ControlFunction {
-        trace!("Getting control function values");
-        self.simulation.as_ref().map_or_else(
-            || todo!("Non simulation case not implemented yet."),
-            |simulation| {
-                &simulation
-                    .model
-                    .functional_description
-                    .control_function_values
-            },
-        )
-    }
-
-    /// # Panics
-    ///
-    /// Panics if simulation is None
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn get_gains(&self) -> &Gains {
-        trace!("Getting gains");
-        self.simulation.as_ref().map_or_else(
-            || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.model.functional_description.ap_params.gains,
-        )
-    }
-
-    /// # Panics
-    ///
-    /// Panics if simulation is None
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn get_coefs(&self) -> &Coefs {
-        trace!("Getting coefs");
-        self.simulation.as_ref().map_or_else(
-            || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.model.functional_description.ap_params.coefs,
-        )
-    }
-
-    /// # Panics
-    ///
-    /// Panics if simulation is None
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn get_voxel_types(&self) -> &VoxelTypes {
-        trace!("Getting voxel types");
-        self.simulation.as_ref().map_or_else(
-            || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.model.spatial_description.voxels.types,
-        )
-    }
-
-    /// # Panics
-    ///
-    /// Panics if simulation is None
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn get_model(&self) -> &Model {
-        trace!("Getting model");
-        self.simulation.as_ref().map_or_else(
-            || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.model,
-        )
-    }
-
-    /// # Panics
-    ///
-    /// Panics if simulation is None
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn get_activation_time_ms(&self) -> &ActivationTimeMs {
-        trace!("Getting activation time");
-        self.simulation.as_ref().map_or_else(
-            || todo!("Non simulation case not implemented yet."),
-            |simulation| {
-                &simulation
-                    .model
-                    .functional_description
-                    .ap_params
-                    .activation_time_ms
-            },
-        )
-    }
-
-    // # Panics
-    ///
-    /// Panics if simulation is None
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn get_delays(&self) -> &UnitDelays {
-        trace!("Getting delays");
-        self.simulation.as_ref().map_or_else(
-            || todo!("Non simulation case not implemented yet."),
-            |simulation| &simulation.model.functional_description.ap_params.delays,
-        )
+        Ok(Self { simulation })
     }
 
     /// # Panics
@@ -207,9 +67,6 @@ impl Data {
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) {
         trace!("Saving data to npy");
-        self.simulation
-            .as_ref()
-            .expect("Simulation to be some.")
-            .save_npy(&path.join("simulation"));
+        self.simulation.save_npy(&path.join("simulation"));
     }
 }

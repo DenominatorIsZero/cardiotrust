@@ -150,16 +150,17 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_spherical_plot_over_time(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
             simulation_config.sample_rate_hz,
-            &data.get_model().spatial_description.voxels.numbers,
+            &data.simulation.model.spatial_description.voxels.numbers,
             Some(files[0].as_path()),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
@@ -186,16 +187,17 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_spherical_plot_over_time(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
             simulation_config.sample_rate_hz,
-            &data.get_model().spatial_description.voxels.numbers,
+            &data.simulation.model.spatial_description.voxels.numbers,
             Some(files[0].as_path()),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ANGLE),

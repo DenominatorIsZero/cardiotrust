@@ -81,7 +81,7 @@ fn plan_scenarios() {
 
     let mut scenario = Scenario::build(Some(format!("{experiment_name} - (I) - Static Array")));
     scenario.config.algorithm = algorithm_config.clone();
-    scenario.config.simulation = Some(simulation_config.clone());
+    scenario.config.simulation = simulation_config.clone();
     scenario.schedule().expect("Scheduling to succeed");
     scenario.save().expect("Scenario to save");
 
@@ -96,7 +96,7 @@ fn plan_scenarios() {
             "{experiment_name} - (II) - Move Along Y - {y_step:0>4} Steps"
         )));
         scenario.config.algorithm = algorithm_config.clone();
-        scenario.config.simulation = Some(simulation_config.clone());
+        scenario.config.simulation = simulation_config.clone();
         scenario.schedule().expect("Scheduling to succeed");
         scenario.save().expect("Scenario to save");
     }
@@ -115,7 +115,7 @@ fn plan_scenarios() {
             "{experiment_name} - (III) - Move Along XYZ - {total_steps:0>4} Steps"
         )));
         scenario.config.algorithm = algorithm_config.clone();
-        scenario.config.simulation = Some(simulation_config.clone());
+        scenario.config.simulation = simulation_config.clone();
         scenario.schedule().expect("Scheduling to succeed");
         scenario.save().expect("Scenario to save");
     }

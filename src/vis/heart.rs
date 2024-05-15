@@ -107,7 +107,7 @@ pub fn init_voxels(
 ) {
     debug!("Running system to initialize voxel components.");
     let data = scenario.data.as_ref().expect("Data to be some");
-    let model = data.get_model();
+    let model = &data.simulation.model;
     let voxels = &model.spatial_description.voxels;
     let voxel_count = model.spatial_description.voxels.count_xyz();
     info!("Voxel count: {voxel_count:?}");
@@ -336,11 +336,15 @@ fn set_heart_voxel_colors_to_types(
 ) {
     debug!("Setting heart voxel colors to types.");
     let voxel_types = if simulation_not_model {
-        scenario
+        &scenario
             .data
             .as_ref()
             .expect("Data to be some")
-            .get_voxel_types()
+            .simulation
+            .model
+            .spatial_description
+            .voxels
+            .types
     } else {
         &scenario
             .results
@@ -446,8 +450,6 @@ fn set_heart_voxel_colors_to_norm(
             .as_ref()
             .expect("Data to be some")
             .simulation
-            .as_ref()
-            .expect("Simulation to be some")
             .system_states_spherical
             .magnitude
     } else {
@@ -492,8 +494,6 @@ fn set_heart_voxel_colors_to_max(
                 .as_ref()
                 .expect("Data to be some")
                 .simulation
-                .as_ref()
-                .expect("Simulation to be some")
                 .system_states_spherical_max
                 .magnitude
         }
@@ -558,8 +558,6 @@ fn set_heart_voxel_colors_to_activation_time(
                 .as_ref()
                 .expect("Data to be some")
                 .simulation
-                .as_ref()
-                .expect("Simulation to be some")
                 .activation_times
         }
         VisSource::Estimation => {

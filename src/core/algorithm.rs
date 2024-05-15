@@ -56,11 +56,12 @@ pub fn calculate_pseudo_inverse(
     let derivatives = &mut results.derivatives;
 
     for time_index in 0..estimations.system_states.num_steps() {
-        let rows = data.get_measurements().num_sensors();
+        let rows = data.simulation.measurements.num_sensors();
         let measurements = DMatrix::from_row_slice(
             rows,
             1,
-            data.get_measurements()
+            data.simulation
+                .measurements
                 .slice(s![0, time_index, ..])
                 .as_slice()
                 .expect("Slice to be some."),
@@ -89,7 +90,7 @@ pub fn calculate_pseudo_inverse(
         calculate_residuals(
             &mut estimations.residuals,
             &estimations.measurements,
-            data.get_measurements(),
+            &data.simulation.measurements,
             time_index,
             0,
         );
@@ -100,14 +101,14 @@ pub fn calculate_pseudo_inverse(
             &mut estimations.post_update_residuals,
             &functional_description.measurement_matrix,
             &estimations.system_states,
-            data.get_measurements(),
+            &data.simulation.measurements,
             time_index,
             0,
         );
         calculate_system_states_delta(
             &mut estimations.system_states_delta,
             &estimations.system_states,
-            data.get_system_states(),
+            &data.simulation.system_states,
             time_index,
         );
         results.metrics.calculate_step(
@@ -135,7 +136,7 @@ pub fn run_epoch(
     debug!("Running epoch {}", epoch_index);
     results.derivatives.reset();
     let num_steps = results.estimations.system_states.num_steps();
-    let num_beats = data.get_measurements().num_beats();
+    let num_beats = data.simulation.measurements.num_beats();
 
     let mut batch = match config.batch_size {
         0 => None,
@@ -163,7 +164,7 @@ pub fn run_epoch(
             calculate_residuals(
                 &mut estimations.residuals,
                 &estimations.measurements,
-                data.get_measurements(),
+                &data.simulation.measurements,
                 time_index,
                 beat_index,
             );
@@ -240,27 +241,32 @@ pub fn calculate_deltas(
         &mut estimations.post_update_residuals,
         &functional_description.measurement_matrix,
         &estimations.system_states,
-        data.get_measurements(),
+        &data.simulation.measurements,
         time_index,
         beat_index,
     );
     calculate_system_states_delta(
         &mut estimations.system_states_delta,
         &estimations.system_states,
-        data.get_system_states(),
+        &data.simulation.system_states,
         time_index,
     );
     calculate_gains_delta(
         &mut estimations.gains_delta,
         &functional_description.ap_params.gains,
-        data.get_gains(),
+        &data.simulation.model.functional_description.ap_params.gains,
     );
     calculate_delays_delta(
         &mut estimations.delays_delta,
         &functional_description.ap_params.delays,
-        data.get_delays(),
+        &data
+            .simulation
+            .model
+            .functional_description
+            .ap_params
+            .delays,
         &functional_description.ap_params.coefs,
-        data.get_coefs(),
+        &data.simulation.model.functional_description.ap_params.coefs,
     );
 }
 

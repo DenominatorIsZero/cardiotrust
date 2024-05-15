@@ -164,8 +164,6 @@ fn handle_init_sim_message(
         .as_mut()
         .expect("Data to be some")
         .simulation
-        .as_mut()
-        .expect("Simulation to be some.")
         .model;
     model.spatial_description.voxels.size_mm = payload
         .get("fVoxelSizeMm")
@@ -237,13 +235,11 @@ fn handle_update_sim_message(
         .index
         .expect("Selected scenario to be some.")]
     .scenario;
-    let simulation = scenario
+    let simulation = &mut scenario
         .data
         .as_mut()
         .expect("Data should be some")
-        .simulation
-        .as_mut()
-        .expect("Simulation should be some");
+        .simulation;
     let states = &mut simulation.system_states;
     let measurements = &mut simulation.measurements;
 

@@ -66,7 +66,7 @@ fn draw_ui_scenario_topbar(
             ui.separator();
             ui.vertical(|ui| {
                 let mut handcrafted = scenario.config.algorithm.model.handcrafted.is_some();
-                let simulation = scenario.config.simulation.as_mut().unwrap();
+                let simulation = &mut scenario.config.simulation;
                 let last_value = handcrafted;
                 let model_type = if handcrafted { "Handcrafted" } else { "MRI" };
                 ui.label("Model Type:");

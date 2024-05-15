@@ -277,10 +277,15 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_plot(
-            data.get_system_states(),
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+            &data.simulation.system_states,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             files[0].as_path(),
             Some(PlotSlice::Z(0)),
             Some(StatePlotMode::X),
@@ -305,10 +310,15 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_plot(
-            data.get_system_states(),
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+            &data.simulation.system_states,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             files[0].as_path(),
             Some(PlotSlice::X(10)),
             Some(StatePlotMode::X),
@@ -332,10 +342,15 @@ mod test {
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
         states_plot(
-            data.get_system_states(),
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+            &data.simulation.system_states,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             files[0].as_path(),
             Some(PlotSlice::Y(5)),
             Some(StatePlotMode::X),
@@ -360,10 +375,15 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_plot(
-            data.get_system_states(),
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+            &data.simulation.system_states,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             files[0].as_path(),
             Some(PlotSlice::Z(0)),
             Some(StatePlotMode::Y),
@@ -388,10 +408,15 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_plot(
-            data.get_system_states(),
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+            &data.simulation.system_states,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             files[0].as_path(),
             Some(PlotSlice::Z(0)),
             Some(StatePlotMode::Z),
@@ -416,15 +441,16 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_spherical_plot(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             Some(files[0].as_path()),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
@@ -450,15 +476,16 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_spherical_plot(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             Some(files[0].as_path()),
             Some(PlotSlice::Y(5)),
             Some(StateSphericalPlotMode::ABS),
@@ -484,15 +511,16 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_spherical_plot(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             Some(files[0].as_path()),
             Some(PlotSlice::X(10)),
             Some(StateSphericalPlotMode::ABS),
@@ -518,15 +546,16 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_spherical_plot(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             Some(files[0].as_path()),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ANGLE),
@@ -552,15 +581,16 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_spherical_plot(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             Some(files[0].as_path()),
             Some(PlotSlice::Y(5)),
             Some(StateSphericalPlotMode::ANGLE),
@@ -586,15 +616,16 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_spherical_plot(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             Some(files[0].as_path()),
             Some(PlotSlice::X(10)),
             Some(StateSphericalPlotMode::ANGLE),
@@ -620,15 +651,16 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_spherical_plot(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             Some(files[0].as_path()),
             Some(PlotSlice::Z(0)),
             Some(StateSphericalPlotMode::ABS),
@@ -654,15 +686,16 @@ mod test {
             .expect("Model parameters to be valid.");
 
         states_spherical_plot(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             Some(files[0].as_path()),
             None,
             Some(StateSphericalPlotMode::ANGLE),

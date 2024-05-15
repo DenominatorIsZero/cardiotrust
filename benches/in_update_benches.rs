@@ -74,14 +74,8 @@ fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
 fn setup_config(voxel_size: &f32) -> Config {
     let samplerate_hz = 2000.0 * 2.5 / voxel_size;
     let mut config = Config::default();
-    config
-        .simulation
-        .as_mut()
-        .unwrap()
-        .model
-        .common
-        .voxel_size_mm = *voxel_size;
-    config.simulation.as_mut().unwrap().sample_rate_hz = samplerate_hz;
+    config.simulation.model.common.voxel_size_mm = *voxel_size;
+    config.simulation.sample_rate_hz = samplerate_hz;
     config.algorithm.model.common.voxel_size_mm = *voxel_size;
     config.algorithm.model.common.apply_system_update = true;
     config.algorithm.update_kalman_gain = false;
@@ -93,7 +87,7 @@ fn setup_config(voxel_size: &f32) -> Config {
 }
 
 fn setup_inputs(config: &Config) -> (Data, Model, Results) {
-    let simulation_config = config.simulation.as_ref().unwrap();
+    let simulation_config = &config.simulation;
     let data =
         Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
     let mut model = Model::from_model_config(
@@ -104,7 +98,7 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
     .unwrap();
     let mut results = Results::new(
         config.algorithm.epochs,
-        data.get_measurements().num_steps(),
+        data.simulation.measurements.num_steps(),
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),

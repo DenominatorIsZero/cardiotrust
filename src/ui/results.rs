@@ -304,15 +304,16 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             None,
         ),
         ImageType::StatesMaxSimulation => states_spherical_plot(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
-            &data.get_model().spatial_description.voxels.numbers,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.numbers,
             Some(&path),
             None,
             Some(StateSphericalPlotMode::ABS),
@@ -320,13 +321,8 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             None,
         ),
         ImageType::StatesMaxDelta => states_spherical_plot(
-            &(&data.simulation.as_ref().unwrap().system_states_spherical
-                - &estimations.system_states_spherical),
-            &(&data
-                .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max
+            &(&data.simulation.system_states_spherical - &estimations.system_states_spherical),
+            &(&data.simulation.system_states_spherical_max
                 - &estimations.system_states_spherical_max),
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
@@ -345,16 +341,26 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             Some(PlotSlice::Z(0)),
         ),
         ImageType::ActivationTimeSimulation => activation_time_plot(
-            data.get_activation_time_ms(),
+            &data
+                .simulation
+                .model
+                .functional_description
+                .ap_params
+                .activation_time_ms,
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
             &path,
             Some(PlotSlice::Z(0)),
         ),
         ImageType::ActivationTimeDelta => {
-            let gt = &data.get_activation_time_ms();
+            let gt = &data
+                .simulation
+                .model
+                .functional_description
+                .ap_params
+                .activation_time_ms;
             let estimation = &model.functional_description.ap_params.activation_time_ms;
-            let mut delta = ActivationTimeMs::empty(data.get_activation_time_ms().raw_dim());
+            let mut delta = ActivationTimeMs::empty(gt.raw_dim());
             for x in 0..delta.shape()[0] {
                 for y in 0..delta.shape()[1] {
                     for z in 0..delta.shape()[2] {
@@ -381,16 +387,21 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             None,
         ),
         ImageType::VoxelTypesSimulation => voxel_type_plot(
-            &data.get_model().spatial_description.voxels.types,
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.types,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
             Some(&path),
             None,
         ),
         ImageType::VoxelTypesPrediction => voxel_type_plot(
             &predict_voxeltype(
                 estimations,
-                data.get_voxel_types(),
+                &data.simulation.model.spatial_description.voxels.types,
                 &model.spatial_description.voxels.numbers,
                 scenario.summary.unwrap().threshold,
             ),
@@ -577,66 +588,74 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
         ),
         ImageType::ControlFunctionAlgorithm => standard_time_plot(
             &model.functional_description.control_function_values,
-            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            scenario.config.simulation.sample_rate_hz,
             &path,
             "Control Function Algorithm",
             "u [A/mm^2]",
         ),
         ImageType::ControlFunctionSimulation => standard_time_plot(
-            data.get_control_function_values(),
-            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &data
+                .simulation
+                .model
+                .functional_description
+                .control_function_values,
+            scenario.config.simulation.sample_rate_hz,
             &path,
             "Control Function Simulation",
             "u [A/mm^2]",
         ),
         ImageType::ControlFunctionDelta => standard_time_plot(
             &(&*model.functional_description.control_function_values
-                - &**data.get_control_function_values()),
-            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+                - &*data
+                    .simulation
+                    .model
+                    .functional_description
+                    .control_function_values),
+            scenario.config.simulation.sample_rate_hz,
             &path,
             "Control Function Delta",
             "u [A/mm^2]",
         ),
         ImageType::StateAlgorithm => standard_time_plot(
             &estimations.system_states.slice(s![.., 0]).to_owned(),
-            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            scenario.config.simulation.sample_rate_hz,
             &path,
             "System State 0 Algorithm",
             "j [A/mm^2]",
         ),
         ImageType::StateSimulation => standard_time_plot(
-            &data.get_system_states().slice(s![.., 0]).to_owned(),
-            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &data.simulation.system_states.slice(s![.., 0]).to_owned(),
+            scenario.config.simulation.sample_rate_hz,
             &path,
             "System State 0 Simulation",
             "j [A/mm^2]",
         ),
         ImageType::StateDelta => standard_time_plot(
             &(&estimations.system_states.slice(s![.., 0]).to_owned()
-                - &data.get_system_states().slice(s![.., 0]).to_owned()),
-            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+                - &data.simulation.system_states.slice(s![.., 0]).to_owned()),
+            scenario.config.simulation.sample_rate_hz,
             &path,
             "System State 0 Delta",
             "j [A/mm^2]",
         ),
         ImageType::MeasurementAlgorithm => standard_time_plot(
             &estimations.measurements.slice(s![0, .., 0]).to_owned(),
-            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            scenario.config.simulation.sample_rate_hz,
             &path,
             "Measurement 0 Algorithm",
             "z [pT]",
         ),
         ImageType::MeasurementSimulation => standard_time_plot(
-            &data.get_measurements().slice(s![0, .., 0]).to_owned(),
-            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            &data.simulation.measurements.slice(s![0, .., 0]).to_owned(),
+            scenario.config.simulation.sample_rate_hz,
             &path,
             "Measurement 0 Simulation",
             "z [pT]",
         ),
         ImageType::MeasurementDelta => standard_time_plot(
             &(&estimations.measurements.slice(s![0, .., 0]).to_owned()
-                - &data.get_measurements().slice(s![0, .., 0]).to_owned()),
-            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+                - &data.simulation.measurements.slice(s![0, .., 0]).to_owned()),
+            scenario.config.simulation.sample_rate_hz,
             &path,
             "Measurement 0 Delta",
             "z [pT]",
@@ -677,7 +696,7 @@ fn generate_gifs(
             &estimations.system_states_spherical_max,
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
-            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            scenario.config.simulation.sample_rate_hz,
             &model.spatial_description.voxels.numbers,
             Some(path.as_path()),
             Some(PlotSlice::Z(0)),
@@ -686,15 +705,16 @@ fn generate_gifs(
             Some(20),
         ),
         GifType::StatesSimulation => states_spherical_plot_over_time(
-            &data.simulation.as_ref().unwrap().system_states_spherical,
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
             &data
                 .simulation
-                .as_ref()
-                .unwrap()
-                .system_states_spherical_max,
-            &data.get_model().spatial_description.voxels.positions_mm,
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
             model.spatial_description.voxels.size_mm,
-            scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
+            scenario.config.simulation.sample_rate_hz,
             &model.spatial_description.voxels.numbers,
             Some(path.as_path()),
             Some(PlotSlice::Z(0)),

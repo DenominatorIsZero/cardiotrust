@@ -262,9 +262,14 @@ mod test {
             .expect("Model parameters to be valid.");
 
         voxel_type_plot(
-            data.get_voxel_types(),
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.types,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
             Some(files[0].as_path()),
             None,
         )
@@ -287,9 +292,14 @@ mod test {
             .expect("Model parameters to be valid.");
 
         voxel_type_plot(
-            data.get_voxel_types(),
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.types,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
             Some(files[0].as_path()),
             Some(PlotSlice::X(10)),
         )
@@ -312,9 +322,14 @@ mod test {
             .expect("Model parameters to be valid.");
 
         voxel_type_plot(
-            data.get_voxel_types(),
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
+            &data.simulation.model.spatial_description.voxels.types,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
             Some(files[0].as_path()),
             Some(PlotSlice::Y(5)),
         )

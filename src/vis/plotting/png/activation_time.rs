@@ -115,9 +115,19 @@ mod test {
             .expect("Model parameters to be valid.");
 
         activation_time_plot(
-            data.get_activation_time_ms(),
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
+            &data
+                .simulation
+                .model
+                .functional_description
+                .ap_params
+                .activation_time_ms,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
             files[0].as_path(),
             Some(PlotSlice::Z(0)),
         )
@@ -140,9 +150,19 @@ mod test {
             .expect("Model parameters to be valid.");
 
         activation_time_plot(
-            data.get_activation_time_ms(),
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
+            &data
+                .simulation
+                .model
+                .functional_description
+                .ap_params
+                .activation_time_ms,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
             files[0].as_path(),
             Some(PlotSlice::X(10)),
         )
@@ -165,9 +185,19 @@ mod test {
             .expect("Model parameters to be valid.");
 
         activation_time_plot(
-            data.get_activation_time_ms(),
-            &data.get_model().spatial_description.voxels.positions_mm,
-            data.get_model().spatial_description.voxels.size_mm,
+            &data
+                .simulation
+                .model
+                .functional_description
+                .ap_params
+                .activation_time_ms,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
             files[0].as_path(),
             Some(PlotSlice::Y(5)),
         )
