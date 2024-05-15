@@ -6,15 +6,16 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
+    ops::{Deref, DerefMut},
 };
 use tracing::{debug, trace};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArrayActivationTime {
+pub struct ActivationTimeMs {
     pub values: Array3<Option<f32>>,
 }
 
-impl ArrayActivationTime {
+impl ActivationTimeMs {
     #[must_use]
     /// Creates a new `ArrayActivationTime` with the given voxel dimensions,
     /// initializing all values to `None`.
@@ -38,38 +39,40 @@ impl ArrayActivationTime {
         trace!("Saving activation time to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("activation_time.npy")).unwrap());
-        self.values
-            .map(|v| v.as_ref().map_or_else(|| -1.0, |index| *index))
+        self.map(|v| v.as_ref().map_or_else(|| -1.0, |index| *index))
             .write_npy(writer)
             .unwrap();
     }
 }
 
-#[allow(clippy::module_name_repetitions)]
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct ArrayGains<T>
-where
-    T: Clone + Zero + PartialEq,
-{
-    pub values: Array2<T>,
+impl Deref for ActivationTimeMs {
+    type Target = Array3<Option<f32>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.values
+    }
 }
 
-impl<T> ArrayGains<T>
-where
-    T: Clone + Zero + PartialEq,
-{
+impl DerefMut for ActivationTimeMs {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.values
+    }
+}
+
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct Gains(Array2<f32>);
+
+impl Gains {
     /// Creates a new `ArrayGains` with the given number of states,
     /// initializing all values to zeros.
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn empty(number_of_states: usize) -> Self {
         trace!("Creating empty gains array");
-        Self {
-            values: Array2::zeros((number_of_states, 78)),
-        }
+        Self(Array2::zeros((number_of_states, 78)))
     }
-}
-impl ArrayGains<f32> {
+
     /// Saves the array values to a .npy file at the given path with the given name.
     /// The values are written directly to the file using `write_npy`.
     ///
@@ -82,26 +85,36 @@ impl ArrayGains<f32> {
         trace!("Saving gains to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+}
+
+impl Deref for Gains {
+    type Target = Array2<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Gains {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct ArrayIndicesGains {
-    pub values: Array2<Option<usize>>,
-}
+pub struct Indices(Array2<Option<usize>>);
 
-impl ArrayIndicesGains {
+impl Indices {
     /// Creates a new `ArrayIndicesGains` with the given number of states,
     /// initializing all values to `None`.
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn empty(number_of_states: usize) -> Self {
         trace!("Creating empty indices gains array");
-        Self {
-            values: Array2::from_elem((number_of_states, 78), None),
-        }
+        Self(Array2::from_elem((number_of_states, 78), None))
     }
 
     /// Saves the array indices values to a .npy file at the given path.  
@@ -116,29 +129,34 @@ impl ArrayIndicesGains {
         trace!("Saving indices gains to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("output_state_indices.npy")).unwrap());
-        self.values
-            .map(|v| {
-                v.as_ref()
-                    .map_or(-1, |index| i32::try_from(*index).unwrap())
-            })
-            .write_npy(writer)
-            .unwrap();
+        self.map(|v| {
+            v.as_ref()
+                .map_or(-1, |index| i32::try_from(*index).unwrap())
+        })
+        .write_npy(writer)
+        .unwrap();
+    }
+}
+
+impl Deref for Indices {
+    type Target = Array2<Option<usize>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Indices {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct ArrayDelays<T>
-where
-    T: Clone + Zero + PartialEq,
-{
-    pub values: Array2<T>,
-}
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct Coefs(Array2<f32>);
 
-impl<T> ArrayDelays<T>
-where
-    T: Clone + Zero + PartialEq,
-{
+impl Coefs {
     /// Creates a new `ArrayDelays` with the given number of states,
     /// initializing all values to 0. The number of states must be divisible by 3.
     ///
@@ -151,13 +169,9 @@ where
     pub fn empty(number_of_states: usize) -> Self {
         trace!("Creating empty delays array");
         assert_relative_eq!(number_of_states as f32 % 3.0, 0.0);
-        Self {
-            values: Array2::zeros((number_of_states / 3, 26)),
-        }
+        Self(Array2::zeros((number_of_states / 3, 26)))
     }
-}
 
-impl ArrayDelays<f32> {
     /// Saves the values in this `ArrayDelays` to a .npy file at the given path.
     ///
     /// The .npy file will be named `coefs.npy`.
@@ -170,11 +184,36 @@ impl ArrayDelays<f32> {
         trace!("Saving delays to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("coefs.npy")).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
     }
 }
 
-impl ArrayDelays<usize> {
+impl Deref for Coefs {
+    type Target = Array2<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Coefs {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub struct UnitDelays(Array2<usize>);
+
+impl UnitDelays {
+    #[must_use]
+    #[allow(clippy::cast_precision_loss)]
+    #[tracing::instrument(level = "trace")]
+    pub fn empty(number_of_states: usize) -> Self {
+        trace!("Creating empty delays array");
+        assert_relative_eq!(number_of_states as f32 % 3.0, 0.0);
+        Self(Array2::zeros((number_of_states / 3, 26)))
+    }
     /// Saves the delay line values in this `ArrayDelays` to a .npy file at the given path.
     ///
     /// Casts the `usize` values to `u32` before writing to satisfy `.npy` format limitations.
@@ -188,9 +227,22 @@ impl ArrayDelays<usize> {
         trace!("Saving delays to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("delays.npy")).unwrap());
-        self.values
-            .map(|v| u32::try_from(*v).unwrap())
+        self.map(|v| u32::try_from(*v).unwrap())
             .write_npy(writer)
             .unwrap();
+    }
+}
+
+impl Deref for UnitDelays {
+    type Target = Array2<usize>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for UnitDelays {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

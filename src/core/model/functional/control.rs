@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
+    ops::{Deref, DerefMut},
 };
 use tracing::{debug, trace};
 
@@ -16,9 +17,7 @@ use crate::core::{
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
-pub struct ControlMatrix {
-    pub values: Array1<f32>,
-}
+pub struct ControlMatrix(Array1<f32>);
 
 impl ControlMatrix {
     /// Creates a new empty `ControlMatrix` with the given number of states initialized
@@ -27,9 +26,7 @@ impl ControlMatrix {
     #[tracing::instrument(level = "debug")]
     pub fn empty(number_of_states: usize) -> Self {
         debug!("Creating empty control matrix");
-        Self {
-            values: Array1::zeros(number_of_states),
-        }
+        Self(Array1::zeros(number_of_states))
     }
 
     /// Creates a `ControlMatrix` from the given `Model` configuration and
@@ -47,12 +44,11 @@ impl ControlMatrix {
         spatial_description
             .voxels
             .types
-            .values
             .iter()
-            .zip(spatial_description.voxels.numbers.values.iter())
+            .zip(spatial_description.voxels.numbers.iter())
             .for_each(|(v_type, v_number)| {
                 if *v_type == VoxelType::Sinoatrial {
-                    control_matrix.values[v_number.unwrap()] = 1.0;
+                    control_matrix[v_number.unwrap()] = 1.0;
                 }
             });
         control_matrix
@@ -65,24 +61,34 @@ impl ControlMatrix {
         trace!("Saving control matrix to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("control_matrix.npy")).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+}
+
+impl Deref for ControlMatrix {
+    type Target = Array1<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ControlMatrix {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
-pub struct ControlFunction {
-    pub values: Array1<f32>,
-}
+pub struct ControlFunction(Array1<f32>);
 
 impl ControlFunction {
     #[must_use]
     #[tracing::instrument(level = "debug")]
     pub fn empty(number_of_steps: usize) -> Self {
         debug!("Creating empty control function");
-        Self {
-            values: Array1::zeros(number_of_steps),
-        }
+        Self(Array1::zeros(number_of_steps))
     }
 
     /// Creates a new `ControlFunction` by reading a control function .npy file,
@@ -153,9 +159,7 @@ impl ControlFunction {
             })
             .collect();
 
-        Self {
-            values: Array1::from(control_function_values),
-        }
+        Self(Array1::from(control_function_values))
     }
 
     /// Saves the control function values to a .npy file at the given path.
@@ -167,7 +171,21 @@ impl ControlFunction {
         fs::create_dir_all(path).unwrap();
         let writer =
             BufWriter::new(File::create(path.join("control_function_values.npy")).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+}
+
+impl Deref for ControlFunction {
+    type Target = Array1<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ControlFunction {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -202,7 +220,7 @@ mod test {
         let spatial_description = SpatialDescription::from_model_config(&config);
 
         let control_matrix = ControlMatrix::from_model_config(&config, &spatial_description);
-        let sum = control_matrix.values.sum();
+        let sum = control_matrix.sum();
         assert_relative_eq!(sum, 1.0);
     }
 
@@ -220,7 +238,7 @@ mod test {
 
         let control_function =
             ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
-        assert_eq!(expected_length_samples, control_function.values.shape()[0]);
+        assert_eq!(expected_length_samples, control_function.shape()[0]);
     }
 
     #[test]
@@ -238,11 +256,11 @@ mod test {
 
         let control_function =
             ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
-        assert_eq!(expected_length_samples, control_function.values.shape()[0]);
+        assert_eq!(expected_length_samples, control_function.shape()[0]);
 
         let path = Path::new(COMMON_PATH).join("control_function.png");
         standard_time_plot(
-            &control_function.values,
+            &control_function,
             sample_rate_hz,
             path.as_path(),
             "Control Function",

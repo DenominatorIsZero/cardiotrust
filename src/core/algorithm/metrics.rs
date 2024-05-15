@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
+    ops::{Deref, DerefMut},
 };
 use tracing::{debug, trace};
 
@@ -14,33 +15,33 @@ use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Metrics {
-    pub loss: ArrayMetricsSample,
-    pub loss_epoch: ArrayMetricsEpoch,
+    pub loss: SampleWiseMetric,
+    pub loss_epoch: EpochWiseMetric,
 
-    pub loss_mse: ArrayMetricsSample,
-    pub loss_mse_epoch: ArrayMetricsEpoch,
-    pub loss_maximum_regularization: ArrayMetricsSample,
-    pub loss_maximum_regularization_epoch: ArrayMetricsEpoch,
+    pub loss_mse: SampleWiseMetric,
+    pub loss_mse_epoch: EpochWiseMetric,
+    pub loss_maximum_regularization: SampleWiseMetric,
+    pub loss_maximum_regularization_epoch: EpochWiseMetric,
 
-    pub delta_states_mean: ArrayMetricsSample,
-    pub delta_states_mean_epoch: ArrayMetricsEpoch,
-    pub delta_states_max: ArrayMetricsSample,
-    pub delta_states_max_epoch: ArrayMetricsEpoch,
+    pub delta_states_mean: SampleWiseMetric,
+    pub delta_states_mean_epoch: EpochWiseMetric,
+    pub delta_states_max: SampleWiseMetric,
+    pub delta_states_max_epoch: EpochWiseMetric,
 
-    pub delta_measurements_mean: ArrayMetricsSample,
-    pub delta_measurements_mean_epoch: ArrayMetricsEpoch,
-    pub delta_measurements_max: ArrayMetricsSample,
-    pub delta_measurements_max_epoch: ArrayMetricsEpoch,
+    pub delta_measurements_mean: SampleWiseMetric,
+    pub delta_measurements_mean_epoch: EpochWiseMetric,
+    pub delta_measurements_max: SampleWiseMetric,
+    pub delta_measurements_max_epoch: EpochWiseMetric,
 
-    pub delta_gains_mean: ArrayMetricsSample,
-    pub delta_gains_mean_epoch: ArrayMetricsEpoch,
-    pub delta_gains_max: ArrayMetricsSample,
-    pub delta_gains_max_epoch: ArrayMetricsEpoch,
+    pub delta_gains_mean: SampleWiseMetric,
+    pub delta_gains_mean_epoch: EpochWiseMetric,
+    pub delta_gains_max: SampleWiseMetric,
+    pub delta_gains_max_epoch: EpochWiseMetric,
 
-    pub delta_delays_mean: ArrayMetricsSample,
-    pub delta_delays_mean_epoch: ArrayMetricsEpoch,
-    pub delta_delays_max: ArrayMetricsSample,
-    pub delta_delays_max_epoch: ArrayMetricsEpoch,
+    pub delta_delays_mean: SampleWiseMetric,
+    pub delta_delays_mean_epoch: EpochWiseMetric,
+    pub delta_delays_max: SampleWiseMetric,
+    pub delta_delays_max_epoch: EpochWiseMetric,
 
     #[serde(default)]
     pub dice_score_over_threshold: Array1<f32>,
@@ -63,33 +64,33 @@ impl Metrics {
     pub fn new(number_of_epochs: usize, number_of_steps: usize) -> Self {
         debug!("Creating new Metrics struct");
         Self {
-            loss: ArrayMetricsSample::new(number_of_steps),
-            loss_epoch: ArrayMetricsEpoch::new(number_of_epochs),
+            loss: SampleWiseMetric::new(number_of_steps),
+            loss_epoch: EpochWiseMetric::new(number_of_epochs),
 
-            loss_mse: ArrayMetricsSample::new(number_of_steps),
-            loss_mse_epoch: ArrayMetricsEpoch::new(number_of_epochs),
-            loss_maximum_regularization: ArrayMetricsSample::new(number_of_steps),
-            loss_maximum_regularization_epoch: ArrayMetricsEpoch::new(number_of_epochs),
+            loss_mse: SampleWiseMetric::new(number_of_steps),
+            loss_mse_epoch: EpochWiseMetric::new(number_of_epochs),
+            loss_maximum_regularization: SampleWiseMetric::new(number_of_steps),
+            loss_maximum_regularization_epoch: EpochWiseMetric::new(number_of_epochs),
 
-            delta_states_mean: ArrayMetricsSample::new(number_of_steps),
-            delta_states_mean_epoch: ArrayMetricsEpoch::new(number_of_epochs),
-            delta_states_max: ArrayMetricsSample::new(number_of_steps),
-            delta_states_max_epoch: ArrayMetricsEpoch::new(number_of_epochs),
+            delta_states_mean: SampleWiseMetric::new(number_of_steps),
+            delta_states_mean_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_states_max: SampleWiseMetric::new(number_of_steps),
+            delta_states_max_epoch: EpochWiseMetric::new(number_of_epochs),
 
-            delta_measurements_mean: ArrayMetricsSample::new(number_of_steps),
-            delta_measurements_mean_epoch: ArrayMetricsEpoch::new(number_of_epochs),
-            delta_measurements_max: ArrayMetricsSample::new(number_of_steps),
-            delta_measurements_max_epoch: ArrayMetricsEpoch::new(number_of_epochs),
+            delta_measurements_mean: SampleWiseMetric::new(number_of_steps),
+            delta_measurements_mean_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_measurements_max: SampleWiseMetric::new(number_of_steps),
+            delta_measurements_max_epoch: EpochWiseMetric::new(number_of_epochs),
 
-            delta_gains_mean: ArrayMetricsSample::new(number_of_steps),
-            delta_gains_mean_epoch: ArrayMetricsEpoch::new(number_of_epochs),
-            delta_gains_max: ArrayMetricsSample::new(number_of_steps),
-            delta_gains_max_epoch: ArrayMetricsEpoch::new(number_of_epochs),
+            delta_gains_mean: SampleWiseMetric::new(number_of_steps),
+            delta_gains_mean_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_gains_max: SampleWiseMetric::new(number_of_steps),
+            delta_gains_max_epoch: EpochWiseMetric::new(number_of_epochs),
 
-            delta_delays_mean: ArrayMetricsSample::new(number_of_steps),
-            delta_delays_mean_epoch: ArrayMetricsEpoch::new(number_of_epochs),
-            delta_delays_max: ArrayMetricsSample::new(number_of_steps),
-            delta_delays_max_epoch: ArrayMetricsEpoch::new(number_of_epochs),
+            delta_delays_mean: SampleWiseMetric::new(number_of_steps),
+            delta_delays_mean_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_delays_max: SampleWiseMetric::new(number_of_steps),
+            delta_delays_max_epoch: EpochWiseMetric::new(number_of_epochs),
 
             dice_score_over_threshold: Array1::zeros(101),
             iou_over_threshold: Array1::zeros(101),
@@ -125,29 +126,29 @@ impl Metrics {
         trace!("Calculating metrics for step {}", time_index);
         let index = time_index;
 
-        self.loss_mse.values[index] = estimations.residuals.mapv(|v| v.powi(2)).sum()
+        self.loss_mse[index] = estimations.residuals.mapv(|v| v.powi(2)).sum()
             / estimations.measurements.num_sensors() as f32;
-        self.loss_maximum_regularization.values[index] = derivatives.maximum_regularization_sum;
-        self.loss.values[index] = regularization_strength.mul_add(
-            self.loss_maximum_regularization.values[index],
-            self.loss_mse.values[index],
+        self.loss_maximum_regularization[index] = derivatives.maximum_regularization_sum;
+        self.loss[index] = regularization_strength.mul_add(
+            self.loss_maximum_regularization[index],
+            self.loss_mse[index],
         );
 
         let states_delta_abs = estimations.system_states_delta.mapv(f32::abs);
-        self.delta_states_mean.values[index] = states_delta_abs.mean().unwrap();
-        self.delta_states_max.values[index] = *states_delta_abs.max_skipnan();
+        self.delta_states_mean[index] = states_delta_abs.mean().unwrap();
+        self.delta_states_max[index] = *states_delta_abs.max_skipnan();
 
         let measurements_delta_abs = estimations.post_update_residuals.mapv(f32::abs);
-        self.delta_measurements_mean.values[index] = measurements_delta_abs.mean().unwrap();
-        self.delta_measurements_max.values[index] = *measurements_delta_abs.max_skipnan();
+        self.delta_measurements_mean[index] = measurements_delta_abs.mean().unwrap();
+        self.delta_measurements_max[index] = *measurements_delta_abs.max_skipnan();
 
-        let gains_delta_abs = estimations.gains_delta.values.mapv(f32::abs);
-        self.delta_gains_mean.values[index] = gains_delta_abs.mean().unwrap();
-        self.delta_gains_max.values[index] = *gains_delta_abs.max_skipnan();
+        let gains_delta_abs = estimations.gains_delta.mapv(f32::abs);
+        self.delta_gains_mean[index] = gains_delta_abs.mean().unwrap();
+        self.delta_gains_max[index] = *gains_delta_abs.max_skipnan();
 
-        let delays_delta_abs = estimations.delays_delta.values.mapv(f32::abs);
-        self.delta_delays_mean.values[index] = delays_delta_abs.mean().unwrap();
-        self.delta_delays_max.values[index] = *delays_delta_abs.max_skipnan();
+        let delays_delta_abs = estimations.delays_delta.mapv(f32::abs);
+        self.delta_delays_mean[index] = delays_delta_abs.mean().unwrap();
+        self.delta_delays_max[index] = *delays_delta_abs.max_skipnan();
     }
 
     /// Calculates epoch metrics by taking the mean of step metrics.
@@ -158,30 +159,23 @@ impl Metrics {
     #[tracing::instrument(level = "debug")]
     pub fn calculate_epoch(&mut self, epoch_index: usize) {
         debug!("Calculating metrics for epoch {}", epoch_index);
-        self.loss_mse_epoch.values[epoch_index] = self.loss_mse.values.mean().unwrap();
-        self.loss_maximum_regularization_epoch.values[epoch_index] =
-            self.loss_maximum_regularization.values.mean().unwrap();
-        self.loss_epoch.values[epoch_index] = self.loss.values.mean().unwrap();
+        self.loss_mse_epoch[epoch_index] = self.loss_mse.mean().unwrap();
+        self.loss_maximum_regularization_epoch[epoch_index] =
+            self.loss_maximum_regularization.mean().unwrap();
+        self.loss_epoch[epoch_index] = self.loss.mean().unwrap();
 
-        self.delta_states_mean_epoch.values[epoch_index] =
-            self.delta_states_mean.values.mean().unwrap();
-        self.delta_states_max_epoch.values[epoch_index] =
-            *self.delta_states_max.values.max_skipnan();
+        self.delta_states_mean_epoch[epoch_index] = self.delta_states_mean.mean().unwrap();
+        self.delta_states_max_epoch[epoch_index] = *self.delta_states_max.max_skipnan();
 
-        self.delta_measurements_mean_epoch.values[epoch_index] =
-            self.delta_measurements_mean.values.mean().unwrap();
-        self.delta_measurements_max_epoch.values[epoch_index] =
-            *self.delta_measurements_max.values.max_skipnan();
+        self.delta_measurements_mean_epoch[epoch_index] =
+            self.delta_measurements_mean.mean().unwrap();
+        self.delta_measurements_max_epoch[epoch_index] = *self.delta_measurements_max.max_skipnan();
 
-        self.delta_gains_mean_epoch.values[epoch_index] =
-            *self.delta_gains_mean.values.last().unwrap();
-        self.delta_gains_max_epoch.values[epoch_index] =
-            *self.delta_gains_max.values.last().unwrap();
+        self.delta_gains_mean_epoch[epoch_index] = *self.delta_gains_mean.last().unwrap();
+        self.delta_gains_max_epoch[epoch_index] = *self.delta_gains_max.last().unwrap();
 
-        self.delta_delays_mean_epoch.values[epoch_index] =
-            *self.delta_delays_mean.values.last().unwrap();
-        self.delta_delays_max_epoch.values[epoch_index] =
-            *self.delta_delays_max.values.last().unwrap();
+        self.delta_delays_mean_epoch[epoch_index] = *self.delta_delays_mean.last().unwrap();
+        self.delta_delays_max_epoch[epoch_index] = *self.delta_delays_max.last().unwrap();
     }
 
     /// Calculates metrics over the full range of thresholds from 0 to 1 by incrementing
@@ -304,15 +298,13 @@ fn calculate_for_threshold(
 fn calculate_recall(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     trace!("Calculating recall");
     let gt_positives = ground_truth
-        .values
         .iter()
         .filter(|voxel_type| **voxel_type == VoxelType::Pathological)
         .count();
 
     let true_positives = predictions
-        .values
         .iter()
-        .zip(ground_truth.values.iter())
+        .zip(ground_truth.iter())
         .filter(|(prediction, ground_truth)| {
             **ground_truth == VoxelType::Pathological && **prediction == VoxelType::Pathological
         })
@@ -334,15 +326,13 @@ fn calculate_recall(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 
 fn calculate_precision(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     trace!("Calculating precision");
     let predicted_positves = predictions
-        .values
         .iter()
         .filter(|voxel_type| **voxel_type == VoxelType::Pathological)
         .count();
 
     let true_positives = predictions
-        .values
         .iter()
-        .zip(ground_truth.values.iter())
+        .zip(ground_truth.iter())
         .filter(|(prediction, ground_truth)| {
             **ground_truth == VoxelType::Pathological && **prediction == VoxelType::Pathological
         })
@@ -366,18 +356,16 @@ fn calculate_precision(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f
 fn calculate_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     trace!("Calculating IoU");
     let intersection = predictions
-        .values
         .iter()
-        .zip(ground_truth.values.iter())
+        .zip(ground_truth.iter())
         .filter(|(prediction, ground_truth)| {
             **ground_truth == VoxelType::Pathological && **prediction == VoxelType::Pathological
         })
         .count();
 
     let union = predictions
-        .values
         .iter()
-        .zip(ground_truth.values.iter())
+        .zip(ground_truth.iter())
         .filter(|(prediction, ground_truth)| {
             **ground_truth == VoxelType::Pathological || **prediction == VoxelType::Pathological
         })
@@ -402,25 +390,22 @@ fn calculate_iou(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
 fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     trace!("Calculating Dice");
     let true_positives = predictions
-        .values
         .iter()
-        .zip(ground_truth.values.iter())
+        .zip(ground_truth.iter())
         .filter(|(prediction, ground_truth)| {
             **ground_truth == VoxelType::Pathological && **prediction == VoxelType::Pathological
         })
         .count();
     let false_positives = predictions
-        .values
         .iter()
-        .zip(ground_truth.values.iter())
+        .zip(ground_truth.iter())
         .filter(|(prediction, ground_truth)| {
             **ground_truth != VoxelType::Pathological && **prediction == VoxelType::Pathological
         })
         .count();
     let false_negatives = predictions
-        .values
         .iter()
-        .zip(ground_truth.values.iter())
+        .zip(ground_truth.iter())
         .filter(|(prediction, ground_truth)| {
             **ground_truth == VoxelType::Pathological && **prediction != VoxelType::Pathological
         })
@@ -453,18 +438,17 @@ pub fn predict_voxeltype(
 ) -> VoxelTypes {
     trace!("Predicting voxel types");
     let mut predictions = VoxelTypes::empty([
-        ground_truth.values.shape()[0],
-        ground_truth.values.shape()[1],
-        ground_truth.values.shape()[2],
+        ground_truth.shape()[0],
+        ground_truth.shape()[1],
+        ground_truth.shape()[2],
     ]);
 
     let mut abs = Array1::zeros(estimations.system_states.shape()[0]);
     let system_states = &estimations.system_states;
 
     predictions
-        .values
         .iter_mut()
-        .zip(voxel_numbers.values.iter())
+        .zip(voxel_numbers.iter())
         .filter(|(_, number)| number.is_some())
         .for_each(|(prediction, number)| {
             let voxel_index = number.unwrap();
@@ -487,20 +471,16 @@ pub fn predict_voxeltype(
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArrayMetricsSample {
-    pub values: Array1<f32>,
-}
+pub struct SampleWiseMetric(Array1<f32>);
 
-impl ArrayMetricsSample {
+impl SampleWiseMetric {
     /// Creates a new `ArrayMetricsSample` with the given number of steps, initializing
     /// the values to all zeros.
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn new(number_of_steps: usize) -> Self {
         trace!("Creating ArrayMetricsSample");
-        Self {
-            values: Array1::zeros(number_of_steps),
-        }
+        Self(Array1::zeros(number_of_steps))
     }
 
     /// Saves the array values to a .npy file at the given path with the given name.
@@ -510,25 +490,35 @@ impl ArrayMetricsSample {
         trace!("Saving ArrayMetricsSample");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+}
+
+impl Deref for SampleWiseMetric {
+    type Target = Array1<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for SampleWiseMetric {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArrayMetricsEpoch {
-    pub values: Array1<f32>,
-}
+pub struct EpochWiseMetric(Array1<f32>);
 
-impl ArrayMetricsEpoch {
+impl EpochWiseMetric {
     /// Creates a new `ArrayMetricsEpoch` with the given number of epochs, initializing
     /// the values to all zeros.
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn new(number_of_epochs: usize) -> Self {
         trace!("Creating ArrayMetricsEpoch");
-        Self {
-            values: Array1::zeros(number_of_epochs),
-        }
+        Self(Array1::zeros(number_of_epochs))
     }
 
     /// Saves the array values to a .npy file at the given path with the given name.  
@@ -538,6 +528,20 @@ impl ArrayMetricsEpoch {
         trace!("Saving ArrayMetricsEpoch to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+}
+
+impl Deref for EpochWiseMetric {
+    type Target = Array1<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for EpochWiseMetric {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

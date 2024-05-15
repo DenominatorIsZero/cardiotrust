@@ -6,7 +6,7 @@ use tracing::trace;
 use crate::vis::plotting::StateSphericalPlotMode;
 use crate::{
     core::{
-        data::shapes::{ArraySystemStates, SystemStatesSpherical, SystemStatesSphericalMax},
+        data::shapes::{SystemStates, SystemStatesSpherical, SystemStatesSphericalMax},
         model::spatial::voxels::{VoxelNumbers, VoxelPositions},
     },
     vis::plotting::{
@@ -20,7 +20,7 @@ use super::PngBundle;
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(level = "trace")]
 pub(crate) fn states_plot(
-    states: &ArraySystemStates,
+    states: &SystemStates,
     voxel_positions_mm: &VoxelPositions,
     voxel_size_mm: f32,
     voxel_numbers: &VoxelNumbers,
@@ -36,10 +36,10 @@ pub(crate) fn states_plot(
 
     let (numbers, offset, title, x_label, y_label, flip_axis) = match slice {
         PlotSlice::X(index) => {
-            let numbers = voxel_numbers.values.index_axis(Axis(0), index);
+            let numbers = voxel_numbers.index_axis(Axis(0), index);
             let offset = Some((
-                voxel_positions_mm.values[(0, 0, 0, 1)],
-                voxel_positions_mm.values[(0, 0, 0, 2)],
+                voxel_positions_mm[(0, 0, 0, 1)],
+                voxel_positions_mm[(0, 0, 0, 2)],
             ));
             let title =
                 format!("System States in {mode:?} (x-index = {index}, time-index = {time_step})");
@@ -50,10 +50,10 @@ pub(crate) fn states_plot(
             (numbers, offset, title, x_label, y_label, flip_axis)
         }
         PlotSlice::Y(index) => {
-            let numbers = voxel_numbers.values.index_axis(Axis(1), index);
+            let numbers = voxel_numbers.index_axis(Axis(1), index);
             let offset = Some((
-                voxel_positions_mm.values[(0, 0, 0, 0)],
-                voxel_positions_mm.values[(0, 0, 0, 2)],
+                voxel_positions_mm[(0, 0, 0, 0)],
+                voxel_positions_mm[(0, 0, 0, 2)],
             ));
             let title =
                 format!("System States in {mode:?} (y-index = {index}, time-index = {time_step})");
@@ -64,10 +64,10 @@ pub(crate) fn states_plot(
             (numbers, offset, title, x_label, y_label, flip_axis)
         }
         PlotSlice::Z(index) => {
-            let numbers = voxel_numbers.values.index_axis(Axis(2), index);
+            let numbers = voxel_numbers.index_axis(Axis(2), index);
             let offset = Some((
-                voxel_positions_mm.values[(0, 0, 0, 0)],
-                voxel_positions_mm.values[(0, 0, 0, 1)],
+                voxel_positions_mm[(0, 0, 0, 0)],
+                voxel_positions_mm[(0, 0, 0, 1)],
             ));
             let title =
                 format!("System States in {mode:?} (z-index = {index}, time-index = {time_step})");
@@ -136,10 +136,10 @@ pub(crate) fn states_spherical_plot(
 
     let (numbers, offset, title, x_label, y_label, flip_axis) = match slice {
         PlotSlice::X(index) => {
-            let numbers = voxel_numbers.values.index_axis(Axis(0), index);
+            let numbers = voxel_numbers.index_axis(Axis(0), index);
             let offset = Some((
-                voxel_positions_mm.values[(0, 0, 0, 1)],
-                voxel_positions_mm.values[(0, 0, 0, 2)],
+                voxel_positions_mm[(0, 0, 0, 1)],
+                voxel_positions_mm[(0, 0, 0, 2)],
             ));
             let title = format!("System States {mode:?} (x-index = {index}, {title_time})");
             let x_label = Some("y [mm]");
@@ -149,10 +149,10 @@ pub(crate) fn states_spherical_plot(
             (numbers, offset, title, x_label, y_label, flip_axis)
         }
         PlotSlice::Y(index) => {
-            let numbers = voxel_numbers.values.index_axis(Axis(1), index);
+            let numbers = voxel_numbers.index_axis(Axis(1), index);
             let offset = Some((
-                voxel_positions_mm.values[(0, 0, 0, 0)],
-                voxel_positions_mm.values[(0, 0, 0, 2)],
+                voxel_positions_mm[(0, 0, 0, 0)],
+                voxel_positions_mm[(0, 0, 0, 2)],
             ));
             let title = format!("System States {mode:?} (y-index = {index}, {title_time})");
             let x_label = Some("x [mm]");
@@ -162,10 +162,10 @@ pub(crate) fn states_spherical_plot(
             (numbers, offset, title, x_label, y_label, flip_axis)
         }
         PlotSlice::Z(index) => {
-            let numbers = voxel_numbers.values.index_axis(Axis(2), index);
+            let numbers = voxel_numbers.index_axis(Axis(2), index);
             let offset = Some((
-                voxel_positions_mm.values[(0, 0, 0, 0)],
-                voxel_positions_mm.values[(0, 0, 0, 1)],
+                voxel_positions_mm[(0, 0, 0, 0)],
+                voxel_positions_mm[(0, 0, 0, 1)],
             ));
             let title = format!("System States {mode:?} (z-index = {index}, {title_time})");
             let x_label = Some("x [mm]");

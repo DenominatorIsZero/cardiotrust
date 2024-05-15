@@ -43,12 +43,12 @@ pub fn voxel_type_plot(
 
     let (data, offset, title, x_label, y_label, flip_axis) = match slice {
         PlotSlice::X(index) => {
-            let data = types.values.index_axis(Axis(0), index);
+            let data = types.index_axis(Axis(0), index);
             let offset = (
-                voxel_positions_mm.values[(0, 0, 0, 1)],
-                voxel_positions_mm.values[(0, 0, 0, 2)],
+                voxel_positions_mm[(0, 0, 0, 1)],
+                voxel_positions_mm[(0, 0, 0, 2)],
             );
-            let x = voxel_positions_mm.values[(index, 0, 0, 0)];
+            let x = voxel_positions_mm[(index, 0, 0, 0)];
             let title = format!("Voxel types x-index = {index}, x = {x} mm");
             let x_label = Some("y [mm]");
             let y_label = Some("z [mm]");
@@ -57,12 +57,12 @@ pub fn voxel_type_plot(
             (data, offset, title, x_label, y_label, flip_axis)
         }
         PlotSlice::Y(index) => {
-            let data = types.values.index_axis(Axis(1), index);
+            let data = types.index_axis(Axis(1), index);
             let offset = (
-                voxel_positions_mm.values[(0, 0, 0, 0)],
-                voxel_positions_mm.values[(0, 0, 0, 2)],
+                voxel_positions_mm[(0, 0, 0, 0)],
+                voxel_positions_mm[(0, 0, 0, 2)],
             );
-            let y = voxel_positions_mm.values[(0, index, 0, 1)];
+            let y = voxel_positions_mm[(0, index, 0, 1)];
             let title = format!("Voxel types y-index = {index}, y = {y} mm");
             let x_label = Some("x [mm]");
             let y_label = Some("z [mm]");
@@ -71,12 +71,12 @@ pub fn voxel_type_plot(
             (data, offset, title, x_label, y_label, flip_axis)
         }
         PlotSlice::Z(index) => {
-            let data = types.values.index_axis(Axis(2), index);
+            let data = types.index_axis(Axis(2), index);
             let offset = (
-                voxel_positions_mm.values[(0, 0, 0, 0)],
-                voxel_positions_mm.values[(0, 0, 0, 1)],
+                voxel_positions_mm[(0, 0, 0, 0)],
+                voxel_positions_mm[(0, 0, 0, 1)],
             );
-            let z = voxel_positions_mm.values[(0, 0, index, 2)];
+            let z = voxel_positions_mm[(0, 0, index, 2)];
             let title = format!("Voxel types z-index = {index}, z = {z} mm");
             let x_label = Some("x [mm]");
             let y_label = Some("y [mm]");

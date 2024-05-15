@@ -117,14 +117,14 @@ pub fn init_voxels(
     let x = voxel_count[0] - 1;
     let y = voxel_count[1] - 1;
     let z = voxel_count[2] - 1;
-    let position = voxels.positions_mm.values.slice(s!(x, y, z, ..));
+    let position = voxels.positions_mm.slice(s!(x, y, z, ..));
     camera.translation.x = position[0]; //position[0] + 20.0;
     camera.translation.z = position[2];
     camera.translation.y = position[1] + 100.0;
     let x = voxel_count[0] / 2;
     let y = voxel_count[1] / 2;
     let z = voxel_count[2] / 2;
-    let position = voxels.positions_mm.values.slice(s!(x, y, z, ..));
+    let position = voxels.positions_mm.slice(s!(x, y, z, ..));
     camera.look_at(
         Vec3 {
             x: position[0],
@@ -147,11 +147,11 @@ pub fn init_voxels(
     for x in 0..voxel_count[0] {
         for y in 0..voxel_count[1] {
             for z in 0..voxel_count[2] {
-                let voxel_type = voxels.types.values[(x, y, z)];
+                let voxel_type = voxels.types[(x, y, z)];
                 if !voxel_type.is_connectable() {
                     continue;
                 }
-                let position = voxels.positions_mm.values.slice(s!(x, y, z, ..));
+                let position = voxels.positions_mm.slice(s!(x, y, z, ..));
                 commands.spawn((
                     PbrBundle {
                         mesh: mesh.clone(),
@@ -160,7 +160,7 @@ pub fn init_voxels(
                         ..default()
                     },
                     VoxelData {
-                        index: voxels.numbers.values[(x, y, z)].expect("Voxel numbes to be some."),
+                        index: voxels.numbers[(x, y, z)].expect("Voxel numbes to be some."),
                         colors: Array1::from_elem(
                             sample_tracker.max_sample,
                             materials.voxel_types[voxel_type as usize].clone(),
@@ -359,8 +359,7 @@ fn set_heart_voxel_colors_to_types(
             let x = data.position_xyz[0];
             let y = data.position_xyz[1];
             let z = data.position_xyz[2];
-            data.colors[sample] =
-                materials.voxel_types[voxel_types.values[(x, y, z)] as usize].clone();
+            data.colors[sample] = materials.voxel_types[voxel_types[(x, y, z)] as usize].clone();
         }
     });
 }

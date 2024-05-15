@@ -53,7 +53,7 @@ where
         )));
     }
 
-    let num_slices = types.values.shape()[axis.index()];
+    let num_slices = types.shape()[axis.index()];
 
     let mut frames: Vec<Vec<u8>> = Vec::with_capacity(num_slices);
 

@@ -9,13 +9,13 @@ use tracing::{debug, trace};
 use crate::core::{
     config::algorithm::Algorithm,
     data::shapes::{
-        ActivationTimePerStateMs, ArraySystemStates, Measurements, Residuals,
-        SystemStatesSpherical, SystemStatesSphericalMax,
+        ActivationTimePerStateMs, Measurements, Residuals, SystemStates, SystemStatesSpherical,
+        SystemStatesSphericalMax,
     },
     model::functional::{
         allpass::{
             from_coef_to_samples, gain_index_to_offset, offset_to_gain_index,
-            shapes::{ArrayDelays, ArrayGains},
+            shapes::{Coefs, Gains, UnitDelays},
         },
         measurement::MeasurementMatrix,
         FunctionalDescription,
@@ -24,21 +24,21 @@ use crate::core::{
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Estimations {
-    pub ap_outputs: ArrayGains<f32>,
-    pub system_states: ArraySystemStates,
+    pub ap_outputs: Gains,
+    pub system_states: SystemStates,
     pub system_states_spherical: SystemStatesSpherical,
     pub system_states_spherical_max: SystemStatesSphericalMax,
     pub activation_times: ActivationTimePerStateMs,
-    pub state_covariance_pred: ArrayGains<f32>,
-    pub state_covariance_est: ArrayGains<f32>,
+    pub state_covariance_pred: Gains,
+    pub state_covariance_est: Gains,
     pub measurements: Measurements,
     pub residuals: Residuals,
     pub post_update_residuals: Residuals,
-    pub system_states_delta: ArraySystemStates,
+    pub system_states_delta: SystemStates,
     pub system_states_spherical_max_delta: SystemStatesSphericalMax,
     pub activation_times_delta: ActivationTimePerStateMs,
-    pub gains_delta: ArrayGains<f32>,
-    pub delays_delta: ArrayDelays<f32>,
+    pub gains_delta: Gains,
+    pub delays_delta: Coefs,
     pub s: DMatrix<f32>,
     pub kalman_gain_converged: bool,
 }
@@ -55,24 +55,24 @@ impl Estimations {
     ) -> Self {
         debug!("Creating empty estimations");
         Self {
-            ap_outputs: ArrayGains::empty(number_of_states),
-            system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
+            ap_outputs: Gains::empty(number_of_states),
+            system_states: SystemStates::empty(number_of_steps, number_of_states),
             system_states_spherical: SystemStatesSpherical::empty(
                 number_of_steps,
                 number_of_states,
             ),
             system_states_spherical_max: SystemStatesSphericalMax::empty(number_of_states),
             activation_times: ActivationTimePerStateMs::empty(number_of_states),
-            state_covariance_pred: ArrayGains::empty(number_of_states),
-            state_covariance_est: ArrayGains::empty(number_of_states),
+            state_covariance_pred: Gains::empty(number_of_states),
+            state_covariance_est: Gains::empty(number_of_states),
             measurements: Measurements::empty(number_of_beats, number_of_steps, number_of_sensors),
             residuals: Residuals::empty(number_of_sensors),
             post_update_residuals: Residuals::empty(number_of_sensors),
-            system_states_delta: ArraySystemStates::empty(1, number_of_states),
+            system_states_delta: SystemStates::empty(1, number_of_states),
             system_states_spherical_max_delta: SystemStatesSphericalMax::empty(number_of_states),
             activation_times_delta: ActivationTimePerStateMs::empty(number_of_states),
-            gains_delta: ArrayGains::empty(number_of_states),
-            delays_delta: ArrayDelays::empty(number_of_states),
+            gains_delta: Gains::empty(number_of_states),
+            delays_delta: Coefs::empty(number_of_states),
             s: DMatrix::zeros(number_of_sensors, number_of_sensors),
             kalman_gain_converged: false,
         }
@@ -84,15 +84,15 @@ impl Estimations {
     #[tracing::instrument(level = "debug")]
     pub fn reset(&mut self) {
         debug!("Resetting estimations");
-        self.ap_outputs.values.fill(0.0);
+        self.ap_outputs.fill(0.0);
         self.system_states.fill(0.0);
-        self.state_covariance_pred.values.fill(0.0);
-        self.state_covariance_est.values.fill(0.0);
+        self.state_covariance_pred.fill(0.0);
+        self.state_covariance_est.fill(0.0);
         self.residuals.fill(0.0);
         self.post_update_residuals.fill(0.0);
         self.system_states_delta.fill(0.0);
-        self.gains_delta.values.fill(0.0);
-        self.delays_delta.values.fill(0.0);
+        self.gains_delta.fill(0.0);
+        self.delays_delta.fill(0.0);
     }
 
     /// Saves the system states and measurements to .npy files at the given path.
@@ -131,13 +131,13 @@ pub fn calculate_residuals(
 pub fn calculate_post_update_residuals(
     post_update_residuals: &mut Residuals,
     measurement_matrix: &MeasurementMatrix,
-    estimated_system_states: &ArraySystemStates,
+    estimated_system_states: &SystemStates,
     actual_measurements: &Measurements,
     time_index: usize,
     beat_index: usize,
 ) {
     trace!("Calculating post update residuals");
-    let measurement_matrix = measurement_matrix.values.slice(s![beat_index, .., ..]);
+    let measurement_matrix = measurement_matrix.slice(s![beat_index, .., ..]);
     post_update_residuals.assign(
         &(measurement_matrix.dot(&estimated_system_states.slice(s![time_index, ..]))
             - actual_measurements.slice(s![beat_index, time_index, ..])),
@@ -149,9 +149,9 @@ pub fn calculate_post_update_residuals(
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn calculate_system_states_delta(
-    system_states_delta: &mut ArraySystemStates,
-    estimated_system_states: &ArraySystemStates,
-    actual_system_states: &ArraySystemStates,
+    system_states_delta: &mut SystemStates,
+    estimated_system_states: &SystemStates,
+    actual_system_states: &SystemStates,
     time_index: usize,
 ) {
     trace!("Calculating system states delta");
@@ -166,14 +166,12 @@ pub fn calculate_system_states_delta(
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn calculate_gains_delta(
-    gains_delta: &mut ArrayGains<f32>,
-    estimated_gains: &ArrayGains<f32>,
-    actual_gains: &ArrayGains<f32>,
+    gains_delta: &mut Gains,
+    estimated_gains: &Gains,
+    actual_gains: &Gains,
 ) {
     trace!("Calculating gains delta");
-    gains_delta
-        .values
-        .assign(&(&estimated_gains.values - &actual_gains.values));
+    gains_delta.assign(&(&**estimated_gains - &**actual_gains));
 }
 
 /// Calculates the delta between the estimated delays and actual delays.
@@ -181,22 +179,20 @@ pub fn calculate_gains_delta(
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn calculate_delays_delta(
-    delays_delta: &mut ArrayDelays<f32>,
-    estimated_delays: &ArrayDelays<usize>,
-    actual_delays: &ArrayDelays<usize>,
-    estimated_coefs: &ArrayDelays<f32>,
-    actual_coefs: &ArrayDelays<f32>,
+    delays_delta: &mut Coefs,
+    estimated_delays: &UnitDelays,
+    actual_delays: &UnitDelays,
+    estimated_coefs: &Coefs,
+    actual_coefs: &Coefs,
 ) {
     trace!("Calculating delays delta");
     #[allow(clippy::cast_precision_loss)]
     delays_delta
-        .values
         .indexed_iter_mut()
         .for_each(|(index, delay_delta)| {
-            *delay_delta = (estimated_delays.values[index] as f32
-                - actual_delays.values[index] as f32)
-                + (from_coef_to_samples(estimated_coefs.values[index])
-                    - from_coef_to_samples(actual_coefs.values[index]));
+            *delay_delta = (estimated_delays[index] as f32 - actual_delays[index] as f32)
+                + (from_coef_to_samples(estimated_coefs[index])
+                    - from_coef_to_samples(actual_coefs[index]));
         });
 }
 
@@ -219,7 +215,6 @@ pub fn calculate_system_update(
         &(&states
             + functional_description
                 .kalman_gain
-                .values
                 .dot(&*estimations.residuals)),
     );
 }
@@ -239,9 +234,9 @@ pub fn update_kalman_gain_and_check_convergence(
 ) {
     trace!("Updating Kalman gain and checking convergence");
     if !estimations.kalman_gain_converged {
-        let kalman_gain_old = functional_description.kalman_gain.values.clone();
+        let kalman_gain_old = functional_description.kalman_gain.clone();
         calculate_kalman_gain(estimations, functional_description, beat);
-        let difference = (kalman_gain_old - &functional_description.kalman_gain.values)
+        let difference = (&*kalman_gain_old - &*functional_description.kalman_gain)
             .mapv(|v| v.powi(2))
             .sum();
         if difference < 1e-6 {
@@ -278,15 +273,8 @@ pub fn estimate_state_covariance(
     trace!("Estimating state covariance");
     estimations
         .state_covariance_est
-        .values
         .indexed_iter_mut()
-        .zip(
-            functional_description
-                .ap_params
-                .output_state_indices
-                .values
-                .iter(),
-        )
+        .zip(functional_description.ap_params.output_state_indices.iter())
         .filter(|(_, output_state_index)| output_state_index.is_some())
         .for_each(|((index, variance), output_state_index)| {
             *variance = 0.0;
@@ -298,7 +286,7 @@ pub fn estimate_state_covariance(
                 if k_x == 0 && k_y == 0 && k_z == 0 {
                     continue;
                 }
-                let k = functional_description.ap_params.output_state_indices.values[[
+                let k = functional_description.ap_params.output_state_indices[[
                     output_state_index.unwrap(),
                     offset_to_gain_index(k_x, k_y, k_z, k_d).expect("Offsets to be valid."),
                 ]];
@@ -306,12 +294,12 @@ pub fn estimate_state_covariance(
                     continue;
                 }
                 let mut sum = 0.0;
-                for m in 0..functional_description.measurement_matrix.values.raw_dim()[0] {
-                    sum += functional_description.kalman_gain.values[[index.0, m]]
-                        * functional_description.measurement_matrix.values[[beat, m, k.unwrap()]];
+                for m in 0..functional_description.measurement_matrix.raw_dim()[0] {
+                    sum += functional_description.kalman_gain[[index.0, m]]
+                        * functional_description.measurement_matrix[[beat, m, k.unwrap()]];
                 }
                 let i = if index.0 == k.unwrap() { 1.0 } else { 0.0 };
-                *variance += estimations.state_covariance_pred.values[[
+                *variance += estimations.state_covariance_pred[[
                     k.unwrap(),
                     offset_to_gain_index(-k_x, -k_y, -k_z, output_state_index.unwrap() % 3)
                         .expect("Offsets to be valid."),
@@ -334,7 +322,6 @@ pub fn calculate_k(
     trace!("Calculating Kalman gain");
     functional_description
         .kalman_gain
-        .values
         .indexed_iter_mut()
         .for_each(|(index, value)| {
             *value = 0.0;
@@ -348,18 +335,17 @@ pub fn calculate_k(
                     if m_x == 0 && m_y == 0 && m_z == 0 {
                         continue;
                     }
-                    let m = functional_description.ap_params.output_state_indices.values[[
+                    let m = functional_description.ap_params.output_state_indices[[
                         index.0,
                         offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offsets to be valid."),
                     ]];
                     if m.is_none() {
                         continue;
                     }
-                    sum += estimations.state_covariance_pred.values[[
+                    sum += estimations.state_covariance_pred[[
                         index.0,
                         offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid."),
-                    ]] * functional_description.measurement_matrix.values
-                        [[beat, k, m.unwrap()]];
+                    ]] * functional_description.measurement_matrix[[beat, k, m.unwrap()]];
                 }
                 *value += unsafe { estimations.s.get_unchecked((k, index.1)) } * sum;
             }
@@ -385,13 +371,9 @@ pub fn calculate_s_inv(
         for j in 0..estimations.s.shape().1 {
             unsafe {
                 *estimations.s.get_unchecked_mut((i, j)) =
-                    functional_description.measurement_covariance.values[(i, j)];
+                    functional_description.measurement_covariance[(i, j)];
             };
-            for k in 0..functional_description
-                .measurement_covariance
-                .values
-                .raw_dim()[1]
-            {
+            for k in 0..functional_description.measurement_covariance.raw_dim()[1] {
                 let mut sum = 0.0;
                 for (((m_x, m_y), m_z), m_d) in (-1..=1) // over neighors of input voxel
                     .cartesian_product(-1..=1)
@@ -402,15 +384,15 @@ pub fn calculate_s_inv(
                         continue;
                     }
                     // check if voxel m exists.
-                    let m = functional_description.ap_params.output_state_indices.values[[
+                    let m = functional_description.ap_params.output_state_indices[[
                         k,
                         offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid."),
                     ]];
                     if m.is_none() {
                         continue;
                     }
-                    sum += functional_description.measurement_matrix.values[[beat, i, m.unwrap()]]
-                        * estimations.state_covariance_pred.values[[
+                    sum += functional_description.measurement_matrix[[beat, i, m.unwrap()]]
+                        * estimations.state_covariance_pred[[
                             m.unwrap(),
                             offset_to_gain_index(-m_x, -m_y, -m_z, k % 3)
                                 .expect("Offset to be valid"),
@@ -418,7 +400,7 @@ pub fn calculate_s_inv(
                 }
                 unsafe {
                     *estimations.s.get_unchecked_mut((i, j)) +=
-                        functional_description.measurement_matrix.values[[beat, j, k]] * sum;
+                        functional_description.measurement_matrix[[beat, j, k]] * sum;
                 };
             }
         }
@@ -442,12 +424,11 @@ pub fn predict_state_covariance(
     let process_covariace = &functional_description.process_covariance;
     estimations
         .state_covariance_pred
-        .values
         .indexed_iter_mut()
-        .zip(ap_params.output_state_indices.values.iter())
+        .zip(ap_params.output_state_indices.iter())
         .filter(|(_, output_state_index)| output_state_index.is_some())
         .for_each(|((index, variance), output_state_index)| {
-            *variance = process_covariace.values[index];
+            *variance = process_covariace[index];
             for (((k_x, k_y), k_z), k_d) in (-1..=1) // over neighbors of output voxel
                 .cartesian_product(-1..=1)
                 .cartesian_product(-1..=1)
@@ -458,7 +439,7 @@ pub fn predict_state_covariance(
                 }
 
                 // skip if neighbor doesn't exist
-                let k = ap_params.output_state_indices.values[[
+                let k = ap_params.output_state_indices[[
                     output_state_index.unwrap(),
                     offset_to_gain_index(k_x, k_y, k_z, k_d).expect("Offset to be valid."),
                 ]];
@@ -476,7 +457,7 @@ pub fn predict_state_covariance(
                         continue;
                     }
                     // skip if neighbor doesn't exist
-                    let m = ap_params.output_state_indices.values[[
+                    let m = ap_params.output_state_indices[[
                         index.0,
                         offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid"),
                     ]];
@@ -503,16 +484,16 @@ pub fn predict_state_covariance(
                         continue;
                     }
 
-                    sum += ap_params.gains.values[[
+                    sum += ap_params.gains[[
                         index.0,
                         offset_to_gain_index(m_x, m_y, m_z, m_d).expect("Offset to be valid"),
-                    ]] * estimations.state_covariance_est.values[[
+                    ]] * estimations.state_covariance_est[[
                         m.unwrap(),
                         offset_to_gain_index(m_to_k_x, m_to_k_y, m_to_k_z, m_d)
                             .expect("Offset to be valid"),
                     ]];
                 }
-                *variance += ap_params.gains.values[[
+                *variance += ap_params.gains[[
                     output_state_index.unwrap(),
                     offset_to_gain_index(k_x, k_y, k_z, k_d).expect("Offset to be valid"),
                 ]] * sum;
@@ -526,8 +507,8 @@ mod tests {
 
     use crate::core::{
         config::algorithm::Algorithm,
-        data::shapes::{ArraySystemStates, Measurements, Residuals},
-        model::functional::{allpass::shapes::ArrayGains, FunctionalDescription},
+        data::shapes::{Measurements, Residuals, SystemStates},
+        model::functional::{allpass::shapes::Gains, FunctionalDescription},
     };
 
     use super::{
@@ -545,8 +526,8 @@ mod tests {
         let beat_index = 4;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(number_of_states);
-        let mut system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
+        let mut ap_outputs = Gains::empty(number_of_states);
+        let mut system_states = SystemStates::empty(number_of_steps, number_of_states);
         let mut measurements =
             Measurements::empty(number_of_beats, number_of_steps, number_of_sensors);
         let functional_description = FunctionalDescription::empty(

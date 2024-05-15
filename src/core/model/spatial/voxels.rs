@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
+    ops::{Deref, DerefMut},
 };
 use strum_macros::{EnumCount, EnumIter};
 use tracing::{debug, trace};
@@ -43,8 +44,7 @@ impl Voxels {
         debug!("Creating voxels from handcrafted model config");
         let types = VoxelTypes::from_handcrafted_model_config(config);
         let numbers = VoxelNumbers::from_voxel_types(&types);
-        let positions =
-            VoxelPositions::from_handcrafted_model_config(config, types.values.raw_dim());
+        let positions = VoxelPositions::from_handcrafted_model_config(config, types.raw_dim());
         Self {
             size_mm: config.common.voxel_size_mm,
             types,
@@ -87,7 +87,7 @@ impl Voxels {
     #[tracing::instrument(level = "trace")]
     pub fn count_xyz(&self) -> [usize; 3] {
         trace!("Counting voxels in xyz");
-        let shape = self.types.values.raw_dim();
+        let shape = self.types.raw_dim();
         [shape[0], shape[1], shape[2]]
     }
 
@@ -99,7 +99,6 @@ impl Voxels {
     pub fn count_states(&self) -> usize {
         trace!("Counting states");
         self.types
-            .values
             .iter()
             .filter(|voxel| voxel.is_connectable())
             .count()
@@ -124,7 +123,7 @@ impl Voxels {
         (0 <= x && x < (i32::try_from(x_max).unwrap()))
             && (0 <= y && y < (i32::try_from(y_max).unwrap()))
             && (0 <= z && z < (i32::try_from(z_max).unwrap()))
-            && self.types.values[(
+            && self.types[(
                 usize::try_from(x).unwrap(),
                 usize::try_from(y).unwrap(),
                 usize::try_from(z).unwrap(),
@@ -143,9 +142,8 @@ impl Voxels {
         trace!("Getting first state of type {:?}", v_type);
         let query = self
             .types
-            .values
             .iter()
-            .zip(self.numbers.values.iter())
+            .zip(self.numbers.iter())
             .find(|(this_type, _)| **this_type == v_type);
         query.unwrap().1.unwrap()
     }
@@ -165,9 +163,7 @@ impl Voxels {
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct VoxelTypes {
-    pub values: Array3<VoxelType>,
-}
+pub struct VoxelTypes(Array3<VoxelType>);
 
 impl VoxelTypes {
     /// Creates an empty `VoxelTypes` with the given dimensions.
@@ -175,9 +171,7 @@ impl VoxelTypes {
     #[tracing::instrument(level = "trace")]
     pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         trace!("Creating empty voxel types");
-        Self {
-            values: Array3::default(voxels_in_dims),
-        }
+        Self(Array3::default(voxels_in_dims))
     }
 
     /// Creates a `VoxelTypes` struct initialized with voxel types according
@@ -236,7 +230,6 @@ impl VoxelTypes {
 
         let mut voxel_types = Self::empty(voxels_in_dims);
         voxel_types
-            .values
             .indexed_iter_mut()
             .for_each(|((x, y, _z), voxel_type)| {
                 if (config.common.pathological)
@@ -270,7 +263,7 @@ impl VoxelTypes {
     fn save_npy(&self, path: &std::path::Path) {
         trace!("Saving voxel types to npy files");
         let writer = BufWriter::new(File::create(path.join("voxel_types.npy")).unwrap());
-        self.values.map(|v| *v as u32).write_npy(writer).unwrap();
+        self.map(|v| *v as u32).write_npy(writer).unwrap();
     }
 
     #[must_use]
@@ -281,19 +274,18 @@ impl VoxelTypes {
         mri_data: &MriData,
     ) -> Self {
         let mut voxel_types = Self::empty([
-            positions.values.raw_dim()[0],
-            positions.values.raw_dim()[1],
-            positions.values.raw_dim()[2],
+            positions.raw_dim()[0],
+            positions.raw_dim()[1],
+            positions.raw_dim()[2],
         ]);
 
         let mut sinoatrial_placed = false;
 
         voxel_types
-            .values
             .indexed_iter_mut()
             .for_each(|(index, voxel_type)| {
                 let (x, y, z) = index;
-                let position = positions.values.slice(s![x, y, z, ..]);
+                let position = positions.slice(s![x, y, z, ..]);
 
                 *voxel_type = determine_voxel_type(config, position, mri_data, sinoatrial_placed);
                 if *voxel_type == VoxelType::Sinoatrial {
@@ -302,6 +294,20 @@ impl VoxelTypes {
             });
 
         voxel_types
+    }
+}
+
+impl Deref for VoxelTypes {
+    type Target = Array3<VoxelType>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for VoxelTypes {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -319,9 +325,7 @@ impl VoxelTypes {
 ///
 /// This struct is often used to iterate over the voxel-tpyes.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-pub struct VoxelNumbers {
-    pub values: Array3<Option<usize>>,
-}
+pub struct VoxelNumbers(Array3<Option<usize>>);
 
 impl VoxelNumbers {
     /// Creates a new `VoxelNumbers` instance with the given dimensions,
@@ -330,9 +334,7 @@ impl VoxelNumbers {
     #[tracing::instrument(level = "trace")]
     pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         trace!("Creating empty voxel numbers");
-        Self {
-            values: Array3::default(voxels_in_dims),
-        }
+        Self(Array3::default(voxels_in_dims))
     }
 
     /// Creates a new `VoxelNumbers` instance from the given `VoxelTypes`.
@@ -344,15 +346,12 @@ impl VoxelNumbers {
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn from_voxel_types(types: &VoxelTypes) -> Self {
         trace!("Creating voxel numbers from voxel types");
-        let mut numbers = Self {
-            values: Array3::default(types.values.raw_dim()),
-        };
+        let mut numbers = Self(Array3::default(types.raw_dim()));
 
         let mut current_number = 0;
         numbers
-            .values
             .iter_mut()
-            .zip(types.values.iter())
+            .zip(types.iter())
             .for_each(|(number, voxel_type)| {
                 if voxel_type.is_connectable() {
                     *number = Some(current_number);
@@ -371,21 +370,32 @@ impl VoxelNumbers {
     fn save_npy(&self, path: &std::path::Path) {
         trace!("Saving voxel numbers to npy files");
         let writer = BufWriter::new(File::create(path.join("voxel_numbers.npy")).unwrap());
-        self.values
-            .map(|v| {
-                v.as_ref()
-                    .map_or(-1, |number| i32::try_from(*number).unwrap())
-            })
-            .write_npy(writer)
-            .unwrap();
+        self.map(|v| {
+            v.as_ref()
+                .map_or(-1, |number| i32::try_from(*number).unwrap())
+        })
+        .write_npy(writer)
+        .unwrap();
+    }
+}
+
+impl Deref for VoxelNumbers {
+    type Target = Array3<Option<usize>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for VoxelNumbers {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct VoxelPositions {
-    pub values: Array4<f32>,
-}
+pub struct VoxelPositions(Array4<f32>);
 
 impl VoxelPositions {
     /// Creates a new empty `VoxelPositions` instance with the given dimensions.
@@ -394,9 +404,12 @@ impl VoxelPositions {
     #[tracing::instrument(level = "trace")]
     pub fn empty(voxels_in_dims: [usize; 3]) -> Self {
         trace!("Creating empty voxel positions");
-        Self {
-            values: Array4::zeros((voxels_in_dims[0], voxels_in_dims[1], voxels_in_dims[2], 3)),
-        }
+        Self(Array4::zeros((
+            voxels_in_dims[0],
+            voxels_in_dims[1],
+            voxels_in_dims[2],
+            3,
+        )))
     }
 
     /// Creates a new `VoxelPositions` instance from the given `Model` config
@@ -427,10 +440,7 @@ impl VoxelPositions {
                             .voxel_size_mm
                             .mul_add(z as f32, offset + config.common.heart_offset_mm[2]),
                     ]);
-                    positions
-                        .values
-                        .slice_mut(s![x, y, z, ..])
-                        .assign(&position);
+                    positions.slice_mut(s![x, y, z, ..]).assign(&position);
                 }
             }
         }
@@ -511,10 +521,7 @@ impl VoxelPositions {
                         config.common.voxel_size_mm.mul_add(y as f32, offset[1]),
                         config.common.voxel_size_mm.mul_add(z as f32, offset[2]),
                     ]);
-                    positions
-                        .values
-                        .slice_mut(s![x, y, z, ..])
-                        .assign(&position);
+                    positions.slice_mut(s![x, y, z, ..]).assign(&position);
                 }
             }
         }
@@ -529,7 +536,21 @@ impl VoxelPositions {
     fn save_npy(&self, path: &std::path::Path) {
         trace!("Saving voxel positions to npy files");
         let writer = BufWriter::new(File::create(path.join("voxel_positions_mm.npy")).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+}
+
+impl Deref for VoxelPositions {
+    type Target = Array4<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for VoxelPositions {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -645,7 +666,7 @@ mod tests {
     fn number_of_states_some() {
         let voxels_in_dims = [1000, 1, 1];
         let mut voxels = Voxels::empty(voxels_in_dims);
-        voxels.types.values[(0, 0, 0)] = VoxelType::Atrioventricular;
+        voxels.types[(0, 0, 0)] = VoxelType::Atrioventricular;
 
         assert_eq!(3, voxels.count_states());
     }
@@ -695,7 +716,6 @@ mod tests {
         let types = VoxelTypes::from_handcrafted_model_config(&config);
 
         let num_sa = types
-            .values
             .iter()
             .filter(|v_type| **v_type == VoxelType::Sinoatrial)
             .count();
@@ -703,7 +723,6 @@ mod tests {
         assert_eq!(num_sa, 1);
 
         let num_atrium = types
-            .values
             .iter()
             .filter(|v_type| **v_type == VoxelType::Atrium)
             .count();
@@ -711,7 +730,6 @@ mod tests {
         assert!(num_atrium > 0);
 
         let num_avn = types
-            .values
             .iter()
             .filter(|v_type| **v_type == VoxelType::Atrioventricular)
             .count();
@@ -719,7 +737,6 @@ mod tests {
         assert_eq!(num_avn, 1);
 
         let num_ventricle = types
-            .values
             .iter()
             .filter(|v_type| **v_type == VoxelType::Ventricle)
             .count();
@@ -727,7 +744,6 @@ mod tests {
         assert!(num_ventricle > 0);
 
         let num_hps = types
-            .values
             .iter()
             .filter(|v_type| **v_type == VoxelType::HPS)
             .count();
@@ -735,7 +751,6 @@ mod tests {
         assert!(num_hps > 0);
 
         let num_pathological = types
-            .values
             .iter()
             .filter(|v_type| **v_type == VoxelType::Pathological)
             .count();

@@ -1,3 +1,5 @@
+use std::ops::{Deref, DerefMut};
+
 use ndarray::{s, Array1};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -5,10 +7,10 @@ use tracing::{debug, trace};
 use crate::core::{
     algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
-    data::shapes::{ArraySystemStates, Residuals},
+    data::shapes::{Residuals, SystemStates},
     model::functional::{
         allpass::{
-            shapes::{ArrayDelays, ArrayGains},
+            shapes::{Coefs, Gains},
             APParameters,
         },
         measurement::MeasurementMatrix,
@@ -25,29 +27,29 @@ use super::Optimizer;
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Derivatives {
     /// Derivatives of the All-pass gains
-    pub gains: ArrayGains<f32>,
+    pub gains: Gains,
     /// First moment of the gains derivatives
-    pub gains_first_moment: Option<ArrayGains<f32>>,
+    pub gains_first_moment: Option<Gains>,
     /// second moment of the gains derivatives
-    pub gains_second_moment: Option<ArrayGains<f32>>,
+    pub gains_second_moment: Option<Gains>,
     /// Derivatives of the All-pass coeficients
-    pub coefs: ArrayDelays<f32>,
+    pub coefs: Coefs,
     /// First moment of the coeficients derivatives
-    pub coefs_first_moment: Option<ArrayDelays<f32>>,
+    pub coefs_first_moment: Option<Coefs>,
     /// Second moment of the coeficients derivatives
-    pub coefs_second_moment: Option<ArrayDelays<f32>>,
+    pub coefs_second_moment: Option<Coefs>,
     pub step: usize,
     /// IIR component of the coeficients derivatives
     /// only used for internal computation
-    coefs_iir: ArrayGains<f32>,
+    coefs_iir: Gains,
     /// FIR component of the coeficients derivatives
     /// only used for internal computation
-    coefs_fir: ArrayGains<f32>,
+    coefs_fir: Gains,
     /// Residuals mapped onto the system states via
     /// the measurement matrix.
     /// Stored internally to avoid redundant computation
-    mapped_residuals: ArrayMappedResiduals,
-    pub maximum_regularization: ArrayMaximumRegularization,
+    mapped_residuals: MappedResiduals,
+    pub maximum_regularization: MaximumRegularization,
     pub maximum_regularization_sum: f32,
 }
 
@@ -60,32 +62,32 @@ impl Derivatives {
         debug!("Creating empty derivatives");
         let gains_first_moment = match optimizer {
             Optimizer::Sgd => None,
-            Optimizer::Adam => Some(ArrayGains::empty(number_of_states)),
+            Optimizer::Adam => Some(Gains::empty(number_of_states)),
         };
         let gains_second_moment = match optimizer {
             Optimizer::Sgd => None,
-            Optimizer::Adam => Some(ArrayGains::empty(number_of_states)),
+            Optimizer::Adam => Some(Gains::empty(number_of_states)),
         };
         let coefs_first_moment = match optimizer {
             Optimizer::Sgd => None,
-            Optimizer::Adam => Some(ArrayDelays::empty(number_of_states)),
+            Optimizer::Adam => Some(Coefs::empty(number_of_states)),
         };
         let coefs_second_moment = match optimizer {
             Optimizer::Sgd => None,
-            Optimizer::Adam => Some(ArrayDelays::empty(number_of_states)),
+            Optimizer::Adam => Some(Coefs::empty(number_of_states)),
         };
         Self {
-            gains: ArrayGains::empty(number_of_states),
+            gains: Gains::empty(number_of_states),
             gains_first_moment,
             gains_second_moment,
-            coefs: ArrayDelays::empty(number_of_states),
+            coefs: Coefs::empty(number_of_states),
             coefs_first_moment,
             coefs_second_moment,
             step: 1,
-            coefs_iir: ArrayGains::empty(number_of_states),
-            coefs_fir: ArrayGains::empty(number_of_states),
-            mapped_residuals: ArrayMappedResiduals::new(number_of_states),
-            maximum_regularization: ArrayMaximumRegularization::new(number_of_states),
+            coefs_iir: Gains::empty(number_of_states),
+            coefs_fir: Gains::empty(number_of_states),
+            mapped_residuals: MappedResiduals::new(number_of_states),
+            maximum_regularization: MaximumRegularization::new(number_of_states),
             maximum_regularization_sum: 0.0,
         }
     }
@@ -97,12 +99,12 @@ impl Derivatives {
     #[tracing::instrument(level = "debug")]
     pub fn reset(&mut self) {
         debug!("Resetting derivatives");
-        self.gains.values.fill(0.0);
-        self.coefs.values.fill(0.0);
-        self.coefs_iir.values.fill(0.0);
-        self.coefs_fir.values.fill(0.0);
-        self.mapped_residuals.values.fill(0.0);
-        self.maximum_regularization.values.fill(0.0);
+        self.gains.fill(0.0);
+        self.coefs.fill(0.0);
+        self.coefs_iir.fill(0.0);
+        self.coefs_fir.fill(0.0);
+        self.mapped_residuals.fill(0.0);
+        self.maximum_regularization.fill(0.0);
         self.maximum_regularization_sum = 0.0;
     }
 
@@ -139,10 +141,7 @@ impl Derivatives {
             self.calculate_derivatives_gains(
                 &estimations.ap_outputs,
                 config.regularization_strength,
-                functional_description
-                    .measurement_covariance
-                    .values
-                    .raw_dim()[0],
+                functional_description.measurement_covariance.raw_dim()[0],
             );
         }
         if !config.freeze_delays {
@@ -151,10 +150,7 @@ impl Derivatives {
                 &estimations.system_states,
                 &functional_description.ap_params,
                 time_index,
-                functional_description
-                    .measurement_covariance
-                    .values
-                    .raw_dim()[0],
+                functional_description.measurement_covariance.raw_dim()[0],
             );
         }
     }
@@ -166,7 +162,7 @@ impl Derivatives {
         // This gets updated
         &mut self,
         // Based on these values
-        ap_outputs: &ArrayGains<f32>,
+        ap_outputs: &Gains,
         // This needed for indexing
         regularization_strength: f32,
         number_of_sensors: usize,
@@ -178,14 +174,13 @@ impl Derivatives {
         let regularization_scaling = regularization_strength;
 
         self.gains
-            .values
             .indexed_iter_mut()
-            .zip(ap_outputs.values.iter())
+            .zip(ap_outputs.iter())
             .for_each(|((gain_index, derivative), ap_output)| {
-                let maximum_regularization = self.maximum_regularization.values[gain_index.0];
+                let maximum_regularization = self.maximum_regularization[gain_index.0];
 
                 *derivative += ap_output
-                    * self.mapped_residuals.values[gain_index.0]
+                    * self.mapped_residuals[gain_index.0]
                         .mul_add(scaling, maximum_regularization * regularization_scaling);
             });
     }
@@ -202,26 +197,25 @@ impl Derivatives {
         // These get updated
         &mut self,
         // Based on these values
-        ap_outputs: &ArrayGains<f32>,
-        estimated_system_states: &ArraySystemStates,
+        ap_outputs: &Gains,
+        estimated_system_states: &SystemStates,
         ap_params: &APParameters,
         time_index: usize,
         number_of_sensors: usize,
     ) {
         trace!("Calculating derivatives for coefficients");
         self.coefs_fir
-            .values
             .indexed_iter_mut()
-            .zip(ap_params.output_state_indices.values.iter())
+            .zip(ap_params.output_state_indices.iter())
             .filter(|(_, output_state_index)| output_state_index.is_some())
             .for_each(
                 |(((state_index, offset_index), derivative), output_state_index)| {
                     let coef_index = (state_index / 3, offset_index / 3);
-                    if time_index >= ap_params.delays.values[coef_index] {
-                        *derivative = ap_params.coefs.values[coef_index].mul_add(
+                    if time_index >= ap_params.delays[coef_index] {
+                        *derivative = ap_params.coefs[coef_index].mul_add(
                             *derivative,
                             estimated_system_states[(
-                                time_index - ap_params.delays.values[coef_index],
+                                time_index - ap_params.delays[coef_index],
                                 output_state_index.unwrap(),
                             )],
                         );
@@ -229,25 +223,23 @@ impl Derivatives {
                 },
             );
         self.coefs_iir
-            .values
             .indexed_iter_mut()
-            .zip(ap_outputs.values.iter())
+            .zip(ap_outputs.iter())
             .for_each(|(((state_index, offset_index), derivative), ap_output)| {
                 let coef_index = (state_index / 3, offset_index / 3);
-                *derivative = ap_params.coefs.values[coef_index].mul_add(*derivative, *ap_output);
+                *derivative = ap_params.coefs[coef_index].mul_add(*derivative, *ap_output);
             });
         #[allow(clippy::cast_precision_loss)]
         let scaling = 1.0 / number_of_sensors as f32;
         #[allow(clippy::cast_precision_loss)]
         self.coefs_iir
-            .values
             .indexed_iter()
-            .zip(self.coefs_fir.values.iter())
-            .zip(ap_params.gains.values.iter())
+            .zip(self.coefs_fir.iter())
+            .zip(ap_params.gains.iter())
             .for_each(|((((state_index, offset_index), iir), fir), ap_gain)| {
                 let coef_index = (state_index / 3, offset_index / 3);
-                self.coefs.values[coef_index] +=
-                    (fir + iir) * ap_gain * self.mapped_residuals.values[state_index] * scaling;
+                self.coefs[coef_index] +=
+                    (fir + iir) * ap_gain * self.mapped_residuals[state_index] * scaling;
             });
     }
 
@@ -259,7 +251,7 @@ impl Derivatives {
     #[tracing::instrument(level = "trace")]
     pub fn calculate_maximum_regularization(
         &mut self,
-        system_states: &ArraySystemStates,
+        system_states: &SystemStates,
         time_index: usize,
         regularization_threshold: f32,
     ) {
@@ -272,16 +264,16 @@ impl Derivatives {
             if sum > regularization_threshold {
                 let factor = sum - regularization_threshold;
                 self.maximum_regularization_sum += factor.powi(2);
-                self.maximum_regularization.values[state_index] =
+                self.maximum_regularization[state_index] =
                     factor * system_states[[time_index, state_index]].signum();
-                self.maximum_regularization.values[state_index + 1] =
+                self.maximum_regularization[state_index + 1] =
                     factor * system_states[[time_index, state_index + 1]].signum();
-                self.maximum_regularization.values[state_index + 2] =
+                self.maximum_regularization[state_index + 2] =
                     factor * system_states[[time_index, state_index + 2]].signum();
             } else {
-                self.maximum_regularization.values[state_index] = 0.0;
-                self.maximum_regularization.values[state_index + 1] = 0.0;
-                self.maximum_regularization.values[state_index + 2] = 0.0;
+                self.maximum_regularization[state_index] = 0.0;
+                self.maximum_regularization[state_index + 1] = 0.0;
+                self.maximum_regularization[state_index + 2] = 0.0;
             }
         }
     }
@@ -295,8 +287,8 @@ impl Derivatives {
         beat: usize,
     ) {
         trace!("Calculating mapped residuals");
-        let measurement_matrix = measurement_matrix.values.slice(s![beat, .., ..]);
-        self.mapped_residuals.values = measurement_matrix.t().dot(&**residuals);
+        let measurement_matrix = measurement_matrix.slice(s![beat, .., ..]);
+        *self.mapped_residuals = measurement_matrix.t().dot(&**residuals);
     }
 }
 
@@ -311,18 +303,28 @@ impl Derivatives {
 /// The mapped residuals are calculated as
 /// `H_T` * y
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-struct ArrayMappedResiduals {
-    pub values: Array1<f32>,
-}
+struct MappedResiduals(Array1<f32>);
 
-impl ArrayMappedResiduals {
+impl MappedResiduals {
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn new(number_of_states: usize) -> Self {
         trace!("Creating ArrayMappedResiduals");
-        Self {
-            values: Array1::zeros(number_of_states),
-        }
+        Self(Array1::zeros(number_of_states))
+    }
+}
+
+impl Deref for MappedResiduals {
+    type Target = Array1<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for MappedResiduals {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -342,18 +344,28 @@ impl ArrayMappedResiduals {
 /// magnitude should not influence the loss and therefore
 /// the derivatives.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArrayMaximumRegularization {
-    pub values: Array1<f32>,
-}
+pub struct MaximumRegularization(Array1<f32>);
 
-impl ArrayMaximumRegularization {
+impl MaximumRegularization {
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn new(number_of_states: usize) -> Self {
         trace!("Creating ArrayMaximumRegularization");
-        Self {
-            values: Array1::zeros(number_of_states),
-        }
+        Self(Array1::zeros(number_of_states))
+    }
+}
+
+impl Deref for MaximumRegularization {
+    type Target = Array1<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for MaximumRegularization {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -361,20 +373,20 @@ impl ArrayMaximumRegularization {
 mod tests {
     use ndarray::Dim;
 
-    use crate::core::model::functional::allpass::shapes::ArrayIndicesGains;
+    use crate::core::model::functional::allpass::shapes::{Indices, UnitDelays};
 
     use super::*;
     #[test]
     fn coef_no_crash() {
         let number_of_steps = 2000;
         let number_of_states = 3000;
-        let ap_outputs = ArrayGains::empty(number_of_states);
-        let estimated_system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
+        let ap_outputs = Gains::empty(number_of_states);
+        let estimated_system_states = SystemStates::empty(number_of_steps, number_of_states);
         let ap_params = APParameters::empty(number_of_states, Dim([1000, 1, 1]));
-        let mut delays = ArrayDelays::empty(number_of_states);
-        delays.values.fill(30);
-        let mut output_state_indices = ArrayIndicesGains::empty(number_of_states);
-        output_state_indices.values.fill(Some(3));
+        let mut delays = UnitDelays::empty(number_of_states);
+        delays.fill(30);
+        let mut output_state_indices = Indices::empty(number_of_states);
+        output_state_indices.fill(Some(3));
         let time_index = 10;
 
         let mut derivatives = Derivatives::new(number_of_states, Optimizer::Sgd);

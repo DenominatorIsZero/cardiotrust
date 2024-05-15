@@ -7,12 +7,10 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tracing::{debug, trace};
 
-use self::{measurement::Measurement, shapes::ArraySystemStates, simulation::Simulation};
+use self::{measurement::Measurement, shapes::SystemStates, simulation::Simulation};
 use super::model::{
     functional::{
-        allpass::shapes::{
-            ArrayActivationTime, {ArrayDelays, ArrayGains},
-        },
+        allpass::shapes::{ActivationTimeMs, Coefs, Gains, UnitDelays},
         control::ControlFunction,
     },
     spatial::voxels::VoxelTypes,
@@ -93,7 +91,7 @@ impl Data {
     /// Panics if simulation is None
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn get_system_states(&self) -> &ArraySystemStates {
+    pub fn get_system_states(&self) -> &SystemStates {
         trace!("Getting system states");
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -124,7 +122,7 @@ impl Data {
     /// Panics if simulation is None
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn get_gains(&self) -> &ArrayGains<f32> {
+    pub fn get_gains(&self) -> &Gains {
         trace!("Getting gains");
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -137,7 +135,7 @@ impl Data {
     /// Panics if simulation is None
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn get_coefs(&self) -> &ArrayDelays<f32> {
+    pub fn get_coefs(&self) -> &Coefs {
         trace!("Getting coefs");
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -176,7 +174,7 @@ impl Data {
     /// Panics if simulation is None
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn get_activation_time_ms(&self) -> &ArrayActivationTime {
+    pub fn get_activation_time_ms(&self) -> &ActivationTimeMs {
         trace!("Getting activation time");
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),
@@ -195,7 +193,7 @@ impl Data {
     /// Panics if simulation is None
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn get_delays(&self) -> &ArrayDelays<usize> {
+    pub fn get_delays(&self) -> &UnitDelays {
         trace!("Getting delays");
         self.simulation.as_ref().map_or_else(
             || todo!("Non simulation case not implemented yet."),

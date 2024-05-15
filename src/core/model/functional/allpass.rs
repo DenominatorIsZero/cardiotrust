@@ -13,9 +13,7 @@ use tracing::{debug, trace};
 
 use self::{
     delay::calculate_delay_samples_array,
-    shapes::{
-        ArrayActivationTime, {ArrayDelays, ArrayGains, ArrayIndicesGains},
-    },
+    shapes::{ActivationTimeMs, Coefs, Gains, Indices, UnitDelays},
 };
 use crate::core::{
     config::model::Model,
@@ -28,11 +26,11 @@ use crate::core::{
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct APParameters {
-    pub gains: ArrayGains<f32>,
-    pub output_state_indices: ArrayIndicesGains,
-    pub coefs: ArrayDelays<f32>,
-    pub delays: ArrayDelays<usize>,
-    pub activation_time_ms: ArrayActivationTime,
+    pub gains: Gains,
+    pub output_state_indices: Indices,
+    pub coefs: Coefs,
+    pub delays: UnitDelays,
+    pub activation_time_ms: ActivationTimeMs,
 }
 
 impl APParameters {
@@ -43,11 +41,11 @@ impl APParameters {
     pub fn empty(number_of_states: usize, voxels_in_dims: Dim<[usize; 3]>) -> Self {
         debug!("Creating empty AP parameters");
         Self {
-            gains: ArrayGains::empty(number_of_states),
-            output_state_indices: ArrayIndicesGains::empty(number_of_states),
-            coefs: ArrayDelays::empty(number_of_states),
-            delays: ArrayDelays::empty(number_of_states),
-            activation_time_ms: ArrayActivationTime::empty(voxels_in_dims),
+            gains: Gains::empty(number_of_states),
+            output_state_indices: Indices::empty(number_of_states),
+            coefs: Coefs::empty(number_of_states),
+            delays: UnitDelays::empty(number_of_states),
+            activation_time_ms: ActivationTimeMs::empty(voxels_in_dims),
         }
     }
 
@@ -68,7 +66,7 @@ impl APParameters {
         debug!("Creating AP parameters from model config");
         let mut ap_params = Self::empty(
             spatial_description.voxels.count_states(),
-            spatial_description.voxels.types.values.raw_dim(),
+            spatial_description.voxels.types.raw_dim(),
         );
 
         connect_voxels(spatial_description, config, &mut ap_params);
@@ -83,16 +81,14 @@ impl APParameters {
 
         ap_params
             .delays
-            .values
             .iter_mut()
-            .zip(delays_samples.values.iter())
+            .zip(delays_samples.iter())
             .for_each(|(delay, samples)| *delay = from_samples_to_usize(*samples));
 
         ap_params
             .coefs
-            .values
             .iter_mut()
-            .zip(delays_samples.values.iter())
+            .zip(delays_samples.iter())
             .for_each(|(coef, samples)| *coef = from_samples_to_coef(*samples));
 
         Ok(ap_params)
@@ -117,12 +113,11 @@ impl APParameters {
 /// allows signals to propagate from input voxels to neighboring output voxels
 /// through the allpass filter.
 #[tracing::instrument(level = "debug", skip_all)]
-fn init_output_state_indicies(spatial_description: &SpatialDescription) -> ArrayIndicesGains {
+fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Indices {
     debug!("Initializing output state indices");
-    let mut output_state_indices =
-        ArrayIndicesGains::empty(spatial_description.voxels.count_states());
-    let v_types = &spatial_description.voxels.types.values;
-    let v_numbers = &spatial_description.voxels.numbers.values;
+    let mut output_state_indices = Indices::empty(spatial_description.voxels.count_states());
+    let v_types = &spatial_description.voxels.types;
+    let v_numbers = &spatial_description.voxels.numbers;
     // TODO: write tests
     v_types
         .indexed_iter()
@@ -157,7 +152,7 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Array
                     for output_dimension in 0..3 {
                         let output_state_index =
                             v_numbers[output_voxel_index].unwrap() + output_dimension;
-                        output_state_indices.values[(
+                        output_state_indices[(
                             input_state_number,
                             offset_to_gain_index(x_offset, y_offset, z_offset, output_dimension)
                                 .expect("Not all offsets to be zero."),
@@ -180,11 +175,11 @@ fn connect_voxels(
 ) {
     debug!("Connecting voxels");
     let mut activation_time_s =
-        Array3::<Option<f32>>::from_elem(spatial_description.voxels.types.values.raw_dim(), None);
+        Array3::<Option<f32>>::from_elem(spatial_description.voxels.types.raw_dim(), None);
     let mut current_directions =
-        Array4::<f32>::zeros(spatial_description.voxels.positions_mm.values.raw_dim());
+        Array4::<f32>::zeros(spatial_description.voxels.positions_mm.raw_dim());
 
-    let v_types = &spatial_description.voxels.types.values;
+    let v_types = &spatial_description.voxels.types;
 
     let mut current_time_s: f32 = 0.0;
     // Handle Sinoatrial node
@@ -241,7 +236,6 @@ fn connect_voxels(
     }
     ap_params
         .activation_time_ms
-        .values
         .iter_mut()
         .zip(activation_time_s)
         .filter(|(_, s)| s.is_some())
@@ -265,9 +259,9 @@ fn try_to_connect(
         voxel_offset,
         output_voxel_index
     );
-    let v_types = &spatial_description.voxels.types.values;
-    let v_position_mm = &spatial_description.voxels.positions_mm.values;
-    let v_numbers = &spatial_description.voxels.numbers.values;
+    let v_types = &spatial_description.voxels.types;
+    let v_position_mm = &spatial_description.voxels.positions_mm;
+    let v_numbers = &spatial_description.voxels.numbers;
     let (x_offset, y_offset, z_offset) = voxel_offset;
 
     // no self connection allowed
@@ -370,7 +364,7 @@ fn assign_gain(
     );
     for input_dimension in 0..3 {
         for output_dimension in 0..3 {
-            ap_params.gains.values[(
+            ap_params.gains[(
                 input_state_number + input_dimension,
                 offset_to_gain_index(x_offset, y_offset, z_offset, output_dimension)
                     .expect("Offsets to be valid"),

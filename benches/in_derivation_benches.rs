@@ -108,7 +108,7 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
                     model
                         .functional_description
                         .measurement_covariance
-                        .values
+                        
                         .raw_dim()[0],
                 );
             })
@@ -148,7 +148,7 @@ fn bench_coefs(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
                     model
                         .functional_description
                         .measurement_covariance
-                        .values
+                        
                         .raw_dim()[0],
                 );
             })

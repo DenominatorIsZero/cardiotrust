@@ -13,7 +13,7 @@ use crate::{
     core::{
         algorithm::refinement::Optimizer,
         data::{
-            shapes::{ArraySystemStates, Measurements},
+            shapes::{SystemStates, Measurements},
             Data,
         },
         model::{spatial::voxels::VoxelType, Model},
@@ -285,7 +285,7 @@ fn handle_update_est_message(
     clippy::cast_possible_truncation
 )]
 #[tracing::instrument(level = "debug")]
-fn update_values(payload: &Value, states: &mut ArraySystemStates, measurements: &mut Measurements) {
+fn update_values(payload: &Value, states: &mut SystemStates, measurements: &mut Measurements) {
     debug!("Updating values.");
     let key = "ppfStatesToExoBuffer";
     let ppf_state_buffer = payload
@@ -329,7 +329,7 @@ fn update_values(payload: &Value, states: &mut ArraySystemStates, measurements: 
 #[tracing::instrument(level = "debug", skip_all)]
 fn initialize_voxel_types(model: &mut Model, payload: &Value) {
     debug!("Initializing voxel types.");
-    let types = &mut model.spatial_description.voxels.types.values;
+    let types = &mut model.spatial_description.voxels.types;
     let key = "pppcVoxelTypes";
     let pppc_voxel_types = payload
         .get(key)
@@ -373,7 +373,7 @@ fn initialize_voxel_types(model: &mut Model, payload: &Value) {
 #[tracing::instrument(level = "debug", skip_all)]
 fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
     debug!("Initializing voxel positions.");
-    let positions = &mut model.spatial_description.voxels.positions_mm.values;
+    let positions = &mut model.spatial_description.voxels.positions_mm;
     let key = "ppppfVoxelPositionsMm";
     let ppppf_voxel_positions = payload
         .get(key)
@@ -416,7 +416,7 @@ fn initialize_voxel_positions(model: &mut Model, payload: &Value) {
 #[tracing::instrument(level = "debug", skip_all)]
 fn initialize_voxel_numbers(model: &mut Model, payload: &Value) {
     debug!("Initializing voxel numbers.");
-    let numbers = &mut model.spatial_description.voxels.numbers.values;
+    let numbers = &mut model.spatial_description.voxels.numbers;
     let key = "pppuVoxelNumbers";
     let pppu_voxel_numbers = payload
         .get(key)

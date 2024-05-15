@@ -132,8 +132,7 @@ mod tests {
 
         let duration_ms = 5000;
         let path = directory.join("types_over_x.gif");
-        let time_per_frame_ms =
-            duration_ms / spatial_description.voxels.types.values.shape()[0] as u32;
+        let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[0] as u32;
         voxel_types_over_slices_plot(
             &spatial_description.voxels.types,
             &spatial_description.voxels.positions_mm,
@@ -145,8 +144,7 @@ mod tests {
         .unwrap();
 
         let path = directory.join("types_over_y.gif");
-        let time_per_frame_ms =
-            duration_ms / spatial_description.voxels.types.values.shape()[1] as u32;
+        let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[1] as u32;
         voxel_types_over_slices_plot(
             &spatial_description.voxels.types,
             &spatial_description.voxels.positions_mm,
@@ -158,8 +156,7 @@ mod tests {
         .unwrap();
 
         let path = directory.join("types_over_z.gif");
-        let time_per_frame_ms =
-            duration_ms / spatial_description.voxels.types.values.shape()[2] as u32;
+        let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[2] as u32;
         voxel_types_over_slices_plot(
             &spatial_description.voxels.types,
             &spatial_description.voxels.positions_mm,
@@ -185,8 +182,7 @@ mod tests {
 
         let duration_ms = 5000;
         let path = directory.join("types_over_x.gif");
-        let time_per_frame_ms =
-            duration_ms / spatial_description.voxels.types.values.shape()[0] as u32;
+        let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[0] as u32;
         voxel_types_over_slices_plot(
             &spatial_description.voxels.types,
             &spatial_description.voxels.positions_mm,
@@ -198,8 +194,7 @@ mod tests {
         .unwrap();
 
         let path = directory.join("types_over_y.gif");
-        let time_per_frame_ms =
-            duration_ms / spatial_description.voxels.types.values.shape()[1] as u32;
+        let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[1] as u32;
         voxel_types_over_slices_plot(
             &spatial_description.voxels.types,
             &spatial_description.voxels.positions_mm,
@@ -211,8 +206,7 @@ mod tests {
         .unwrap();
 
         let path = directory.join("types_over_z.gif");
-        let time_per_frame_ms =
-            duration_ms / spatial_description.voxels.types.values.shape()[2] as u32;
+        let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[2] as u32;
         voxel_types_over_slices_plot(
             &spatial_description.voxels.types,
             &spatial_description.voxels.positions_mm,
@@ -239,8 +233,7 @@ mod tests {
 
         let duration_ms = 5000;
         let path = directory.join("types_over_x_coarse.gif");
-        let time_per_frame_ms =
-            duration_ms / spatial_description.voxels.types.values.shape()[0] as u32;
+        let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[0] as u32;
         voxel_types_over_slices_plot(
             &spatial_description.voxels.types,
             &spatial_description.voxels.positions_mm,
@@ -252,8 +245,7 @@ mod tests {
         .unwrap();
 
         let path = directory.join("types_over_y_coarse.gif");
-        let time_per_frame_ms =
-            duration_ms / spatial_description.voxels.types.values.shape()[1] as u32;
+        let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[1] as u32;
         voxel_types_over_slices_plot(
             &spatial_description.voxels.types,
             &spatial_description.voxels.positions_mm,
@@ -265,8 +257,7 @@ mod tests {
         .unwrap();
 
         let path = directory.join("types_over_z_coarse.gif");
-        let time_per_frame_ms =
-            duration_ms / spatial_description.voxels.types.values.shape()[2] as u32;
+        let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[2] as u32;
         voxel_types_over_slices_plot(
             &spatial_description.voxels.types,
             &spatial_description.voxels.positions_mm,

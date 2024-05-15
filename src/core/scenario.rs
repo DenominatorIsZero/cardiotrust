@@ -416,11 +416,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
 
     let mut results = Results::new(
         scenario.config.algorithm.epochs,
-        model
-            .functional_description
-            .control_function_values
-            .values
-            .shape()[0],
+        model.functional_description.control_function_values.shape()[0],
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),
@@ -578,14 +574,13 @@ fn run_pseudo_inverse(
         data,
         &scenario.config.algorithm,
     );
-    summary.loss = results.metrics.loss_epoch.values[0];
-    summary.loss_mse = results.metrics.loss_mse_epoch.values[0];
-    summary.loss_maximum_regularization =
-        results.metrics.loss_maximum_regularization_epoch.values[0];
-    summary.delta_states_mean = results.metrics.delta_states_mean_epoch.values[0];
-    summary.delta_states_max = results.metrics.delta_states_max_epoch.values[0];
-    summary.delta_measurements_mean = results.metrics.delta_measurements_mean_epoch.values[0];
-    summary.delta_measurements_max = results.metrics.delta_measurements_max_epoch.values[0];
+    summary.loss = results.metrics.loss_epoch[0];
+    summary.loss_mse = results.metrics.loss_mse_epoch[0];
+    summary.loss_maximum_regularization = results.metrics.loss_maximum_regularization_epoch[0];
+    summary.delta_states_mean = results.metrics.delta_states_mean_epoch[0];
+    summary.delta_states_max = results.metrics.delta_states_max_epoch[0];
+    summary.delta_measurements_mean = results.metrics.delta_measurements_mean_epoch[0];
+    summary.delta_measurements_max = results.metrics.delta_measurements_max_epoch[0];
 }
 
 /// Runs the model-based algorithm on the given scenario, model, and data.
@@ -622,20 +617,19 @@ fn run_model_based(
         );
         scenario.status = Status::Running(epoch_index);
 
-        summary.loss = results.metrics.loss_epoch.values[epoch_index];
-        summary.loss_mse = results.metrics.loss_mse_epoch.values[epoch_index];
+        summary.loss = results.metrics.loss_epoch[epoch_index];
+        summary.loss_mse = results.metrics.loss_mse_epoch[epoch_index];
         summary.loss_maximum_regularization =
-            results.metrics.loss_maximum_regularization_epoch.values[epoch_index];
-        summary.delta_states_mean = results.metrics.delta_states_mean_epoch.values[epoch_index];
-        summary.delta_states_max = results.metrics.delta_states_max_epoch.values[epoch_index];
+            results.metrics.loss_maximum_regularization_epoch[epoch_index];
+        summary.delta_states_mean = results.metrics.delta_states_mean_epoch[epoch_index];
+        summary.delta_states_max = results.metrics.delta_states_max_epoch[epoch_index];
         summary.delta_measurements_mean =
-            results.metrics.delta_measurements_mean_epoch.values[epoch_index];
-        summary.delta_measurements_max =
-            results.metrics.delta_measurements_max_epoch.values[epoch_index];
-        summary.delta_gains_mean = results.metrics.delta_gains_mean_epoch.values[epoch_index];
-        summary.delta_gains_max = results.metrics.delta_gains_max_epoch.values[epoch_index];
-        summary.delta_delays_mean = results.metrics.delta_delays_mean_epoch.values[epoch_index];
-        summary.delta_delays_max = results.metrics.delta_delays_max_epoch.values[epoch_index];
+            results.metrics.delta_measurements_mean_epoch[epoch_index];
+        summary.delta_measurements_max = results.metrics.delta_measurements_max_epoch[epoch_index];
+        summary.delta_gains_mean = results.metrics.delta_gains_mean_epoch[epoch_index];
+        summary.delta_gains_max = results.metrics.delta_gains_max_epoch[epoch_index];
+        summary.delta_delays_mean = results.metrics.delta_delays_mean_epoch[epoch_index];
+        summary.delta_delays_max = results.metrics.delta_delays_max_epoch[epoch_index];
 
         if scenario.config.algorithm.snapshots_interval != 0
             && epoch_index % scenario.config.algorithm.snapshots_interval == 0

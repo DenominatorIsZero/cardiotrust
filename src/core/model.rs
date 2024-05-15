@@ -91,8 +91,8 @@ impl Model {
             .functional_description
             .ap_params
             .activation_time_ms
-            .values;
-        let numbers = &self.spatial_description.voxels.numbers.values;
+            ;
+        let numbers = &self.spatial_description.voxels.numbers;
         for x in 0..target.shape()[0] {
             for y in 0..target.shape()[1] {
                 for z in 0..target.shape()[2] {

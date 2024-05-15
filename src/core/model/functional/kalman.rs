@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
+    ops::{Deref, DerefMut},
 };
 use tracing::{debug, trace};
 
@@ -15,20 +16,16 @@ use crate::core::config::model::Model;
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct Gain {
-    pub values: Array2<f32>,
-}
+pub struct KalmanGain(Array2<f32>);
 
-impl Gain {
+impl KalmanGain {
     /// Creates a new Gain with the given number of states and sensors,
     /// initializing the values to a matrix of zeros.
     #[must_use]
     #[tracing::instrument(level = "debug")]
     pub fn empty(number_of_states: usize, number_of_sensors: usize) -> Self {
         debug!("Creating empty gain matrix");
-        Self {
-            values: Array2::zeros((number_of_states, number_of_sensors)),
-        }
+        Self(Array2::zeros((number_of_states, number_of_sensors)))
     }
 
     /// Creates a new Gain matrix by calculating it from the provided model config and
@@ -44,14 +41,10 @@ impl Gain {
     #[tracing::instrument(level = "debug")]
     pub fn from_model_config(config: &Model, measurement_matrix: &MeasurementMatrix) -> Self {
         debug!("Creating gain matrix from model config");
-        let mut process_covariance = Array2::<f32>::zeros((
-            measurement_matrix.values.shape()[2],
-            measurement_matrix.values.shape()[2],
-        ));
-        let mut measurement_covariance = Array2::<f32>::zeros((
-            measurement_matrix.values.shape()[1],
-            measurement_matrix.values.shape()[1],
-        ));
+        let mut process_covariance =
+            Array2::<f32>::zeros((measurement_matrix.shape()[2], measurement_matrix.shape()[2]));
+        let mut measurement_covariance =
+            Array2::<f32>::zeros((measurement_matrix.shape()[1], measurement_matrix.shape()[1]));
 
         if relative_eq!(config.common.process_covariance_std, 0.0) {
             process_covariance
@@ -84,7 +77,7 @@ impl Gain {
         }
 
         let h: &ArrayBase<ViewRepr<&f32>, Dim<[usize; 2]>> =
-            &measurement_matrix.values.slice(s![0, .., ..]);
+            &measurement_matrix.slice(s![0, .., ..]);
 
         let s = h.dot(&process_covariance).dot(&h.t()) + measurement_covariance;
         let mut s = DMatrix::from_row_slice(
@@ -99,7 +92,7 @@ impl Gain {
             .for_each(|(s, s_inv)| *s_inv = *s);
         let k = process_covariance.dot(&h.t()).dot(&s_inv);
 
-        Self { values: k }
+        Self(k)
     }
 
     /// Saves the Kalman gain matrix to a .npy file at the given path.
@@ -108,7 +101,21 @@ impl Gain {
         trace!("Saving Kalman gain matrix to npy");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("kalman_gain.npy")).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+}
+
+impl Deref for KalmanGain {
+    type Target = Array2<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for KalmanGain {
+    fn deref_mut(&mut self) -> &mut Array2<f32> {
+        &mut self.0
     }
 }
 
@@ -125,6 +132,6 @@ mod tests {
         let measurement_matrix =
             MeasurementMatrix::from_model_spatial_description(&spatial_description);
 
-        let _kalman_gain = Gain::from_model_config(&config, &measurement_matrix);
+        let _kalman_gain = KalmanGain::from_model_config(&config, &measurement_matrix);
     }
 }

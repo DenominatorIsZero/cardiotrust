@@ -3,7 +3,7 @@ use ndarray::{s, ArrayBase, Dim, ViewRepr};
 use std::{collections::HashMap, error::Error};
 use tracing::trace;
 
-use super::{offset_to_delay_index, shapes::ArrayDelays};
+use super::{offset_to_delay_index, shapes::Coefs};
 use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
 
 /// Calculates the delay in seconds for a given input and output position,
@@ -36,14 +36,13 @@ pub fn calculate_delay_samples_array(
     spatial_description: &SpatialDescription,
     propagation_velocities_m_per_s: &HashMap<VoxelType, f32>,
     sample_rate_hz: f32,
-) -> Result<ArrayDelays<f32>, Box<dyn Error>> {
+) -> Result<Coefs, Box<dyn Error>> {
     trace!("Calculating delay samples array");
-    let mut delay_samples_array =
-        ArrayDelays::<f32>::empty(spatial_description.voxels.count_states());
+    let mut delay_samples_array = Coefs::empty(spatial_description.voxels.count_states());
 
-    let v_types = &spatial_description.voxels.types.values;
-    let v_position_mm = &spatial_description.voxels.positions_mm.values;
-    let v_numbers = &spatial_description.voxels.numbers.values;
+    let v_types = &spatial_description.voxels.types;
+    let v_position_mm = &spatial_description.voxels.positions_mm;
+    let v_numbers = &spatial_description.voxels.numbers;
 
     // Fill the delays_samples tensor
     for (input_voxel_index, v_type) in v_types.indexed_iter() {
@@ -89,7 +88,7 @@ pub fn calculate_delay_samples_array(
                 .into());
             }
 
-            delay_samples_array.values[(
+            delay_samples_array[(
                 v_numbers[input_voxel_index].unwrap() / 3,
                 offset_to_delay_index(x_offset, y_offset, z_offset)
                     .expect("Offsets to not all be zero."),
@@ -155,7 +154,7 @@ mod test {
         )
         .unwrap();
 
-        let max = delay_samples.values.max_skipnan();
+        let max = delay_samples.max_skipnan();
         let expected = (spatial_description.voxels.size_mm / 1000.0)
             / config
                 .common

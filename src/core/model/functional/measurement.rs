@@ -8,6 +8,7 @@ use std::{
     f32::consts::PI,
     fs::{self, File},
     io::BufWriter,
+    ops::{Deref, DerefMut},
 };
 use tracing::{debug, trace};
 
@@ -15,9 +16,7 @@ use crate::core::{config::model::Model, model::spatial::SpatialDescription};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions, clippy::unsafe_derive_deserialize)]
-pub struct MeasurementMatrix {
-    pub values: Array3<f32>,
-}
+pub struct MeasurementMatrix(Array3<f32>);
 
 impl MeasurementMatrix {
     /// Creates a new `MeasurementMatrix` with the given number of sensor states
@@ -30,9 +29,11 @@ impl MeasurementMatrix {
         number_of_sensors: usize,
     ) -> Self {
         debug!("Creating empty measurement matrix");
-        Self {
-            values: Array3::zeros((number_of_beats, number_of_sensors, number_of_states)),
-        }
+        Self(Array3::zeros((
+            number_of_beats,
+            number_of_sensors,
+            number_of_states,
+        )))
     }
 
     /// Creates a new `MeasurementMatrix` from the given `Model` config and
@@ -54,11 +55,11 @@ impl MeasurementMatrix {
             spatial_description.sensors.count(),
         );
 
-        let m = &mut measurement_matrix.values;
+        let m = &mut measurement_matrix;
 
-        let types = &spatial_description.voxels.types.values;
-        let voxel_numbers = &spatial_description.voxels.numbers.values;
-        let voxel_positions_mm = &spatial_description.voxels.positions_mm.values;
+        let types = &spatial_description.voxels.types;
+        let voxel_numbers = &spatial_description.voxels.numbers;
+        let voxel_positions_mm = &spatial_description.voxels.positions_mm;
         let sensor_positions = &spatial_description.sensors.positions_mm;
         let sensor_offsets = &spatial_description.sensors.array_offsets_mm;
         let sensor_orientations = &spatial_description.sensors.orientations_xyz;
@@ -108,15 +109,27 @@ impl MeasurementMatrix {
         trace!("Saving measurement matrix to npy file");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("measurement_matrix.npy")).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+}
+
+impl Deref for MeasurementMatrix {
+    type Target = Array3<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for MeasurementMatrix {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions, clippy::unsafe_derive_deserialize)]
-pub struct MeasurementCovariance {
-    pub values: Array2<f32>,
-}
+pub struct MeasurementCovariance(Array2<f32>);
 
 impl MeasurementCovariance {
     /// Creates a new `MeasurementCovariance` with the given number of sensors,
@@ -125,9 +138,7 @@ impl MeasurementCovariance {
     #[tracing::instrument(level = "debug")]
     pub fn empty(number_of_sensors: usize) -> Self {
         debug!("Creating empty measurement covariance");
-        Self {
-            values: Array2::zeros((number_of_sensors, number_of_sensors)),
-        }
+        Self(Array2::zeros((number_of_sensors, number_of_sensors)))
     }
 
     /// Creates a new `MeasurementCovariance` initialized from the model
@@ -146,7 +157,6 @@ impl MeasurementCovariance {
 
         if relative_eq!(config.common.measurement_covariance_std, 0.0) {
             measurement_covariance
-                .values
                 .diag_mut()
                 .fill(config.common.measurement_covariance_mean);
         } else {
@@ -155,13 +165,9 @@ impl MeasurementCovariance {
                 config.common.measurement_covariance_std,
             )
             .unwrap();
-            measurement_covariance
-                .values
-                .diag_mut()
-                .iter_mut()
-                .for_each(|v| {
-                    *v = normal.sample(&mut rand::thread_rng());
-                });
+            measurement_covariance.diag_mut().iter_mut().for_each(|v| {
+                *v = normal.sample(&mut rand::thread_rng());
+            });
         }
 
         measurement_covariance
@@ -174,7 +180,21 @@ impl MeasurementCovariance {
         trace!("Saving process covariance matrix to npy file");
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("process_covariance.npy")).unwrap());
-        self.values.write_npy(writer).unwrap();
+        self.write_npy(writer).unwrap();
+    }
+}
+
+impl Deref for MeasurementCovariance {
+    type Target = Array2<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for MeasurementCovariance {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
@@ -215,7 +235,7 @@ mod tests {
         let measurement_matrix =
             MeasurementMatrix::from_model_spatial_description(&spatial_description);
 
-        assert!(!measurement_matrix.values.is_empty());
+        assert!(!measurement_matrix.is_empty());
     }
 
     #[test]
@@ -234,11 +254,11 @@ mod tests {
         let measurement_matrix =
             MeasurementMatrix::from_model_spatial_description(&spatial_description);
 
-        assert!(!measurement_matrix.values.is_empty());
+        assert!(!measurement_matrix.is_empty());
 
         let path = Path::new(COMMON_PATH).join("measurement_matrix_default.png");
         matrix_plot(
-            &measurement_matrix.values.slice(s![0, .., ..]),
+            &measurement_matrix.slice(s![0, .., ..]),
             None,
             None,
             None,

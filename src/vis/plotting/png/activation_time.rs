@@ -5,7 +5,7 @@ use tracing::trace;
 
 use crate::{
     core::model::{
-        functional::allpass::shapes::ArrayActivationTime, spatial::voxels::VoxelPositions,
+        functional::allpass::shapes::ActivationTimeMs, spatial::voxels::VoxelPositions,
     },
     vis::plotting::{png::matrix::matrix_plot, PlotSlice},
 };
@@ -16,7 +16,7 @@ use super::PngBundle;
 /// activation time matrix.
 #[tracing::instrument(level = "trace")]
 pub(crate) fn activation_time_plot(
-    activation_time_ms: &ArrayActivationTime,
+    activation_time_ms: &ActivationTimeMs,
     voxel_positions_mm: &VoxelPositions,
     voxel_size_mm: f32,
     path: &Path,
@@ -29,14 +29,14 @@ pub(crate) fn activation_time_plot(
     let (data, offset, title, x_label, y_label, flip_axis) = match slice {
         PlotSlice::X(index) => {
             let data = activation_time_ms
-                .values
+                
                 .index_axis(Axis(0), index)
                 .map(|value| value.unwrap_or(0.0));
             let offset = Some((
-                voxel_positions_mm.values[(0, 0, 0, 1)],
-                voxel_positions_mm.values[(0, 0, 0, 2)],
+                voxel_positions_mm[(0, 0, 0, 1)],
+                voxel_positions_mm[(0, 0, 0, 2)],
             ));
-            let x = voxel_positions_mm.values[(index, 0, 0, 0)];
+            let x = voxel_positions_mm[(index, 0, 0, 0)];
             let title = format!("Activation time x-index = {index}, x = {x} mm");
             let x_label = Some("y [mm]");
             let y_label = Some("z [mm]");
@@ -46,14 +46,14 @@ pub(crate) fn activation_time_plot(
         }
         PlotSlice::Y(index) => {
             let data = activation_time_ms
-                .values
+                
                 .index_axis(Axis(1), index)
                 .map(|value| value.unwrap_or(0.0));
             let offset = Some((
-                voxel_positions_mm.values[(0, 0, 0, 0)],
-                voxel_positions_mm.values[(0, 0, 0, 2)],
+                voxel_positions_mm[(0, 0, 0, 0)],
+                voxel_positions_mm[(0, 0, 0, 2)],
             ));
-            let y = voxel_positions_mm.values[(0, index, 0, 1)];
+            let y = voxel_positions_mm[(0, index, 0, 1)];
             let title = format!("Activation time y-index = {index}, y = {y} mm");
             let x_label = Some("x [mm]");
             let y_label = Some("z [mm]");
@@ -63,14 +63,14 @@ pub(crate) fn activation_time_plot(
         }
         PlotSlice::Z(index) => {
             let data = activation_time_ms
-                .values
+                
                 .index_axis(Axis(2), index)
                 .map(|value| value.unwrap_or(0.0));
             let offset = Some((
-                voxel_positions_mm.values[(0, 0, 0, 0)],
-                voxel_positions_mm.values[(0, 0, 0, 1)],
+                voxel_positions_mm[(0, 0, 0, 0)],
+                voxel_positions_mm[(0, 0, 0, 1)],
             ));
-            let z = voxel_positions_mm.values[(0, 0, index, 2)];
+            let z = voxel_positions_mm[(0, 0, index, 2)];
             let title = format!("Activation time z-index = {index}, z = {z} mm");
             let x_label = Some("x [mm]");
             let y_label = Some("y [mm]");

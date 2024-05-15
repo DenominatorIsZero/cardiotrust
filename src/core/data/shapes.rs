@@ -3,7 +3,6 @@ use ndarray_npy::WriteNpyExt;
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 use std::{
-    alloc::System,
     fs::{self, File},
     io::BufWriter,
     ops::{Deref, DerefMut},
@@ -14,9 +13,9 @@ use tracing::trace;
 ///
 /// Has dimensions (`number_of_steps` `number_of_states`)
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct ArraySystemStates(Array2<f32>);
+pub struct SystemStates(Array2<f32>);
 
-impl ArraySystemStates {
+impl SystemStates {
     /// Creates an empty `ArraySystemStates` with the given dimensions.
     #[must_use]
     #[tracing::instrument(level = "trace")]
@@ -53,7 +52,7 @@ impl ArraySystemStates {
     }
 }
 
-impl Deref for ArraySystemStates {
+impl Deref for SystemStates {
     type Target = Array2<f32>;
 
     fn deref(&self) -> &Self::Target {
@@ -61,7 +60,7 @@ impl Deref for ArraySystemStates {
     }
 }
 
-impl DerefMut for ArraySystemStates {
+impl DerefMut for SystemStates {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -87,7 +86,7 @@ impl SystemStatesSpherical {
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn calculate(&mut self, states: &ArraySystemStates) {
+    pub fn calculate(&mut self, states: &SystemStates) {
         trace!("Calculating spherical states");
         self.magnitude
             .indexed_iter_mut()

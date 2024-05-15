@@ -7,19 +7,19 @@ use std::error::Error;
 use tracing::{debug, info, trace};
 
 use super::shapes::{
-    ActivationTimePerStateMs, ArraySystemStates, SystemStatesSpherical, SystemStatesSphericalMax,
+    ActivationTimePerStateMs, SystemStates, SystemStatesSpherical, SystemStatesSphericalMax,
 };
 use crate::core::{
     algorithm::estimation::prediction::calculate_system_prediction,
     config::{model::SensorArrayMotion, simulation::Simulation as SimulationConfig},
     data::Measurements,
-    model::{functional::allpass::shapes::ArrayGains, Model},
+    model::{functional::allpass::shapes::Gains, Model},
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Simulation {
     pub measurements: Measurements,
-    pub system_states: ArraySystemStates,
+    pub system_states: SystemStates,
     pub system_states_spherical: SystemStatesSpherical,
     pub system_states_spherical_max: SystemStatesSphericalMax,
     pub activation_times: ActivationTimePerStateMs,
@@ -45,7 +45,7 @@ impl Simulation {
                 number_of_steps,
                 number_of_sensors,
             ),
-            system_states: ArraySystemStates::empty(number_of_steps, number_of_states),
+            system_states: SystemStates::empty(number_of_steps, number_of_states),
             system_states_spherical: SystemStatesSpherical::empty(
                 number_of_steps,
                 number_of_states,
@@ -92,7 +92,7 @@ impl Simulation {
         };
 
         let measurements = Measurements::empty(number_of_beats, number_of_steps, number_of_sensors);
-        let system_states = ArraySystemStates::empty(number_of_steps, number_of_states);
+        let system_states = SystemStates::empty(number_of_steps, number_of_states);
         let system_states_spherical =
             SystemStatesSpherical::empty(number_of_steps, number_of_states);
         let system_states_spherical_max = SystemStatesSphericalMax::empty(number_of_states);
@@ -122,9 +122,9 @@ impl Simulation {
         let system_states = &mut self.system_states;
         let model = &self.model;
 
-        let mut ap_outputs: ArrayGains<f32> = ArrayGains::empty(system_states.shape()[1]);
+        let mut ap_outputs: Gains = Gains::empty(system_states.shape()[1]);
         for beat_index in 0..measurements.num_beats() {
-            ap_outputs.values.fill(0.0);
+            ap_outputs.fill(0.0);
             system_states.fill(0.0);
             for time_index in 0..system_states.shape()[0] {
                 calculate_system_prediction(
@@ -141,8 +141,7 @@ impl Simulation {
         for sensor_index in 0..measurements.num_sensors() {
             let dist = Normal::new(
                 0.0,
-                model.functional_description.measurement_covariance.values
-                    [[sensor_index, sensor_index]],
+                model.functional_description.measurement_covariance[[sensor_index, sensor_index]],
             )
             .unwrap();
             for beat_index in 0..measurements.num_beats() {

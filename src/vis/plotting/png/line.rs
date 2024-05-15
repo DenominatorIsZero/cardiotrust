@@ -5,7 +5,7 @@ use std::{error::Error, io, path::Path};
 use tracing::trace;
 
 use crate::{
-    core::data::shapes::ArraySystemStates,
+    core::data::shapes::SystemStates,
     vis::plotting::{
         allocate_buffer, AXIS_LABEL_AREA, CHART_MARGIN, COLORS, LEGEND_OPACITY, LEGEND_PATH_LENGTH,
     },
@@ -424,7 +424,7 @@ where
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace")]
 pub fn plot_state_xyz(
-    system_states: &ArraySystemStates,
+    system_states: &SystemStates,
     state_index: usize,
     sample_rate_hz: f32,
     path: &Path,
@@ -800,7 +800,7 @@ mod test {
         let files = vec![path.join("xyz_plot_basic.png")];
         clean_files(&files);
 
-        let mut system_states = ArraySystemStates::empty(100, 6);
+        let mut system_states = SystemStates::empty(100, 6);
 
         for i in 0..100 {
             for j in 0..6 {
@@ -823,7 +823,7 @@ mod test {
         let files = vec![path.join("xyz_plot_invalid.png")];
         clean_files(&files);
 
-        let system_states = ArraySystemStates::empty(100, 6);
+        let system_states = SystemStates::empty(100, 6);
         let title = "Test Plot";
         let sample_rate_hz = 10.0;
 

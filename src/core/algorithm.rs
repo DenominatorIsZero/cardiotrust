@@ -17,7 +17,7 @@ use self::estimation::{
 };
 use super::{
     config::algorithm::Algorithm,
-    data::{shapes::ArraySystemStates, Data},
+    data::{shapes::SystemStates, Data},
     model::functional::FunctionalDescription,
     scenario::results::Results,
 };
@@ -39,11 +39,10 @@ pub fn calculate_pseudo_inverse(
     config: &Algorithm,
 ) {
     debug!("Calculating pseudo inverse");
-    let rows = functional_description.measurement_matrix.values.shape()[1];
-    let columns = functional_description.measurement_matrix.values.shape()[2];
+    let rows = functional_description.measurement_matrix.shape()[1];
+    let columns = functional_description.measurement_matrix.shape()[2];
     let measurement_matrix = functional_description
         .measurement_matrix
-        .values
         .slice(s![0, .., ..]);
     let measurement_matrix = DMatrix::from_row_slice(
         rows,
@@ -80,7 +79,6 @@ pub fn calculate_pseudo_inverse(
 
         let measurement_matrix: ArrayBase<ViewRepr<&f32>, Dim<[usize; 2]>> = functional_description
             .measurement_matrix
-            .values
             .slice(s![0, .., ..]);
 
         estimations
@@ -268,7 +266,7 @@ pub fn calculate_deltas(
 
 #[tracing::instrument(level = "trace")]
 pub fn constrain_system_states(
-    system_states: &mut ArraySystemStates,
+    system_states: &mut SystemStates,
     time_index: usize,
     clamping_threshold: f32,
 ) {
@@ -461,11 +459,7 @@ mod test {
 
         let mut results = Results::new(
             algorithm_config.epochs,
-            model
-                .functional_description
-                .control_function_values
-                .values
-                .shape()[0],
+            model.functional_description.control_function_values.shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
             simulation_config
@@ -485,9 +479,7 @@ mod test {
         );
 
         (0..algorithm_config.epochs - 1).for_each(|i| {
-            assert!(
-                results.metrics.loss_epoch.values[i] > results.metrics.loss_epoch.values[i + 1]
-            );
+            assert!(results.metrics.loss_epoch[i] > results.metrics.loss_epoch[i + 1]);
         });
     }
 
@@ -517,11 +509,7 @@ mod test {
 
         let mut results = Results::new(
             algorithm_config.epochs,
-            model
-                .functional_description
-                .control_function_values
-                .values
-                .shape()[0],
+            model.functional_description.control_function_values.shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
             simulation_config
@@ -542,7 +530,7 @@ mod test {
 
         let path = Path::new(COMMON_PATH).join("default").join("loss.png");
         standard_y_plot(
-            &results.metrics.loss.values,
+            &results.metrics.loss,
             Path::new(path.as_path()),
             "Loss",
             "Loss",
@@ -554,7 +542,7 @@ mod test {
             .join("default")
             .join("loss_epoch.png");
         standard_y_plot(
-            &results.metrics.loss_epoch.values,
+            &results.metrics.loss_epoch,
             Path::new(path.as_path()),
             "Sum Loss Per Epoch",
             "Loss",
@@ -627,11 +615,7 @@ mod test {
 
         let mut results = Results::new(
             algorithm_config.epochs,
-            model
-                .functional_description
-                .control_function_values
-                .values
-                .shape()[0],
+            model.functional_description.control_function_values.shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
             simulation_config
@@ -650,13 +634,10 @@ mod test {
             &algorithm_config,
         );
 
-        println!("{:?}", results.metrics.loss_mse_epoch.values);
+        println!("{:?}", results.metrics.loss_mse_epoch);
 
         (0..algorithm_config.epochs - 1).for_each(|i| {
-            assert!(
-                results.metrics.loss_mse_epoch.values[i]
-                    > results.metrics.loss_mse_epoch.values[i + 1]
-            );
+            assert!(results.metrics.loss_mse_epoch[i] > results.metrics.loss_mse_epoch[i + 1]);
         });
     }
 
@@ -685,11 +666,7 @@ mod test {
 
         let mut results = Results::new(
             algorithm_config.epochs,
-            model
-                .functional_description
-                .control_function_values
-                .values
-                .shape()[0],
+            model.functional_description.control_function_values.shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
             simulation_config
@@ -708,12 +685,9 @@ mod test {
             &algorithm_config,
         );
 
-        println!("{:?}", results.metrics.loss_epoch.values);
+        println!("{:?}", results.metrics.loss_epoch);
         (0..algorithm_config.epochs - 1).for_each(|i| {
-            assert!(
-                results.metrics.loss_mse_epoch.values[i]
-                    > results.metrics.loss_mse_epoch.values[i + 1]
-            );
+            assert!(results.metrics.loss_mse_epoch[i] > results.metrics.loss_mse_epoch[i + 1]);
         });
     }
 
@@ -743,11 +717,7 @@ mod test {
 
         let mut results = Results::new(
             algorithm_config.epochs,
-            model
-                .functional_description
-                .control_function_values
-                .values
-                .shape()[0],
+            model.functional_description.control_function_values.shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
             simulation_config
@@ -768,7 +738,7 @@ mod test {
 
         let path = Path::new(COMMON_PATH).join("no_kalman").join("loss.png");
         standard_y_plot(
-            &results.metrics.loss.values,
+            &results.metrics.loss,
             Path::new(path.as_path()),
             "Loss",
             "Loss",
@@ -779,7 +749,7 @@ mod test {
             .join("no_kalman")
             .join("loss_epoch.png");
         standard_y_plot(
-            &results.metrics.loss_epoch.values,
+            &results.metrics.loss_epoch,
             Path::new(path.as_path()),
             "Sum Loss Per Epoch",
             "Loss",
@@ -853,11 +823,7 @@ mod test {
 
         let mut results = Results::new(
             algorithm_config.epochs,
-            model
-                .functional_description
-                .control_function_values
-                .values
-                .shape()[0],
+            model.functional_description.control_function_values.shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
             simulation_config
@@ -878,7 +844,7 @@ mod test {
 
         let path = Path::new(COMMON_PATH).join("full_kalman").join("loss.png");
         standard_y_plot(
-            &results.metrics.loss.values,
+            &results.metrics.loss,
             Path::new(path.as_path()),
             "Loss",
             "Loss",
@@ -889,7 +855,7 @@ mod test {
             .join("full_kalman")
             .join("loss_epoch.png");
         standard_y_plot(
-            &results.metrics.loss_epoch.values,
+            &results.metrics.loss_epoch,
             Path::new(path.as_path()),
             "Sum Loss Per Epoch",
             "Loss",
@@ -944,7 +910,9 @@ mod test {
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
-        let algorithm_config = Algorithm::default();
+        let mut algorithm_config = Algorithm::default();
+        algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
+        algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
         let model = Model::from_model_config(
             &algorithm_config.model,
@@ -955,11 +923,7 @@ mod test {
 
         let mut results = Results::new(
             algorithm_config.epochs,
-            model
-                .functional_description
-                .control_function_values
-                .values
-                .shape()[0],
+            model.functional_description.control_function_values.shape()[0],
             model.spatial_description.sensors.count(),
             model.spatial_description.voxels.count_states(),
             simulation_config

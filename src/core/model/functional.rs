@@ -11,9 +11,9 @@ use std::error::Error;
 use tracing::{debug, trace};
 
 use self::{
-    allpass::{shapes::ArrayGains, APParameters},
+    allpass::{shapes::Gains, APParameters},
     control::{ControlFunction, ControlMatrix},
-    kalman::Gain,
+    kalman::KalmanGain,
     measurement::{MeasurementCovariance, MeasurementMatrix},
 };
 use super::spatial::SpatialDescription;
@@ -25,9 +25,9 @@ pub struct FunctionalDescription {
     pub ap_params: APParameters,
     pub measurement_matrix: MeasurementMatrix,
     pub control_matrix: ControlMatrix,
-    pub process_covariance: ArrayGains<f32>,
+    pub process_covariance: Gains,
     pub measurement_covariance: MeasurementCovariance,
-    pub kalman_gain: Gain,
+    pub kalman_gain: KalmanGain,
     pub control_function_values: ControlFunction,
 }
 
@@ -54,9 +54,9 @@ impl FunctionalDescription {
                 number_of_sensors,
             ),
             control_matrix: ControlMatrix::empty(number_of_states),
-            process_covariance: ArrayGains::empty(number_of_states),
+            process_covariance: Gains::empty(number_of_states),
             measurement_covariance: MeasurementCovariance::empty(number_of_sensors),
-            kalman_gain: Gain::empty(number_of_states, number_of_sensors),
+            kalman_gain: KalmanGain::empty(number_of_states, number_of_sensors),
             control_function_values: ControlFunction::empty(number_of_steps),
         }
     }
@@ -90,7 +90,7 @@ impl FunctionalDescription {
         let measurement_covariance =
             MeasurementCovariance::from_model_config(config, spatial_description);
         //        let kalman_gain = Gain::from_model_config(config, &measurement_matrix);
-        let kalman_gain = Gain::empty(
+        let kalman_gain = KalmanGain::empty(
             spatial_description.voxels.count_states(),
             spatial_description.sensors.count(),
         );
@@ -140,7 +140,7 @@ fn process_covariance_from_model_config(
     config: &Model,
     spatial_description: &SpatialDescription,
     ap_params: &APParameters,
-) -> ArrayGains<f32> {
+) -> Gains {
     debug!("Creating process covariance matrix from model config");
     let normal = if relative_eq!(config.common.process_covariance_std, 0.0) {
         None
@@ -153,11 +153,10 @@ fn process_covariance_from_model_config(
             .unwrap(),
         )
     };
-    let mut process_covariance = ArrayGains::empty(spatial_description.voxels.count_states());
+    let mut process_covariance = Gains::empty(spatial_description.voxels.count_states());
     process_covariance
-        .values
         .indexed_iter_mut()
-        .zip(ap_params.output_state_indices.values.iter())
+        .zip(ap_params.output_state_indices.iter())
         .filter(|((index, _), output_state_index)| {
             output_state_index.is_some() && index.0 == output_state_index.unwrap_or(0)
         })
