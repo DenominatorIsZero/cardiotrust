@@ -583,7 +583,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "u [A/mm^2]",
         ),
         ImageType::ControlFunctionSimulation => standard_time_plot(
-            &data.get_control_function_values(),
+            data.get_control_function_values(),
             scenario.config.simulation.as_ref().unwrap().sample_rate_hz,
             &path,
             "Control Function Simulation",
