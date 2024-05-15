@@ -188,11 +188,18 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         config.algorithm.optimizer,
     );
     let estimations = &mut results.estimations;
+    let measurement_matrix = model
+        .functional_description
+        .measurement_matrix
+        .at_beat(BEAT_INDEX);
     calculate_system_prediction(
         &mut estimations.ap_outputs,
         &mut estimations.system_states,
         &mut estimations.measurements,
-        &model.functional_description,
+        &model.functional_description.ap_params,
+        &measurement_matrix,
+        &model.functional_description.control_function_values,
+        &model.functional_description.control_matrix,
         TIME_INDEX,
         BEAT_INDEX,
     );

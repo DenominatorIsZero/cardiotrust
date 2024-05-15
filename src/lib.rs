@@ -1,4 +1,5 @@
 #![warn(clippy::pedantic, clippy::nursery)]
+#![allow(clippy::too_many_arguments, clippy::module_name_repetitions)]
 pub mod core;
 pub mod scheduler;
 pub mod tests;

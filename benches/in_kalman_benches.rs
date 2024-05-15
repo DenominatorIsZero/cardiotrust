@@ -5,7 +5,10 @@ use cardiotrust::core::{
     },
     config::Config,
     data::Data,
-    model::Model,
+    model::{
+        functional::{self, measurement},
+        Model,
+    },
     scenario::results::Results,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
@@ -34,13 +37,20 @@ fn bench_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
+        let measurement_matrix = model.functional_description.measurement_matrix.at_beat(0);
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("update_and_check", voxel_size), |b| {
             b.iter(|| {
                 update_kalman_gain_and_check_convergence(
-                    &mut results.estimations,
-                    &mut model.functional_description,
-                    0,
+                    &mut model.functional_description.kalman_gain,
+                    &mut results.estimations.kalman_gain_converged,
+                    &mut results.estimations.state_covariance_est,
+                    &mut results.estimations.state_covariance_pred,
+                    &mut results.estimations.innovation_covariance,
+                    &model.functional_description.ap_params,
+                    &model.functional_description.process_covariance,
+                    &model.functional_description.measurement_covariance,
+                    &measurement_matrix,
                 );
                 results.estimations.kalman_gain_converged = false;
             })
@@ -57,13 +67,19 @@ fn bench_calculation(group: &mut criterion::BenchmarkGroup<criterion::measuremen
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
+        let measurement_matrix = model.functional_description.measurement_matrix.at_beat(0);
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("calculate", voxel_size), |b| {
             b.iter(|| {
                 calculate_kalman_gain(
-                    &mut results.estimations,
-                    &mut model.functional_description,
-                    0,
+                    &mut model.functional_description.kalman_gain,
+                    &mut results.estimations.state_covariance_est,
+                    &mut results.estimations.state_covariance_pred,
+                    &mut results.estimations.innovation_covariance,
+                    &model.functional_description.ap_params,
+                    &model.functional_description.process_covariance,
+                    &model.functional_description.measurement_covariance,
+                    &measurement_matrix,
                 );
             })
         });
@@ -84,7 +100,12 @@ fn bench_predict_state_covariance(
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("predict_covariance", voxel_size), |b| {
             b.iter(|| {
-                predict_state_covariance(&mut results.estimations, &model.functional_description);
+                predict_state_covariance(
+                    &mut results.estimations.state_covariance_pred,
+                    &results.estimations.state_covariance_est,
+                    &model.functional_description.ap_params,
+                    &model.functional_description.process_covariance,
+                );
             })
         });
     }
@@ -98,14 +119,26 @@ fn bench_calculate_s_inv(group: &mut criterion::BenchmarkGroup<criterion::measur
         let (_, model, mut results) = setup_inputs(&config);
 
         // prepare for bench
-        predict_state_covariance(&mut results.estimations, &model.functional_description);
+        predict_state_covariance(
+            &mut results.estimations.state_covariance_pred,
+            &results.estimations.state_covariance_est,
+            &model.functional_description.ap_params,
+            &model.functional_description.process_covariance,
+        );
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
+        let measurement_matrix = model.functional_description.measurement_matrix.at_beat(0);
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("s_inv", voxel_size), |b| {
             b.iter(|| {
-                calculate_s_inv(&mut results.estimations, &model.functional_description, 0);
+                calculate_s_inv(
+                    &mut results.estimations.innovation_covariance,
+                    &mut results.estimations.state_covariance_pred,
+                    &model.functional_description.measurement_covariance,
+                    &model.functional_description.ap_params,
+                    &measurement_matrix,
+                );
             })
         });
     }
@@ -118,16 +151,34 @@ fn bench_calculate_k(group: &mut criterion::BenchmarkGroup<criterion::measuremen
         // setup inputs
         let (_, mut model, mut results) = setup_inputs(&config);
 
+        let measurement_matrix = model.functional_description.measurement_matrix.at_beat(0);
         // prepare for bench
-        predict_state_covariance(&mut results.estimations, &model.functional_description);
-        calculate_s_inv(&mut results.estimations, &model.functional_description, 0);
+        predict_state_covariance(
+            &mut results.estimations.state_covariance_pred,
+            &results.estimations.state_covariance_est,
+            &model.functional_description.ap_params,
+            &model.functional_description.process_covariance,
+        );
+        calculate_s_inv(
+            &mut results.estimations.innovation_covariance,
+            &mut results.estimations.state_covariance_pred,
+            &model.functional_description.measurement_covariance,
+            &model.functional_description.ap_params,
+            &measurement_matrix,
+        );
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("calculate_k", voxel_size), |b| {
             b.iter(|| {
-                calculate_k(&results.estimations, &mut model.functional_description, 0);
+                calculate_k(
+                    &mut model.functional_description.kalman_gain,
+                    &results.estimations.state_covariance_pred,
+                    &results.estimations.innovation_covariance,
+                    &model.functional_description.ap_params,
+                    &measurement_matrix,
+                );
             })
         });
     }
@@ -140,11 +191,29 @@ fn bench_estimate_state_covariance(
 
         // setup inputs
         let (_, mut model, mut results) = setup_inputs(&config);
+        let measurement_matrix = model.functional_description.measurement_matrix.at_beat(0);
 
         // prepare for bench
-        predict_state_covariance(&mut results.estimations, &model.functional_description);
-        calculate_s_inv(&mut results.estimations, &model.functional_description, 0);
-        calculate_k(&results.estimations, &mut model.functional_description, 0);
+        predict_state_covariance(
+            &mut results.estimations.state_covariance_pred,
+            &results.estimations.state_covariance_est,
+            &model.functional_description.ap_params,
+            &model.functional_description.process_covariance,
+        );
+        calculate_s_inv(
+            &mut results.estimations.innovation_covariance,
+            &mut results.estimations.state_covariance_pred,
+            &model.functional_description.measurement_covariance,
+            &model.functional_description.ap_params,
+            &measurement_matrix,
+        );
+        calculate_k(
+            &mut model.functional_description.kalman_gain,
+            &results.estimations.state_covariance_pred,
+            &results.estimations.innovation_covariance,
+            &model.functional_description.ap_params,
+            &measurement_matrix,
+        );
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -152,9 +221,11 @@ fn bench_estimate_state_covariance(
         group.bench_function(BenchmarkId::new("estimate_covariance", voxel_size), |b| {
             b.iter(|| {
                 estimate_state_covariance(
-                    &mut results.estimations,
-                    &model.functional_description,
-                    0,
+                    &mut results.estimations.state_covariance_est,
+                    &results.estimations.state_covariance_pred,
+                    &model.functional_description.ap_params,
+                    &measurement_matrix,
+                    &model.functional_description.kalman_gain,
                 );
             })
         });

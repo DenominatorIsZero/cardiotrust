@@ -152,12 +152,18 @@ pub fn run_epoch(
         results.estimations.kalman_gain_converged = false;
         let estimations = &mut results.estimations;
         let derivatives = &mut results.derivatives;
+        let measurement_matrix = functional_description
+            .measurement_matrix
+            .at_beat(beat_index);
         for time_index in 0..num_steps {
             calculate_system_prediction(
                 &mut estimations.ap_outputs,
                 &mut estimations.system_states,
                 &mut estimations.measurements,
-                functional_description,
+                &functional_description.ap_params,
+                &measurement_matrix,
+                &functional_description.control_function_values,
+                &functional_description.control_matrix,
                 time_index,
                 beat_index,
             );
@@ -180,12 +186,24 @@ pub fn run_epoch(
             if config.model.common.apply_system_update {
                 if config.update_kalman_gain {
                     update_kalman_gain_and_check_convergence(
-                        estimations,
-                        functional_description,
-                        beat_index,
+                        &mut functional_description.kalman_gain,
+                        &mut estimations.kalman_gain_converged,
+                        &mut estimations.state_covariance_est,
+                        &mut estimations.state_covariance_pred,
+                        &mut estimations.innovation_covariance,
+                        &functional_description.ap_params,
+                        &functional_description.process_covariance,
+                        &functional_description.measurement_covariance,
+                        &measurement_matrix,
                     );
                 }
-                calculate_system_update(estimations, time_index, functional_description, config);
+                calculate_system_update(
+                    &mut estimations.system_states,
+                    &functional_description.kalman_gain,
+                    &estimations.residuals,
+                    time_index,
+                    config,
+                );
             }
 
             calculate_deltas(

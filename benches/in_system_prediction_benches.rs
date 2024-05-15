@@ -62,9 +62,10 @@ fn bench_control_function(group: &mut criterion::BenchmarkGroup<criterion::measu
         group.bench_function(BenchmarkId::new("add_control_funciton", voxel_size), |b| {
             b.iter(|| {
                 add_control_function(
-                    &model.functional_description,
-                    TIME_INDEX,
                     &mut results.estimations.system_states,
+                    &model.functional_description.control_function_values,
+                    &model.functional_description.control_matrix,
+                    TIME_INDEX,
                 );
             })
         });
@@ -77,6 +78,10 @@ fn bench_measurements(group: &mut criterion::BenchmarkGroup<criterion::measureme
 
         // setup inputs
         let (_, model, mut results) = setup_inputs(&config);
+        let measurement_matrix = model
+            .functional_description
+            .measurement_matrix
+            .at_beat(BEAT_INDEX);
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -87,7 +92,7 @@ fn bench_measurements(group: &mut criterion::BenchmarkGroup<criterion::measureme
                     &mut results.estimations.measurements,
                     TIME_INDEX,
                     BEAT_INDEX,
-                    &model.functional_description.measurement_matrix,
+                    &measurement_matrix,
                     &results.estimations.system_states,
                 );
             })

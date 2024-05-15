@@ -1,5 +1,5 @@
 use approx::relative_eq;
-use ndarray::{s, Array2, Array3};
+use ndarray::{s, Array2, Array3, ArrayView1, ArrayView2};
 use ndarray_npy::WriteNpyExt;
 use physical_constants::VACUUM_MAG_PERMEABILITY;
 use rand_distr::{Distribution, Normal};
@@ -111,6 +111,11 @@ impl MeasurementMatrix {
         let writer = BufWriter::new(File::create(path.join("measurement_matrix.npy")).unwrap());
         self.write_npy(writer).unwrap();
     }
+
+    #[must_use]
+    pub fn at_beat(&self, beat: usize) -> MeasurementMatrixAtBeat {
+        MeasurementMatrixAtBeat(self.slice(s![beat, .., ..]))
+    }
 }
 
 impl Deref for MeasurementMatrix {
@@ -124,6 +129,16 @@ impl Deref for MeasurementMatrix {
 impl DerefMut for MeasurementMatrix {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct MeasurementMatrixAtBeat<'a>(ArrayView2<'a, f32>);
+
+impl<'a> Deref for MeasurementMatrixAtBeat<'a> {
+    type Target = ArrayView2<'a, f32>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

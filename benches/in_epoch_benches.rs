@@ -67,6 +67,10 @@ fn bench_system_prediction(
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
+        let measurement_matrix = model
+            .functional_description
+            .measurement_matrix
+            .at_beat(BEAT_INDEX);
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("system_prediction", voxel_size), |b| {
             b.iter(|| {
@@ -74,7 +78,10 @@ fn bench_system_prediction(
                     &mut results.estimations.ap_outputs,
                     &mut results.estimations.system_states,
                     &mut results.estimations.measurements,
-                    &model.functional_description,
+                    &model.functional_description.ap_params,
+                    &measurement_matrix,
+                    &model.functional_description.control_function_values,
+                    &model.functional_description.control_matrix,
                     TIME_INDEX,
                     BEAT_INDEX,
                 )
@@ -146,9 +153,15 @@ fn _bench_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::W
             |b| {
                 b.iter(|| {
                     update_kalman_gain_and_check_convergence(
-                        &mut results.estimations,
-                        &mut model.functional_description,
-                        BEAT_INDEX,
+                        &mut model.functional_description.kalman_gain,
+                        &mut results.estimations.kalman_gain_converged,
+                        &mut results.estimations.state_covariance_est,
+                        &mut results.estimations.state_covariance_pred,
+                        &mut results.estimations.innovation_covariance,
+                        &model.functional_description.ap_params,
+                        &model.functional_description.process_covariance,
+                        &model.functional_description.measurement_covariance,
+                        &model.functional_description.measurement_matrix.at_beat(0),
                     );
                     results.estimations.kalman_gain_converged = false;
                 })
@@ -162,7 +175,7 @@ fn bench_system_update(group: &mut criterion::BenchmarkGroup<criterion::measurem
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, mut model, mut results) = setup_inputs(&config);
+        let (_, model, mut results) = setup_inputs(&config);
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -170,9 +183,10 @@ fn bench_system_update(group: &mut criterion::BenchmarkGroup<criterion::measurem
         group.bench_function(BenchmarkId::new("system_update", voxel_size), |b| {
             b.iter(|| {
                 calculate_system_update(
-                    &mut results.estimations,
+                    &mut results.estimations.system_states,
+                    &model.functional_description.kalman_gain,
+                    &results.estimations.residuals,
                     TIME_INDEX,
-                    &mut model.functional_description,
                     &config.algorithm,
                 );
             })

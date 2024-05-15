@@ -126,12 +126,19 @@ impl Simulation {
         for beat_index in 0..measurements.num_beats() {
             ap_outputs.fill(0.0);
             system_states.fill(0.0);
+            let measurement_matrix = &model
+                .functional_description
+                .measurement_matrix
+                .at_beat(beat_index);
             for time_index in 0..system_states.shape()[0] {
                 calculate_system_prediction(
                     &mut ap_outputs,
                     system_states,
                     measurements,
-                    &model.functional_description,
+                    &model.functional_description.ap_params,
+                    measurement_matrix,
+                    &model.functional_description.control_function_values,
+                    &model.functional_description.control_matrix,
                     time_index,
                     beat_index,
                 );

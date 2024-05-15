@@ -5,7 +5,8 @@ use crate::core::{
     data::shapes::{Measurements, SystemStates},
     model::functional::{
         allpass::{shapes::Gains, APParameters},
-        measurement::MeasurementMatrix,
+        control::{ControlFunction, ControlMatrix},
+        measurement::{self, MeasurementMatrix, MeasurementMatrixAtBeat},
         FunctionalDescription,
     },
 };
@@ -17,28 +18,26 @@ use crate::core::{
 ///
 /// Panics if `ap_params_flat` is not set.
 #[allow(clippy::module_name_repetitions)]
-#[tracing::instrument(level = "trace")]
+#[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_system_prediction(
     ap_outputs: &mut Gains,
     system_states: &mut SystemStates,
     measurements: &mut Measurements,
-    functional_description: &FunctionalDescription,
+    ap_params: &APParameters,
+    measurement_matrix: &MeasurementMatrixAtBeat,
+    control_function: &ControlFunction,
+    control_matrix: &ControlMatrix,
     time_index: usize,
     beat_index: usize,
 ) {
     trace!("Calculating system prediction");
-    innovate_system_states_v1(
-        ap_outputs,
-        &functional_description.ap_params,
-        time_index,
-        system_states,
-    );
-    add_control_function(functional_description, time_index, system_states);
+    innovate_system_states_v1(ap_outputs, ap_params, time_index, system_states);
+    add_control_function(system_states, control_function, control_matrix, time_index);
     predict_measurements(
         measurements,
         time_index,
         beat_index,
-        &functional_description.measurement_matrix,
+        measurement_matrix,
         system_states,
     );
 }
@@ -102,17 +101,18 @@ pub fn innovate_system_states_v1(
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn add_control_function(
-    functional_description: &FunctionalDescription,
-    time_index: usize,
     system_states: &mut SystemStates,
+    control_function: &ControlFunction,
+    control_matrix: &ControlMatrix,
+    time_index: usize,
 ) {
     trace!("Adding control function");
     // Add control function
-    let control_function_value = functional_description.control_function_values[time_index];
+    let control_function_value = control_function[time_index];
     system_states
         .slice_mut(s![time_index, ..])
         .iter_mut()
-        .zip(functional_description.control_matrix.iter())
+        .zip(control_matrix.iter())
         .for_each(|(system_state, coef)| {
             *system_state += coef * control_function_value;
         });
@@ -122,17 +122,16 @@ pub fn add_control_function(
 /// system states for the given time index. This computes the model predicted
 /// measurements to compare against the actual measurements.
 #[inline]
-#[tracing::instrument(level = "trace")]
+#[tracing::instrument(level = "trace", skip_all)]
 pub fn predict_measurements(
     measurements: &mut Measurements,
     time_index: usize,
     beat_index: usize,
-    measurement_matrix: &MeasurementMatrix,
+    measurement_matrix: &MeasurementMatrixAtBeat,
     system_states: &SystemStates,
 ) {
     trace!("Predicting measurements");
     // Prediction of measurements H * x
-    let measurement_matrix = measurement_matrix.slice(s![beat_index, .., ..]);
     measurements
         .slice_mut(s![beat_index, time_index, ..])
         .assign(&measurement_matrix.dot(&system_states.slice(s![time_index, ..])));
