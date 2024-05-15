@@ -289,7 +289,6 @@ mod test {
 
     use std::path::Path;
 
-    use bevy::utils::petgraph::algo;
     use ndarray::Dim;
     use tracing::info;
 

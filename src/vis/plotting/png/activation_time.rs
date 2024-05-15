@@ -4,9 +4,7 @@ use std::{error::Error, path::Path};
 use tracing::trace;
 
 use crate::{
-    core::model::{
-        functional::allpass::shapes::ActivationTimeMs, spatial::voxels::VoxelPositions,
-    },
+    core::model::{functional::allpass::shapes::ActivationTimeMs, spatial::voxels::VoxelPositions},
     vis::plotting::{png::matrix::matrix_plot, PlotSlice},
 };
 
@@ -29,7 +27,6 @@ pub(crate) fn activation_time_plot(
     let (data, offset, title, x_label, y_label, flip_axis) = match slice {
         PlotSlice::X(index) => {
             let data = activation_time_ms
-                
                 .index_axis(Axis(0), index)
                 .map(|value| value.unwrap_or(0.0));
             let offset = Some((
@@ -46,7 +43,6 @@ pub(crate) fn activation_time_plot(
         }
         PlotSlice::Y(index) => {
             let data = activation_time_ms
-                
                 .index_axis(Axis(1), index)
                 .map(|value| value.unwrap_or(0.0));
             let offset = Some((
@@ -63,7 +59,6 @@ pub(crate) fn activation_time_plot(
         }
         PlotSlice::Z(index) => {
             let data = activation_time_ms
-                
                 .index_axis(Axis(2), index)
                 .map(|value| value.unwrap_or(0.0));
             let offset = Some((

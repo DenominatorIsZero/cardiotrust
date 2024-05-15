@@ -87,11 +87,7 @@ impl Model {
         &mut self,
         activation_times: &super::data::shapes::ActivationTimePerStateMs,
     ) {
-        let target = &mut self
-            .functional_description
-            .ap_params
-            .activation_time_ms
-            ;
+        let target = &mut self.functional_description.ap_params.activation_time_ms;
         let numbers = &self.spatial_description.voxels.numbers;
         for x in 0..target.shape()[0] {
             for y in 0..target.shape()[1] {

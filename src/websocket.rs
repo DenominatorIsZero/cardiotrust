@@ -13,7 +13,7 @@ use crate::{
     core::{
         algorithm::refinement::Optimizer,
         data::{
-            shapes::{SystemStates, Measurements},
+            shapes::{Measurements, SystemStates},
             Data,
         },
         model::{spatial::voxels::VoxelType, Model},
