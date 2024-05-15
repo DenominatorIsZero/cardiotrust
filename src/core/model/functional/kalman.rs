@@ -14,7 +14,7 @@ use tracing::{debug, trace};
 use super::measurement::MeasurementMatrix;
 use crate::core::config::model::Model;
 
-#[allow(clippy::unsafe_derive_deserialize)]
+#[allow(clippy::unsafe_derive_deserialize, clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct KalmanGain(Array2<f32>);
 
