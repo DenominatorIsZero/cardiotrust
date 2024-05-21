@@ -133,7 +133,7 @@ pub fn calculate_post_update_residuals(
 ) {
     trace!("Calculating post update residuals");
     post_update_residuals
-        .assign(&(measurement_matrix.dot(&**estimated_system_states) - &**actual_measurements));
+        .assign(&(measurement_matrix.dot(&**estimated_system_states) - **actual_measurements));
 }
 
 /// Calculates the delta between the estimated system states and the actual system states for the given time index.
@@ -534,7 +534,7 @@ mod tests {
     use crate::core::{
         config::algorithm::Algorithm,
         data::shapes::{Measurements, Residuals, SystemStates},
-        model::functional::{allpass::shapes::Gains, measurement, FunctionalDescription},
+        model::functional::{allpass::shapes::Gains, FunctionalDescription},
     };
 
     use super::{

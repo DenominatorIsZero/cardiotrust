@@ -12,8 +12,6 @@ use cardiotrust::core::{
     scenario::results::Results,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use physical_constants::REDUCED_PLANCK_CONSTANT;
-use serde_json::de;
 use std::time::Duration;
 
 const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];

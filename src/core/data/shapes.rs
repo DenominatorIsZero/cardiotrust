@@ -14,6 +14,7 @@ use tracing::trace;
 /// Shape for the simulated/estimated system states
 ///
 /// Has dimensions (`number_of_steps` `number_of_states`)
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct SystemStates(Array2<f32>);
 
@@ -288,6 +289,7 @@ impl DerefMut for ActivationTimePerStateMs {
     }
 }
 
+#[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Measurements(Array3<f32>);
 

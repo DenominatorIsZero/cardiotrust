@@ -2,7 +2,7 @@ use cardiotrust::core::{
     algorithm::{calculate_deltas, run_epoch},
     config::Config,
     data::Data,
-    model::{functional::FunctionalDescription, Model},
+    model::Model,
     scenario::results::Results,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};

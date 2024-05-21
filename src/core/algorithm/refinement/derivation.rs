@@ -148,8 +148,8 @@ pub fn calculate_derivatives(
         calculate_derivatives_gains(
             derivatives_gains,
             ap_outputs,
-            &maximum_regularization,
-            &mapped_residuals,
+            maximum_regularization,
+            mapped_residuals,
             config.regularization_strength,
             number_of_sensors,
         );
@@ -162,7 +162,7 @@ pub fn calculate_derivatives(
             ap_outputs,
             estimated_system_states,
             ap_params,
-            &mapped_residuals,
+            mapped_residuals,
             step,
             number_of_sensors,
         );
@@ -383,7 +383,13 @@ impl DerefMut for MaximumRegularization {
 mod tests {
     use ndarray::Dim;
 
-    use crate::core::model::functional::allpass::shapes::{Indices, UnitDelays};
+    use crate::core::{
+        algorithm::estimation::Estimations,
+        model::functional::{
+            allpass::shapes::{Indices, UnitDelays},
+            FunctionalDescription,
+        },
+    };
 
     use super::*;
     #[test]
