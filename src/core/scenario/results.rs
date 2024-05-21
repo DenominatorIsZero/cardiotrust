@@ -23,7 +23,12 @@ pub struct Results {
     pub model: Option<Model>,
 }
 
-#[allow(clippy::useless_let_if_seq)]
+#[allow(
+    clippy::useless_let_if_seq,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 impl Results {
     /// Creates a new Results instance with empty estimations, derivatives,
     /// snapshots, and model. The metrics are initialized based on the provided
@@ -36,6 +41,7 @@ impl Results {
         number_of_sensors: usize,
         number_of_states: usize,
         number_of_beats: usize,
+        batch_size: usize,
         optimizer: Optimizer,
     ) -> Self {
         debug!("Creating results with empty estimations, derivatives, snapshots, and model");
@@ -47,9 +53,16 @@ impl Results {
         );
         let derivatives = Derivatives::new(number_of_states, optimizer);
         let snapshots = Vec::new();
+        let batch_size = if batch_size > 0 {
+            batch_size
+        } else {
+            number_of_beats
+        };
+
+        let number_of_batches = (number_of_beats as f32 / batch_size as f32).ceil() as usize;
 
         Self {
-            metrics: Metrics::new(number_of_epochs, number_of_steps),
+            metrics: Metrics::new(number_of_epochs, number_of_steps, number_of_batches),
             estimations,
             derivatives,
             model: None,

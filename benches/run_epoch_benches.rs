@@ -29,15 +29,16 @@ fn without_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
+        let mut batch_index = 0;
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("without_update", voxel_size), |b| {
             b.iter(|| {
                 run_epoch(
                     &mut model.functional_description,
                     &mut results,
+                    &mut batch_index,
                     &data,
                     &config.algorithm,
-                    0,
                 )
             })
         });
@@ -56,15 +57,16 @@ fn with_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
+        let mut batch_index = 0;
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("with_update", voxel_size), |b| {
             b.iter(|| {
                 run_epoch(
                     &mut model.functional_description,
                     &mut results,
+                    &mut batch_index,
                     &data,
                     &config.algorithm,
-                    0,
                 )
             })
         });
@@ -80,15 +82,16 @@ fn with_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
+        let mut batch_index = 0;
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("with_kalman", voxel_size), |b| {
             b.iter(|| {
                 run_epoch(
                     &mut model.functional_description,
                     &mut results,
+                    &mut batch_index,
                     &data,
                     &config.algorithm,
-                    0,
                 )
             })
         });
@@ -125,6 +128,7 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),
+        config.algorithm.batch_size,
         config.algorithm.optimizer,
     );
     (data, model, results)

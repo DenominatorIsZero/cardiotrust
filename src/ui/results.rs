@@ -411,7 +411,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             None,
         ),
         ImageType::LossEpoch => standard_log_y_plot(
-            &metrics.loss_epoch,
+            &metrics.loss_batch,
             &path,
             "Sum Loss Per Epoch",
             "Loss",
@@ -419,7 +419,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
         ),
         ImageType::Loss => standard_y_plot(&metrics.loss, &path, "Loss Per Step", "Loss", "Step"),
         ImageType::LossMseEpoch => standard_log_y_plot(
-            &metrics.loss_mse_epoch,
+            &metrics.loss_mse_batch,
             &path,
             "Sum MSE Loss Per Epoch",
             "Loss",
@@ -433,7 +433,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "Step",
         ),
         ImageType::LossMaximumRegularizationEpoch => standard_log_y_plot(
-            &metrics.loss_maximum_regularization_epoch,
+            &metrics.loss_maximum_regularization_batch,
             &path,
             "Sum Max. Reg. Loss Per Epoch",
             "Loss",
@@ -447,7 +447,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "Step",
         ),
         ImageType::DeltaStatesMeanEpoch => standard_log_y_plot(
-            &metrics.delta_states_mean_epoch,
+            &metrics.delta_states_mean_batch,
             &path,
             "Mean Absolute Error Of System States Per Epoch",
             "Error",
@@ -461,7 +461,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "Step",
         ),
         ImageType::DeltaStatesMaxEpoch => standard_log_y_plot(
-            &metrics.delta_states_max_epoch,
+            &metrics.delta_states_max_batch,
             &path,
             "Max Absolute Error Of System States Per Epoch",
             "Error",
@@ -475,7 +475,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "Step",
         ),
         ImageType::DeltaMeasurementsMeanEpoch => standard_log_y_plot(
-            &metrics.delta_measurements_mean_epoch,
+            &metrics.delta_measurements_mean_batch,
             &path,
             "Mean Absolute Error Of Measurements Per Epoch",
             "Error",
@@ -489,7 +489,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "Step",
         ),
         ImageType::DeltaMeasurementsMaxEpoch => standard_log_y_plot(
-            &metrics.delta_measurements_max_epoch,
+            &metrics.delta_measurements_max_batch,
             &path,
             "Max Absolute Error Of Measurements Per Epoch",
             "Error",
@@ -503,7 +503,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "Step",
         ),
         ImageType::DeltaGainsMeanEpoch => standard_log_y_plot(
-            &metrics.delta_gains_mean_epoch,
+            &metrics.delta_gains_mean_batch,
             &path,
             "Final Mean Absolute Error Of Gains Per Epoch",
             "Error",
@@ -517,7 +517,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "Step",
         ),
         ImageType::DeltaGainsMaxEpoch => standard_log_y_plot(
-            &metrics.delta_gains_max_epoch,
+            &metrics.delta_gains_max_batch,
             &path,
             "Final Max Absolute Error Of Gains Per Epoch",
             "Error",
@@ -531,7 +531,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "Step",
         ),
         ImageType::DeltaDelaysMeanEpoch => standard_log_y_plot(
-            &metrics.delta_delays_mean_epoch,
+            &metrics.delta_delays_mean_batch,
             &path,
             "Final Mean Absolute Error Of Delays Per Epoch",
             "Error",
@@ -545,7 +545,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "Step",
         ),
         ImageType::DeltaDelaysMaxEpoch => standard_log_y_plot(
-            &metrics.delta_delays_max_epoch,
+            &metrics.delta_delays_max_batch,
             &path,
             "Final Max Absolute Error Of Delays Per Epoch",
             "Error",

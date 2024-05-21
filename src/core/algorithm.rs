@@ -143,7 +143,7 @@ pub fn calculate_pseudo_inverse(
             step,
         );
     }
-    results.metrics.calculate_epoch(0);
+    results.metrics.calculate_batch(0);
 }
 
 /// Runs the algorithm for one epoch.
@@ -154,18 +154,17 @@ pub fn calculate_pseudo_inverse(
 pub fn run_epoch(
     functional_description: &mut FunctionalDescription,
     results: &mut Results,
+    batch_index: &mut usize,
     data: &Data,
     config: &Algorithm,
-    epoch_index: usize,
 ) {
-    debug!("Running epoch {}", epoch_index);
     results.derivatives.reset();
     let num_steps = results.estimations.system_states.num_steps();
     let num_beats = data.simulation.measurements.num_beats();
 
     let mut batch = match config.batch_size {
         0 => None,
-        _ => Some((epoch_index * num_beats) % config.batch_size),
+        _ => Some(0),
     };
 
     let mut beat_indices: Vec<usize> = (0..num_beats).collect();
@@ -296,14 +295,26 @@ pub fn run_epoch(
         if let Some(n) = batch.as_mut() {
             *n += 1;
             if *n == config.batch_size {
-                estimated_ap_params.update(derivatives, config, num_steps, num_beats);
+                estimated_ap_params.update(derivatives, config, num_steps, *n);
                 derivatives.reset();
                 estimations.kalman_gain_converged = false;
                 *n = 0;
+                results.metrics.calculate_batch(*batch_index);
+                *batch_index += 1;
             }
         }
     }
-    if batch.is_none() {
+    if let Some(n) = batch {
+        if n > 0 {
+            functional_description
+                .ap_params
+                .update(&mut results.derivatives, config, num_steps, n);
+            results.derivatives.reset();
+            results.estimations.kalman_gain_converged = false;
+            results.metrics.calculate_batch(*batch_index);
+            *batch_index += 1;
+        }
+    } else {
         functional_description.ap_params.update(
             &mut results.derivatives,
             config,
@@ -312,8 +323,9 @@ pub fn run_epoch(
         );
         results.derivatives.reset();
         results.estimations.kalman_gain_converged = false;
+        results.metrics.calculate_batch(*batch_index);
+        *batch_index += 1;
     }
-    results.metrics.calculate_epoch(epoch_index);
 }
 
 #[tracing::instrument(level = "trace", skip_all)]
@@ -417,13 +429,14 @@ mod test {
         algorithm_config: &Algorithm,
     ) {
         info!("Running optimization.");
+        let mut batch_index = 0;
         for epoch_index in 0..algorithm_config.epochs {
             run_epoch(
                 functional_description,
                 results,
+                &mut batch_index,
                 data,
                 algorithm_config,
-                epoch_index,
             );
         }
         results
@@ -460,6 +473,7 @@ mod test {
             number_of_sensors,
             number_of_states,
             number_of_beats,
+            config.batch_size,
             config.optimizer,
         );
         let data = Data::empty(
@@ -470,12 +484,13 @@ mod test {
             number_of_beats,
         );
 
+        let mut batch_index = 0;
         run_epoch(
             &mut functional_description,
             &mut results,
+            &mut batch_index,
             &data,
             &config,
-            epoch_index,
         );
     }
 
@@ -504,6 +519,7 @@ mod test {
             number_of_sensors,
             number_of_states,
             number_of_beats,
+            algorithm_config.batch_size,
             algorithm_config.optimizer,
         );
         let data = Data::empty(
@@ -558,6 +574,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.batch_size,
             algorithm_config.optimizer,
         );
 
@@ -569,7 +586,7 @@ mod test {
         );
 
         (0..algorithm_config.epochs - 1).for_each(|i| {
-            assert!(results.metrics.loss_epoch[i] > results.metrics.loss_epoch[i + 1]);
+            assert!(results.metrics.loss_batch[i] > results.metrics.loss_batch[i + 1]);
         });
     }
 
@@ -608,6 +625,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.batch_size,
             algorithm_config.optimizer,
         );
 
@@ -632,7 +650,7 @@ mod test {
             .join("default")
             .join("loss_epoch.png");
         standard_y_plot(
-            &results.metrics.loss_epoch,
+            &results.metrics.loss_batch,
             Path::new(path.as_path()),
             "Sum Loss Per Epoch",
             "Loss",
@@ -714,6 +732,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.batch_size,
             algorithm_config.optimizer,
         );
 
@@ -724,10 +743,10 @@ mod test {
             &algorithm_config,
         );
 
-        println!("{:?}", results.metrics.loss_mse_epoch);
+        println!("{:?}", results.metrics.loss_mse_batch);
 
         (0..algorithm_config.epochs - 1).for_each(|i| {
-            assert!(results.metrics.loss_mse_epoch[i] > results.metrics.loss_mse_epoch[i + 1]);
+            assert!(results.metrics.loss_mse_batch[i] > results.metrics.loss_mse_batch[i + 1]);
         });
     }
 
@@ -765,6 +784,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.batch_size,
             algorithm_config.optimizer,
         );
 
@@ -775,9 +795,9 @@ mod test {
             &algorithm_config,
         );
 
-        println!("{:?}", results.metrics.loss_epoch);
+        println!("{:?}", results.metrics.loss_batch);
         (0..algorithm_config.epochs - 1).for_each(|i| {
-            assert!(results.metrics.loss_mse_epoch[i] > results.metrics.loss_mse_epoch[i + 1]);
+            assert!(results.metrics.loss_mse_batch[i] > results.metrics.loss_mse_batch[i + 1]);
         });
     }
 
@@ -816,6 +836,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.batch_size,
             algorithm_config.optimizer,
         );
 
@@ -839,7 +860,7 @@ mod test {
             .join("no_kalman")
             .join("loss_epoch.png");
         standard_y_plot(
-            &results.metrics.loss_epoch,
+            &results.metrics.loss_batch,
             Path::new(path.as_path()),
             "Sum Loss Per Epoch",
             "Loss",
@@ -922,6 +943,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.batch_size,
             algorithm_config.optimizer,
         );
 
@@ -945,7 +967,7 @@ mod test {
             .join("full_kalman")
             .join("loss_epoch.png");
         standard_y_plot(
-            &results.metrics.loss_epoch,
+            &results.metrics.loss_batch,
             Path::new(path.as_path()),
             "Sum Loss Per Epoch",
             "Loss",
@@ -1022,6 +1044,7 @@ mod test {
                 .sensor_array_motion_steps
                 .iter()
                 .product(),
+            algorithm_config.batch_size,
             algorithm_config.optimizer,
         );
 

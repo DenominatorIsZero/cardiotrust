@@ -572,6 +572,7 @@ fn init_scenario(
         number_of_sensors,
         number_of_states,
         1,
+        1,
         Optimizer::Sgd,
     );
     let est_model = Model::empty(

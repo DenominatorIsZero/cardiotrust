@@ -22,32 +22,32 @@ use crate::core::{
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Metrics {
     pub loss: SampleWiseMetric,
-    pub loss_epoch: EpochWiseMetric,
+    pub loss_batch: BatchWiseMetric,
 
     pub loss_mse: SampleWiseMetric,
-    pub loss_mse_epoch: EpochWiseMetric,
+    pub loss_mse_batch: BatchWiseMetric,
     pub loss_maximum_regularization: SampleWiseMetric,
-    pub loss_maximum_regularization_epoch: EpochWiseMetric,
+    pub loss_maximum_regularization_batch: BatchWiseMetric,
 
     pub delta_states_mean: SampleWiseMetric,
-    pub delta_states_mean_epoch: EpochWiseMetric,
+    pub delta_states_mean_batch: BatchWiseMetric,
     pub delta_states_max: SampleWiseMetric,
-    pub delta_states_max_epoch: EpochWiseMetric,
+    pub delta_states_max_batch: BatchWiseMetric,
 
     pub delta_measurements_mean: SampleWiseMetric,
-    pub delta_measurements_mean_epoch: EpochWiseMetric,
+    pub delta_measurements_mean_batch: BatchWiseMetric,
     pub delta_measurements_max: SampleWiseMetric,
-    pub delta_measurements_max_epoch: EpochWiseMetric,
+    pub delta_measurements_max_batch: BatchWiseMetric,
 
     pub delta_gains_mean: SampleWiseMetric,
-    pub delta_gains_mean_epoch: EpochWiseMetric,
+    pub delta_gains_mean_batch: BatchWiseMetric,
     pub delta_gains_max: SampleWiseMetric,
-    pub delta_gains_max_epoch: EpochWiseMetric,
+    pub delta_gains_max_batch: BatchWiseMetric,
 
     pub delta_delays_mean: SampleWiseMetric,
-    pub delta_delays_mean_epoch: EpochWiseMetric,
+    pub delta_delays_mean_batch: BatchWiseMetric,
     pub delta_delays_max: SampleWiseMetric,
-    pub delta_delays_max_epoch: EpochWiseMetric,
+    pub delta_delays_max_batch: BatchWiseMetric,
 
     #[serde(default)]
     pub dice_score_over_threshold: Array1<f32>,
@@ -67,36 +67,42 @@ impl Metrics {
     /// per-epoch arrays is set to `number_of_epochs`.
     #[must_use]
     #[tracing::instrument(level = "debug")]
-    pub fn new(number_of_epochs: usize, number_of_steps: usize) -> Self {
+    pub fn new(number_of_epochs: usize, number_of_steps: usize, number_of_batches: usize) -> Self {
         debug!("Creating new Metrics struct");
         Self {
             loss: SampleWiseMetric::new(number_of_steps),
-            loss_epoch: EpochWiseMetric::new(number_of_epochs),
+            loss_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
 
             loss_mse: SampleWiseMetric::new(number_of_steps),
-            loss_mse_epoch: EpochWiseMetric::new(number_of_epochs),
+            loss_mse_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
             loss_maximum_regularization: SampleWiseMetric::new(number_of_steps),
-            loss_maximum_regularization_epoch: EpochWiseMetric::new(number_of_epochs),
+            loss_maximum_regularization_batch: BatchWiseMetric::new(
+                number_of_epochs,
+                number_of_batches,
+            ),
 
             delta_states_mean: SampleWiseMetric::new(number_of_steps),
-            delta_states_mean_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_states_mean_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
             delta_states_max: SampleWiseMetric::new(number_of_steps),
-            delta_states_max_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_states_max_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
 
             delta_measurements_mean: SampleWiseMetric::new(number_of_steps),
-            delta_measurements_mean_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_measurements_mean_batch: BatchWiseMetric::new(
+                number_of_epochs,
+                number_of_batches,
+            ),
             delta_measurements_max: SampleWiseMetric::new(number_of_steps),
-            delta_measurements_max_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_measurements_max_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
 
             delta_gains_mean: SampleWiseMetric::new(number_of_steps),
-            delta_gains_mean_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_gains_mean_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
             delta_gains_max: SampleWiseMetric::new(number_of_steps),
-            delta_gains_max_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_gains_max_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
 
             delta_delays_mean: SampleWiseMetric::new(number_of_steps),
-            delta_delays_mean_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_delays_mean_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
             delta_delays_max: SampleWiseMetric::new(number_of_steps),
-            delta_delays_max_epoch: EpochWiseMetric::new(number_of_epochs),
+            delta_delays_max_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
 
             dice_score_over_threshold: Array1::zeros(101),
             iou_over_threshold: Array1::zeros(101),
@@ -167,25 +173,25 @@ impl Metrics {
     ///
     /// Panics if any loss array is None.
     #[tracing::instrument(level = "debug")]
-    pub fn calculate_epoch(&mut self, epoch_index: usize) {
+    pub fn calculate_batch(&mut self, epoch_index: usize) {
         debug!("Calculating metrics for epoch {}", epoch_index);
-        self.loss_mse_epoch[epoch_index] = self.loss_mse.mean().unwrap();
-        self.loss_maximum_regularization_epoch[epoch_index] =
+        self.loss_mse_batch[epoch_index] = self.loss_mse.mean().unwrap();
+        self.loss_maximum_regularization_batch[epoch_index] =
             self.loss_maximum_regularization.mean().unwrap();
-        self.loss_epoch[epoch_index] = self.loss.mean().unwrap();
+        self.loss_batch[epoch_index] = self.loss.mean().unwrap();
 
-        self.delta_states_mean_epoch[epoch_index] = self.delta_states_mean.mean().unwrap();
-        self.delta_states_max_epoch[epoch_index] = *self.delta_states_max.max_skipnan();
+        self.delta_states_mean_batch[epoch_index] = self.delta_states_mean.mean().unwrap();
+        self.delta_states_max_batch[epoch_index] = *self.delta_states_max.max_skipnan();
 
-        self.delta_measurements_mean_epoch[epoch_index] =
+        self.delta_measurements_mean_batch[epoch_index] =
             self.delta_measurements_mean.mean().unwrap();
-        self.delta_measurements_max_epoch[epoch_index] = *self.delta_measurements_max.max_skipnan();
+        self.delta_measurements_max_batch[epoch_index] = *self.delta_measurements_max.max_skipnan();
 
-        self.delta_gains_mean_epoch[epoch_index] = *self.delta_gains_mean.last().unwrap();
-        self.delta_gains_max_epoch[epoch_index] = *self.delta_gains_max.last().unwrap();
+        self.delta_gains_mean_batch[epoch_index] = *self.delta_gains_mean.last().unwrap();
+        self.delta_gains_max_batch[epoch_index] = *self.delta_gains_max.last().unwrap();
 
-        self.delta_delays_mean_epoch[epoch_index] = *self.delta_delays_mean.last().unwrap();
-        self.delta_delays_max_epoch[epoch_index] = *self.delta_delays_max.last().unwrap();
+        self.delta_delays_mean_batch[epoch_index] = *self.delta_delays_mean.last().unwrap();
+        self.delta_delays_max_batch[epoch_index] = *self.delta_delays_max.last().unwrap();
     }
 
     /// Calculates metrics over the full range of thresholds from 0 to 1 by incrementing
@@ -219,45 +225,45 @@ impl Metrics {
         fs::create_dir_all(path).unwrap();
 
         self.loss.save_npy(path, "loss.npy");
-        self.loss_epoch.save_npy(path, "loss_epoch.npy");
+        self.loss_batch.save_npy(path, "loss_epoch.npy");
 
         self.loss_mse.save_npy(path, "loss_mse.npy");
-        self.loss_mse_epoch.save_npy(path, "loss_mse_epoch.npy");
+        self.loss_mse_batch.save_npy(path, "loss_mse_epoch.npy");
         self.loss_maximum_regularization
             .save_npy(path, "loss_maximum_regularization.npy");
-        self.loss_maximum_regularization_epoch
+        self.loss_maximum_regularization_batch
             .save_npy(path, "loss_maximum_regularization_epoch.npy");
 
         self.delta_delays_mean
             .save_npy(path, "delta_states_mean.npy");
-        self.delta_delays_mean_epoch
+        self.delta_delays_mean_batch
             .save_npy(path, "delta_states_mean_epoch.npy");
         self.delta_delays_max.save_npy(path, "delta_states_max.npy");
-        self.delta_delays_max_epoch
+        self.delta_delays_max_batch
             .save_npy(path, "delta_states_max_epoch.npy");
 
         self.delta_measurements_mean
             .save_npy(path, "delta_measurements_mean.npy");
-        self.delta_measurements_mean_epoch
+        self.delta_measurements_mean_batch
             .save_npy(path, "delta_measurements_mean_epoch.npy");
         self.delta_measurements_max
             .save_npy(path, "delta_measurements_max.npy");
-        self.delta_measurements_max_epoch
+        self.delta_measurements_max_batch
             .save_npy(path, "delta_measurements_max_epoch.npy");
 
         self.delta_gains_mean.save_npy(path, "delta_gains_mean.npy");
-        self.delta_gains_mean_epoch
+        self.delta_gains_mean_batch
             .save_npy(path, "delta_gains_mean_epoch.npy");
         self.delta_gains_max.save_npy(path, "delta_gains_max.npy");
-        self.delta_gains_max_epoch
+        self.delta_gains_max_batch
             .save_npy(path, "delta_gains_max_epoch.npy");
 
         self.delta_delays_mean
             .save_npy(path, "delta_delays_mean.npy");
-        self.delta_delays_mean_epoch
+        self.delta_delays_mean_batch
             .save_npy(path, "delta_delays_mean_epoch.npy");
         self.delta_delays_max.save_npy(path, "delta_delays_max.npy");
-        self.delta_delays_max_epoch
+        self.delta_delays_max_batch
             .save_npy(path, "delta_delays_max_epoch.npy");
 
         let writer = BufWriter::new(File::create(path.join("dice.npy")).unwrap());
@@ -519,16 +525,16 @@ impl DerefMut for SampleWiseMetric {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct EpochWiseMetric(Array1<f32>);
+pub struct BatchWiseMetric(Array1<f32>);
 
-impl EpochWiseMetric {
+impl BatchWiseMetric {
     /// Creates a new `ArrayMetricsEpoch` with the given number of epochs, initializing
     /// the values to all zeros.
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn new(number_of_epochs: usize) -> Self {
+    pub fn new(number_of_epochs: usize, number_of_batches: usize) -> Self {
         trace!("Creating ArrayMetricsEpoch");
-        Self(Array1::zeros(number_of_epochs))
+        Self(Array1::zeros(number_of_epochs * number_of_batches))
     }
 
     /// Saves the array values to a .npy file at the given path with the given name.  
@@ -542,7 +548,7 @@ impl EpochWiseMetric {
     }
 }
 
-impl Deref for EpochWiseMetric {
+impl Deref for BatchWiseMetric {
     type Target = Array1<f32>;
 
     fn deref(&self) -> &Self::Target {
@@ -550,7 +556,7 @@ impl Deref for EpochWiseMetric {
     }
 }
 
-impl DerefMut for EpochWiseMetric {
+impl DerefMut for BatchWiseMetric {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

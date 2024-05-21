@@ -260,6 +260,7 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),
+        config.algorithm.batch_size,
         config.algorithm.optimizer,
     );
     (data, model, results)

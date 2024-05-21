@@ -102,15 +102,17 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),
+        config.algorithm.batch_size,
         config.algorithm.optimizer,
     );
 
+    let mut batch_index = 0;
     run_epoch(
         &mut model.functional_description,
         &mut results,
+        &mut batch_index,
         &data,
         &config.algorithm,
-        0,
     );
 
     (data, model, results)
