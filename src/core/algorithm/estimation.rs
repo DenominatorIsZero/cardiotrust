@@ -9,7 +9,8 @@ use tracing::{debug, trace};
 use crate::core::{
     config::algorithm::Algorithm,
     data::shapes::{
-        ActivationTimePerStateMs, Measurements, Residuals, SystemStates, SystemStatesSpherical,
+        ActivationTimePerStateMs, Measurements, MeasurementsAtStep, MeasurementsAtStepMut,
+        Residuals, SystemStates, SystemStatesAtStep, SystemStatesAtStepMut, SystemStatesSpherical,
         SystemStatesSphericalMax,
     },
     model::functional::{
@@ -69,7 +70,7 @@ impl Estimations {
             measurements: Measurements::empty(number_of_beats, number_of_steps, number_of_sensors),
             residuals: Residuals::empty(number_of_sensors),
             post_update_residuals: Residuals::empty(number_of_sensors),
-            system_states_delta: SystemStates::empty(1, number_of_states),
+            system_states_delta: SystemStates::empty(number_of_steps, number_of_states),
             system_states_spherical_max_delta: SystemStatesSphericalMax::empty(number_of_states),
             activation_times_delta: ActivationTimePerStateMs::empty(number_of_states),
             gains_delta: Gains::empty(number_of_states),
@@ -109,57 +110,43 @@ impl Estimations {
 /// Calculates the residuals between the predicted and actual measurements for the given time index.
 /// The residuals are stored in the provided `residuals` array.
 #[inline]
-#[tracing::instrument(level = "trace")]
+#[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_residuals(
     residuals: &mut Residuals,
-    predicted_measurements: &Measurements,
-    actual_measurements: &Measurements,
-    time_index: usize,
-    beat_index: usize,
+    predicted_measurements: &MeasurementsAtStepMut,
+    actual_measurements: &MeasurementsAtStep,
 ) {
     trace!("Calculating residuals");
-    residuals.assign(
-        &(&predicted_measurements.slice(s![beat_index, time_index, ..])
-            - &actual_measurements.slice(s![beat_index, time_index, ..])),
-    );
+    residuals.assign(&(&**predicted_measurements - &**actual_measurements));
 }
 
 /// Calculates the residuals between the estimated measurements from the
 /// estimated system states and the actual measurements. The residuals are
 /// stored in the provided `post_update_residuals` array.
 #[inline]
-#[tracing::instrument(level = "trace")]
+#[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_post_update_residuals(
     post_update_residuals: &mut Residuals,
-    measurement_matrix: &MeasurementMatrix,
-    estimated_system_states: &SystemStates,
-    actual_measurements: &Measurements,
-    time_index: usize,
-    beat_index: usize,
+    measurement_matrix: &MeasurementMatrixAtBeat,
+    estimated_system_states: &SystemStatesAtStepMut,
+    actual_measurements: &MeasurementsAtStep,
 ) {
     trace!("Calculating post update residuals");
-    let measurement_matrix = measurement_matrix.slice(s![beat_index, .., ..]);
-    post_update_residuals.assign(
-        &(measurement_matrix.dot(&estimated_system_states.slice(s![time_index, ..]))
-            - actual_measurements.slice(s![beat_index, time_index, ..])),
-    );
+    post_update_residuals
+        .assign(&(measurement_matrix.dot(&**estimated_system_states) - &**actual_measurements));
 }
 
 /// Calculates the delta between the estimated system states and the actual system states for the given time index.
 /// The delta is stored in the provided `system_states_delta` array.
 #[inline]
-#[tracing::instrument(level = "trace")]
+#[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_system_states_delta(
-    system_states_delta: &mut SystemStates,
-    estimated_system_states: &SystemStates,
-    actual_system_states: &SystemStates,
-    time_index: usize,
+    system_states_delta: &mut SystemStatesAtStepMut,
+    estimated_system_states: &SystemStatesAtStepMut,
+    actual_system_states: &SystemStatesAtStep,
 ) {
     trace!("Calculating system states delta");
-    system_states_delta.slice_mut(s![0, ..]).assign(
-        &(&estimated_system_states.slice(s![time_index, ..])
-            - &actual_system_states.slice(s![time_index, ..])),
-    );
+    system_states_delta.assign(&(&**estimated_system_states - &**actual_system_states));
 }
 
 /// Calculates the delta between the estimated gains and the actual gains.  
@@ -547,7 +534,7 @@ mod tests {
     use crate::core::{
         config::algorithm::Algorithm,
         data::shapes::{Measurements, Residuals, SystemStates},
-        model::functional::{allpass::shapes::Gains, FunctionalDescription},
+        model::functional::{allpass::shapes::Gains, measurement, FunctionalDescription},
     };
 
     use super::{
@@ -561,8 +548,8 @@ mod tests {
         let number_of_sensors = 300;
         let number_of_steps = 2000;
         let number_of_beats = 10;
-        let time_index = 333;
-        let beat_index = 4;
+        let step = 333;
+        let beat = 4;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
         let mut ap_outputs = Gains::empty(number_of_states);
@@ -577,20 +564,17 @@ mod tests {
             voxels_in_dims,
         );
 
-        let measurement_matrix = functional_description
-            .measurement_matrix
-            .at_beat(beat_index);
+        let measurement_matrix = functional_description.measurement_matrix.at_beat(beat);
 
         calculate_system_prediction(
             &mut ap_outputs,
             &mut system_states,
-            &mut measurements,
+            &mut measurements.at_beat_mut(beat).at_step_mut(step),
             &functional_description.ap_params,
             &measurement_matrix,
-            &functional_description.control_function_values,
+            functional_description.control_function_values[step],
             &functional_description.control_matrix,
-            time_index,
-            beat_index,
+            step,
         );
     }
 
@@ -631,21 +615,19 @@ mod tests {
         let number_of_sensors = 300;
         let number_of_steps = 2000;
         let number_of_beats = 10;
-        let time_index = 333;
-        let beat_index = 2;
+        let step = 333;
+        let beat = 2;
 
         let mut residuals = Residuals::empty(number_of_sensors);
-        let predicted_measurements =
+        let mut predicted_measurements =
             Measurements::empty(number_of_beats, number_of_steps, number_of_sensors);
         let actual_measurements =
             Measurements::empty(number_of_beats, number_of_steps, number_of_sensors);
 
         calculate_residuals(
             &mut residuals,
-            &predicted_measurements,
-            &actual_measurements,
-            time_index,
-            beat_index,
+            &predicted_measurements.at_beat_mut(beat).at_step_mut(step),
+            &actual_measurements.at_beat(beat).at_step(step),
         );
     }
 }

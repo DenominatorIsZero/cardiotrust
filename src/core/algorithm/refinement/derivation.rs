@@ -1,5 +1,7 @@
+use core::num;
 use std::ops::{Deref, DerefMut};
 
+use bevy::ui::measurement;
 use ndarray::{s, Array1};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -7,13 +9,13 @@ use tracing::{debug, trace};
 use crate::core::{
     algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
-    data::shapes::{Residuals, SystemStates},
+    data::shapes::{Residuals, SystemStates, SystemStatesAtStep},
     model::functional::{
         allpass::{
             shapes::{Coefs, Gains},
             APParameters,
         },
-        measurement::MeasurementMatrix,
+        measurement::{MeasurementMatrix, MeasurementMatrixAtBeat},
         FunctionalDescription,
     },
 };
@@ -41,14 +43,14 @@ pub struct Derivatives {
     pub step: usize,
     /// IIR component of the coeficients derivatives
     /// only used for internal computation
-    coefs_iir: Gains,
+    pub coefs_iir: Gains,
     /// FIR component of the coeficients derivatives
     /// only used for internal computation
-    coefs_fir: Gains,
+    pub coefs_fir: Gains,
     /// Residuals mapped onto the system states via
     /// the measurement matrix.
     /// Stored internally to avoid redundant computation
-    mapped_residuals: MappedResiduals,
+    pub mapped_residuals: MappedResiduals,
     pub maximum_regularization: MaximumRegularization,
     pub maximum_regularization_sum: f32,
 }
@@ -107,189 +109,201 @@ impl Derivatives {
         self.maximum_regularization.fill(0.0);
         self.maximum_regularization_sum = 0.0;
     }
+}
 
-    /// Calculates the derivatives for the given time index.
-    ///
-    /// CAUTION: adds to old values. use "reset" after using the
-    /// derivatives to update the parameters.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `ap_params` is not set.
-    #[inline]
-    #[tracing::instrument(level = "debug")]
-    pub fn calculate(
-        &mut self,
-        functional_description: &FunctionalDescription,
-        estimations: &Estimations,
-        config: &Algorithm,
-        time_index: usize,
-        beat_index: usize,
-    ) {
-        debug!("Calculating derivatives");
-        self.calculate_mapped_residuals(
-            &functional_description.measurement_matrix,
-            &estimations.residuals,
-            beat_index,
+/// Calculates the derivatives for the given time index.
+///
+/// CAUTION: adds to old values. use "reset" after using the
+/// derivatives to update the parameters.
+///
+/// # Panics
+///
+/// Panics if `ap_params` is not set.
+#[inline]
+#[tracing::instrument(level = "debug", skip_all)]
+pub fn calculate_derivatives(
+    derivatives_gains: &mut Gains,
+    derivatives_coefs: &mut Coefs,
+    derivatives_iir: &mut Gains,
+    derivatives_fir: &mut Gains,
+    mapped_residuals: &mut MappedResiduals,
+    maximum_regularization: &mut MaximumRegularization,
+    maximum_regularization_sum: &mut f32,
+    residuals: &Residuals,
+    estimated_system_states: &SystemStates,
+    ap_outputs: &Gains,
+    ap_params: &APParameters,
+    measurement_matrix: &MeasurementMatrixAtBeat,
+    config: &Algorithm,
+    step: usize,
+    number_of_sensors: usize,
+) {
+    debug!("Calculating derivatives");
+    calculate_mapped_residuals(mapped_residuals, residuals, measurement_matrix);
+
+    calculate_maximum_regularization(
+        maximum_regularization,
+        maximum_regularization_sum,
+        &estimated_system_states.at_step(step),
+        config.regularization_threshold,
+    );
+
+    if !config.freeze_gains {
+        calculate_derivatives_gains(
+            derivatives_gains,
+            ap_outputs,
+            &maximum_regularization,
+            &mapped_residuals,
+            config.regularization_strength,
+            number_of_sensors,
         );
-        self.calculate_maximum_regularization(
-            &estimations.system_states,
-            time_index,
-            config.regularization_threshold,
+    }
+    if !config.freeze_delays {
+        calculate_derivatives_coefs(
+            derivatives_coefs,
+            derivatives_iir,
+            derivatives_fir,
+            ap_outputs,
+            estimated_system_states,
+            ap_params,
+            &mapped_residuals,
+            step,
+            number_of_sensors,
         );
-        if !config.freeze_gains {
-            self.calculate_derivatives_gains(
-                &estimations.ap_outputs,
-                config.regularization_strength,
-                functional_description.measurement_covariance.raw_dim()[0],
-            );
-        }
-        if !config.freeze_delays {
-            self.calculate_derivatives_coefs(
-                &estimations.ap_outputs,
-                &estimations.system_states,
-                &functional_description.ap_params,
-                time_index,
-                functional_description.measurement_covariance.raw_dim()[0],
-            );
-        }
     }
+}
 
-    /// Calculates the derivatives for the allpass filter gains.
-    #[inline]
-    #[tracing::instrument(level = "trace")]
-    pub fn calculate_derivatives_gains(
-        // This gets updated
-        &mut self,
-        // Based on these values
-        ap_outputs: &Gains,
-        // This needed for indexing
-        regularization_strength: f32,
-        number_of_sensors: usize,
-    ) {
-        trace!("Calculating derivatives for gains");
-        #[allow(clippy::cast_precision_loss)]
-        let scaling = 1.0 / number_of_sensors as f32;
-        #[allow(clippy::cast_precision_loss)]
-        let regularization_scaling = regularization_strength;
+/// Calculates the derivatives for the allpass filter gains.
+#[inline]
+#[tracing::instrument(level = "trace")]
+pub fn calculate_derivatives_gains(
+    derivatives_gains: &mut Gains,
+    ap_outputs: &Gains,
+    maximum_regularization: &MaximumRegularization,
+    mapped_residuals: &MappedResiduals,
+    regularization_strength: f32,
+    number_of_sensors: usize,
+) {
+    trace!("Calculating derivatives for gains");
+    #[allow(clippy::cast_precision_loss)]
+    let scaling = 1.0 / number_of_sensors as f32;
+    #[allow(clippy::cast_precision_loss)]
+    let regularization_scaling = regularization_strength;
 
-        self.gains
-            .indexed_iter_mut()
-            .zip(ap_outputs.iter())
-            .for_each(|((gain_index, derivative), ap_output)| {
-                let maximum_regularization = self.maximum_regularization[gain_index.0];
+    derivatives_gains
+        .indexed_iter_mut()
+        .zip(ap_outputs.iter())
+        .for_each(|((gain_index, derivative), ap_output)| {
+            let maximum_regularization = maximum_regularization[gain_index.0];
 
-                *derivative += ap_output
-                    * self.mapped_residuals[gain_index.0]
-                        .mul_add(scaling, maximum_regularization * regularization_scaling);
-            });
-    }
+            *derivative += ap_output
+                * mapped_residuals[gain_index.0]
+                    .mul_add(scaling, maximum_regularization * regularization_scaling);
+        });
+}
 
-    /// Calculates the derivatives for the allpass filter coefficients.
-    ///
-    /// This mutates the `self.coefs` values based on the provided `ap_outputs`,
-    /// `estimated_system_states`, `ap_params`, `time_index`, and `number_of_sensors`.
-    /// It calculates the FIR and IIR coefficient derivatives separately,
-    /// then combines them to update `self.coefs`.
-    #[inline]
-    #[tracing::instrument(level = "trace")]
-    pub fn calculate_derivatives_coefs(
-        // These get updated
-        &mut self,
-        // Based on these values
-        ap_outputs: &Gains,
-        estimated_system_states: &SystemStates,
-        ap_params: &APParameters,
-        time_index: usize,
-        number_of_sensors: usize,
-    ) {
-        trace!("Calculating derivatives for coefficients");
-        self.coefs_fir
-            .indexed_iter_mut()
-            .zip(ap_params.output_state_indices.iter())
-            .filter(|(_, output_state_index)| output_state_index.is_some())
-            .for_each(
-                |(((state_index, offset_index), derivative), output_state_index)| {
-                    let coef_index = (state_index / 3, offset_index / 3);
-                    if time_index >= ap_params.delays[coef_index] {
-                        *derivative = ap_params.coefs[coef_index].mul_add(
-                            *derivative,
-                            estimated_system_states[(
-                                time_index - ap_params.delays[coef_index],
-                                output_state_index.unwrap(),
-                            )],
-                        );
-                    }
-                },
-            );
-        self.coefs_iir
-            .indexed_iter_mut()
-            .zip(ap_outputs.iter())
-            .for_each(|(((state_index, offset_index), derivative), ap_output)| {
+/// Calculates the derivatives for the allpass filter coefficients.
+///
+/// This mutates the `self.coefs` values based on the provided `ap_outputs`,
+/// `estimated_system_states`, `ap_params`, `time_index`, and `number_of_sensors`.
+/// It calculates the FIR and IIR coefficient derivatives separately,
+/// then combines them to update `self.coefs`.
+#[inline]
+#[tracing::instrument(level = "trace")]
+pub fn calculate_derivatives_coefs(
+    derivatives_coefs: &mut Coefs,
+    derivatives_iir: &mut Gains,
+    derivatives_fir: &mut Gains,
+    ap_outputs: &Gains,
+    estimated_system_states: &SystemStates,
+    ap_params: &APParameters,
+    mapped_residuals: &MappedResiduals,
+    step: usize,
+    number_of_sensors: usize,
+) {
+    trace!("Calculating derivatives for coefficients");
+    derivatives_fir
+        .indexed_iter_mut()
+        .zip(ap_params.output_state_indices.iter())
+        .filter(|(_, output_state_index)| output_state_index.is_some())
+        .for_each(
+            |(((state_index, offset_index), derivative), output_state_index)| {
                 let coef_index = (state_index / 3, offset_index / 3);
-                *derivative = ap_params.coefs[coef_index].mul_add(*derivative, *ap_output);
-            });
-        #[allow(clippy::cast_precision_loss)]
-        let scaling = 1.0 / number_of_sensors as f32;
-        #[allow(clippy::cast_precision_loss)]
-        self.coefs_iir
-            .indexed_iter()
-            .zip(self.coefs_fir.iter())
-            .zip(ap_params.gains.iter())
-            .for_each(|((((state_index, offset_index), iir), fir), ap_gain)| {
-                let coef_index = (state_index / 3, offset_index / 3);
-                self.coefs[coef_index] +=
-                    (fir + iir) * ap_gain * self.mapped_residuals[state_index] * scaling;
-            });
-    }
+                if step >= ap_params.delays[coef_index] {
+                    *derivative = ap_params.coefs[coef_index].mul_add(
+                        *derivative,
+                        estimated_system_states[(
+                            step - ap_params.delays[coef_index],
+                            output_state_index.unwrap(),
+                        )],
+                    );
+                }
+            },
+        );
+    derivatives_iir
+        .indexed_iter_mut()
+        .zip(ap_outputs.iter())
+        .for_each(|(((state_index, offset_index), derivative), ap_output)| {
+            let coef_index = (state_index / 3, offset_index / 3);
+            *derivative = ap_params.coefs[coef_index].mul_add(*derivative, *ap_output);
+        });
+    #[allow(clippy::cast_precision_loss)]
+    let scaling = 1.0 / number_of_sensors as f32;
+    #[allow(clippy::cast_precision_loss)]
+    derivatives_iir
+        .indexed_iter()
+        .zip(derivatives_fir.iter())
+        .zip(ap_params.gains.iter())
+        .for_each(|((((state_index, offset_index), iir), fir), ap_gain)| {
+            let coef_index = (state_index / 3, offset_index / 3);
+            derivatives_coefs[coef_index] +=
+                (fir + iir) * ap_gain * mapped_residuals[state_index] * scaling;
+        });
+}
 
-    /// Calculates the maximum regularization for the given system states.
-    /// Iterates through the states, calculates the sum of the absolute values,
-    /// compares to the threshold, and calculates & assigns maximum regularization
-    /// accordingly.
-    #[inline]
-    #[tracing::instrument(level = "trace")]
-    pub fn calculate_maximum_regularization(
-        &mut self,
-        system_states: &SystemStates,
-        time_index: usize,
-        regularization_threshold: f32,
-    ) {
-        trace!("Calculating maximum regularization");
-        // self.maximum_regularization_sum = 0.0; // This is probably wrong, no?
-        for state_index in (0..system_states.raw_dim()[1]).step_by(3) {
-            let sum = system_states[[time_index, state_index]].abs()
-                + system_states[[time_index, state_index + 1]].abs()
-                + system_states[[time_index, state_index + 2]].abs();
-            if sum > regularization_threshold {
-                let factor = sum - regularization_threshold;
-                self.maximum_regularization_sum += factor.powi(2);
-                self.maximum_regularization[state_index] =
-                    factor * system_states[[time_index, state_index]].signum();
-                self.maximum_regularization[state_index + 1] =
-                    factor * system_states[[time_index, state_index + 1]].signum();
-                self.maximum_regularization[state_index + 2] =
-                    factor * system_states[[time_index, state_index + 2]].signum();
-            } else {
-                self.maximum_regularization[state_index] = 0.0;
-                self.maximum_regularization[state_index + 1] = 0.0;
-                self.maximum_regularization[state_index + 2] = 0.0;
-            }
+/// Calculates the maximum regularization for the given system states.
+/// Iterates through the states, calculates the sum of the absolute values,
+/// compares to the threshold, and calculates & assigns maximum regularization
+/// accordingly.
+#[inline]
+#[tracing::instrument(level = "trace", skip_all)]
+pub fn calculate_maximum_regularization(
+    maximum_regularization: &mut MaximumRegularization,
+    maximum_regularization_sum: &mut f32,
+    system_states: &SystemStatesAtStep,
+    regularization_threshold: f32,
+) {
+    trace!("Calculating maximum regularization");
+    // self.maximum_regularization_sum = 0.0; // This is probably wrong, no?
+    for state_index in (0..system_states.raw_dim()[0]).step_by(3) {
+        let sum = system_states[[state_index]].abs()
+            + system_states[[state_index + 1]].abs()
+            + system_states[[state_index + 2]].abs();
+        if sum > regularization_threshold {
+            let factor = sum - regularization_threshold;
+            *maximum_regularization_sum += factor.powi(2);
+            maximum_regularization[state_index] = factor * system_states[[state_index]].signum();
+            maximum_regularization[state_index + 1] =
+                factor * system_states[[state_index + 1]].signum();
+            maximum_regularization[state_index + 2] =
+                factor * system_states[[state_index + 2]].signum();
+        } else {
+            maximum_regularization[state_index] = 0.0;
+            maximum_regularization[state_index + 1] = 0.0;
+            maximum_regularization[state_index + 2] = 0.0;
         }
     }
+}
 
-    #[inline]
-    #[tracing::instrument(level = "trace")]
-    pub fn calculate_mapped_residuals(
-        &mut self,
-        measurement_matrix: &MeasurementMatrix,
-        residuals: &Residuals,
-        beat: usize,
-    ) {
-        trace!("Calculating mapped residuals");
-        let measurement_matrix = measurement_matrix.slice(s![beat, .., ..]);
-        *self.mapped_residuals = measurement_matrix.t().dot(&**residuals);
-    }
+#[inline]
+#[tracing::instrument(level = "trace", skip_all)]
+pub fn calculate_mapped_residuals(
+    mapped_residuals: &mut MappedResiduals,
+    residuals: &Residuals,
+    measurement_matrix: &MeasurementMatrixAtBeat,
+) {
+    trace!("Calculating mapped residuals");
+    mapped_residuals.assign(&measurement_matrix.t().dot(&**residuals));
 }
 
 /// Shape for the mapped residuals.
@@ -303,7 +317,7 @@ impl Derivatives {
 /// The mapped residuals are calculated as
 /// `H_T` * y
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-struct MappedResiduals(Array1<f32>);
+pub struct MappedResiduals(Array1<f32>);
 
 impl MappedResiduals {
     #[must_use]
@@ -387,15 +401,19 @@ mod tests {
         delays.fill(30);
         let mut output_state_indices = Indices::empty(number_of_states);
         output_state_indices.fill(Some(3));
-        let time_index = 10;
+        let step = 10;
 
         let mut derivatives = Derivatives::new(number_of_states, Optimizer::Sgd);
 
-        derivatives.calculate_derivatives_coefs(
+        calculate_derivatives_coefs(
+            &mut derivatives.coefs,
+            &mut derivatives.coefs_iir,
+            &mut derivatives.coefs_fir,
             &ap_outputs,
             &estimated_system_states,
             &ap_params,
-            time_index,
+            &derivatives.mapped_residuals,
+            step,
             1,
         );
     }
@@ -406,8 +424,7 @@ mod tests {
         let number_of_sensors = 300;
         let number_of_steps = 2000;
         let number_of_beats = 10;
-        let time_index = 333;
-        let beat_index = 0;
+        let step = 333;
         let voxels_in_dims = Dim([1000, 1, 1]);
         let config = Algorithm {
             regularization_strength: 0.0,
@@ -429,12 +446,22 @@ mod tests {
             number_of_beats,
         );
 
-        derivates.calculate(
-            &functional_description,
-            &estimations,
+        calculate_derivatives(
+            &mut derivates.gains,
+            &mut derivates.coefs,
+            &mut derivates.coefs_iir,
+            &mut derivates.coefs_fir,
+            &mut derivates.mapped_residuals,
+            &mut derivates.maximum_regularization,
+            &mut derivates.maximum_regularization_sum,
+            &estimations.residuals,
+            &estimations.system_states,
+            &estimations.ap_outputs,
+            &functional_description.ap_params,
+            &functional_description.measurement_matrix.at_beat(0),
             &config,
-            time_index,
-            beat_index,
+            step,
+            estimations.measurements.num_sensors(),
         );
     }
 }

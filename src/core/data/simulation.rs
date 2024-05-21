@@ -123,24 +123,25 @@ impl Simulation {
         let model = &self.model;
 
         let mut ap_outputs: Gains = Gains::empty(system_states.shape()[1]);
-        for beat_index in 0..measurements.num_beats() {
+        for beat in 0..measurements.num_beats() {
             ap_outputs.fill(0.0);
             system_states.fill(0.0);
             let measurement_matrix = &model
                 .functional_description
                 .measurement_matrix
-                .at_beat(beat_index);
-            for time_index in 0..system_states.shape()[0] {
+                .at_beat(beat);
+            let mut measurements = measurements.at_beat_mut(beat);
+            for step in 0..system_states.shape()[0] {
+                let mut measurements = measurements.at_step_mut(step);
                 calculate_system_prediction(
                     &mut ap_outputs,
                     system_states,
-                    measurements,
+                    &mut measurements,
                     &model.functional_description.ap_params,
                     measurement_matrix,
-                    &model.functional_description.control_function_values,
+                    model.functional_description.control_function_values[step],
                     &model.functional_description.control_matrix,
-                    time_index,
-                    beat_index,
+                    step,
                 );
             }
         }

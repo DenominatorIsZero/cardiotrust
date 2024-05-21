@@ -1,4 +1,6 @@
-use ndarray::{Array1, Array2, Array3, Axis};
+use ndarray::{
+    s, Array1, Array2, Array3, ArrayView1, ArrayView2, ArrayViewMut1, ArrayViewMut2, Axis,
+};
 use ndarray_npy::WriteNpyExt;
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
@@ -50,6 +52,16 @@ impl SystemStates {
     pub fn num_states(&self) -> usize {
         self.raw_dim()[1]
     }
+
+    #[must_use]
+    pub fn at_step(&self, step: usize) -> SystemStatesAtStep {
+        SystemStatesAtStep(self.slice(s![step, ..]))
+    }
+
+    #[must_use]
+    pub fn at_step_mut(&mut self, step: usize) -> SystemStatesAtStepMut {
+        SystemStatesAtStepMut(self.slice_mut(s![step, ..]))
+    }
 }
 
 impl Deref for SystemStates {
@@ -61,6 +73,31 @@ impl Deref for SystemStates {
 }
 
 impl DerefMut for SystemStates {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct SystemStatesAtStep<'a>(ArrayView1<'a, f32>);
+
+impl<'a> Deref for SystemStatesAtStep<'a> {
+    type Target = ArrayView1<'a, f32>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+pub struct SystemStatesAtStepMut<'a>(ArrayViewMut1<'a, f32>);
+
+impl<'a> Deref for SystemStatesAtStepMut<'a> {
+    type Target = ArrayViewMut1<'a, f32>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a> DerefMut for SystemStatesAtStepMut<'a> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -294,6 +331,16 @@ impl Measurements {
     pub fn num_sensors(&self) -> usize {
         self.raw_dim()[2]
     }
+
+    #[must_use]
+    pub fn at_beat(&self, beat: usize) -> MeasurementsAtBeat {
+        MeasurementsAtBeat(self.slice(s![beat, .., ..]))
+    }
+
+    #[must_use]
+    pub fn at_beat_mut(&mut self, beat: usize) -> MeasurementsAtBeatMut {
+        MeasurementsAtBeatMut(self.slice_mut(s![beat, .., ..]))
+    }
 }
 
 impl Deref for Measurements {
@@ -305,6 +352,70 @@ impl Deref for Measurements {
 }
 
 impl DerefMut for Measurements {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct MeasurementsAtBeat<'a>(ArrayView2<'a, f32>);
+
+impl MeasurementsAtBeat<'_> {
+    #[must_use]
+    pub fn at_step(&self, step: usize) -> MeasurementsAtStep {
+        MeasurementsAtStep(self.slice(s![step, ..]))
+    }
+}
+
+impl<'a> Deref for MeasurementsAtBeat<'a> {
+    type Target = ArrayView2<'a, f32>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+pub struct MeasurementsAtBeatMut<'a>(ArrayViewMut2<'a, f32>);
+
+impl MeasurementsAtBeatMut<'_> {
+    #[must_use]
+    pub fn at_step_mut(&mut self, step: usize) -> MeasurementsAtStepMut {
+        MeasurementsAtStepMut(self.slice_mut(s![step, ..]))
+    }
+}
+
+impl<'a> Deref for MeasurementsAtBeatMut<'a> {
+    type Target = ArrayViewMut2<'a, f32>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a> DerefMut for MeasurementsAtBeatMut<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct MeasurementsAtStep<'a>(ArrayView1<'a, f32>);
+
+impl<'a> Deref for MeasurementsAtStep<'a> {
+    type Target = ArrayView1<'a, f32>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+pub struct MeasurementsAtStepMut<'a>(ArrayViewMut1<'a, f32>);
+
+impl<'a> Deref for MeasurementsAtStepMut<'a> {
+    type Target = ArrayViewMut1<'a, f32>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a> DerefMut for MeasurementsAtStepMut<'a> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

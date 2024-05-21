@@ -1,17 +1,25 @@
 use cardiotrust::core::{
-    algorithm::estimation::{calculate_residuals, prediction::calculate_system_prediction},
+    algorithm::{
+        estimation::{calculate_residuals, prediction::calculate_system_prediction},
+        refinement::derivation::{
+            calculate_derivatives_coefs, calculate_derivatives_gains, calculate_mapped_residuals,
+            calculate_maximum_regularization,
+        },
+    },
     config::Config,
     data::Data,
     model::Model,
     scenario::results::Results,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use physical_constants::REDUCED_PLANCK_CONSTANT;
+use serde_json::de;
 use std::time::Duration;
 
 const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
 const LEARNING_RATE: f32 = 1e-3;
-const TIME_INDEX: usize = 42;
-const BEAT_INDEX: usize = 0;
+const STEP: usize = 42;
+const BEAT: usize = 0;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Derivation");
@@ -34,10 +42,13 @@ fn bench_residual_mapping(group: &mut criterion::BenchmarkGroup<criterion::measu
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("residual_mapping", voxel_size), |b| {
             b.iter(|| {
-                results.derivatives.calculate_mapped_residuals(
-                    &model.functional_description.measurement_matrix,
+                calculate_mapped_residuals(
+                    &mut results.derivatives.mapped_residuals,
                     &results.estimations.residuals,
-                    BEAT_INDEX,
+                    &model
+                        .functional_description
+                        .measurement_matrix
+                        .at_beat(BEAT),
                 );
             })
         });
@@ -54,10 +65,13 @@ fn bench_maximum_regularization(
         let (_, model, mut results) = setup_inputs(&config);
 
         // prepare inputs
-        results.derivatives.calculate_mapped_residuals(
-            &model.functional_description.measurement_matrix,
+        calculate_mapped_residuals(
+            &mut results.derivatives.mapped_residuals,
             &results.estimations.residuals,
-            BEAT_INDEX,
+            &model
+                .functional_description
+                .measurement_matrix
+                .at_beat(BEAT),
         );
 
         // run bench
@@ -67,9 +81,10 @@ fn bench_maximum_regularization(
             BenchmarkId::new("maximum_regularization", voxel_size),
             |b| {
                 b.iter(|| {
-                    results.derivatives.calculate_maximum_regularization(
-                        &results.estimations.system_states,
-                        TIME_INDEX,
+                    calculate_maximum_regularization(
+                        &mut results.derivatives.maximum_regularization,
+                        &mut results.derivatives.maximum_regularization_sum,
+                        &results.estimations.system_states.at_step(STEP),
                         config.algorithm.regularization_threshold,
                     );
                 })
@@ -86,14 +101,18 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         let (_, model, mut results) = setup_inputs(&config);
 
         // prepare inputs
-        results.derivatives.calculate_mapped_residuals(
-            &model.functional_description.measurement_matrix,
+        calculate_mapped_residuals(
+            &mut results.derivatives.mapped_residuals,
             &results.estimations.residuals,
-            BEAT_INDEX,
+            &model
+                .functional_description
+                .measurement_matrix
+                .at_beat(BEAT),
         );
-        results.derivatives.calculate_maximum_regularization(
-            &results.estimations.system_states,
-            TIME_INDEX,
+        calculate_maximum_regularization(
+            &mut results.derivatives.maximum_regularization,
+            &mut results.derivatives.maximum_regularization_sum,
+            &results.estimations.system_states.at_step(STEP),
             config.algorithm.regularization_threshold,
         );
 
@@ -102,13 +121,13 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("gains", voxel_size), |b| {
             b.iter(|| {
-                results.derivatives.calculate_derivatives_gains(
+                calculate_derivatives_gains(
+                    &mut results.derivatives.gains,
                     &results.estimations.ap_outputs,
+                    &results.derivatives.maximum_regularization,
+                    &results.derivatives.mapped_residuals,
                     config.algorithm.regularization_strength,
-                    model
-                        .functional_description
-                        .measurement_covariance
-                        .raw_dim()[0],
+                    results.estimations.measurements.num_sensors(),
                 );
             })
         });
@@ -123,14 +142,18 @@ fn bench_coefs(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         let (_, model, mut results) = setup_inputs(&config);
 
         // prepare inputs
-        results.derivatives.calculate_mapped_residuals(
-            &model.functional_description.measurement_matrix,
+        calculate_mapped_residuals(
+            &mut results.derivatives.mapped_residuals,
             &results.estimations.residuals,
-            BEAT_INDEX,
+            &model
+                .functional_description
+                .measurement_matrix
+                .at_beat(BEAT),
         );
-        results.derivatives.calculate_maximum_regularization(
-            &results.estimations.system_states,
-            TIME_INDEX,
+        calculate_maximum_regularization(
+            &mut results.derivatives.maximum_regularization,
+            &mut results.derivatives.maximum_regularization_sum,
+            &results.estimations.system_states.at_step(STEP),
             config.algorithm.regularization_threshold,
         );
 
@@ -139,15 +162,16 @@ fn bench_coefs(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("coefs", voxel_size), |b| {
             b.iter(|| {
-                results.derivatives.calculate_derivatives_coefs(
+                calculate_derivatives_coefs(
+                    &mut results.derivatives.coefs,
+                    &mut results.derivatives.coefs_iir,
+                    &mut results.derivatives.coefs_fir,
                     &results.estimations.ap_outputs,
                     &results.estimations.system_states,
                     &model.functional_description.ap_params,
-                    TIME_INDEX,
-                    model
-                        .functional_description
-                        .measurement_covariance
-                        .raw_dim()[0],
+                    &results.derivatives.mapped_residuals,
+                    STEP,
+                    results.estimations.measurements.num_sensors(),
                 );
             })
         });
@@ -191,24 +215,21 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
     let measurement_matrix = model
         .functional_description
         .measurement_matrix
-        .at_beat(BEAT_INDEX);
+        .at_beat(BEAT);
     calculate_system_prediction(
         &mut estimations.ap_outputs,
         &mut estimations.system_states,
-        &mut estimations.measurements,
+        &mut estimations.measurements.at_beat_mut(BEAT).at_step_mut(STEP),
         &model.functional_description.ap_params,
         &measurement_matrix,
-        &model.functional_description.control_function_values,
+        model.functional_description.control_function_values[STEP],
         &model.functional_description.control_matrix,
-        TIME_INDEX,
-        BEAT_INDEX,
+        STEP,
     );
     calculate_residuals(
         &mut estimations.residuals,
-        &estimations.measurements,
-        &data.simulation.measurements,
-        TIME_INDEX,
-        BEAT_INDEX,
+        &estimations.measurements.at_beat_mut(BEAT).at_step_mut(STEP),
+        &data.simulation.measurements.at_beat(BEAT).at_step(STEP),
     );
     (data, model, results)
 }

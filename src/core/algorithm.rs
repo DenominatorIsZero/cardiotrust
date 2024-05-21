@@ -2,13 +2,17 @@ pub mod estimation;
 pub mod metrics;
 pub mod refinement;
 
+use bevy::ui::measurement;
 use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1, ArrayBase, Dim, ViewRepr};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use tracing::{debug, trace};
 
-use crate::core::algorithm::estimation::update_kalman_gain_and_check_convergence;
+use crate::core::algorithm::{
+    estimation::update_kalman_gain_and_check_convergence,
+    refinement::derivation::calculate_derivatives,
+};
 
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
@@ -17,8 +21,18 @@ use self::estimation::{
 };
 use super::{
     config::algorithm::Algorithm,
-    data::{shapes::SystemStates, Data},
-    model::functional::FunctionalDescription,
+    data::{
+        shapes::{
+            MeasurementsAtStep, MeasurementsAtStepMut, Residuals, SystemStates, SystemStatesAtStep,
+            SystemStatesAtStepMut,
+        },
+        Data,
+    },
+    model::functional::{
+        allpass::shapes::{Coefs, Gains, UnitDelays},
+        measurement::MeasurementMatrixAtBeat,
+        FunctionalDescription,
+    },
     scenario::results::Results,
 };
 
@@ -52,20 +66,23 @@ pub fn calculate_pseudo_inverse(
 
     let decomposition = SVD::new_unordered(measurement_matrix, true, true);
 
+    let num_sensors = data.simulation.measurements.num_sensors();
+
     let estimations = &mut results.estimations;
     let derivatives = &mut results.derivatives;
 
-    for time_index in 0..estimations.system_states.num_steps() {
+    for step in 0..estimations.system_states.num_steps() {
+        let mut estimated_measurements = estimations.measurements.at_beat_mut(0);
+        let actual_measurements = data.simulation.measurements.at_beat(0);
+        let mut system_states_delta = estimations.system_states_delta.at_step_mut(step);
+        let mut estimated_system_states = estimations.system_states.at_step_mut(step);
+        let actual_system_states = data.simulation.system_states.at_step(step);
+        let mut estimated_measurements = estimated_measurements.at_step_mut(step);
+        let actual_measurements = actual_measurements.at_step(step);
+
         let rows = data.simulation.measurements.num_sensors();
-        let measurements = DMatrix::from_row_slice(
-            rows,
-            1,
-            data.simulation
-                .measurements
-                .slice(s![0, time_index, ..])
-                .as_slice()
-                .expect("Slice to be some."),
-        );
+        let measurements =
+            DMatrix::from_row_slice(rows, 1, actual_measurements.as_slice().unwrap());
 
         let system_states = decomposition
             .solve(&measurements, 1e-5)
@@ -73,49 +90,59 @@ pub fn calculate_pseudo_inverse(
 
         let system_states = Array1::from_iter(system_states.as_slice().iter().copied());
 
-        estimations
-            .system_states
-            .slice_mut(s![time_index, ..])
-            .assign(&system_states);
+        estimated_system_states.assign(&system_states);
 
-        let measurement_matrix: ArrayBase<ViewRepr<&f32>, Dim<[usize; 2]>> = functional_description
-            .measurement_matrix
-            .slice(s![0, .., ..]);
+        let measurement_matrix = functional_description.measurement_matrix.at_beat(0);
 
-        estimations
-            .measurements
-            .slice_mut(s![0, time_index, ..])
-            .assign(&measurement_matrix.dot(&estimations.system_states.slice(s![time_index, ..])));
+        estimated_measurements.assign(&measurement_matrix.dot(&*estimated_system_states));
 
         calculate_residuals(
             &mut estimations.residuals,
-            &estimations.measurements,
-            &data.simulation.measurements,
-            time_index,
-            0,
+            &estimated_measurements,
+            &actual_measurements,
         );
 
-        derivatives.calculate(functional_description, estimations, config, time_index, 0);
+        calculate_derivatives(
+            &mut derivatives.gains,
+            &mut derivatives.coefs,
+            &mut derivatives.coefs_iir,
+            &mut derivatives.coefs_fir,
+            &mut derivatives.mapped_residuals,
+            &mut derivatives.maximum_regularization,
+            &mut derivatives.maximum_regularization_sum,
+            &estimations.residuals,
+            &estimations.system_states,
+            &estimations.ap_outputs,
+            &functional_description.ap_params,
+            &measurement_matrix,
+            config,
+            step,
+            num_sensors,
+        );
 
+        let estimated_system_states = estimations.system_states.at_step_mut(step);
         calculate_post_update_residuals(
             &mut estimations.post_update_residuals,
-            &functional_description.measurement_matrix,
-            &estimations.system_states,
-            &data.simulation.measurements,
-            time_index,
-            0,
+            &functional_description.measurement_matrix.at_beat(0),
+            &estimated_system_states,
+            &actual_measurements,
         );
         calculate_system_states_delta(
-            &mut estimations.system_states_delta,
-            &estimations.system_states,
-            &data.simulation.system_states,
-            time_index,
+            &mut system_states_delta,
+            &estimated_system_states,
+            &actual_system_states,
         );
+
         results.metrics.calculate_step(
-            estimations,
-            derivatives,
+            &estimations.residuals,
+            &system_states_delta,
+            &estimations.post_update_residuals,
+            &estimations.gains_delta,
+            &estimations.delays_delta,
+            derivatives.maximum_regularization_sum,
             config.regularization_strength,
-            time_index,
+            num_sensors,
+            step,
         );
     }
     results.metrics.calculate_epoch(0);
@@ -147,40 +174,72 @@ pub fn run_epoch(
     let mut rng = thread_rng();
     beat_indices.shuffle(&mut rng);
 
-    for beat_index in beat_indices {
-        results.estimations.reset();
-        results.estimations.kalman_gain_converged = false;
-        let estimations = &mut results.estimations;
-        let derivatives = &mut results.derivatives;
-        let measurement_matrix = functional_description
-            .measurement_matrix
-            .at_beat(beat_index);
-        for time_index in 0..num_steps {
+    let estimations = &mut results.estimations;
+    let derivatives = &mut results.derivatives;
+
+    let actual_gains = &data.simulation.model.functional_description.ap_params.gains;
+
+    let actual_coefs = &data.simulation.model.functional_description.ap_params.coefs;
+
+    let actual_delays = &data
+        .simulation
+        .model
+        .functional_description
+        .ap_params
+        .delays;
+
+    let estimated_ap_params = &mut functional_description.ap_params;
+
+    let num_sensors = data.simulation.measurements.num_sensors();
+
+    for beat in beat_indices {
+        estimations.reset();
+        estimations.kalman_gain_converged = false;
+        let estimated_system_states = &mut estimations.system_states;
+        let measurement_matrix = functional_description.measurement_matrix.at_beat(beat);
+        let mut estimated_measurements = estimations.measurements.at_beat_mut(beat);
+        let actual_measurements = data.simulation.measurements.at_beat(beat);
+
+        for step in 0..num_steps {
+            let actual_system_states = data.simulation.system_states.at_step(step);
+            let mut system_states_delta = estimations.system_states_delta.at_step_mut(step);
+
+            let mut estimated_measurements = estimated_measurements.at_step_mut(step);
+            let actual_measurements = actual_measurements.at_step(step);
+
             calculate_system_prediction(
                 &mut estimations.ap_outputs,
-                &mut estimations.system_states,
-                &mut estimations.measurements,
-                &functional_description.ap_params,
+                estimated_system_states,
+                &mut estimated_measurements,
+                &estimated_ap_params,
                 &measurement_matrix,
-                &functional_description.control_function_values,
+                functional_description.control_function_values[step],
                 &functional_description.control_matrix,
-                time_index,
-                beat_index,
-            );
-            calculate_residuals(
-                &mut estimations.residuals,
-                &estimations.measurements,
-                &data.simulation.measurements,
-                time_index,
-                beat_index,
+                step,
             );
 
-            derivatives.calculate(
-                functional_description,
-                estimations,
+            calculate_residuals(
+                &mut estimations.residuals,
+                &estimated_measurements,
+                &actual_measurements,
+            );
+
+            calculate_derivatives(
+                &mut derivatives.gains,
+                &mut derivatives.coefs,
+                &mut derivatives.coefs_iir,
+                &mut derivatives.coefs_fir,
+                &mut derivatives.mapped_residuals,
+                &mut derivatives.maximum_regularization,
+                &mut derivatives.maximum_regularization_sum,
+                &estimations.residuals,
+                &estimated_system_states,
+                &estimations.ap_outputs,
+                estimated_ap_params,
+                &measurement_matrix,
                 config,
-                time_index,
-                beat_index,
+                step,
+                num_sensors,
             );
 
             if config.model.common.apply_system_update {
@@ -191,42 +250,55 @@ pub fn run_epoch(
                         &mut estimations.state_covariance_est,
                         &mut estimations.state_covariance_pred,
                         &mut estimations.innovation_covariance,
-                        &functional_description.ap_params,
+                        &estimated_ap_params,
                         &functional_description.process_covariance,
                         &functional_description.measurement_covariance,
                         &measurement_matrix,
                     );
                 }
                 calculate_system_update(
-                    &mut estimations.system_states,
+                    estimated_system_states,
                     &functional_description.kalman_gain,
                     &estimations.residuals,
-                    time_index,
+                    step,
                     config,
                 );
             }
 
+            let estimated_system_states = estimated_system_states.at_step_mut(step);
             calculate_deltas(
-                estimations,
-                functional_description,
-                data,
-                time_index,
-                beat_index,
+                &mut estimations.post_update_residuals,
+                &mut system_states_delta,
+                &mut estimations.gains_delta,
+                &mut estimations.delays_delta,
+                &measurement_matrix,
+                &actual_measurements,
+                &estimated_system_states,
+                &actual_system_states,
+                &estimated_ap_params.gains,
+                actual_gains,
+                &estimated_ap_params.delays,
+                actual_delays,
+                &estimated_ap_params.coefs,
+                actual_coefs,
             );
 
             results.metrics.calculate_step(
-                estimations,
-                derivatives,
+                &estimations.residuals,
+                &system_states_delta,
+                &estimations.post_update_residuals,
+                &estimations.gains_delta,
+                &estimations.delays_delta,
+                derivatives.maximum_regularization_sum,
                 config.regularization_strength,
-                time_index,
+                num_sensors,
+                step,
             );
         }
         if let Some(n) = batch.as_mut() {
             *n += 1;
             if *n == config.batch_size {
-                functional_description
-                    .ap_params
-                    .update(derivatives, config, num_steps, num_beats);
+                estimated_ap_params.update(derivatives, config, num_steps, num_beats);
                 derivatives.reset();
                 estimations.kalman_gain_converged = false;
                 *n = 0;
@@ -246,45 +318,42 @@ pub fn run_epoch(
     results.metrics.calculate_epoch(epoch_index);
 }
 
-#[tracing::instrument(level = "trace")]
+#[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_deltas(
-    estimations: &mut Estimations,
-    functional_description: &FunctionalDescription,
-    data: &Data,
-    time_index: usize,
-    beat_index: usize,
+    post_update_residuals: &mut Residuals,
+    system_states_delta: &mut SystemStatesAtStepMut,
+    gains_delta: &mut Gains,
+    delays_delta: &mut Coefs,
+    measurement_matrix: &MeasurementMatrixAtBeat,
+    actual_measurements: &MeasurementsAtStep,
+    estimated_system_states: &SystemStatesAtStepMut,
+    actual_system_states: &SystemStatesAtStep,
+    estimated_gains: &Gains,
+    actual_gains: &Gains,
+    estimated_delays: &UnitDelays,
+    actual_delays: &UnitDelays,
+    estimated_coefs: &Coefs,
+    actual_coefs: &Coefs,
 ) {
     trace!("Calculating deltas");
     calculate_post_update_residuals(
-        &mut estimations.post_update_residuals,
-        &functional_description.measurement_matrix,
-        &estimations.system_states,
-        &data.simulation.measurements,
-        time_index,
-        beat_index,
+        post_update_residuals,
+        measurement_matrix,
+        estimated_system_states,
+        actual_measurements,
     );
     calculate_system_states_delta(
-        &mut estimations.system_states_delta,
-        &estimations.system_states,
-        &data.simulation.system_states,
-        time_index,
+        system_states_delta,
+        estimated_system_states,
+        actual_system_states,
     );
-    calculate_gains_delta(
-        &mut estimations.gains_delta,
-        &functional_description.ap_params.gains,
-        &data.simulation.model.functional_description.ap_params.gains,
-    );
+    calculate_gains_delta(gains_delta, estimated_gains, actual_gains);
     calculate_delays_delta(
-        &mut estimations.delays_delta,
-        &functional_description.ap_params.delays,
-        &data
-            .simulation
-            .model
-            .functional_description
-            .ap_params
-            .delays,
-        &functional_description.ap_params.coefs,
-        &data.simulation.model.functional_description.ap_params.coefs,
+        delays_delta,
+        estimated_delays,
+        actual_delays,
+        estimated_coefs,
+        actual_coefs,
     );
 }
 

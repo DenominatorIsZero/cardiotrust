@@ -9,8 +9,17 @@ use std::{
 };
 use tracing::{debug, trace};
 
-use super::{estimation::Estimations, refinement::derivation::Derivatives};
-use crate::core::model::spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes};
+use super::{
+    estimation::Estimations,
+    refinement::derivation::{Derivatives, MaximumRegularization},
+};
+use crate::core::{
+    data::shapes::{Residuals, SystemStatesAtStep, SystemStatesAtStepMut},
+    model::{
+        functional::allpass::shapes::{Coefs, Gains},
+        spatial::voxels::{VoxelNumbers, VoxelType, VoxelTypes},
+    },
+};
 
 #[allow(clippy::unsafe_derive_deserialize)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -115,38 +124,42 @@ impl Metrics {
     ///
     /// Panics if any array is None.
     #[allow(clippy::cast_precision_loss)]
-    #[tracing::instrument(level = "trace")]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn calculate_step(
         &mut self,
-        estimations: &Estimations,
-        derivatives: &Derivatives,
+        residuals: &Residuals,
+        system_states_delta: &SystemStatesAtStepMut,
+        post_update_residuals: &Residuals,
+        gains_delta: &Gains,
+        delays_delta: &Coefs,
+        maximum_regularization_sum: f32,
         regularization_strength: f32,
+        num_sensors: usize,
         time_index: usize,
     ) {
         trace!("Calculating metrics for step {}", time_index);
         let index = time_index;
 
-        self.loss_mse[index] = estimations.residuals.mapv(|v| v.powi(2)).sum()
-            / estimations.measurements.num_sensors() as f32;
-        self.loss_maximum_regularization[index] = derivatives.maximum_regularization_sum;
+        self.loss_mse[index] = residuals.mapv(|v| v.powi(2)).sum() / num_sensors as f32;
+        self.loss_maximum_regularization[index] = maximum_regularization_sum;
         self.loss[index] = regularization_strength.mul_add(
             self.loss_maximum_regularization[index],
             self.loss_mse[index],
         );
 
-        let states_delta_abs = estimations.system_states_delta.mapv(f32::abs);
+        let states_delta_abs = system_states_delta.mapv(f32::abs);
         self.delta_states_mean[index] = states_delta_abs.mean().unwrap();
         self.delta_states_max[index] = *states_delta_abs.max_skipnan();
 
-        let measurements_delta_abs = estimations.post_update_residuals.mapv(f32::abs);
+        let measurements_delta_abs = post_update_residuals.mapv(f32::abs);
         self.delta_measurements_mean[index] = measurements_delta_abs.mean().unwrap();
         self.delta_measurements_max[index] = *measurements_delta_abs.max_skipnan();
 
-        let gains_delta_abs = estimations.gains_delta.mapv(f32::abs);
+        let gains_delta_abs = gains_delta.mapv(f32::abs);
         self.delta_gains_mean[index] = gains_delta_abs.mean().unwrap();
         self.delta_gains_max[index] = *gains_delta_abs.max_skipnan();
 
-        let delays_delta_abs = estimations.delays_delta.mapv(f32::abs);
+        let delays_delta_abs = delays_delta.mapv(f32::abs);
         self.delta_delays_mean[index] = delays_delta_abs.mean().unwrap();
         self.delta_delays_max[index] = *delays_delta_abs.max_skipnan();
     }

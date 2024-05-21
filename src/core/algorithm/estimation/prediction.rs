@@ -2,7 +2,10 @@ use ndarray::s;
 use tracing::trace;
 
 use crate::core::{
-    data::shapes::{Measurements, SystemStates},
+    data::shapes::{
+        Measurements, MeasurementsAtStep, MeasurementsAtStepMut, SystemStates,
+        SystemStatesAtStepMut,
+    },
     model::functional::{
         allpass::{shapes::Gains, APParameters},
         control::{ControlFunction, ControlMatrix},
@@ -21,24 +24,18 @@ use crate::core::{
 pub fn calculate_system_prediction(
     ap_outputs: &mut Gains,
     system_states: &mut SystemStates,
-    measurements: &mut Measurements,
+    measurements: &mut MeasurementsAtStepMut,
     ap_params: &APParameters,
     measurement_matrix: &MeasurementMatrixAtBeat,
-    control_function: &ControlFunction,
+    control_function_value: f32,
     control_matrix: &ControlMatrix,
-    time_index: usize,
-    beat_index: usize,
+    step: usize,
 ) {
     trace!("Calculating system prediction");
-    innovate_system_states_v1(ap_outputs, ap_params, time_index, system_states);
-    add_control_function(system_states, control_function, control_matrix, time_index);
-    predict_measurements(
-        measurements,
-        time_index,
-        beat_index,
-        measurement_matrix,
-        system_states,
-    );
+    innovate_system_states_v1(ap_outputs, ap_params, step, system_states);
+    let mut system_states = system_states.at_step_mut(step);
+    add_control_function(&mut system_states, control_function_value, control_matrix);
+    predict_measurements(measurements, measurement_matrix, &system_states);
 }
 
 /// Innovates the system states by calculating the all-pass filter outputs,
@@ -98,23 +95,15 @@ pub fn innovate_system_states_v1(
 /// system states for the given time index. This allows an external control
 /// signal to be injected into the system states.
 #[inline]
-#[tracing::instrument(level = "trace")]
+#[tracing::instrument(level = "trace", skip_all)]
 pub fn add_control_function(
-    system_states: &mut SystemStates,
-    control_function: &ControlFunction,
+    system_states: &mut SystemStatesAtStepMut,
+    control_function_value: f32,
     control_matrix: &ControlMatrix,
-    time_index: usize,
 ) {
     trace!("Adding control function");
     // Add control function
-    let control_function_value = control_function[time_index];
-    system_states
-        .slice_mut(s![time_index, ..])
-        .iter_mut()
-        .zip(control_matrix.iter())
-        .for_each(|(system_state, coef)| {
-            *system_state += coef * control_function_value;
-        });
+    system_states.scaled_add(control_function_value, &**control_matrix);
 }
 
 /// Predicts the measurements by multiplying the measurement matrix with the
@@ -123,15 +112,11 @@ pub fn add_control_function(
 #[inline]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn predict_measurements(
-    measurements: &mut Measurements,
-    time_index: usize,
-    beat_index: usize,
+    measurements: &mut MeasurementsAtStepMut,
     measurement_matrix: &MeasurementMatrixAtBeat,
-    system_states: &SystemStates,
+    system_states: &SystemStatesAtStepMut,
 ) {
     trace!("Predicting measurements");
     // Prediction of measurements H * x
-    measurements
-        .slice_mut(s![beat_index, time_index, ..])
-        .assign(&measurement_matrix.dot(&system_states.slice(s![time_index, ..])));
+    measurements.assign(&measurement_matrix.dot(&**system_states));
 }

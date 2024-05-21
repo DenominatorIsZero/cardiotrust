@@ -4,16 +4,17 @@ use cardiotrust::core::{
     },
     config::Config,
     data::Data,
-    model::Model,
+    model::{functional::measurement, Model},
     scenario::results::Results,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::time::Duration;
+use tracing_subscriber::fmt::format::PrettyFields;
 
 const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
 const LEARNING_RATE: f32 = 1e-3;
-const TIME_INDEX: usize = 42;
-const BEAT_INDEX: usize = 0;
+const STEP: usize = 42;
+const BEAT: usize = 0;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In System Prediction");
@@ -40,7 +41,7 @@ fn bench_innovate(group: &mut criterion::BenchmarkGroup<criterion::measurement::
                     innovate_system_states_v1(
                         &mut results.estimations.ap_outputs,
                         &model.functional_description.ap_params,
-                        TIME_INDEX,
+                        STEP,
                         &mut results.estimations.system_states,
                     );
                 })
@@ -58,15 +59,13 @@ fn bench_control_function(group: &mut criterion::BenchmarkGroup<criterion::measu
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
+        let mut system_states = results.estimations.system_states.at_step_mut(STEP);
+        let control_function_value = model.functional_description.control_function_values[STEP];
+        let control_matrix = &model.functional_description.control_matrix;
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("add_control_funciton", voxel_size), |b| {
             b.iter(|| {
-                add_control_function(
-                    &mut results.estimations.system_states,
-                    &model.functional_description.control_function_values,
-                    &model.functional_description.control_matrix,
-                    TIME_INDEX,
-                );
+                add_control_function(&mut system_states, control_function_value, control_matrix);
             })
         });
     }
@@ -78,24 +77,19 @@ fn bench_measurements(group: &mut criterion::BenchmarkGroup<criterion::measureme
 
         // setup inputs
         let (_, model, mut results) = setup_inputs(&config);
-        let measurement_matrix = model
-            .functional_description
-            .measurement_matrix
-            .at_beat(BEAT_INDEX);
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
+        let mut measurements_at_beat = results.estimations.measurements.at_beat_mut(BEAT);
+        let mut measurements = measurements_at_beat.at_step_mut(STEP);
+        let measurement_matrix = model
+            .functional_description
+            .measurement_matrix
+            .at_beat(BEAT);
+        let system_states = results.estimations.system_states.at_step_mut(STEP);
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("predict_measurements", voxel_size), |b| {
-            b.iter(|| {
-                predict_measurements(
-                    &mut results.estimations.measurements,
-                    TIME_INDEX,
-                    BEAT_INDEX,
-                    &measurement_matrix,
-                    &results.estimations.system_states,
-                );
-            })
+            b.iter(|| predict_measurements(&mut measurements, &measurement_matrix, &system_states));
         });
     }
 }

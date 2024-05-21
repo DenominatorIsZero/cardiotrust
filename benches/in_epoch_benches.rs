@@ -5,6 +5,7 @@ use cardiotrust::core::{
             calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
             update_kalman_gain_and_check_convergence,
         },
+        refinement::derivation::calculate_derivatives,
     },
     config::Config,
     data::Data,
@@ -16,8 +17,8 @@ use std::time::Duration;
 
 const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
 const LEARNING_RATE: f32 = 1e-3;
-const TIME_INDEX: usize = 42;
-const BEAT_INDEX: usize = 0;
+const STEP: usize = 42;
+const BEAT: usize = 0;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Epoch");
@@ -70,20 +71,23 @@ fn bench_system_prediction(
         let measurement_matrix = model
             .functional_description
             .measurement_matrix
-            .at_beat(BEAT_INDEX);
+            .at_beat(BEAT);
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("system_prediction", voxel_size), |b| {
             b.iter(|| {
                 calculate_system_prediction(
                     &mut results.estimations.ap_outputs,
                     &mut results.estimations.system_states,
-                    &mut results.estimations.measurements,
+                    &mut results
+                        .estimations
+                        .measurements
+                        .at_beat_mut(BEAT)
+                        .at_step_mut(STEP),
                     &model.functional_description.ap_params,
                     &measurement_matrix,
-                    &model.functional_description.control_function_values,
+                    model.functional_description.control_function_values[STEP],
                     &model.functional_description.control_matrix,
-                    TIME_INDEX,
-                    BEAT_INDEX,
+                    STEP,
                 )
             })
         });
@@ -104,10 +108,12 @@ fn bench_residuals(group: &mut criterion::BenchmarkGroup<criterion::measurement:
             b.iter(|| {
                 calculate_residuals(
                     &mut results.estimations.residuals,
-                    &results.estimations.measurements,
-                    &data.simulation.measurements,
-                    TIME_INDEX,
-                    BEAT_INDEX,
+                    &results
+                        .estimations
+                        .measurements
+                        .at_beat_mut(BEAT)
+                        .at_step_mut(STEP),
+                    &data.simulation.measurements.at_beat(BEAT).at_step(STEP),
                 );
             })
         });
@@ -126,12 +132,25 @@ fn bench_derivation(group: &mut criterion::BenchmarkGroup<criterion::measurement
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("derivation", voxel_size), |b| {
             b.iter(|| {
-                results.derivatives.calculate(
-                    &model.functional_description,
-                    &results.estimations,
+                calculate_derivatives(
+                    &mut results.derivatives.gains,
+                    &mut results.derivatives.coefs,
+                    &mut results.derivatives.coefs_iir,
+                    &mut results.derivatives.coefs_fir,
+                    &mut results.derivatives.mapped_residuals,
+                    &mut results.derivatives.maximum_regularization,
+                    &mut results.derivatives.maximum_regularization_sum,
+                    &results.estimations.residuals,
+                    &results.estimations.system_states,
+                    &results.estimations.ap_outputs,
+                    &model.functional_description.ap_params,
+                    &model
+                        .functional_description
+                        .measurement_matrix
+                        .at_beat(BEAT),
                     &config.algorithm,
-                    TIME_INDEX,
-                    BEAT_INDEX,
+                    STEP,
+                    results.estimations.measurements.num_sensors(),
                 );
             })
         });
@@ -186,7 +205,7 @@ fn bench_system_update(group: &mut criterion::BenchmarkGroup<criterion::measurem
                     &mut results.estimations.system_states,
                     &model.functional_description.kalman_gain,
                     &results.estimations.residuals,
-                    TIME_INDEX,
+                    STEP,
                     &config.algorithm,
                 );
             })
@@ -207,11 +226,28 @@ fn bench_deltas(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
         group.bench_function(BenchmarkId::new("deltas", voxel_size), |b| {
             b.iter(|| {
                 calculate_deltas(
-                    &mut results.estimations,
-                    &model.functional_description,
-                    &data,
-                    TIME_INDEX,
-                    BEAT_INDEX,
+                    &mut results.estimations.post_update_residuals,
+                    &mut results.estimations.system_states_delta.at_step_mut(STEP),
+                    &mut results.estimations.gains_delta,
+                    &mut results.estimations.delays_delta,
+                    &model
+                        .functional_description
+                        .measurement_matrix
+                        .at_beat(BEAT),
+                    &results.estimations.measurements.at_beat(BEAT).at_step(STEP),
+                    &results.estimations.system_states.at_step_mut(STEP),
+                    &data.simulation.system_states.at_step(STEP),
+                    &model.functional_description.ap_params.gains,
+                    &data.simulation.model.functional_description.ap_params.gains,
+                    &model.functional_description.ap_params.delays,
+                    &data
+                        .simulation
+                        .model
+                        .functional_description
+                        .ap_params
+                        .delays,
+                    &model.functional_description.ap_params.coefs,
+                    &data.simulation.model.functional_description.ap_params.coefs,
                 );
             })
         });
@@ -231,10 +267,15 @@ fn bench_metrics(group: &mut criterion::BenchmarkGroup<criterion::measurement::W
         group.bench_function(BenchmarkId::new("metrics", voxel_size), |b| {
             b.iter(|| {
                 results.metrics.calculate_step(
-                    &results.estimations,
-                    &results.derivatives,
+                    &results.estimations.residuals,
+                    &results.estimations.system_states_delta.at_step_mut(STEP),
+                    &results.estimations.post_update_residuals,
+                    &results.estimations.gains_delta,
+                    &results.estimations.delays_delta,
+                    results.derivatives.maximum_regularization_sum,
                     config.algorithm.regularization_strength,
-                    TIME_INDEX,
+                    results.estimations.measurements.num_sensors(),
+                    STEP,
                 );
             })
         });

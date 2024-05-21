@@ -2,7 +2,7 @@ use cardiotrust::core::{
     algorithm::{calculate_deltas, run_epoch},
     config::Config,
     data::Data,
-    model::Model,
+    model::{functional::FunctionalDescription, Model},
     scenario::results::Results,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
@@ -10,8 +10,8 @@ use std::time::Duration;
 
 const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
 const LEARNING_RATE: f32 = 1e-3;
-const TIME_INDEX: usize = 42;
-const BEAT_INDEX: usize = 0;
+const STEP: usize = 42;
+const BEAT: usize = 0;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Metrics");
@@ -34,11 +34,28 @@ fn bench_deltas(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
         group.bench_function(BenchmarkId::new("gains", voxel_size), |b| {
             b.iter(|| {
                 calculate_deltas(
-                    &mut results.estimations,
-                    &model.functional_description,
-                    &data,
-                    TIME_INDEX,
-                    BEAT_INDEX,
+                    &mut results.estimations.post_update_residuals,
+                    &mut results.estimations.system_states_delta.at_step_mut(STEP),
+                    &mut results.estimations.gains_delta,
+                    &mut results.estimations.delays_delta,
+                    &model
+                        .functional_description
+                        .measurement_matrix
+                        .at_beat(BEAT),
+                    &data.simulation.measurements.at_beat(BEAT).at_step(STEP),
+                    &results.estimations.system_states.at_step_mut(STEP),
+                    &data.simulation.system_states.at_step(STEP),
+                    &model.functional_description.ap_params.gains,
+                    &data.simulation.model.functional_description.ap_params.gains,
+                    &model.functional_description.ap_params.delays,
+                    &data
+                        .simulation
+                        .model
+                        .functional_description
+                        .ap_params
+                        .delays,
+                    &model.functional_description.ap_params.coefs,
+                    &data.simulation.model.functional_description.ap_params.coefs,
                 );
             })
         });
@@ -54,11 +71,28 @@ fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wall
 
         // perpare inputs
         calculate_deltas(
-            &mut results.estimations,
-            &model.functional_description,
-            &data,
-            TIME_INDEX,
-            BEAT_INDEX,
+            &mut results.estimations.post_update_residuals,
+            &mut results.estimations.system_states_delta.at_step_mut(STEP),
+            &mut results.estimations.gains_delta,
+            &mut results.estimations.delays_delta,
+            &model
+                .functional_description
+                .measurement_matrix
+                .at_beat(BEAT),
+            &data.simulation.measurements.at_beat(BEAT).at_step(STEP),
+            &results.estimations.system_states.at_step_mut(STEP),
+            &data.simulation.system_states.at_step(STEP),
+            &model.functional_description.ap_params.gains,
+            &data.simulation.model.functional_description.ap_params.gains,
+            &model.functional_description.ap_params.delays,
+            &data
+                .simulation
+                .model
+                .functional_description
+                .ap_params
+                .delays,
+            &model.functional_description.ap_params.coefs,
+            &data.simulation.model.functional_description.ap_params.coefs,
         );
 
         // run bench
@@ -67,10 +101,15 @@ fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wall
         group.bench_function(BenchmarkId::new("step", voxel_size), |b| {
             b.iter(|| {
                 results.metrics.calculate_step(
-                    &results.estimations,
-                    &results.derivatives,
+                    &results.estimations.residuals,
+                    &results.estimations.system_states_delta.at_step_mut(STEP),
+                    &results.estimations.post_update_residuals,
+                    &results.estimations.gains_delta,
+                    &results.estimations.delays_delta,
+                    results.derivatives.maximum_regularization_sum,
                     config.algorithm.regularization_strength,
-                    TIME_INDEX,
+                    results.estimations.measurements.num_sensors(),
+                    STEP,
                 );
             })
         });
