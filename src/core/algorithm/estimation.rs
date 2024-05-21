@@ -20,7 +20,7 @@ use crate::core::{
             APParameters,
         },
         kalman::KalmanGain,
-        measurement::{MeasurementCovariance, MeasurementMatrix, MeasurementMatrixAtBeat},
+        measurement::{MeasurementCovariance, MeasurementMatrixAtBeat},
     },
 };
 

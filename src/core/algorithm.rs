@@ -2,9 +2,8 @@ pub mod estimation;
 pub mod metrics;
 pub mod refinement;
 
-use bevy::ui::measurement;
 use nalgebra::{DMatrix, SVD};
-use ndarray::{s, Array1, ArrayBase, Dim, ViewRepr};
+use ndarray::{s, Array1};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use tracing::{debug, trace};
@@ -17,14 +16,13 @@ use crate::core::algorithm::{
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
     calculate_residuals, calculate_system_states_delta, calculate_system_update,
-    prediction::calculate_system_prediction, Estimations,
+    prediction::calculate_system_prediction,
 };
 use super::{
     config::algorithm::Algorithm,
     data::{
         shapes::{
-            MeasurementsAtStep, MeasurementsAtStepMut, Residuals, SystemStates, SystemStatesAtStep,
-            SystemStatesAtStepMut,
+            MeasurementsAtStep, Residuals, SystemStates, SystemStatesAtStep, SystemStatesAtStepMut,
         },
         Data,
     },

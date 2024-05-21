@@ -1,14 +1,10 @@
-use ndarray::s;
 use tracing::trace;
 
 use crate::core::{
-    data::shapes::{
-        Measurements, MeasurementsAtStep, MeasurementsAtStepMut, SystemStates,
-        SystemStatesAtStepMut,
-    },
+    data::shapes::{MeasurementsAtStepMut, SystemStates, SystemStatesAtStepMut},
     model::functional::{
         allpass::{shapes::Gains, APParameters},
-        control::{ControlFunction, ControlMatrix},
+        control::ControlMatrix,
         measurement::MeasurementMatrixAtBeat,
     },
 };

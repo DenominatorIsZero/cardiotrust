@@ -1,13 +1,10 @@
-use core::num;
 use std::ops::{Deref, DerefMut};
 
-use bevy::ui::measurement;
-use ndarray::{s, Array1};
+use ndarray::Array1;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use crate::core::{
-    algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
     data::shapes::{Residuals, SystemStates, SystemStatesAtStep},
     model::functional::{
@@ -15,8 +12,7 @@ use crate::core::{
             shapes::{Coefs, Gains},
             APParameters,
         },
-        measurement::{MeasurementMatrix, MeasurementMatrixAtBeat},
-        FunctionalDescription,
+        measurement::MeasurementMatrixAtBeat,
     },
 };
 
