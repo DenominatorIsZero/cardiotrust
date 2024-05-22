@@ -430,7 +430,7 @@ mod test {
     ) {
         info!("Running optimization.");
         let mut batch_index = 0;
-        for epoch_index in 0..algorithm_config.epochs {
+        for _ in 0..algorithm_config.epochs {
             run_epoch(
                 functional_description,
                 results,
@@ -456,7 +456,6 @@ mod test {
         let number_of_steps = 3;
         let number_of_epochs = 10;
         let config = AlgorithmConfig::default();
-        let epoch_index = 3;
         let voxels_in_dims = Dim([1000, 1, 1]);
         let number_of_beats = 10;
 
