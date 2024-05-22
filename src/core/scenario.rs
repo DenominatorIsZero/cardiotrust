@@ -363,7 +363,7 @@ impl Scenario {
                 let remaining_seconds = remaining_seconds_total % 60;
                 let remaining_minutes = (remaining_seconds_total / 60) % 60;
                 let remaining_hours = (remaining_seconds_total / 3600) % 24;
-                let remaining_days = remaining_seconds / 86400;
+                let remaining_days = remaining_seconds_total / 86400;
 
                 if remaining_days > 0 {
                     format!("ETC: {remaining_days} days, {remaining_hours} hours")
