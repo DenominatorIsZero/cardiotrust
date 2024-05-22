@@ -78,7 +78,7 @@ pub fn start_scenarios(
         let (epoch_tx, epoch_rx) = channel();
         let (summary_tx, summary_rx) = channel();
         let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
-        entry.scenario.set_running(0);
+        entry.scenario.set_simulating();
         entry.join_handle = Some(handle);
         entry.epoch_rx = Some(Mutex::new(epoch_rx));
         entry.summary_rx = Some(Mutex::new(summary_rx));
@@ -88,6 +88,7 @@ pub fn start_scenarios(
         .iter()
         .filter(|entry| {
             discriminant(entry.scenario.get_status()) == discriminant(&Status::Running(1))
+                || entry.scenario.get_status() == &Status::Simulating
         })
         .count()
         >= number_of_jobs.value
@@ -119,6 +120,7 @@ pub fn check_scenarios(
         .iter_mut()
         .filter(|entry| {
             discriminant(entry.scenario.get_status()) == discriminant(&Status::Running(1))
+                || entry.scenario.get_status() == &Status::Simulating
         })
         .for_each(|entry| {
             match &entry.epoch_rx {

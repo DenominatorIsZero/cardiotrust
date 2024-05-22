@@ -185,7 +185,8 @@ fn draw_row(
             {
                 ui.add(
                     ProgressBar::new(scenario_list.entries[index].scenario.get_progress())
-                        .show_percentage(),
+                        .show_percentage()
+                        .text(scenario_list.entries[index].scenario.get_etc()),
                 );
             } else {
                 ui.label(scenario_list.entries[index].scenario.get_status_str());

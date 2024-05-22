@@ -2,9 +2,10 @@ pub mod results;
 pub mod summary;
 
 use bincode;
-use chrono;
+use chrono::serde::ts_seconds;
+use chrono::{self, DateTime, NaiveDateTime, TimeDelta, Utc};
 use ndarray_stats::QuantileExt;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fs::{self, File},
     io::{BufReader, BufWriter, Write},
@@ -38,6 +39,14 @@ pub struct Scenario {
     pub summary: Option<Summary>,
     #[serde(default)]
     pub comment: String,
+    #[serde(default)]
+    pub started: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub last_update: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub finished: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub duration_s: Option<i64>,
 }
 
 impl Scenario {
@@ -60,6 +69,10 @@ impl Scenario {
             results: None,
             summary: None,
             comment: "EMPTY".into(),
+            started: None,
+            last_update: None,
+            finished: None,
+            duration_s: None,
         }
     }
 
@@ -87,6 +100,10 @@ impl Scenario {
             results: None,
             summary: None,
             comment: String::new(),
+            started: None,
+            last_update: None,
+            finished: None,
+            duration_s: None,
         };
         scenario
             .save()
@@ -161,13 +178,29 @@ impl Scenario {
     /// Returns a string representation of the scenario's status.
     /// Matches the Status enum variant names.
     #[must_use]
-    pub const fn get_status_str(&self) -> &str {
+    pub fn get_status_str(&self) -> String {
         match self.status {
-            Status::Planning => "Planning",
-            Status::Done => "Done",
-            Status::Running(_) => "Running",
-            Status::Aborted => "Aborted",
-            Status::Scheduled => "Scheduled",
+            Status::Planning => "Planning".to_string(),
+            Status::Simulating => "Simulating".to_string(),
+            Status::Done => {
+                let total_seconds = self.duration_s.unwrap_or(0);
+                let seconds = total_seconds % 60;
+                let minutes = (total_seconds / 60) % 60;
+                let hours = (total_seconds / 3600) % 24;
+                let days = total_seconds / 86400;
+                if days > 0 {
+                    format!("Done ({days}d, {hours}h)")
+                } else if hours > 0 {
+                    format!("Done ({hours}h, {minutes}m)")
+                } else if minutes > 0 {
+                    format!("Done ({minutes}m, {seconds}s)")
+                } else {
+                    format!("Done ({seconds}s)")
+                }
+            }
+            Status::Running(_) => "Running".to_string(),
+            Status::Aborted => "Aborted".to_string(),
+            Status::Scheduled => "Scheduled".to_string(),
         }
     }
 
@@ -251,9 +284,20 @@ impl Scenario {
 
     /// Sets the scenario status to Running with the given epoch number.
     #[tracing::instrument(level = "debug")]
+    pub fn set_simulating(&mut self) {
+        debug!("Setting scenario status to simulating");
+        self.status = Status::Simulating;
+    }
+
+    /// Sets the scenario status to Running with the given epoch number.
+    #[tracing::instrument(level = "debug")]
     pub fn set_running(&mut self, epoch: usize) {
         debug!("Setting scenario status to running with epoch {}", epoch);
         self.status = Status::Running(epoch);
+        if self.started.is_none() {
+            self.started = Some(Utc::now());
+        }
+        self.last_update = Some(Utc::now());
     }
 
     /// Sets the scenario status to Done.
@@ -261,6 +305,8 @@ impl Scenario {
     pub fn set_done(&mut self) {
         debug!("Setting scenario status to done");
         self.status = Status::Done;
+        self.finished = Some(Utc::now());
+        self.duration_s = Some((self.finished.unwrap() - self.started.unwrap()).num_seconds());
     }
 
     /// Deletes the results directory for this scenario.
@@ -293,6 +339,43 @@ impl Scenario {
         match self.status {
             Status::Running(epoch) => epoch as f32 / self.config.algorithm.epochs as f32,
             _ => 0.0,
+        }
+    }
+
+    #[allow(clippy::cast_possible_truncation)]
+    #[must_use]
+    #[tracing::instrument(level = "trace")]
+    pub fn get_etc(&self) -> String {
+        trace!("Getting progress for scenario with id {}", self.id);
+        #[allow(clippy::cast_precision_loss)]
+        match self.status {
+            Status::Running(0) => "ETC: ???".to_string(),
+            Status::Running(_) => {
+                let now = Utc::now();
+                let duration = self.last_update.unwrap() - self.started.unwrap();
+                let ellapsed_second = duration.num_seconds();
+                let progress = self.get_progress();
+                let remaining = 1.0 - progress;
+                let meanwhile = now - self.last_update.unwrap();
+                let remaining_seconds_total = (ellapsed_second as f32 / progress * remaining)
+                    as i64
+                    - meanwhile.num_seconds();
+                let remaining_seconds = remaining_seconds_total % 60;
+                let remaining_minutes = (remaining_seconds_total / 60) % 60;
+                let remaining_hours = (remaining_seconds_total / 3600) % 24;
+                let remaining_days = remaining_seconds / 86400;
+
+                if remaining_days > 0 {
+                    format!("ETC: {remaining_days} days, {remaining_hours} hours")
+                } else if remaining_hours > 0 {
+                    format!("ETC: {remaining_hours} hours, {remaining_minutes} minutes")
+                } else if remaining_minutes > 0 {
+                    format!("ETC: {remaining_minutes} minutes, {remaining_seconds} seconds")
+                } else {
+                    format!("ETC: {remaining_seconds} seconds")
+                }
+            }
+            _ => String::new(),
         }
     }
 
@@ -403,6 +486,8 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         simulation.duration_s,
     )
     .unwrap();
+
+    epoch_tx.send(0).unwrap();
 
     let mut results = Results::new(
         scenario.config.algorithm.epochs,
@@ -570,10 +655,9 @@ fn run_model_based(
     info!("Running model-based algorithm");
     let original_learning_rate = scenario.config.algorithm.learning_rate;
     let mut batch_index = 0;
-    for epoch_index in 0..scenario.config.algorithm.epochs {
+    for epoch_index in 1..=scenario.config.algorithm.epochs {
         if scenario.config.algorithm.learning_rate_reduction_interval != 0
             && (epoch_index % scenario.config.algorithm.learning_rate_reduction_interval == 0)
-            && epoch_index != 0
         {
             scenario.config.algorithm.learning_rate *=
                 scenario.config.algorithm.learning_rate_reduction_factor;
@@ -587,19 +671,20 @@ fn run_model_based(
         );
         scenario.status = Status::Running(epoch_index);
 
-        summary.loss = results.metrics.loss_batch[epoch_index];
-        summary.loss_mse = results.metrics.loss_mse_batch[epoch_index];
+        summary.loss = results.metrics.loss_batch[batch_index - 1];
+        summary.loss_mse = results.metrics.loss_mse_batch[batch_index - 1];
         summary.loss_maximum_regularization =
-            results.metrics.loss_maximum_regularization_batch[epoch_index];
-        summary.delta_states_mean = results.metrics.delta_states_mean_batch[epoch_index];
-        summary.delta_states_max = results.metrics.delta_states_max_batch[epoch_index];
+            results.metrics.loss_maximum_regularization_batch[batch_index - 1];
+        summary.delta_states_mean = results.metrics.delta_states_mean_batch[batch_index - 1];
+        summary.delta_states_max = results.metrics.delta_states_max_batch[batch_index - 1];
         summary.delta_measurements_mean =
-            results.metrics.delta_measurements_mean_batch[epoch_index];
-        summary.delta_measurements_max = results.metrics.delta_measurements_max_batch[epoch_index];
-        summary.delta_gains_mean = results.metrics.delta_gains_mean_batch[epoch_index];
-        summary.delta_gains_max = results.metrics.delta_gains_max_batch[epoch_index];
-        summary.delta_delays_mean = results.metrics.delta_delays_mean_batch[epoch_index];
-        summary.delta_delays_max = results.metrics.delta_delays_max_batch[epoch_index];
+            results.metrics.delta_measurements_mean_batch[batch_index - 1];
+        summary.delta_measurements_max =
+            results.metrics.delta_measurements_max_batch[batch_index - 1];
+        summary.delta_gains_mean = results.metrics.delta_gains_mean_batch[batch_index - 1];
+        summary.delta_gains_max = results.metrics.delta_gains_max_batch[batch_index - 1];
+        summary.delta_delays_mean = results.metrics.delta_delays_mean_batch[batch_index - 1];
+        summary.delta_delays_max = results.metrics.delta_delays_max_batch[batch_index - 1];
 
         if scenario.config.algorithm.snapshots_interval != 0
             && epoch_index % scenario.config.algorithm.snapshots_interval == 0
@@ -631,6 +716,7 @@ fn run_model_based(
 pub enum Status {
     Planning,
     Done,
+    Simulating,
     Running(usize),
     Aborted,
     Scheduled,
