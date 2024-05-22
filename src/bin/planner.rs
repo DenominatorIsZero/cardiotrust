@@ -109,6 +109,9 @@ fn plan_scenarios() {
 
     for step in 2..=10_usize {
         let total_steps = step.pow(3);
+        if step > 4 {
+            algorithm_config.learning_rate = 1.0;
+        }
         simulation_config.model.common.sensor_array_motion_steps = [step, step, step];
         simulation_config.model.common.sensor_array_origin_mm = [-100.0, -400.0, -25.0];
         simulation_config.model.common.sensor_array_motion_range_mm = [300.0, 600.0, 600.0];
