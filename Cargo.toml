@@ -9,7 +9,8 @@ edition = "2021"
 approx = "0.5.1"
 bevy = {version = "0.13.2", features = ["bevy_gltf"]}
 bevy_egui = {version = "0.26.0", default-features = false, features = ["open_url", "default_fonts", "render"]}
-bevy_panorbit_camera = "0.17.0"
+bevy_mod_picking = "0.18.2"
+bevy_editor_cam = "0.2.0"
 bevy_embedded_assets = "0.10.2"
 bevy_obj = "0.13.0"
 bincode = "1.3.3"

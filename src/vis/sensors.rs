@@ -35,7 +35,30 @@ pub(crate) fn spawn_sensors(
 
     let motion_steps = sensors.array_offsets_mm.shape()[0];
 
+    let material_red = materials.add(StandardMaterial {
+        base_color: Color::rgb(1.0, 0.0, 0.0),
+        metallic: 0.0,
+        ..Default::default()
+    });
+
+    let materials_green = materials.add(StandardMaterial {
+        base_color: Color::rgb(0.0, 1.0, 0.0),
+        metallic: 0.0,
+        ..Default::default()
+    });
+
+    let material_blue = materials.add(StandardMaterial {
+        base_color: Color::rgb(0.0, 0.0, 1.0),
+        metallic: 0.0,
+        ..Default::default()
+    });
+
     for index_sensor in 0..sensors.positions_mm.shape()[0] {
+        let material = match index_sensor % 3 {
+            0 => material_red.clone(),
+            1 => materials_green.clone(),
+            _ => material_blue.clone(),
+        };
         let mut positions_mm = Array2::zeros((motion_steps, 3));
         for i in 0..motion_steps {
             positions_mm[(i, 0)] =
@@ -57,11 +80,9 @@ pub(crate) fn spawn_sensors(
         commands.spawn((
             PbrBundle {
                 mesh: mesh.clone(),
-                material: materials.add(StandardMaterial::from(Color::rgba(
-                    x_ori, y_ori, z_ori, 1.0,
-                ))),
+                material,
                 transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
-                    .with_scale(Vec3::ONE * 10.0)
+                    .with_scale(Vec3::ONE * 30.0)
                     .with_rotation(Quat::from_rotation_arc(-Vec3::Z, rot)),
                 ..default()
             },
@@ -113,7 +134,6 @@ pub(crate) fn spawn_sensor_bracket(
         .spatial_description
         .sensors;
     let radius = sensors.array_radius_mm;
-    let position = &sensors.array_center_mm;
 
     let motion_steps = sensors.array_offsets_mm.shape()[0];
 

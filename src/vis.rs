@@ -9,8 +9,8 @@ pub mod sensors;
 
 use bevy::prelude::*;
 
+use bevy_editor_cam::controller::component::{EditorCam, OrbitConstraint};
 use bevy_obj::ObjPlugin;
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use room::spawn_room;
 
 use self::{
@@ -40,7 +40,8 @@ impl Plugin for VisPlugin {
     #[tracing::instrument(level = "info", skip(app))]
     fn build(&self, app: &mut App) {
         info!("Initializing visualization plugin.");
-        app.add_plugins(PanOrbitCameraPlugin)
+        app.add_plugins(bevy_mod_picking::DefaultPickingPlugins)
+            .add_plugins(bevy_editor_cam::DefaultEditorCamPlugins)
             .add_plugins(ObjPlugin)
             .init_resource::<SampleTracker>()
             .init_resource::<VisOptions>()
@@ -93,16 +94,16 @@ pub fn setup_light_and_camera(mut commands: Commands) {
         brightness: 1000.0,
     });
 
-    commands.spawn((
-        Camera3dBundle {
+    commands
+        .spawn(Camera3dBundle {
             transform: Transform::from_xyz(-100.0, 200.0, 50.0).looking_at(Vec3::ZERO, Vec3::Z),
             ..default()
-        },
-        PanOrbitCamera {
-            allow_upside_down: true,
+        })
+        .insert(EditorCam {
+            orbit_constraint: OrbitConstraint::Free,
+            last_anchor_depth: 2.0,
             ..default()
-        },
-    ));
+        });
 }
 
 #[tracing::instrument(level = "info", skip_all)]
@@ -112,27 +113,29 @@ pub fn setup_coordinate_system(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     info!("Setting up coordinate system");
-    spawn_axis(
-        &mut commands,
-        &mut meshes,
-        &mut materials,
-        Vec3::X,
-        Color::RED,
-    );
-    spawn_axis(
-        &mut commands,
-        &mut meshes,
-        &mut materials,
-        Vec3::Y,
-        Color::GREEN,
-    );
-    spawn_axis(
-        &mut commands,
-        &mut meshes,
-        &mut materials,
-        Vec3::Z,
-        Color::BLUE,
-    );
+    if false {
+        spawn_axis(
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            Vec3::X,
+            Color::RED,
+        );
+        spawn_axis(
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            Vec3::Y,
+            Color::GREEN,
+        );
+        spawn_axis(
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            Vec3::Z,
+            Color::BLUE,
+        );
+    }
 }
 
 fn spawn_axis(
@@ -174,7 +177,6 @@ pub fn setup_heart_and_sensors(
     mesh_atlas: &mut ResMut<MeshAtlas>,
     sample_tracker: &mut SampleTracker,
     scenario: &Scenario,
-    camera: &mut Transform,
     ass: Res<AssetServer>,
 ) {
     info!("Setting up heart and sensors.");
@@ -188,6 +190,5 @@ pub fn setup_heart_and_sensors(
         mesh_atlas,
         scenario,
         sample_tracker,
-        camera,
     );
 }

@@ -26,7 +26,7 @@ pub(crate) fn spawn_torso(
             85.0 / 255.0,
             79.0 / 255.0,
             72.0 / 255.0,
-            0.25,
+            0.5,
         ))),
         transform: Transform::from_xyz(0.0, 0.0, 0.0)
             .with_scale(Vec3::ONE * 1000.0)
