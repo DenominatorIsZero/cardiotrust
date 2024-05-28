@@ -1,6 +1,6 @@
 use bevy::prelude::*;
+use bevy_editor_cam::controller::component::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
-use bevy_panorbit_camera::PanOrbitCamera;
 use egui_plot::{Line, Plot, PlotPoints, VLine};
 
 use crate::{
@@ -37,7 +37,7 @@ pub fn draw_ui_volumetric(
     mut sample_tracker: ResMut<SampleTracker>,
     mut vis_options: ResMut<VisOptions>,
     mut cutting_plane: ResMut<CuttingPlaneSettings>,
-    mut cameras: Query<(&mut Transform, &mut PanOrbitCamera), With<Camera>>,
+    mut cameras: Query<(&mut Transform, &mut EditorCam), With<Camera>>,
     mut sensor_brackets: Query<&mut SensorBracket>,
     ass: Res<AssetServer>,
     selected_scenario: Res<SelectedSenario>,
@@ -45,7 +45,11 @@ pub fn draw_ui_volumetric(
 ) {
     trace!("Running system to draw volumetric UI.");
     for (_, mut camera) in &mut cameras {
-        camera.enabled = true;
+        camera.enabled_motion = EnabledMotion {
+            pan: true,
+            orbit: true,
+            zoom: true,
+        };
     }
     let scenario = if let Some(index) = selected_scenario.index {
         Some(
@@ -73,12 +77,15 @@ pub fn draw_ui_volumetric(
                 &mut mesh_atlas,
                 &mut sample_tracker,
                 scenario.as_ref().expect("Scenario to be some."),
-                &mut cameras.single_mut().0,
                 ass,
             );
             if ui.ui_contains_pointer() {
                 for (_, mut camera) in &mut cameras {
-                    camera.enabled = false;
+                    camera.enabled_motion = EnabledMotion {
+                        pan: false,
+                        orbit: false,
+                        zoom: false,
+                    };
                 }
             }
         };
@@ -250,21 +257,25 @@ pub fn draw_ui_volumetric(
 
         if ui.ui_contains_pointer() {
             for (_, mut camera) in &mut cameras {
-                camera.enabled = false;
+                camera.enabled_motion = EnabledMotion {
+                    pan: false,
+                    orbit: false,
+                    zoom: false,
+                };
             }
         }
 
         let sensor_bracket = sensor_brackets.get_single_mut();
         if let Ok(mut sensor_bracket) = sensor_bracket {
             ui.label("Sensor positon mm (x, y, z):");
-            let mut position = sensor_bracket.position_mm;
+            let mut position = sensor_bracket.offset_mm;
             ui.horizontal(|ui| {
                 ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
                 ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
                 ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
             });
-            if position != sensor_bracket.position_mm {
-                sensor_bracket.position_mm = position;
+            if position != sensor_bracket.offset_mm {
+                sensor_bracket.offset_mm = position;
             }
 
             ui.label("Sensor radius mm:");
@@ -315,7 +326,11 @@ pub fn draw_ui_volumetric(
 
                 if ui.ui_contains_pointer() {
                     for (_, mut camera) in &mut cameras {
-                        camera.enabled = false;
+                        camera.enabled_motion = EnabledMotion {
+                            pan: false,
+                            orbit: false,
+                            zoom: false,
+                        };
                     }
                 }
             });

@@ -130,12 +130,24 @@ impl Sensors {
             }
         };
         if config.sensor_array_motion == SensorArrayMotion::Grid {
-            let step_size_mm_x =
-                config.sensor_array_motion_range_mm[0] / config.sensor_array_motion_steps[0] as f32;
-            let step_size_mm_y =
-                config.sensor_array_motion_range_mm[1] / config.sensor_array_motion_steps[1] as f32;
-            let step_size_mm_z =
-                config.sensor_array_motion_range_mm[2] / config.sensor_array_motion_steps[2] as f32;
+            let step_size_mm_x = if config.sensor_array_motion_steps[0] > 1 {
+                config.sensor_array_motion_range_mm[0]
+                    / (config.sensor_array_motion_steps[0] - 1) as f32
+            } else {
+                0.0
+            };
+            let step_size_mm_y = if config.sensor_array_motion_steps[1] > 1 {
+                config.sensor_array_motion_range_mm[1]
+                    / (config.sensor_array_motion_steps[1] - 1) as f32
+            } else {
+                0.0
+            };
+            let step_size_mm_z = if config.sensor_array_motion_steps[2] > 1 {
+                config.sensor_array_motion_range_mm[2]
+                    / (config.sensor_array_motion_steps[2] - 1) as f32
+            } else {
+                0.0
+            };
 
             let mut motion_index = 0;
             for x in 0..config.sensor_array_motion_steps[0] {
