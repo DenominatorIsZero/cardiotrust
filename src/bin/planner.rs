@@ -120,12 +120,11 @@ fn plan_scenarios() {
     }
 
     for lr_exp in -3..=4 {
-        let total_steps = 10.pow(3);
         simulation_config.model.common.sensor_array_motion_steps = [step, step, step];
         simulation_config.model.common.sensor_array_origin_mm = [-75.0, -525.0, -25.0];
         simulation_config.model.common.sensor_array_motion_range_mm = [150.0, 600.0, 150.0];
         algorithm_config.epochs = (steps as f32 / total_steps as f32).round() as usize;
-        let lr = 10.0.exp(lr_exp);
+        let lr = 10.0_f32.exp(lr_exp);
         algorithm_config.learning_rate = 1.0;
         simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Grid;
         let mut scenario = Scenario::build(Some(format!(
