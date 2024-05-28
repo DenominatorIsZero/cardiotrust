@@ -21,7 +21,7 @@ pub(crate) struct Sensor {
 #[tracing::instrument(level = "debug", skip_all)]
 pub(crate) fn spawn_sensors(
     commands: &mut Commands,
-    ass: Res<AssetServer>,
+    ass: &Res<AssetServer>,
     materials: &mut Assets<StandardMaterial>,
     scenario: &Scenario,
 ) {
@@ -79,12 +79,12 @@ pub(crate) fn update_sensors(
     sample_tracker: Res<SampleTracker>,
 ) {
     if sample_tracker.is_changed() {
+        let beat_index = sample_tracker.selected_beat;
         sensors.par_iter_mut().for_each(|(mut transform, sensor)| {
-            let sample_index = sample_tracker.selected_beat;
             let position = Vec3 {
-                x: sensor.positions_mm[(sample_index, 0)],
-                y: sensor.positions_mm[(sample_index, 1)],
-                z: sensor.positions_mm[(sample_index, 2)],
+                x: sensor.positions_mm[(beat_index, 0)],
+                y: sensor.positions_mm[(beat_index, 1)],
+                z: sensor.positions_mm[(beat_index, 2)],
             };
             transform.translation = position;
         });
@@ -93,15 +93,15 @@ pub(crate) fn update_sensors(
 #[derive(Component)]
 pub(crate) struct SensorBracket {
     pub radius_mm: f32,
-    pub position_mm: Vec3,
+    pub positions_mm: Array2<f32>,
+    pub offset_mm: Vec3,
 }
 
 #[allow(clippy::needless_pass_by_value)]
 #[tracing::instrument(level = "debug", skip_all)]
 pub(crate) fn spawn_sensor_bracket(
+    ass: &Res<AssetServer>,
     commands: &mut Commands,
-    meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<StandardMaterial>,
     scenario: &Scenario,
 ) {
     let sensors = &scenario
@@ -114,31 +114,49 @@ pub(crate) fn spawn_sensor_bracket(
         .sensors;
     let radius = sensors.array_radius_mm;
     let position = &sensors.array_center_mm;
-    let mesh = meshes.add(Mesh::from(Cylinder {
-        radius: 1.0,
-        half_height: 30.0,
-    }));
+
+    let motion_steps = sensors.array_offsets_mm.shape()[0];
+
+    let mut positions_mm = Array2::zeros((motion_steps, 3));
+    for i in 0..motion_steps {
+        positions_mm[(i, 0)] = sensors.array_center_mm[0] + sensors.array_offsets_mm[(i, 0)];
+        positions_mm[(i, 1)] = sensors.array_center_mm[1] + sensors.array_offsets_mm[(i, 1)];
+        positions_mm[(i, 2)] = sensors.array_center_mm[2] + sensors.array_offsets_mm[(i, 2)];
+    }
+
+    let glb_handle = ass.load("sensor_array.glb#Scene0");
+
     commands.spawn((
-        PbrBundle {
-            mesh,
-            material: materials.add(StandardMaterial::from(Color::rgba(1.0, 1.0, 1.0, 0.2))),
-            transform: Transform::from_xyz(position[0], position[1], position[2]),
-            ..default()
+        SceneBundle {
+            scene: glb_handle,
+            transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::ONE * 1000.0),
+            ..Default::default()
         },
         SensorBracket {
             radius_mm: radius,
-            position_mm: Vec3::new(position[0], position[1], position[2]),
+            positions_mm,
+            offset_mm: Vec3::ZERO,
         },
     ));
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub(crate) fn update_sensor_bracket(mut sensor_brackets: Query<(&mut Transform, &SensorBracket)>) {
+pub(crate) fn update_sensor_bracket(
+    mut sensor_brackets: Query<(&mut Transform, &SensorBracket)>,
+    sample_tracker: Res<SampleTracker>,
+) {
+    let beat_index = sample_tracker.selected_beat;
     let sensor_bracket = sensor_brackets.get_single_mut();
 
     if let Ok((mut transform, sensor_bracket)) = sensor_bracket {
-        transform.translation = sensor_bracket.position_mm;
-        transform.scale.x = sensor_bracket.radius_mm;
-        transform.scale.z = sensor_bracket.radius_mm;
+        let position = Vec3 {
+            x: sensor_bracket.positions_mm[(beat_index, 0)] + sensor_bracket.offset_mm[0],
+            y: sensor_bracket.positions_mm[(beat_index, 1)] + sensor_bracket.offset_mm[1],
+            z: sensor_bracket.positions_mm[(beat_index, 2)] + sensor_bracket.offset_mm[2],
+        };
+        transform.translation = position;
+        // has to be multiplied by 2.5 to get the correct scale (due to blender model size)
+        transform.scale.x = sensor_bracket.radius_mm * 2.5;
+        transform.scale.z = sensor_bracket.radius_mm * 2.5;
     }
 }

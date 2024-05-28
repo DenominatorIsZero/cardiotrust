@@ -3,6 +3,7 @@ pub mod cutting_plane;
 pub mod heart;
 pub mod options;
 pub mod plotting;
+pub mod room;
 pub mod sample_tracker;
 pub mod sensors;
 
@@ -10,6 +11,7 @@ use bevy::prelude::*;
 
 use bevy_obj::ObjPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use room::spawn_room;
 
 use self::{
     body::spawn_torso,
@@ -47,6 +49,7 @@ impl Plugin for VisPlugin {
             .add_systems(Startup, setup_mesh_atlas)
             .add_systems(Startup, setup_light_and_camera)
             .add_systems(Startup, spawn_torso)
+            .add_systems(Startup, spawn_room)
             .add_systems(Startup, spawn_cutting_plane)
             .add_systems(
                 Update,
@@ -176,8 +179,8 @@ pub fn setup_heart_and_sensors(
 ) {
     info!("Setting up heart and sensors.");
     init_sample_tracker(sample_tracker, scenario);
-    spawn_sensors(commands, ass, materials, scenario);
-    spawn_sensor_bracket(commands, meshes, materials, scenario);
+    spawn_sensors(commands, &ass, materials, scenario);
+    spawn_sensor_bracket(&ass, commands, scenario);
     init_voxels(
         commands,
         meshes,
