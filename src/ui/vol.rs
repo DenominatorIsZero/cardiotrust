@@ -45,7 +45,11 @@ pub fn draw_ui_volumetric(
 ) {
     trace!("Running system to draw volumetric UI.");
     for (_, mut camera) in &mut cameras {
-        //        camera.enabled = true;
+        camera.enabled_motion = EnabledMotion {
+            pan: true,
+            orbit: true,
+            zoom: true,
+        };
     }
     let scenario = if let Some(index) = selected_scenario.index {
         Some(
@@ -77,7 +81,11 @@ pub fn draw_ui_volumetric(
             );
             if ui.ui_contains_pointer() {
                 for (_, mut camera) in &mut cameras {
-                    //
+                    camera.enabled_motion = EnabledMotion {
+                        pan: false,
+                        orbit: false,
+                        zoom: false,
+                    };
                 }
             }
         };
@@ -249,7 +257,11 @@ pub fn draw_ui_volumetric(
 
         if ui.ui_contains_pointer() {
             for (_, mut camera) in &mut cameras {
-                //camera.enabled = false;
+                camera.enabled_motion = EnabledMotion {
+                    pan: false,
+                    orbit: false,
+                    zoom: false,
+                };
             }
         }
 
@@ -314,7 +326,11 @@ pub fn draw_ui_volumetric(
 
                 if ui.ui_contains_pointer() {
                     for (_, mut camera) in &mut cameras {
-                        //camera.enabled = false;
+                        camera.enabled_motion = EnabledMotion {
+                            pan: false,
+                            orbit: false,
+                            zoom: false,
+                        };
                     }
                 }
             });
