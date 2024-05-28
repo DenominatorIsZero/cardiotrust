@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::mesh::VertexAttributeValues};
 use std::f32::consts::PI;
 
 /// Spawns a 3D torso mesh into the scene using the given `AssetServer` and
@@ -32,5 +32,29 @@ pub(crate) fn spawn_torso(
             .with_scale(Vec3::ONE * 1000.0)
             .with_rotation(Quat::from_euler(EulerRot::XYZ, 0.0, 0.0, PI)),
         ..default()
+    });
+
+    let glb_handle = ass.load("bed.glb#Scene0");
+
+    commands.spawn(SceneBundle {
+        scene: glb_handle,
+        transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::ONE * 1000.0),
+        ..Default::default()
+    });
+
+    let glb_handle = ass.load("room.glb#Scene0");
+
+    commands.spawn(SceneBundle {
+        scene: glb_handle,
+        transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::ONE * 1000.0),
+        ..Default::default()
+    });
+
+    let glb_handle = ass.load("sensor_array.glb#Scene0");
+
+    commands.spawn(SceneBundle {
+        scene: glb_handle,
+        transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::ONE * 1000.0),
+        ..Default::default()
     });
 }
