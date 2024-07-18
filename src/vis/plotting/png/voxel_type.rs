@@ -1,3 +1,4 @@
+use bevy::color::ColorToPacked;
 use ndarray::Axis;
 use plotters::prelude::*;
 use scarlet::colormap::ListedColorMap;
@@ -157,7 +158,7 @@ pub fn voxel_type_plot(
 
         for (i, voxel_type) in VoxelType::iter().enumerate() {
             let color = type_to_color(voxel_type);
-            let color = color.as_rgba_u8();
+            let color = color.to_linear().to_u8_array();
             let color = RGBColor(color[0], color[1], color[2]);
             let start = (
                 legend_width as i32 / 2 - single_space / 2,
@@ -203,7 +204,7 @@ pub fn voxel_type_plot(
         chart.draw_series(data.indexed_iter().map(|((index_x, index_y), &value)| {
             // Map the value to a color
             let color = type_to_color(value);
-            let color = color.as_rgba_u8();
+            let color = color.to_linear().to_u8_array();
             let color = RGBColor(color[0], color[1], color[2]);
             let start = (
                 (index_x as f32).mul_add(x_step, x_offset - x_step / 2.0),

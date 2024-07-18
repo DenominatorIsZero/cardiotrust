@@ -15,7 +15,9 @@ use crate::core::{
 #[tracing::instrument(skip(parent), level = "trace")]
 pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenario) {
     trace!("Running system to draw scenario algorithm UI.");
-    parent.set_enabled(*scenario.get_status() == Status::Planning);
+    if *scenario.get_status() != Status::Planning {
+        parent.disable();
+    }
     let algorithm = &mut scenario.config.algorithm;
     egui::ScrollArea::vertical()
         .id_source("algorithm")
@@ -73,7 +75,7 @@ fn draw_estimation_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                 update step during the state estimation phase\
                                 of the algorithm.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -94,7 +96,7 @@ fn draw_estimation_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                     simplified gain will be calculated once\
                                     at initialization.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -119,7 +121,7 @@ fn draw_estimation_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                     "The mean value of the process\
                                  noise covariance matrix.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -145,7 +147,7 @@ fn draw_estimation_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                 distribution according\
                                 to the mean value and standard deviation.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -198,7 +200,7 @@ fn draw_regularization_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                     exceeded before the regularization\
                                     starts havin an effect. Default: 1.1.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -216,7 +218,7 @@ fn draw_regularization_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                         row.col(|ui| {
                             ui.add(
                                 egui::Label::new("The weighting of the regularization term.")
-                                    .truncate(true),
+                                    .truncate(),
                             );
                         });
                     });
@@ -278,7 +280,7 @@ fn draw_algorithm_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                 "The algorhim used for estimating the \
                                      current densities.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -294,7 +296,7 @@ fn draw_algorithm_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                         row.col(|ui| {
                             ui.add(
                                 egui::Label::new("The number of epochs to run the algorithm for.")
-                                    .truncate(true),
+                                    .truncate(),
                             );
                         });
                     });
@@ -313,7 +315,7 @@ fn draw_algorithm_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                 After how many samples to update the weights.\
                                 Default: 0 - one update per Epoch.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -331,7 +333,7 @@ fn draw_algorithm_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                     "Wether or not to freeze the gains\
                                     preventing them from being changed.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -349,7 +351,7 @@ fn draw_algorithm_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                     "Wether or not to freeze the delays\
                                     preventing them from being changed.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -402,7 +404,7 @@ fn draw_metrics_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                 Default: 0 - no snapshots are taken, only the final\
                                 result is stored.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -465,7 +467,7 @@ fn draw_optimizer_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                 egui::Label::new(
                                     "The optimization algorithm used to update the model parameters."
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -487,7 +489,7 @@ fn draw_optimizer_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                     "The learning rate used in the model refinement\
                                 step of the algorithm.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -512,7 +514,7 @@ fn draw_optimizer_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                     "The interval between which to reduce the learning rate.\
                                     a value of 0 means no learning rate reduction is done.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -538,7 +540,7 @@ fn draw_optimizer_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                         "The factor with which to multiply the learning rate\
                                     every n epochs.",
                                     )
-                                    .truncate(true),
+                                    .truncate(),
                                 );
                             });
                         });

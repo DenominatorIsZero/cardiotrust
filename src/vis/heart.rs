@@ -59,7 +59,7 @@ pub(crate) fn setup_material_atlas(
 
     for i in 0..256 {
         let color: RGBColor = color_map.transform_single(i as f64 / 255.0);
-        let color = Color::rgb(color.r as f32, color.g as f32, color.b as f32);
+        let color = Color::srgb(color.r as f32, color.g as f32, color.b as f32);
         scalar.push(materials.add(StandardMaterial {
             base_color: color,
             metallic: 0.0,
@@ -119,7 +119,7 @@ pub fn init_voxels(
         voxels.size_mm / 2.0,
     );
 
-    meshes.remove(mesh_atlas.voxels.clone());
+    meshes.remove(&mesh_atlas.voxels);
 
     let mesh = meshes.add(Mesh::from(Cuboid { half_size }));
     mesh_atlas.voxels = mesh.clone();
@@ -352,60 +352,60 @@ fn set_heart_voxel_colors_to_types(
 pub const fn type_to_color(voxel_type: VoxelType) -> Color {
     let alpha = 1.0;
     match voxel_type {
-        VoxelType::None => Color::Rgba {
+        VoxelType::None => Color::Srgba(Srgba {
             red: 1.0,
             green: 1.0,
             blue: 1.0,
             alpha: 0.0,
-        },
-        VoxelType::Sinoatrial => Color::Rgba {
+        }),
+        VoxelType::Sinoatrial => Color::Srgba(Srgba {
             red: 1.0,
             green: 0.776,
             blue: 0.118,
             alpha,
-        },
-        VoxelType::Atrium => Color::Rgba {
+        }),
+        VoxelType::Atrium => Color::Srgba(Srgba {
             red: 0.686,
             green: 0.345,
             blue: 0.541,
             alpha,
-        },
-        VoxelType::Atrioventricular | VoxelType::Vessel => Color::Rgba {
+        }),
+        VoxelType::Atrioventricular | VoxelType::Vessel => Color::Srgba(Srgba {
             red: 0.0,
             green: 0.804,
             blue: 0.424,
             alpha,
-        },
-        VoxelType::HPS => Color::Rgba {
+        }),
+        VoxelType::HPS => Color::Srgba(Srgba {
             red: 0.0,
             green: 0.604,
             blue: 0.871,
             alpha,
-        },
-        VoxelType::Ventricle => Color::Rgba {
+        }),
+        VoxelType::Ventricle => Color::Srgba(Srgba {
             red: 1.0,
             green: 0.122,
             blue: 0.357,
             alpha,
-        },
-        VoxelType::Pathological => Color::Rgba {
+        }),
+        VoxelType::Pathological => Color::Srgba(Srgba {
             red: 0.651,
             green: 0.463,
             blue: 0.114,
             alpha,
-        },
-        VoxelType::Torso => Color::Rgba {
+        }),
+        VoxelType::Torso => Color::Srgba(Srgba {
             red: 0.63,
             green: 0.69,
             blue: 0.73,
             alpha,
-        },
-        VoxelType::Chamber => Color::Rgba {
+        }),
+        VoxelType::Chamber => Color::Srgba(Srgba {
             red: 0.12,
             green: 0.35,
             blue: 0.54,
             alpha,
-        },
+        }),
     }
 }
 

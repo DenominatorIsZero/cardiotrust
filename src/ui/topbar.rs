@@ -33,7 +33,7 @@ pub fn draw_ui_topbar(
                 )
                 .clicked()
             {
-                commands.insert_resource(NextState(Some(UiState::Explorer)));
+                commands.insert_resource(NextState::Pending(UiState::Explorer));
             };
             if ui
                 .add_enabled(
@@ -42,7 +42,7 @@ pub fn draw_ui_topbar(
                 )
                 .clicked()
             {
-                commands.insert_resource(NextState(Some(UiState::Scenario)));
+                commands.insert_resource(NextState::Pending(UiState::Scenario));
             };
             if ui
                 .add_enabled(
@@ -61,7 +61,7 @@ pub fn draw_ui_topbar(
                 let scenario = &mut scenario_list.entries[index].scenario;
                 scenario.load_data();
                 scenario.load_results();
-                commands.insert_resource(NextState(Some(UiState::Results)));
+                commands.insert_resource(NextState::Pending(UiState::Results));
             };
             if ui
                 .add_enabled(
@@ -80,7 +80,7 @@ pub fn draw_ui_topbar(
                 let scenario = &mut scenario_list.entries[index].scenario;
                 scenario.load_data();
                 scenario.load_results();
-                commands.insert_resource(NextState(Some(UiState::Volumetric)));
+                commands.insert_resource(NextState::Pending(UiState::Volumetric));
             };
             ui.add(Separator::default().spacing(200.0));
             if ui
@@ -90,7 +90,7 @@ pub fn draw_ui_topbar(
                 )
                 .clicked()
             {
-                commands.insert_resource(NextState(Some(SchedulerState::Available)));
+                commands.insert_resource(NextState::Pending(SchedulerState::Available));
             };
             if ui
                 .add_enabled(
@@ -99,7 +99,7 @@ pub fn draw_ui_topbar(
                 )
                 .clicked()
             {
-                commands.insert_resource(NextState(Some(SchedulerState::Paused)));
+                commands.insert_resource(NextState::Pending(SchedulerState::Paused));
             };
             ui.label("Number of jobs:");
             ui.add(egui::Slider::new(&mut number_of_jobs.value, 1..=32));

@@ -39,9 +39,10 @@ pub(crate) fn spawn_cutting_plane(
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(Plane3d {
-                normal: Direction3d::Y,
+                normal: Dir3::Y,
+                half_size: Vec2 { x: 1.0, y: 1.0 },
             })),
-            material: materials.add(StandardMaterial::from(Color::rgba(1.0, 1.0, 1.0, 0.5))),
+            material: materials.add(StandardMaterial::from(Color::srgba(1.0, 1.0, 1.0, 0.5))),
             transform: Transform {
                 translation: position,
                 rotation,
@@ -69,7 +70,7 @@ pub(crate) fn update_cutting_plane(
         } else {
             0.0
         };
-        materials.get_mut(material).unwrap().base_color = Color::rgba(1.0, 1.0, 1.0, opacity);
+        materials.get_mut(material).unwrap().base_color = Color::srgba(1.0, 1.0, 1.0, opacity);
 
         transform.translation = settings.position;
         let rotation = Quat::from_rotation_arc(Vec3::Y, settings.normal);

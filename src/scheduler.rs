@@ -93,7 +93,7 @@ pub fn start_scenarios(
         .count()
         >= number_of_jobs.value
     {
-        commands.insert_resource(NextState(Some(SchedulerState::Unavailale)));
+        commands.insert_resource(NextState::Pending(SchedulerState::Unavailale));
     }
 }
 
@@ -172,6 +172,6 @@ pub fn check_scenarios(
         < number_of_jobs.value)
         && (scheduler_state.get() == &SchedulerState::Unavailale)
     {
-        commands.insert_resource(NextState(Some(SchedulerState::Available)));
+        commands.insert_resource(NextState::Pending(SchedulerState::Available));
     }
 }

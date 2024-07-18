@@ -132,7 +132,7 @@ pub fn draw_ui_explorer(
                                 summary_rx: None,
                             });
                             selected_scenario.index = Some(scenario_list.entries.len() - 1);
-                            commands.insert_resource(NextState(Some(UiState::Scenario)));
+                            commands.insert_resource(NextState::Pending(UiState::Scenario));
                         };
                     });
                     row.col(|_ui| {});
@@ -176,7 +176,7 @@ fn draw_row(
                 .clicked()
             {
                 selected_scenario.index = Some(index);
-                commands.insert_resource(NextState(Some(UiState::Scenario)));
+                commands.insert_resource(NextState::Pending(UiState::Scenario));
             };
         });
         row.col(|ui| {

@@ -36,19 +36,19 @@ pub(crate) fn spawn_sensors(
     let motion_steps = sensors.array_offsets_mm.shape()[0];
 
     let material_red = materials.add(StandardMaterial {
-        base_color: Color::rgb(1.0, 0.0, 0.0),
+        base_color: Color::srgb(1.0, 0.0, 0.0),
         metallic: 0.0,
         ..Default::default()
     });
 
     let materials_green = materials.add(StandardMaterial {
-        base_color: Color::rgb(0.0, 1.0, 0.0),
+        base_color: Color::srgb(0.0, 1.0, 0.0),
         metallic: 0.0,
         ..Default::default()
     });
 
     let material_blue = materials.add(StandardMaterial {
-        base_color: Color::rgb(0.0, 0.0, 1.0),
+        base_color: Color::srgb(0.0, 0.0, 1.0),
         metallic: 0.0,
         ..Default::default()
     });

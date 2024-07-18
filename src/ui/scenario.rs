@@ -113,7 +113,7 @@ fn draw_ui_scenario_topbar(
             } else if ui.button("Copy").clicked() {
                 let mut new_scenario = Scenario::build(None);
                 new_scenario.config = scenario.config.clone();
-                new_scenario.comment = scenario.comment.clone();
+                new_scenario.comment.clone_from(&scenario.comment);
                 scenarios.entries.push(ScenarioBundle {
                     scenario: new_scenario,
                     join_handle: None,

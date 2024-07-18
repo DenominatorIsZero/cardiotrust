@@ -70,7 +70,7 @@ fn draw_measurement_settings(ui: &mut egui::Ui, model: &mut Model) {
                             egui::Label::new(
                                 "The mean value of the measurement noise covariance matrix.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -96,7 +96,7 @@ fn draw_measurement_settings(ui: &mut egui::Ui, model: &mut Model) {
                                 distribution according \
                                 to the mean value and standard deviation.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -156,7 +156,7 @@ fn draw_functional_settings(ui: &mut egui::Ui, model: &mut Model) {
                                 "The control function used as the input tthe system \
                                     / The shape of the assumed current density curve.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -173,7 +173,7 @@ fn draw_functional_settings(ui: &mut egui::Ui, model: &mut Model) {
                             egui::Label::new(
                                 "Whether or not to place pathological tissue in the model.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -195,7 +195,7 @@ fn draw_functional_settings(ui: &mut egui::Ui, model: &mut Model) {
                                     "A factor describing how much to reduce the \
                                     current densities in pathological voxels.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -255,7 +255,7 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                                     maximum propagation velocity is limited \
                                     by the voxel size and sample rate.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -285,7 +285,7 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                                     maximum propagation velocity is limited \
                                     by the voxel size and sample rate.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -315,7 +315,7 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                                     maximum propagation velocity is limited \
                                     by the voxel size and sample rate.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -345,7 +345,7 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                                     maximum propagation velocity is limited \
                                     by the voxel size and sample rate.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -375,7 +375,7 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                                     maximum propagation velocity is limited \
                                     by the voxel size and sample rate.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -406,7 +406,7 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                                     maximum propagation velocity is limited \
                                     by the voxel size and sample rate.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -457,7 +457,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                 "The center of the sinoatrial node \
                                     in x-direction in percent.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -478,7 +478,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                 "The center of the sinoatrial node \
                                     in y-direction in percent.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -500,7 +500,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                     / start of the ventricles
                                     in y-direction in percent.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -521,7 +521,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                 "The center of the atrioventricular node \
                                     in x-direction in percent.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -542,7 +542,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                 "The end of the His-Purkinje-System \
                                     in y-direction in percent.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -563,7 +563,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                 "The start of the His-Purkinje-System \
                                     in x-direction in percent.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -584,7 +584,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                 "The end of the His-Purkinje-System \
                                     in x-direction in percent.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -606,7 +606,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                     of the His-Purkinje-System \
                                     in x-direction in percent.",
                             )
-                            .truncate(true),
+                            .truncate(),
                         );
                     });
                 });
@@ -628,7 +628,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                     "The start of the pathology \
                                     in x-direction in percent.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -649,7 +649,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                     "The end of the pathology \
                                     in x-direction in percent.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -670,7 +670,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                     "The start of the pathology \
                                     in y-direction in percent.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -691,7 +691,7 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                                     "The end of the pathology \
                                     in y-direction in percent.",
                                 )
-                                .truncate(true),
+                                .truncate(),
                             );
                         });
                     });
@@ -741,7 +741,7 @@ fn draw_mri_settings(ui: &mut egui::Ui, mri: &mut Mri, _patholoical: bool) {
                         mri.path = PathBuf::from(path);
                     });
                     row.col(|ui| {
-                        ui.add(egui::Label::new("The path to the .nii file.").truncate(true));
+                        ui.add(egui::Label::new("The path to the .nii file.").truncate());
                     });
                 });
             });

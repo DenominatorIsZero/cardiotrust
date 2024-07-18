@@ -7,6 +7,7 @@ pub mod room;
 pub mod sample_tracker;
 pub mod sensors;
 
+use bevy::color::palettes::css::{BLUE, GREEN, RED};
 use bevy::prelude::*;
 
 use bevy_editor_cam::controller::component::{EditorCam, OrbitConstraint};
@@ -119,21 +120,21 @@ pub fn setup_coordinate_system(
             &mut meshes,
             &mut materials,
             Vec3::X,
-            Color::RED,
+            RED.into(),
         );
         spawn_axis(
             &mut commands,
             &mut meshes,
             &mut materials,
             Vec3::Y,
-            Color::GREEN,
+            GREEN.into(),
         );
         spawn_axis(
             &mut commands,
             &mut meshes,
             &mut materials,
             Vec3::Z,
-            Color::BLUE,
+            BLUE.into(),
         );
     }
 }

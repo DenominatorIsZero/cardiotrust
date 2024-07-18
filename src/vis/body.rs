@@ -22,7 +22,7 @@ pub(crate) fn spawn_torso(
         // Notice how there is no need to set the `alpha_mode` explicitly here.
         // When converting a color to a material using `into()`, the alpha mode is
         // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
-        material: materials.add(StandardMaterial::from(Color::rgba(
+        material: materials.add(StandardMaterial::from(Color::srgba(
             85.0 / 255.0,
             79.0 / 255.0,
             72.0 / 255.0,
