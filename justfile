@@ -27,7 +27,7 @@ wasm-build:
   cargo build --target wasm32-unknown-unknown --bin client
 
 wasm-run: wasm-build
-  wasm-server-runner '.\target\wasm32-unknown-unknown\debug\client.wasm'
+  WASM_SERVER_RUNNER_CUSTOM_INDEX_HTML='index.html' wasm-server-runner './target/wasm32-unknown-unknown/debug/client.wasm'
 
 wasm-build-deploy:
   cargo build --release --target wasm32-unknown-unknown --bin client
