@@ -111,11 +111,15 @@ pub(crate) fn update_sensors(
         });
     }
 }
+
 #[derive(Component)]
+/// A struct representing a sensor bracket in the visualization.
+///
+/// The sensor bracket has a radius, an array of positions, and an offset all given in mm.
 pub(crate) struct SensorBracket {
-    pub radius_mm: f32,
-    pub positions_mm: Array2<f32>,
-    pub offset_mm: Vec3,
+    pub radius: f32,
+    pub positions: Array2<f32>,
+    pub offset: Vec3,
 }
 
 #[allow(clippy::needless_pass_by_value)]
@@ -137,11 +141,11 @@ pub(crate) fn spawn_sensor_bracket(
 
     let motion_steps = sensors.array_offsets_mm.shape()[0];
 
-    let mut positions_mm = Array2::zeros((motion_steps, 3));
+    let mut positions = Array2::zeros((motion_steps, 3));
     for i in 0..motion_steps {
-        positions_mm[(i, 0)] = sensors.array_center_mm[0] + sensors.array_offsets_mm[(i, 0)];
-        positions_mm[(i, 1)] = sensors.array_center_mm[1] + sensors.array_offsets_mm[(i, 1)];
-        positions_mm[(i, 2)] = sensors.array_center_mm[2] + sensors.array_offsets_mm[(i, 2)];
+        positions[(i, 0)] = sensors.array_center_mm[0] + sensors.array_offsets_mm[(i, 0)];
+        positions[(i, 1)] = sensors.array_center_mm[1] + sensors.array_offsets_mm[(i, 1)];
+        positions[(i, 2)] = sensors.array_center_mm[2] + sensors.array_offsets_mm[(i, 2)];
     }
 
     let glb_handle = ass.load("sensor_array.glb#Scene0");
@@ -153,9 +157,9 @@ pub(crate) fn spawn_sensor_bracket(
             ..Default::default()
         },
         SensorBracket {
-            radius_mm: radius,
-            positions_mm,
-            offset_mm: Vec3::ZERO,
+            radius,
+            positions,
+            offset: Vec3::ZERO,
         },
     ));
 }
@@ -170,13 +174,13 @@ pub(crate) fn update_sensor_bracket(
 
     if let Ok((mut transform, sensor_bracket)) = sensor_bracket {
         let position = Vec3 {
-            x: sensor_bracket.positions_mm[(beat_index, 0)] + sensor_bracket.offset_mm[0],
-            y: sensor_bracket.positions_mm[(beat_index, 1)] + sensor_bracket.offset_mm[1],
-            z: sensor_bracket.positions_mm[(beat_index, 2)] + sensor_bracket.offset_mm[2],
+            x: sensor_bracket.positions[(beat_index, 0)] + sensor_bracket.offset[0],
+            y: sensor_bracket.positions[(beat_index, 1)] + sensor_bracket.offset[1],
+            z: sensor_bracket.positions[(beat_index, 2)] + sensor_bracket.offset[2],
         };
         transform.translation = position;
         // has to be multiplied by 2.5 to get the correct scale (due to blender model size)
-        transform.scale.x = sensor_bracket.radius_mm * 2.5;
-        transform.scale.z = sensor_bracket.radius_mm * 2.5;
+        transform.scale.x = sensor_bracket.radius * 2.5;
+        transform.scale.z = sensor_bracket.radius * 2.5;
     }
 }

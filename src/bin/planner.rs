@@ -1,6 +1,6 @@
 use std::process::Command;
 
-use bevy::{prelude::*, utils::petgraph::algo};
+use bevy::prelude::*;
 
 use tracing::info;
 use tracing_subscriber::fmt;

@@ -268,22 +268,22 @@ pub fn draw_ui_volumetric(
         let sensor_bracket = sensor_brackets.get_single_mut();
         if let Ok(mut sensor_bracket) = sensor_bracket {
             ui.label("Sensor positon mm (x, y, z):");
-            let mut position = sensor_bracket.offset_mm;
+            let mut position = sensor_bracket.offset;
             ui.horizontal(|ui| {
                 ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
                 ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
                 ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
             });
-            if position != sensor_bracket.offset_mm {
-                sensor_bracket.offset_mm = position;
+            if position != sensor_bracket.offset {
+                sensor_bracket.offset = position;
             }
 
             ui.label("Sensor radius mm:");
 
-            let mut radius = sensor_bracket.radius_mm;
+            let mut radius = sensor_bracket.radius;
             ui.add(egui::DragValue::new(&mut radius).speed(1));
-            if (radius - sensor_bracket.radius_mm).abs() > 10.0 * f32::EPSILON {
-                sensor_bracket.radius_mm = radius;
+            if (radius - sensor_bracket.radius).abs() > 10.0 * f32::EPSILON {
+                sensor_bracket.radius = radius;
             }
         }
     });
