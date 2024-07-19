@@ -23,7 +23,7 @@ impl Default for SampleTracker {
             current_sample: 1,
             max_sample: 1,
             sample_rate: 1.0,
-            manual: false,
+            manual: true,
             selected_sensor: 0,
             selected_beat: 0,
         }

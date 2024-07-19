@@ -148,20 +148,21 @@ pub(crate) fn spawn_sensor_bracket(
         positions[(i, 2)] = sensors.array_center_mm[2] + sensors.array_offsets_mm[(i, 2)];
     }
 
-    let glb_handle = ass.load("sensor_array.glb#Scene0");
+    // TODO: readd and add checkbox to enable/disable sensor bracket
+    // let glb_handle = ass.load("sensor_array.glb#Scene0");
 
-    commands.spawn((
-        SceneBundle {
-            scene: glb_handle,
-            transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::ONE * 1000.0),
-            ..Default::default()
-        },
-        SensorBracket {
-            radius,
-            positions,
-            offset: Vec3::ZERO,
-        },
-    ));
+    // commands.spawn((
+    //     SceneBundle {
+    //         scene: glb_handle,
+    //         transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::ONE * 1000.0),
+    //         ..Default::default()
+    //     },
+    //     SensorBracket {
+    //         radius,
+    //         positions,
+    //         offset: Vec3::ZERO,
+    //     },
+    // ));
 }
 
 #[allow(clippy::needless_pass_by_value)]

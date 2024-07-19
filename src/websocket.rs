@@ -289,11 +289,11 @@ fn update_values(payload: &Value, states: &mut SystemStates, measurements: &mut 
         .unwrap_or_else(|| panic!("Key {key} should exist"))
         .as_array()
         .unwrap_or_else(|| panic!("{key} to be array."));
-    for index_sample in 0..states.shape()[0] {
+    for index_sample in 0..states.num_steps() {
         let pf_state_buffer = ppf_state_buffer[index_sample]
             .as_array()
             .expect("pfStateBuffer should be an array.");
-        for index_state in 0..states.shape()[1] {
+        for index_state in 0..states.num_states() {
             let state = pf_state_buffer[index_state]
                 .as_f64()
                 .expect("State should be a float");
@@ -306,15 +306,15 @@ fn update_values(payload: &Value, states: &mut SystemStates, measurements: &mut 
         .unwrap_or_else(|| panic!("Key {key} should exist"))
         .as_array()
         .unwrap_or_else(|| panic!("{key} to be array."));
-    for index_sample in 0..measurements.shape()[0] {
+    for index_sample in 0..measurements.num_steps() {
         let pf_measurement_buffer = ppf_measurement_buffer[index_sample]
             .as_array()
             .expect("pfMeasurementBuffer should be an array.");
-        for index_state in 0..measurements.shape()[1] {
-            let state = pf_measurement_buffer[index_state]
+        for index_sensor in 0..measurements.num_sensors() {
+            let state = pf_measurement_buffer[index_sensor]
                 .as_f64()
                 .expect("Measurement should be a float");
-            measurements[(0, index_sample, index_state)] = state as f32;
+            measurements[(0, index_sample, index_sensor)] = state as f32;
         }
     }
 }
@@ -526,6 +526,7 @@ fn init_scenario(
             .expect("iNumberOfSensors should be an int."),
     )
     .unwrap();
+    info!("Number of sensors: {number_of_sensors}");
     let number_of_states = usize::try_from(
         payload
             .get("iNumberOfStates")

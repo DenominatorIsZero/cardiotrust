@@ -29,8 +29,8 @@ pub(crate) fn spawn_cutting_plane(
     let cutting_plane = CuttingPlaneSettings {
         position,
         normal,
-        visible: true,
-        enabled: true,
+        visible: false,
+        enabled: false,
         opacity: 0.5,
     };
 
