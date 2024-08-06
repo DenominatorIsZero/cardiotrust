@@ -213,4 +213,29 @@ mod test {
             }
         }
     }
+
+    #[test]
+    fn calculate_gain_one_to_two_direction() {
+        let output_direction = arr1(&[1.0, 0.0, 0.0]);
+        let input_direction = arr1(&[0.5, 0.5, 0.0]);
+
+        let gain = calculate(&input_direction, output_direction.view());
+
+        let mut expected_gain = Array2::<f32>::zeros((3, 3));
+        expected_gain[(0, 0)] = 0.5;
+        expected_gain[(0, 1)] = 0.0;
+        expected_gain[(0, 2)] = 0.0;
+        expected_gain[(1, 0)] = 0.5;
+        expected_gain[(1, 1)] = 0.0;
+        expected_gain[(1, 2)] = 0.0;
+        expected_gain[(2, 0)] = 0.0;
+        expected_gain[(2, 1)] = 0.0;
+        expected_gain[(2, 2)] = 0.0;
+
+        for i in 0..3 {
+            for j in 0..3 {
+                assert_relative_eq!(gain[[i, j]], expected_gain[[i, j]], epsilon = 0.01,);
+            }
+        }
+    }
 }

@@ -150,13 +150,13 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Indic
                     let input_state_number =
                         v_numbers[input_voxel_index].unwrap() + input_direction;
                     for output_dimension in 0..3 {
+                        let gain_index =
+                            offset_to_gain_index(x_offset, y_offset, z_offset, output_dimension)
+                                .unwrap();
                         let output_state_index =
                             v_numbers[output_voxel_index].unwrap() + output_dimension;
-                        output_state_indices[(
-                            input_state_number,
-                            offset_to_gain_index(x_offset, y_offset, z_offset, output_dimension)
-                                .expect("Not all offsets to be zero."),
-                        )] = Some(output_state_index);
+                        output_state_indices[(input_state_number, gain_index)] =
+                            Some(output_state_index);
                     }
                 }
             }
@@ -388,18 +388,14 @@ pub const fn offset_to_gain_index(
     if x_offset == 0 && y_offset == 0 && z_offset == 0 {
         return None;
     }
-    let correction = if x_offset >= 0 && y_offset >= 0 && z_offset >= 0 {
-        3
-    } else {
-        0
-    };
-    Some(
-        output_dimension
-            + (z_offset + 1) as usize * 3
-            + (y_offset + 1) as usize * 9
-            + (x_offset + 1) as usize * 27
-            - correction,
-    )
+    let mut index = output_dimension
+        + (z_offset + 1) as usize * 3
+        + (y_offset + 1) as usize * 9
+        + (x_offset + 1) as usize * 27;
+    if index > 27 + 9 + 3 {
+        index -= 3;
+    }
+    Some(index)
 }
 
 /// Converts a 1D index into the gains array to the corresponding
@@ -437,15 +433,12 @@ pub const fn offset_to_delay_index(x_offset: i32, y_offset: i32, z_offset: i32) 
     if x_offset == 0 && y_offset == 0 && z_offset == 0 {
         return None;
     }
-    let correction = if x_offset >= 0 && y_offset >= 0 && z_offset >= 0 {
-        1
-    } else {
-        0
-    };
-    Some(
-        (z_offset + 1) as usize + (y_offset + 1) as usize * 3 + (x_offset + 1) as usize * 9
-            - correction,
-    )
+    let mut index =
+        (z_offset + 1) as usize + (y_offset + 1) as usize * 3 + (x_offset + 1) as usize * 9;
+    if index > 9 + 3 + 1 {
+        index -= 1;
+    }
+    Some(index)
 }
 
 /// Finds candidate voxels that are activated at the given `current_time_s`.
@@ -536,6 +529,22 @@ mod test {
 
         let desired = 77;
         let actual = offset_to_gain_index(1, 1, 1, 2).expect("Offsets to be valid.");
+        assert_eq!(desired, actual);
+
+        let desired = 42;
+        let actual = offset_to_gain_index(0, 1, -1, 0).expect("Offsets to be valid.");
+        assert_eq!(desired, actual);
+
+        let desired = 45;
+        let actual = offset_to_gain_index(0, 1, 0, 0).expect("Offsets to be valid.");
+        assert_eq!(desired, actual);
+
+        let desired = 60;
+        let actual = offset_to_gain_index(1, 0, -1, 0).expect("Offsets to be valid.");
+        assert_eq!(desired, actual);
+
+        let desired = 63;
+        let actual = offset_to_gain_index(1, 0, 0, 0).expect("Offsets to be valid.");
         assert_eq!(desired, actual);
     }
 }
