@@ -1,5 +1,7 @@
 pub mod functional;
 pub mod spatial;
+#[cfg(test)]
+mod tests;
 
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
