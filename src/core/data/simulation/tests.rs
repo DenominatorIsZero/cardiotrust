@@ -320,10 +320,60 @@ fn run_simulation_mri() {
     config.model.mri = Some(Mri::default());
     let mut simulation = Simulation::from_config(&config).unwrap();
     simulation.run();
-    let max = *simulation.system_states.max_skipnan();
-    assert!(max.relative_eq(&1.0, 0.002, 0.002), "max: {max}");
     let max = *simulation.measurements.max_skipnan();
     assert!(max > 0.0);
+    // make sure the max in each voxel is one
+    for index_voxel in 0..simulation.model.spatial_description.voxels.count_states() / 3 {
+        for index_time in 0..simulation.system_states.shape()[0] {
+            let value = simulation.system_states_spherical.magnitude[(index_time, index_voxel)];
+            assert!(
+                value < 1.003,
+                "voxel: {index_voxel}, time: {index_time}, value: {value}"
+            );
+        }
+    }
+
+    let x_y_z = simulation.model.spatial_description.voxels.count_xyz();
+    for x in 0..x_y_z[0] {
+        for y in 0..x_y_z[1] {
+            for z in 0..x_y_z[2] {
+                if !simulation.model.spatial_description.voxels.types[(x, y, z)].is_connectable() {
+                    continue;
+                }
+                let state = simulation.model.spatial_description.voxels.numbers[(x, y, z)].unwrap();
+                crawl_through_states(&simulation, state);
+            }
+        }
+    }
+}
+
+fn crawl_through_states(simulation: &Simulation, state: usize) {
+    let voxel = state / 3;
+
+    let value = simulation.system_states_spherical_max.magnitude[voxel];
+    let gains = simulation
+        .model
+        .functional_description
+        .ap_params
+        .gains
+        .slice(s![state, ..]);
+    if value < 0.99 {
+        println!("voxel: {voxel}, value: {value}, gain: {gains}");
+        let output_offset = gains.mapv(f32::abs).argmax_skipnan().unwrap();
+        let output_state = simulation
+            .model
+            .functional_description
+            .ap_params
+            .output_state_indices[(state, output_offset)]
+            .unwrap();
+        let output_value = simulation.system_states_spherical_max.magnitude[output_state / 3];
+        println!("output_offset: {output_offset}, output_state: {output_state}, output_value: {output_value}");
+        crawl_through_states(simulation, output_state);
+    }
+    assert!(
+        value > 0.99,
+        "voxel: {voxel}, value: {value}, gain: {gains}"
+    );
 }
 
 #[test]
