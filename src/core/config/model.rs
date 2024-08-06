@@ -162,7 +162,7 @@ impl Default for Common {
             control_function: ControlFunction::Ohara,
             pathological: false,
             sensor_array_geometry: SensorArrayGeometry::Cylinder,
-            sensor_array_motion: SensorArrayMotion::Grid,
+            sensor_array_motion: SensorArrayMotion::Static,
             three_d_sensors: true,
             number_of_sensors: 40,
             sensor_array_radius_mm: 400.0,
