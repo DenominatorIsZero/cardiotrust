@@ -80,8 +80,7 @@ pub fn innovate_system_states_v1(
             *ap_output = coef.mul_add(input - *ap_output, input_delayed);
             let gain = unsafe { *ap_params.gains.uget((index_state, index_offset)) };
             unsafe {
-                *system_states.uget_mut((time_index, index_state)) +=
-                    gain * ap_outputs.uget((index_state, index_offset));
+                *system_states.uget_mut((time_index, index_state)) += gain * *ap_output;
             };
         }
     }
