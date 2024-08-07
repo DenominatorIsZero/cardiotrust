@@ -125,8 +125,8 @@ pub(crate) struct SensorBracket {
 #[allow(clippy::needless_pass_by_value)]
 #[tracing::instrument(level = "debug", skip_all)]
 pub(crate) fn spawn_sensor_bracket(
-    ass: &Res<AssetServer>,
-    commands: &mut Commands,
+    _ass: &Res<AssetServer>,
+    _commands: &mut Commands,
     scenario: &Scenario,
 ) {
     let sensors = &scenario
@@ -137,8 +137,8 @@ pub(crate) fn spawn_sensor_bracket(
         .model
         .spatial_description
         .sensors;
-    let radius = sensors.array_radius_mm;
-
+    #[allow(clippy::no_effect_underscore_binding)]
+    let _radius = sensors.array_radius_mm;
     let motion_steps = sensors.array_offsets_mm.shape()[0];
 
     let mut positions = Array2::zeros((motion_steps, 3));

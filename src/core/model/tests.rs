@@ -1,5 +1,4 @@
-use approx::RelativeEq;
-use ndarray::{s, Axis};
+use ndarray::s;
 
 use crate::core::config;
 

@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use ndarray::Dim;
 
 use crate::core::config::algorithm::Algorithm as AlgorithmConfig;
@@ -9,20 +7,6 @@ use crate::core::model::Model;
 
 use super::super::*;
 use super::run;
-
-const COMMON_PATH: &str = "tests/core/algorithm/no_crash";
-
-#[tracing::instrument(level = "trace")]
-fn setup(folder: Option<&str>) {
-    let path = folder.map_or_else(
-        || Path::new(COMMON_PATH).to_path_buf(),
-        |folder| Path::new(COMMON_PATH).join(folder),
-    );
-
-    if !path.exists() {
-        std::fs::create_dir_all(path).unwrap();
-    }
-}
 
 #[test]
 fn run_epoch_no_crash() {
