@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use ndarray::{s, ArrayBase, Dim, ViewRepr};
 use std::{collections::HashMap, error::Error};
-use tracing::trace;
+use tracing::{info, trace};
 
 use super::{offset_to_delay_index, shapes::Coefs};
 use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
@@ -93,6 +93,7 @@ pub fn calculate_delay_samples_array(
                 offset_to_delay_index(x_offset, y_offset, z_offset)
                     .expect("Offsets to not all be zero."),
             )] = delay_samples;
+            info!("input_voxel_index: {input_voxel_index:?}, output_voxel_index: {ouput_voxel_index:?}, delay_samples: {delay_samples}");
         }
     }
     Ok(delay_samples_array)

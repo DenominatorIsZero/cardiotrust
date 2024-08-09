@@ -1,4 +1,4 @@
-use tracing::debug;
+use tracing::{debug, info};
 
 use super::derivation::Derivatives;
 use crate::core::{
@@ -74,7 +74,7 @@ impl APParameters {
                     batch_size,
                 ),
             };
-            roll_delays(&mut self.coefs, &mut self.delays);
+            roll_delays(&mut self.coefs, &mut self.delays); // TODO: reactivate and test
         }
         derivatives.step += 1;
     }
@@ -137,7 +137,7 @@ pub fn update_delays_sgd(
     batch_size: usize,
 ) {
     debug!("Updating coefficients and delays");
-    **ap_coefs -= &(learning_rate / batch_size as f32 * &**derivatives);
+    **ap_coefs += &(learning_rate / batch_size as f32 * &**derivatives);
 }
 
 #[allow(clippy::cast_precision_loss)]
@@ -173,19 +173,23 @@ pub fn roll_delays(ap_coefs: &mut Coefs, delays: &mut UnitDelays) {
         .iter_mut()
         .zip(delays.iter_mut())
         .for_each(|(ap_coef, delay)| {
-            if *ap_coef > 0.99 {
+            if *ap_coef > 0.999 {
+                info!("Rolling delay down: {delay}");
                 if *delay > 0 {
-                    *ap_coef = 0.01;
+                    *ap_coef = 1.0 / 3.0;
                     *delay -= 1;
+                    info!("Delay after roll: {delay}");
                 } else {
-                    *ap_coef = 0.99;
+                    *ap_coef = 0.999;
                 }
-            } else if *ap_coef < 0.01 {
+            } else if *ap_coef < 0.1 {
                 if *delay < 1000 {
-                    *ap_coef = 0.99;
+                    info!("Rolling delay up: {delay}");
+                    *ap_coef = 1.0 / 3.0;
                     *delay += 1;
+                    info!("Delay after roll: {delay}");
                 } else {
-                    *ap_coef = 0.01;
+                    *ap_coef = 0.001;
                 }
             }
         });
