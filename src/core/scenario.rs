@@ -664,6 +664,13 @@ fn run_model_based(
             scenario.config.algorithm.learning_rate *=
                 scenario.config.algorithm.learning_rate_reduction_factor;
         }
+        let functional_description = if scenario.config.algorithm.snapshots_interval != 0
+            && epoch_index % scenario.config.algorithm.snapshots_interval == 0
+        {
+            Some(model.functional_description.clone())
+        } else {
+            None
+        };
         algorithm::run_epoch(
             &mut model.functional_description,
             results,
@@ -693,7 +700,7 @@ fn run_model_based(
         {
             results.snapshots.push(Snapshot::new(
                 &results.estimations,
-                &model.functional_description,
+                functional_description.unwrap(),
             ));
         }
 

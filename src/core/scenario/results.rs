@@ -93,11 +93,11 @@ impl Snapshot {
     /// Creates a new Snapshot instance with the provided estimations and
     /// functional description.
     #[tracing::instrument(level = "trace")]
-    pub fn new(estimations: &Estimations, functional_description: &FunctionalDescription) -> Self {
+    pub fn new(estimations: &Estimations, functional_description: FunctionalDescription) -> Self {
         trace!("Creating snapshot with estimations and functional description");
         Self {
             estimations: estimations.clone(),
-            functional_description: functional_description.clone(),
+            functional_description,
         }
     }
 }

@@ -1,24 +1,498 @@
-use std::{fs, path::Path, sync::mpsc::channel, thread};
+use std::{fs, ops::Deref, path::Path, sync::mpsc::channel, thread};
 
-use crate::core::scenario::{run, Scenario};
+use approx::RelativeEq;
+use nalgebra::ComplexField;
+use ndarray::{Array1, AssignElem};
 
+use crate::{
+    core::{
+        algorithm::metrics::BatchWiseMetric,
+        model::spatial::voxels::VoxelType,
+        scenario::{run, Scenario},
+    },
+    tests::{clean_files, setup_folder},
+    vis::plotting::png::line::{line_plot, log_y_plot},
+};
+
+const COMMON_PATH: &str = "tests/core/scenario/single_ap/";
+
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines
+)]
 #[test]
-fn optimize_single_ap() {
-    let id = "single_ap_basic".to_string();
-    let path = Path::new("./results").join(&id);
-    if path.is_dir() {
-        fs::remove_dir_all(&path).unwrap();
+fn no_roll_down() {
+    let base_id = "Single AP - No Roll - Down - ".to_string();
+    let integer_part = 5.0;
+    let fractional_step = 0.1;
+    let steps = (1.0 / fractional_step).ceil() as usize;
+    let voxel_size_mm = 2.5;
+    let sample_rate_hz = 2000.0;
+
+    let mut scenarios = Vec::new();
+
+    let initial_fractional = 0.0;
+    let initial_delay = integer_part + initial_fractional;
+    let initial_delay_s = initial_delay / sample_rate_hz;
+    let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
+    for target_fractional_part in 1..=steps {
+        let target_fractional = target_fractional_part as f32 * fractional_step;
+        println!("target_fractional: {}", target_fractional);
+        let target_delay = integer_part + target_fractional;
+        let target_delay_s = target_delay / sample_rate_hz;
+        let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
+        // Duplication, get rid of this.
+        let id =
+            format!("{base_id} {initial_velocity:.2} [m per s] to {target_velocity:.2} [m per s]");
+        let path = Path::new("results").join(&id);
+        if path.is_dir() {
+            println!("Found scenario. Loading it!");
+            let mut scenario = Scenario::load(path.as_path());
+            scenario.load_data();
+            scenario.load_results();
+            scenarios.push(scenario);
+        } else {
+            println!("Didn't find scenario. Building it!");
+            scenarios.push(build_scenario(
+                target_velocity,
+                initial_velocity,
+                base_id.clone(),
+            ));
+        }
     }
-    let mut scenario = Scenario::build(Some(id));
+
+    // Plot 1.0 to others
+
+    let path = Path::new(COMMON_PATH).join("no_roll_down");
+    setup_folder(path.clone());
+    let files = vec![
+        path.join("1_to_others_loss.png"),
+        path.join("1_to_others_params.png"),
+        path.join("1_to_others_params_error.png"),
+    ];
+    clean_files(&files);
+
+    let first_scenario = scenarios.first().unwrap();
+    println!(
+        "{:?}",
+        first_scenario
+            .results
+            .as_ref()
+            .unwrap()
+            .model
+            .as_ref()
+            .unwrap()
+            .functional_description
+            .ap_params
+            .coefs
+    );
+
+    let x_epochs = Array1::range(0.0, first_scenario.config.algorithm.epochs as f32, 1.0);
+    let num_snapshots = first_scenario.results.as_ref().unwrap().snapshots.len() as f32;
+    let x_snapshots = Array1::range(0.0, num_snapshots, 1.0);
+    let mut losses_owned: Vec<BatchWiseMetric> = Vec::new();
+    let mut params_owned: Vec<Array1<f32>> = Vec::new();
+    let mut params_error_owned: Vec<Array1<f32>> = Vec::new();
+    let mut labels_owned: Vec<String> = Vec::new();
+
+    let propagation_velocity_max = (voxel_size_mm / 1000.0) / (integer_part / sample_rate_hz);
+
+    println!("{}", scenarios.len());
+    for scenario in scenarios {
+        if !scenario
+            .config
+            .algorithm
+            .model
+            .common
+            .propagation_velocities_m_per_s
+            .get(&VoxelType::Sinoatrial)
+            .unwrap()
+            .relative_eq(&propagation_velocity_max, 0.001, 0.001)
+        {
+            continue;
+        }
+        losses_owned.push(
+            scenario
+                .results
+                .as_ref()
+                .unwrap()
+                .metrics
+                .loss_mse_batch
+                .clone(),
+        );
+        let mut ap_param = Array1::<f32>::zeros(num_snapshots as usize);
+        let mut ap_param_error = Array1::<f32>::zeros(num_snapshots as usize);
+        for (i, snapshot) in scenario
+            .results
+            .as_ref()
+            .unwrap()
+            .snapshots
+            .iter()
+            .enumerate()
+        {
+            ap_param[i] = snapshot.functional_description.ap_params.coefs[(0, 15)];
+            ap_param_error[i] = scenario
+                .data
+                .as_ref()
+                .unwrap()
+                .simulation
+                .model
+                .functional_description
+                .ap_params
+                .coefs[(0, 15)]
+                - snapshot.functional_description.ap_params.coefs[(0, 15)];
+        }
+        params_owned.push(ap_param);
+        params_error_owned.push(ap_param_error);
+        labels_owned.push(format!(
+            "{:.2}",
+            scenario
+                .config
+                .simulation
+                .model
+                .common
+                .propagation_velocities_m_per_s
+                .get(&VoxelType::Sinoatrial)
+                .unwrap()
+        ));
+    }
+
+    let losses = losses_owned
+        .iter()
+        .map(std::ops::Deref::deref)
+        .collect::<Vec<&Array1<f32>>>();
+    let params = params_owned.iter().collect::<Vec<&Array1<f32>>>();
+    let params_error = params_error_owned.iter().collect::<Vec<&Array1<f32>>>();
+    let labels: Vec<&str> = labels_owned
+        .iter()
+        .map(std::string::String::as_str)
+        .collect();
+
+    println!("ys length: {}", losses.len());
+
+    log_y_plot(
+        Some(&x_epochs),
+        losses,
+        Some(files[0].as_path()),
+        Some("Singe AP - No Roll - Down - Loss - 1 to Others"),
+        Some("Loss MSE"),
+        Some("Epoch"),
+        Some(&labels),
+        None,
+    )
+    .unwrap();
+
+    line_plot(
+        Some(&x_snapshots),
+        params,
+        Some(files[1].as_path()),
+        Some("Singe AP - No Roll - Down - AP Coef - 1 to Others"),
+        Some("AP Coef (Estimated)"),
+        Some("Snapshot"),
+        Some(&labels),
+        None,
+    )
+    .unwrap();
+
+    line_plot(
+        Some(&x_snapshots),
+        params_error,
+        Some(files[2].as_path()),
+        Some("Singe AP - No Roll - Down - AP Coef Error - 1 to Others"),
+        Some("AP Coef (Target - Estimated)"),
+        Some("Snapshot"),
+        Some(&labels),
+        None,
+    )
+    .unwrap();
+}
+
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines
+)]
+#[test]
+fn no_roll_up() {
+    let base_id = "Single AP - No Roll - Up - ".to_string();
+    let integer_part = 5.0;
+    let fractional_step = 0.1;
+    let steps = (1.0 / fractional_step).ceil() as usize;
+    let voxel_size_mm = 2.5;
+    let sample_rate_hz = 2000.0;
+
+    let mut scenarios = Vec::new();
+
+    let initial_fractional = 0.99;
+    let initial_delay = integer_part + initial_fractional;
+    let initial_delay_s = initial_delay / sample_rate_hz;
+    let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
+    for target_fractional_part in 0..steps {
+        let target_fractional = target_fractional_part as f32 * fractional_step;
+        let target_delay = integer_part + target_fractional;
+        let target_delay_s = target_delay / sample_rate_hz;
+        let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
+        // Duplication, get rid of this.
+        let id =
+            format!("{base_id} {initial_velocity:.2} [m per s] to {target_velocity:.2} [m per s]");
+        let path = Path::new("results").join(&id);
+        if path.is_dir() {
+            println!("Found scenario. Loading it!");
+            let mut scenario = Scenario::load(path.as_path());
+            scenario.load_data();
+            scenario.load_results();
+            scenarios.push(scenario);
+        } else {
+            println!("Didn't find scenario. Building it!");
+            scenarios.push(build_scenario(
+                target_velocity,
+                initial_velocity,
+                base_id.clone(),
+            ));
+        }
+    }
+
+    // Plot 1.0 to others
+
+    let path = Path::new(COMMON_PATH).join("no_roll_up");
+    setup_folder(path.clone());
+    let files = vec![
+        path.join("083_to_others_loss.png"),
+        path.join("083_to_others_params.png"),
+        path.join("083_to_others_params_error.png"),
+    ];
+    clean_files(&files);
+
+    let first_scenario = scenarios.first().unwrap();
+    println!(
+        "{:?}",
+        first_scenario
+            .results
+            .as_ref()
+            .unwrap()
+            .model
+            .as_ref()
+            .unwrap()
+            .functional_description
+            .ap_params
+            .coefs
+    );
+
+    let x_epochs = Array1::range(0.0, first_scenario.config.algorithm.epochs as f32, 1.0);
+    let num_snapshots = first_scenario.results.as_ref().unwrap().snapshots.len() as f32;
+    let x_snapshots = Array1::range(0.0, num_snapshots, 1.0);
+    let mut losses_owned: Vec<BatchWiseMetric> = Vec::new();
+    let mut params_owned: Vec<Array1<f32>> = Vec::new();
+    let mut params_error_owned: Vec<Array1<f32>> = Vec::new();
+    let mut labels_owned: Vec<String> = Vec::new();
+
+    println!("Scenarios found: {}", scenarios.len());
+    for scenario in scenarios {
+        losses_owned.push(
+            scenario
+                .results
+                .as_ref()
+                .unwrap()
+                .metrics
+                .loss_mse_batch
+                .clone(),
+        );
+        let mut ap_param = Array1::<f32>::zeros(num_snapshots as usize);
+        let mut ap_param_error = Array1::<f32>::zeros(num_snapshots as usize);
+        for (i, snapshot) in scenario
+            .results
+            .as_ref()
+            .unwrap()
+            .snapshots
+            .iter()
+            .enumerate()
+        {
+            ap_param[i] = snapshot.functional_description.ap_params.coefs[(0, 15)];
+            ap_param_error[i] = scenario
+                .data
+                .as_ref()
+                .unwrap()
+                .simulation
+                .model
+                .functional_description
+                .ap_params
+                .coefs[(0, 15)]
+                - snapshot.functional_description.ap_params.coefs[(0, 15)];
+        }
+        params_owned.push(ap_param);
+        params_error_owned.push(ap_param_error);
+        labels_owned.push(format!(
+            "{:.2}",
+            scenario
+                .config
+                .simulation
+                .model
+                .common
+                .propagation_velocities_m_per_s
+                .get(&VoxelType::Sinoatrial)
+                .unwrap()
+        ));
+    }
+
+    let losses = losses_owned
+        .iter()
+        .map(std::ops::Deref::deref)
+        .collect::<Vec<&Array1<f32>>>();
+    let params = params_owned.iter().collect::<Vec<&Array1<f32>>>();
+    let params_error = params_error_owned.iter().collect::<Vec<&Array1<f32>>>();
+    let labels: Vec<&str> = labels_owned
+        .iter()
+        .map(std::string::String::as_str)
+        .collect();
+
+    println!("ys length: {}", losses.len());
+
+    log_y_plot(
+        Some(&x_epochs),
+        losses,
+        Some(files[0].as_path()),
+        Some("Singe AP - No Roll - Down - Loss - 1 to Others"),
+        Some("Loss MSE"),
+        Some("Epoch"),
+        Some(&labels),
+        None,
+    )
+    .unwrap();
+
+    line_plot(
+        Some(&x_snapshots),
+        params,
+        Some(files[1].as_path()),
+        Some("Singe AP - No Roll - Down - AP Coef - 1 to Others"),
+        Some("AP Coef (Estimated)"),
+        Some("Snapshot"),
+        Some(&labels),
+        None,
+    )
+    .unwrap();
+
+    line_plot(
+        Some(&x_snapshots),
+        params_error,
+        Some(files[2].as_path()),
+        Some("Singe AP - No Roll - Down - AP Coef Error - 1 to Others"),
+        Some("AP Coef (Target - Estimated)"),
+        Some("Snapshot"),
+        Some(&labels),
+        None,
+    )
+    .unwrap();
+}
+
+fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: String) -> Scenario {
+    let mut scenario = Scenario::build(Some(format!(
+        "{base_id} {initial_velocity:.2} [m per s] to {target_velocity:.2} [m per s]"
+    )));
+
+    // Set pathological true
     scenario.config.simulation.model.common.pathological = true;
-    scenario.config.algorithm.epochs = 100;
-    assert!(path.is_dir());
-    assert!(path.join("scenario.toml").is_file());
+    scenario
+        .config
+        .simulation
+        .model
+        .common
+        .current_factor_in_pathology = 1.0;
+    scenario
+        .config
+        .simulation
+        .model
+        .common
+        .measurement_covariance_mean = 1e-12;
+    // Adjust heart size
+    scenario
+        .config
+        .simulation
+        .model
+        .handcrafted
+        .as_mut()
+        .unwrap()
+        .heart_size_mm = [2.5, 5.0, 2.5];
+    // Adjust pathology
+    scenario
+        .config
+        .simulation
+        .model
+        .handcrafted
+        .as_mut()
+        .unwrap()
+        .pathology_x_start_percentage = 0.0;
+    scenario
+        .config
+        .simulation
+        .model
+        .handcrafted
+        .as_mut()
+        .unwrap()
+        .pathology_x_stop_percentage = 1.0;
+    scenario
+        .config
+        .simulation
+        .model
+        .handcrafted
+        .as_mut()
+        .unwrap()
+        .pathology_y_start_percentage = 0.0;
+    scenario
+        .config
+        .simulation
+        .model
+        .handcrafted
+        .as_mut()
+        .unwrap()
+        .pathology_y_stop_percentage = 0.4;
+    // Copy settings to algorithm model
+    scenario.config.algorithm.model = scenario.config.simulation.model.clone();
+    // Adjust propagation velocities
+    *scenario
+        .config
+        .simulation
+        .model
+        .common
+        .propagation_velocities_m_per_s
+        .get_mut(&VoxelType::Sinoatrial)
+        .unwrap() = target_velocity;
+    *scenario
+        .config
+        .simulation
+        .model
+        .common
+        .propagation_velocities_m_per_s
+        .get_mut(&VoxelType::Pathological)
+        .unwrap() = target_velocity;
+    *scenario
+        .config
+        .algorithm
+        .model
+        .common
+        .propagation_velocities_m_per_s
+        .get_mut(&VoxelType::Sinoatrial)
+        .unwrap() = initial_velocity;
+    *scenario
+        .config
+        .algorithm
+        .model
+        .common
+        .propagation_velocities_m_per_s
+        .get_mut(&VoxelType::Pathological)
+        .unwrap() = initial_velocity;
+    // set optimization parameters
+    scenario.config.algorithm.epochs = 3_000;
+    scenario.config.algorithm.learning_rate = 2e5;
+    scenario.config.algorithm.freeze_delays = false;
+    scenario.config.algorithm.freeze_gains = true;
+    let number_of_snapshots = 1000;
+    scenario.config.algorithm.snapshots_interval =
+        scenario.config.algorithm.epochs / number_of_snapshots;
+
     scenario.schedule().unwrap();
-    let send_scenario = scenario.clone();
-    let (epoch_tx, _epoch_rx) = channel();
-    let (summary_tx, _summary_rx) = channel();
-    let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
-    handle.join().unwrap();
-    assert!(path.join("results.bin").is_file());
+    scenario.save();
+    scenario
 }

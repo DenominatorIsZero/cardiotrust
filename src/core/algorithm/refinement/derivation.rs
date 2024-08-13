@@ -226,9 +226,9 @@ pub fn calculate_derivatives_coefs(
             |(((state_index, offset_index), derivative), output_state_index)| {
                 let coef_index = (state_index / 3, offset_index / 3);
                 if step >= ap_params.delays[coef_index] {
-                    *derivative = ap_params.coefs[coef_index].mul_add(
+                    *derivative = (1.0 - ap_params.coefs[coef_index]).mul_add(
                         *derivative,
-                        estimated_system_states[(
+                        -estimated_system_states[(
                             step - ap_params.delays[coef_index],
                             output_state_index.unwrap(),
                         )],
@@ -241,7 +241,10 @@ pub fn calculate_derivatives_coefs(
         .zip(ap_outputs.iter())
         .for_each(|(((state_index, offset_index), derivative), ap_output)| {
             let coef_index = (state_index / 3, offset_index / 3);
-            *derivative = ap_params.coefs[coef_index].mul_add(*derivative, *ap_output);
+            if step >= ap_params.delays[coef_index] {
+                let coef_index = (state_index / 3, offset_index / 3);
+                *derivative = ap_params.coefs[coef_index].mul_add(*derivative, -*ap_output);
+            }
         });
     #[allow(clippy::cast_precision_loss)]
     let scaling = 1.0 / number_of_sensors as f32;

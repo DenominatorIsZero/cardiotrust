@@ -74,7 +74,7 @@ impl APParameters {
                     batch_size,
                 ),
             };
-            roll_delays(&mut self.coefs, &mut self.delays); // TODO: reactivate and test
+            // roll_delays(&mut self.coefs, &mut self.delays); // TODO: reactivate and test
         }
         derivatives.step += 1;
     }
@@ -137,7 +137,7 @@ pub fn update_delays_sgd(
     batch_size: usize,
 ) {
     debug!("Updating coefficients and delays");
-    **ap_coefs += &(learning_rate / batch_size as f32 * &**derivatives);
+    **ap_coefs -= &(learning_rate / batch_size as f32 * &**derivatives);
 }
 
 #[allow(clippy::cast_precision_loss)]
