@@ -1,8 +1,7 @@
-use std::{fs, ops::Deref, path::Path, sync::mpsc::channel, thread};
+use std::{path::Path, sync::mpsc::channel, thread};
 
-use approx::RelativeEq;
 use nalgebra::ComplexField;
-use ndarray::{Array1, AssignElem};
+use ndarray::Array1;
 
 use super::RUN_IN_TESTS;
 
@@ -10,7 +9,7 @@ use crate::{
     core::{
         algorithm::metrics::BatchWiseMetric,
         model::{functional::allpass::from_coef_to_samples, spatial::voxels::VoxelType},
-        scenario::{self, run, Scenario},
+        scenario::{run, Scenario},
     },
     tests::{clean_files, setup_folder},
     vis::plotting::png::line::{line_plot, log_y_plot},
