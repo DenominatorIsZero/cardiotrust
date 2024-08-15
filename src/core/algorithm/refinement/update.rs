@@ -74,7 +74,7 @@ impl APParameters {
                     batch_size,
                 ),
             };
-            // roll_delays(&mut self.coefs, &mut self.delays); // TODO: reactivate and test
+            roll_delays(&mut self.coefs, &mut self.delays);
         }
         derivatives.step += 1;
     }
@@ -169,27 +169,28 @@ pub fn update_delays_adam(
 #[inline]
 #[tracing::instrument(level = "debug")]
 pub fn roll_delays(ap_coefs: &mut Coefs, delays: &mut UnitDelays) {
+    let margin = 1e-8;
     ap_coefs
         .iter_mut()
         .zip(delays.iter_mut())
         .for_each(|(ap_coef, delay)| {
-            if *ap_coef > 0.999 {
+            if *ap_coef > 1.0 - margin {
                 info!("Rolling delay down: {delay}");
                 if *delay > 0 {
-                    *ap_coef = 1.0 / 3.0;
+                    *ap_coef = 2.0 * margin;
                     *delay -= 1;
                     info!("Delay after roll: {delay}");
                 } else {
-                    *ap_coef = 0.999;
+                    *ap_coef = 1.0 - margin;
                 }
-            } else if *ap_coef < 0.1 {
+            } else if *ap_coef < margin {
                 if *delay < 1000 {
                     info!("Rolling delay up: {delay}");
-                    *ap_coef = 1.0 / 3.0;
+                    *ap_coef = 2.0f32.mul_add(-margin, 1.0);
                     *delay += 1;
                     info!("Delay after roll: {delay}");
                 } else {
-                    *ap_coef = 0.001;
+                    *ap_coef = margin;
                 }
             }
         });

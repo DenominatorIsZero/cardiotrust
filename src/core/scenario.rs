@@ -489,7 +489,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
     )
     .unwrap();
 
-    epoch_tx.send(0).unwrap();
+    let _ = epoch_tx.send(0);
 
     let mut results = Results::new(
         scenario.config.algorithm.epochs,
@@ -555,8 +555,8 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
     scenario.summary = Some(summary.clone());
     scenario.status = Status::Done;
     scenario.save().expect("Could not save scenario");
-    epoch_tx.send(scenario.config.algorithm.epochs - 1).unwrap();
-    summary_tx.send(summary).unwrap();
+    let _ = epoch_tx.send(scenario.config.algorithm.epochs - 1);
+    let _ = summary_tx.send(summary);
 }
 
 pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
@@ -704,8 +704,8 @@ fn run_model_based(
             ));
         }
 
-        epoch_tx.send(epoch_index).unwrap();
-        summary_tx.send(summary.clone()).unwrap();
+        let _ = epoch_tx.send(epoch_index);
+        let _ = summary_tx.send(summary.clone());
         // Check if algorithm diverged. If so return early
         if !summary.loss.is_normal() {
             break;
