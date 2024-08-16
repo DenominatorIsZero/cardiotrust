@@ -232,13 +232,13 @@ impl VoxelTypes {
         voxel_types
             .indexed_iter_mut()
             .for_each(|((x, y, _z), voxel_type)| {
-                if (config.common.pathological)
+                if (x == sa_x_center_index) && (y == sa_y_center_index) {
+                    *voxel_type = VoxelType::Sinoatrial;
+                } else if (config.common.pathological)
                     && (x >= pathology_x_start_index && x <= pathology_x_stop_index)
                     && (pathology_y_start_index <= y && y <= pathology_y_stop_index)
                 {
                     *voxel_type = VoxelType::Pathological;
-                } else if (x == sa_x_center_index) && (y == sa_y_center_index) {
-                    *voxel_type = VoxelType::Sinoatrial;
                 } else if x == av_x_center_index && y == atrium_y_start_index {
                     *voxel_type = VoxelType::Atrioventricular;
                 } else if (x == av_x_center_index
