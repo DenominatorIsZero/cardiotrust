@@ -109,13 +109,20 @@ pub fn update_gains_adam(
     batch_size: usize,
 ) {
     debug!("Updating gains");
-    **first_moment = &**first_moment * 0.9 + (0.1 * &**derivatives);
-    **second_moment = &**second_moment * 0.999 + (0.001 * &**derivatives * &**derivatives);
+    let beta1 = 0.9;
+    let one_minus_beta1 = 1. - beta1;
+    let beta2 = 0.999;
+    let one_minus_beta2 = 1. - beta2;
+    let epsilon = 1e-8;
 
-    let first_moment_cor = &**first_moment / (1. - 0.9_f32.powf(step as f32));
-    let second_moment_cor = &**second_moment / (1. - 0.999_f32.powf(step as f32));
+    **first_moment = &**first_moment * beta1 + (one_minus_beta1 * &**derivatives);
+    **second_moment =
+        &**second_moment * beta2 + (one_minus_beta2 * &**derivatives * &**derivatives);
 
-    let factor = first_moment_cor / (second_moment_cor.mapv(f32::sqrt) + 1e-8);
+    let first_moment_cor = &**first_moment / (1. - beta1.powf(step as f32));
+    let second_moment_cor = &**second_moment / (1. - beta2.powf(step as f32));
+
+    let factor = first_moment_cor / (second_moment_cor.mapv(f32::sqrt) + epsilon);
 
     **gains -= &(learning_rate / batch_size as f32 * factor);
 }
@@ -153,13 +160,20 @@ pub fn update_delays_adam(
     batch_size: usize,
 ) {
     debug!("Updating coefficients and delays");
-    **first_moment = &**first_moment * 0.9 + (0.1 * &**derivatives);
-    **second_moment = &**second_moment * 0.999 + (0.001 * &**derivatives * &**derivatives);
+    let beta1 = 0.9;
+    let one_minus_beta1 = 1. - beta1;
+    let beta2 = 0.999;
+    let one_minus_beta2 = 1. - beta2;
+    let epsilon = 1e-8;
 
-    let first_moment_cor = &**first_moment / (1. - 0.9_f32.powf(step as f32));
-    let second_moment_cor = &**second_moment / (1. - 0.999_f32.powf(step as f32));
+    **first_moment = &**first_moment * beta1 + (one_minus_beta1 * &**derivatives);
+    **second_moment =
+        &**second_moment * beta2 + (one_minus_beta2 * &**derivatives * &**derivatives);
 
-    let factor = first_moment_cor / (second_moment_cor.mapv(f32::sqrt) + 1e-8);
+    let first_moment_cor = &**first_moment / (1. - beta1.powf(step as f32));
+    let second_moment_cor = &**second_moment / (1. - beta2.powf(step as f32));
+
+    let factor = first_moment_cor / (second_moment_cor.mapv(f32::sqrt) + epsilon);
 
     **ap_coefs -= &(learning_rate / batch_size as f32 * factor);
 }
