@@ -83,7 +83,7 @@ fn bench_maximum_regularization(
                         &mut results.derivatives.maximum_regularization,
                         &mut results.derivatives.maximum_regularization_sum,
                         &results.estimations.system_states.at_step(STEP),
-                        config.algorithm.regularization_threshold,
+                        config.algorithm.maximum_regularization_threshold,
                     );
                 })
             },
@@ -111,7 +111,7 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
             &mut results.derivatives.maximum_regularization,
             &mut results.derivatives.maximum_regularization_sum,
             &results.estimations.system_states.at_step(STEP),
-            config.algorithm.regularization_threshold,
+            config.algorithm.maximum_regularization_threshold,
         );
 
         // run bench
@@ -124,7 +124,7 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
                     &results.estimations.ap_outputs,
                     &results.derivatives.maximum_regularization,
                     &results.derivatives.mapped_residuals,
-                    config.algorithm.regularization_strength,
+                    config.algorithm.maximum_regularization_strength,
                     results.estimations.measurements.num_sensors(),
                 );
             })
@@ -152,7 +152,7 @@ fn bench_coefs(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
             &mut results.derivatives.maximum_regularization,
             &mut results.derivatives.maximum_regularization_sum,
             &results.estimations.system_states.at_step(STEP),
-            config.algorithm.regularization_threshold,
+            config.algorithm.maximum_regularization_threshold,
         );
 
         // run bench
@@ -170,6 +170,7 @@ fn bench_coefs(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
                     &results.derivatives.mapped_residuals,
                     STEP,
                     results.estimations.measurements.num_sensors(),
+                    config.algorithm.difference_regularization_strength,
                 );
             })
         });

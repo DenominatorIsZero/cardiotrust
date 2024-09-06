@@ -188,7 +188,7 @@ fn draw_regularization_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                         });
                         row.col(|ui| {
                             ui.add(egui::Slider::new(
-                                &mut algorithm.regularization_threshold,
+                                &mut algorithm.maximum_regularization_threshold,
                                 0.5..=1.5,
                             ));
                         });
@@ -211,7 +211,7 @@ fn draw_regularization_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                         });
                         row.col(|ui| {
                             ui.add(egui::Slider::new(
-                                &mut algorithm.regularization_strength,
+                                &mut algorithm.maximum_regularization_strength,
                                 0.0..=1000.0,
                             ));
                         });

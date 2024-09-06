@@ -151,6 +151,7 @@ fn bench_derivation(group: &mut criterion::BenchmarkGroup<criterion::measurement
                     &config.algorithm,
                     STEP,
                     results.estimations.measurements.num_sensors(),
+                    config.algorithm.difference_regularization_strength,
                 );
             })
         });
@@ -273,7 +274,7 @@ fn bench_metrics(group: &mut criterion::BenchmarkGroup<criterion::measurement::W
                     &results.estimations.gains_delta,
                     &results.estimations.delays_delta,
                     results.derivatives.maximum_regularization_sum,
-                    config.algorithm.regularization_strength,
+                    config.algorithm.maximum_regularization_strength,
                     results.estimations.measurements.num_sensors(),
                     STEP,
                 );

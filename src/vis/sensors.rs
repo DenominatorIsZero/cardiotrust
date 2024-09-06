@@ -82,7 +82,7 @@ pub(crate) fn spawn_sensors(
                 mesh: mesh.clone(),
                 material,
                 transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
-                    .with_scale(Vec3::ONE * 30.0)
+                    .with_scale(Vec3::ONE * 15.0) // this should be a parameter, changeable via the gui...
                     .with_rotation(Quat::from_rotation_arc(-Vec3::Z, rot)),
                 ..default()
             },

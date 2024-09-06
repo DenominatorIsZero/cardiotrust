@@ -30,6 +30,7 @@ pub struct APParameters {
     pub output_state_indices: Indices,
     pub coefs: Coefs,
     pub delays: UnitDelays,
+    pub initial_delays: Coefs,
     pub activation_time_ms: ActivationTimeMs,
 }
 
@@ -45,6 +46,7 @@ impl APParameters {
             output_state_indices: Indices::empty(number_of_states),
             coefs: Coefs::empty(number_of_states),
             delays: UnitDelays::empty(number_of_states),
+            initial_delays: Coefs::empty(number_of_states),
             activation_time_ms: ActivationTimeMs::empty(voxels_in_dims),
         }
     }
@@ -90,6 +92,8 @@ impl APParameters {
             .iter_mut()
             .zip(delays_samples.iter())
             .for_each(|(coef, samples)| *coef = from_samples_to_coef(*samples));
+
+        ap_params.initial_delays = delays_samples;
 
         Ok(ap_params)
     }

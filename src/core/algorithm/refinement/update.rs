@@ -61,8 +61,10 @@ impl APParameters {
                 Optimizer::Sgd => update_delays_sgd(
                     &mut self.coefs,
                     &derivatives.coefs,
+                    derivatives.coefs_abs_sum.as_mut().unwrap(),
                     config.learning_rate,
                     batch_size,
+                    config.slow_down_stregth,
                 ),
                 Optimizer::Adam => update_delays_adam(
                     &mut self.coefs,
@@ -109,6 +111,7 @@ pub fn update_gains_adam(
     batch_size: usize,
 ) {
     debug!("Updating gains");
+    // these need to be parameters in the config...
     let beta1 = 0.9;
     let one_minus_beta1 = 1. - beta1;
     let beta2 = 0.999;
@@ -140,11 +143,16 @@ pub fn update_gains_adam(
 pub fn update_delays_sgd(
     ap_coefs: &mut Coefs,
     derivatives: &Coefs,
+    abs_sum: &mut Coefs,
     learning_rate: f32,
     batch_size: usize,
+    slow_down_strength: f32,
 ) {
     debug!("Updating coefficients and delays");
-    **ap_coefs -= &(learning_rate / batch_size as f32 * &**derivatives);
+
+    **abs_sum = &**abs_sum + slow_down_strength * &derivatives.mapv(f32::abs);
+
+    **ap_coefs -= &(learning_rate / batch_size as f32 * &**derivatives / &**abs_sum);
 }
 
 #[allow(clippy::cast_precision_loss)]
@@ -160,6 +168,7 @@ pub fn update_delays_adam(
     batch_size: usize,
 ) {
     debug!("Updating coefficients and delays");
+    // these need to be parameters in the config...
     let beta1 = 0.9;
     let one_minus_beta1 = 1. - beta1;
     let beta2 = 0.999;
@@ -189,20 +198,16 @@ pub fn roll_delays(ap_coefs: &mut Coefs, delays: &mut UnitDelays) {
         .zip(delays.iter_mut())
         .for_each(|(ap_coef, delay)| {
             if *ap_coef > 1.0 - margin {
-                info!("Rolling delay down: {delay}");
                 if *delay > 0 {
                     *ap_coef = 2.0 * margin;
                     *delay -= 1;
-                    info!("Delay after roll: {delay}");
                 } else {
                     *ap_coef = 1.0 - margin;
                 }
             } else if *ap_coef < margin {
                 if *delay < 1000 {
-                    info!("Rolling delay up: {delay}");
                     *ap_coef = 2.0f32.mul_add(-margin, 1.0);
                     *delay += 1;
-                    info!("Delay after roll: {delay}");
                 } else {
                     *ap_coef = margin;
                 }
@@ -234,10 +239,18 @@ mod tests {
         let mut ap_coefs = Coefs::empty(number_of_states);
         let mut delays = UnitDelays::empty(number_of_states);
         let mut derivatives = Coefs::empty(number_of_states);
+        let mut first_moment = Coefs::empty(number_of_states);
         derivatives.fill(-0.5);
         let learning_rate = 1.0;
 
-        update_delays_sgd(&mut ap_coefs, &derivatives, learning_rate, 1);
+        update_delays_sgd(
+            &mut ap_coefs,
+            &derivatives,
+            &mut first_moment,
+            learning_rate,
+            1,
+            0.,
+        );
         roll_delays(&mut ap_coefs, &mut delays);
 
         assert_eq!(-&*derivatives, &*ap_coefs);

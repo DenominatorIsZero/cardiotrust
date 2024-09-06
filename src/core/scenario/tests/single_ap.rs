@@ -1,9 +1,17 @@
+use ndarray_npy::WriteNpyExt;
+use ndarray_stats::QuantileExt;
+use serde::{Deserialize, Serialize};
+use std::{
+    fs::{self, File},
+    io::BufWriter,
+    ops::{Deref, DerefMut},
+};
 use std::{path::Path, sync::mpsc::channel, thread};
 
 use nalgebra::ComplexField;
-use ndarray::Array1;
+use ndarray::{Array1, Array2};
 
-use super::RUN_IN_TESTS;
+use super::{RUN_IN_TESTS, SAVE_NPY};
 
 use crate::{
     core::{
@@ -421,6 +429,34 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         .iter()
         .map(std::string::String::as_str)
         .collect();
+
+    if SAVE_NPY {
+        let path = path.join("npy");
+        fs::create_dir_all(&path).unwrap();
+        let writer = BufWriter::new(File::create(path.join("x_epochs.npy")).unwrap());
+        x_epochs.write_npy(writer).unwrap();
+        let writer = BufWriter::new(File::create(path.join("x_snapshots.npy")).unwrap());
+        x_snapshots.write_npy(writer).unwrap();
+        for (n, label) in labels.iter().enumerate() {
+            let writer =
+                BufWriter::new(File::create(path.join(format!("loss_{label}.npy"))).unwrap());
+            losses[n].write_npy(writer).unwrap();
+            let writer =
+                BufWriter::new(File::create(path.join(format!("param_{label}.npy"))).unwrap());
+            params[n].write_npy(writer).unwrap();
+            let writer = BufWriter::new(
+                File::create(path.join(format!("param_error_{label}.npy"))).unwrap(),
+            );
+            params_error[n].write_npy(writer).unwrap();
+            let writer =
+                BufWriter::new(File::create(path.join(format!("delay_{label}.npy"))).unwrap());
+            delays[n].write_npy(writer).unwrap();
+            let writer = BufWriter::new(
+                File::create(path.join(format!("delay_error_{label}.npy"))).unwrap(),
+            );
+            delays_error[n].write_npy(writer).unwrap();
+        }
+    }
 
     println!("ys length: {}", losses.len());
 

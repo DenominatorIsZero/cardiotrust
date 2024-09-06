@@ -107,7 +107,7 @@ fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wall
                     &results.estimations.gains_delta,
                     &results.estimations.delays_delta,
                     results.derivatives.maximum_regularization_sum,
-                    config.algorithm.regularization_strength,
+                    config.algorithm.maximum_regularization_strength,
                     results.estimations.measurements.num_sensors(),
                     STEP,
                 );

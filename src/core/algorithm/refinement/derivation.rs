@@ -9,6 +9,7 @@ use crate::core::{
     data::shapes::{Residuals, SystemStates, SystemStatesAtStep},
     model::functional::{
         allpass::{
+            from_coef_to_samples,
             shapes::{Coefs, Gains},
             APParameters,
         },
@@ -32,6 +33,8 @@ pub struct Derivatives {
     pub gains_second_moment: Option<Gains>,
     /// Derivatives of the All-pass coeficients
     pub coefs: Coefs,
+    /// Sum of the absolute values of the coeficients derivatives
+    pub coefs_abs_sum: Option<Coefs>,
     /// First moment of the coeficients derivatives
     pub coefs_first_moment: Option<Coefs>,
     /// Second moment of the coeficients derivatives
@@ -66,6 +69,14 @@ impl Derivatives {
             Optimizer::Sgd => None,
             Optimizer::Adam => Some(Gains::empty(number_of_states)),
         };
+        let coefs_abs_sum = match optimizer {
+            Optimizer::Sgd => {
+                let mut coefs = Coefs::empty(number_of_states);
+                coefs.mapv_inplace(|v| 1.0);
+                Some(coefs)
+            }
+            Optimizer::Adam => None,
+        };
         let coefs_first_moment = match optimizer {
             Optimizer::Sgd => None,
             Optimizer::Adam => Some(Coefs::empty(number_of_states)),
@@ -79,6 +90,7 @@ impl Derivatives {
             gains_first_moment,
             gains_second_moment,
             coefs: Coefs::empty(number_of_states),
+            coefs_abs_sum,
             coefs_first_moment,
             coefs_second_moment,
             step: 1,
@@ -133,6 +145,7 @@ pub fn calculate_derivatives(
     config: &Algorithm,
     step: usize,
     number_of_sensors: usize,
+    difference_regularization: f32,
 ) {
     debug!("Calculating derivatives");
     calculate_mapped_residuals(mapped_residuals, residuals, measurement_matrix);
@@ -141,7 +154,7 @@ pub fn calculate_derivatives(
         maximum_regularization,
         maximum_regularization_sum,
         &estimated_system_states.at_step(step),
-        config.regularization_threshold,
+        config.maximum_regularization_threshold,
     );
 
     if !config.freeze_gains {
@@ -150,7 +163,7 @@ pub fn calculate_derivatives(
             ap_outputs,
             maximum_regularization,
             mapped_residuals,
-            config.regularization_strength,
+            config.maximum_regularization_strength,
             number_of_sensors,
         );
     }
@@ -165,6 +178,7 @@ pub fn calculate_derivatives(
             mapped_residuals,
             step,
             number_of_sensors,
+            difference_regularization,
         );
     }
 }
@@ -216,6 +230,7 @@ pub fn calculate_derivatives_coefs(
     mapped_residuals: &MappedResiduals,
     step: usize,
     number_of_sensors: usize,
+    difference_regulariztion: f32,
 ) {
     trace!("Calculating derivatives for coefficients");
     derivatives_fir
@@ -255,8 +270,14 @@ pub fn calculate_derivatives_coefs(
         .zip(ap_params.gains.iter())
         .for_each(|((((state_index, offset_index), iir), fir), ap_gain)| {
             let coef_index = (state_index / 3, offset_index / 3);
+            let delay = ap_params.delays[coef_index] as f32
+                + from_coef_to_samples(ap_params.coefs[coef_index]);
+            let delay_delta = (ap_params.initial_delays[coef_index] - delay).powi(5);
+            // Idea: regularization based on neighboring voxels?
+            // Idea: divide by accumulated gradient to prevent ossilations?
             derivatives_coefs[coef_index] +=
-                (fir + iir) * ap_gain * mapped_residuals[state_index] * scaling;
+                ((fir + iir) * ap_gain * mapped_residuals[state_index])
+                    .mul_add(scaling, difference_regulariztion * delay_delta);
         });
 }
 
@@ -420,6 +441,7 @@ mod tests {
             &derivatives.mapped_residuals,
             step,
             1,
+            0.0,
         );
     }
 
@@ -432,7 +454,7 @@ mod tests {
         let step = 333;
         let voxels_in_dims = Dim([1000, 1, 1]);
         let config = Algorithm {
-            regularization_strength: 0.0,
+            maximum_regularization_strength: 0.0,
             ..Default::default()
         };
 
@@ -467,6 +489,7 @@ mod tests {
             &config,
             step,
             estimations.measurements.num_sensors(),
+            0.0,
         );
     }
 }

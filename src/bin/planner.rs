@@ -53,8 +53,8 @@ fn plan_scenarios() {
     let steps = 30_000;
     let batch_size = 1;
     let experiment_name = "Moving_Sensors_2023_05_28";
-    let regularization_strength = 1.0;
-    let regularization_threshold = 1.001;
+    let maximum_regularization_strength = 1.0;
+    let maximum_regularization_threshold = 1.001;
     let optimizer = Optimizer::Sgd;
     let freeze_gains = false;
     let freeze_delays = true;
@@ -65,8 +65,8 @@ fn plan_scenarios() {
         epochs: steps,
         batch_size,
         learning_rate,
-        regularization_strength,
-        regularization_threshold,
+        maximum_regularization_strength,
+        maximum_regularization_threshold,
         freeze_gains,
         freeze_delays,
         update_kalman_gain,
