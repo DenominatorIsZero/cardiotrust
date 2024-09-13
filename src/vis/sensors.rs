@@ -130,8 +130,8 @@ pub(crate) struct SensorBracket {
 #[allow(clippy::needless_pass_by_value)]
 #[tracing::instrument(level = "debug", skip_all)]
 pub(crate) fn spawn_sensor_bracket(
-    _ass: &Res<AssetServer>,
-    _commands: &mut Commands,
+    ass: &Res<AssetServer>,
+    commands: &mut Commands,
     scenario: &Scenario,
 ) {
     let sensors = &scenario
@@ -143,7 +143,7 @@ pub(crate) fn spawn_sensor_bracket(
         .spatial_description
         .sensors;
     #[allow(clippy::no_effect_underscore_binding)]
-    let _radius = sensors.array_radius_mm;
+    let radius = sensors.array_radius_mm;
     let motion_steps = sensors.array_offsets_mm.shape()[0];
 
     let mut positions = Array2::zeros((motion_steps, 3));
@@ -153,21 +153,20 @@ pub(crate) fn spawn_sensor_bracket(
         positions[(i, 2)] = sensors.array_center_mm[2] + sensors.array_offsets_mm[(i, 2)];
     }
 
-    // TODO: readd and add checkbox to enable/disable sensor bracket
-    // let glb_handle = ass.load("sensor_array.glb#Scene0");
+    let glb_handle = ass.load("sensor_array.glb#Scene0");
 
-    // commands.spawn((
-    //     SceneBundle {
-    //         scene: glb_handle,
-    //         transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::ONE * 1000.0),
-    //         ..Default::default()
-    //     },
-    //     SensorBracket {
-    //         radius,
-    //         positions,
-    //         offset: Vec3::ZERO,
-    //     },
-    // ));
+    commands.spawn((
+        SceneBundle {
+            scene: glb_handle,
+            transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::ONE * 1000.0),
+            ..Default::default()
+        },
+        SensorBracket {
+            radius,
+            positions,
+            offset: Vec3::ZERO,
+        },
+    ));
 }
 
 #[allow(clippy::needless_pass_by_value)]
