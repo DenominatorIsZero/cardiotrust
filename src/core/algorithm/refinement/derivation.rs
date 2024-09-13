@@ -72,7 +72,7 @@ impl Derivatives {
         let coefs_abs_sum = match optimizer {
             Optimizer::Sgd => {
                 let mut coefs = Coefs::empty(number_of_states);
-                coefs.mapv_inplace(|_v| 1.0);
+                coefs.fill(1.0);
                 Some(coefs)
             }
             Optimizer::Adam => None,

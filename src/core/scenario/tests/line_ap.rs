@@ -32,7 +32,7 @@ const NUM_AP: i32 = 3;
 )]
 #[test]
 fn no_roll_down_dif_reg() {
-    let base_id = "Line AP - No Roll - Down - Difference Regularization ".to_string();
+    let base_id = "Line AP - No Roll - Down - Difference Regularization".to_string();
     let base_title = "Line AP - No Roll - Down - Difference Regularization";
     let path = Path::new(COMMON_PATH).join("no_roll_down/dif_reg");
 
@@ -157,7 +157,7 @@ fn build_scenario(
     base_id: &str,
 ) -> Scenario {
     let mut scenario = Scenario::build(Some(format!(
-        "{base_id} d_r: {difference_regularization_strength:.2e}, s_d {slow_down_strength:.2e}"
+        "{base_id} - d_r: {difference_regularization_strength:.2e}, s_d: {slow_down_strength:.2e}"
     )));
 
     // Set pathological true
@@ -531,9 +531,10 @@ fn create_and_run(
     for difference_regularization_strength in difference_regularization_strengths {
         for slow_down_strength in slow_down_strengths {
             let id = format!(
-            "{base_id} r_d: {difference_regularization_strength:.2e} - s_d: {slow_down_strength:.2e}",
+            "{base_id} - d_r: {difference_regularization_strength:.2e}, s_d: {slow_down_strength:.2e}",
         );
             let path = Path::new("results").join(id);
+            println!("Looking for scenario {path:?}");
             let scenario = if path.is_dir() {
                 println!("Found scenario. Loading it!");
                 let mut scenario = Scenario::load(path.as_path());

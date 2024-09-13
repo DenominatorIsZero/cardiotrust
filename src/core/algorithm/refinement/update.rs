@@ -239,14 +239,15 @@ mod tests {
         let mut ap_coefs = Coefs::empty(number_of_states);
         let mut delays = UnitDelays::empty(number_of_states);
         let mut derivatives = Coefs::empty(number_of_states);
-        let mut first_moment = Coefs::empty(number_of_states);
+        let mut abs_sum = Coefs::empty(number_of_states);
+        abs_sum.fill(1.0);
         derivatives.fill(-0.5);
         let learning_rate = 1.0;
 
         update_delays_sgd(
             &mut ap_coefs,
             &derivatives,
-            &mut first_moment,
+            &mut abs_sum,
             learning_rate,
             1,
             0.,

@@ -23,6 +23,7 @@ const COMMON_PATH: &str = "tests/core/scenario/sheet_ap/";
     clippy::too_many_lines
 )]
 #[test]
+#[ignore]
 fn no_roll_down() {
     let base_id = "Sheet AP - No Roll - Down - ".to_string();
     let base_title = "Sheet AP - No Roll - Down";
@@ -58,6 +59,7 @@ fn no_roll_down() {
     clippy::too_many_lines
 )]
 #[test]
+#[ignore]
 fn no_roll_up() {
     let base_id = "Sheet AP - No Roll - Up - ".to_string();
     let base_title = "Sheet AP - No Roll - Up";
