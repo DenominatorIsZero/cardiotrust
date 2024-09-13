@@ -6,7 +6,7 @@ use crate::core::scenario::Scenario;
 use super::sample_tracker::SampleTracker;
 
 #[derive(Component)]
-pub(crate) struct Sensor {
+pub(crate) struct SensorData {
     pub positions_mm: Array2<f32>,
     pub _orientation: Vec3,
 }
@@ -24,8 +24,13 @@ pub(crate) fn spawn_sensors(
     ass: &Res<AssetServer>,
     materials: &mut Assets<StandardMaterial>,
     scenario: &Scenario,
+    sensors: Query<(Entity, &SensorData)>,
 ) {
     debug!("Running system to spawn sensors.");
+    // despawn current sensors
+    for (entity, _) in sensors.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
     let data = scenario.data.as_ref().expect("Data to be some");
     let model = &data.simulation.model;
     let sensors = &model.spatial_description.sensors;
@@ -86,7 +91,7 @@ pub(crate) fn spawn_sensors(
                     .with_rotation(Quat::from_rotation_arc(-Vec3::Z, rot)),
                 ..default()
             },
-            Sensor {
+            SensorData {
                 positions_mm,
                 _orientation: rot,
             },
@@ -96,7 +101,7 @@ pub(crate) fn spawn_sensors(
 
 #[allow(clippy::needless_pass_by_value)]
 pub(crate) fn update_sensors(
-    mut sensors: Query<(&mut Transform, &Sensor)>,
+    mut sensors: Query<(&mut Transform, &SensorData)>,
     sample_tracker: Res<SampleTracker>,
 ) {
     if sample_tracker.is_changed() {

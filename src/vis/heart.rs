@@ -103,8 +103,13 @@ pub fn init_voxels(
     mesh_atlas: &mut ResMut<MeshAtlas>,
     scenario: &Scenario,
     sample_tracker: &SampleTracker,
+    voxels: Query<(Entity, &VoxelData)>,
 ) {
     debug!("Running system to initialize voxel components.");
+    // Despawn current voxels
+    for (entity, _) in voxels.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
     let data = scenario.data.as_ref().expect("Data to be some");
     let model = &data.simulation.model;
     let voxels = &model.spatial_description.voxels;

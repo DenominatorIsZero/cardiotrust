@@ -12,7 +12,9 @@ use bevy::prelude::*;
 
 use bevy_editor_cam::controller::component::{EditorCam, OrbitConstraint};
 use bevy_obj::ObjPlugin;
+use heart::VoxelData;
 use room::spawn_room;
+use sensors::SensorData;
 
 use self::{
     body::spawn_torso,
@@ -179,10 +181,12 @@ pub fn setup_heart_and_sensors(
     sample_tracker: &mut SampleTracker,
     scenario: &Scenario,
     ass: Res<AssetServer>,
+    sensors: Query<(Entity, &SensorData)>,
+    voxels: Query<(Entity, &VoxelData)>,
 ) {
     info!("Setting up heart and sensors.");
     init_sample_tracker(sample_tracker, scenario);
-    spawn_sensors(commands, &ass, materials, scenario);
+    spawn_sensors(commands, &ass, materials, scenario, sensors);
     spawn_sensor_bracket(&ass, commands, scenario);
     init_voxels(
         commands,
@@ -191,5 +195,6 @@ pub fn setup_heart_and_sensors(
         mesh_atlas,
         scenario,
         sample_tracker,
+        voxels,
     );
 }

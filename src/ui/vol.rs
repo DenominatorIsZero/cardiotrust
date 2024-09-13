@@ -6,10 +6,10 @@ use egui_plot::{Line, Plot, PlotPoints, VLine};
 use crate::{
     vis::{
         cutting_plane::CuttingPlaneSettings,
-        heart::{MaterialAtlas, MeshAtlas},
+        heart::{MaterialAtlas, MeshAtlas, VoxelData},
         options::{VisMode, VisOptions},
         sample_tracker::SampleTracker,
-        sensors::SensorBracket,
+        sensors::{SensorBracket, SensorData},
         setup_heart_and_sensors,
     },
     ScenarioList, SelectedSenario,
@@ -42,6 +42,8 @@ pub fn draw_ui_volumetric(
     ass: Res<AssetServer>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
+    mut sensors: Query<(Entity, &SensorData)>,
+    mut voxels: Query<(Entity, &VoxelData)>,
 ) {
     trace!("Running system to draw volumetric UI.");
     for (_, mut camera) in &mut cameras {
@@ -78,6 +80,8 @@ pub fn draw_ui_volumetric(
                 &mut sample_tracker,
                 scenario.as_ref().expect("Scenario to be some."),
                 ass,
+                sensors,
+                voxels,
             );
             if ui.ui_contains_pointer() {
                 for (_, mut camera) in &mut cameras {
