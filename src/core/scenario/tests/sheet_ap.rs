@@ -7,11 +7,11 @@ use super::RUN_IN_TESTS;
 use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
-        model::{functional::allpass::from_coef_to_samples, spatial::voxels::VoxelType},
+        model::spatial::voxels::VoxelType,
         scenario::{run, Scenario},
     },
     tests::{clean_files, setup_folder},
-    vis::plotting::png::line::{line_plot, log_y_plot},
+    vis::plotting::png::line::log_y_plot,
 };
 
 const COMMON_PATH: &str = "tests/core/scenario/sheet_ap/";
@@ -200,7 +200,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: &str) ->
     clippy::cast_sign_loss,
     clippy::cast_precision_loss
 )]
-fn plot_results(path: &Path, base_title: &str, scenario: Scenario) {
+fn plot_results(path: &Path, base_title: &str, scenario: &Scenario) {
     setup_folder(path);
     let files = vec![path.join("loss.png")];
     clean_files(&files);
@@ -220,19 +220,13 @@ fn plot_results(path: &Path, base_title: &str, scenario: Scenario) {
     );
 
     let x_epochs = Array1::range(0.0, scenario.config.algorithm.epochs as f32, 1.0);
-    let num_snapshots = scenario.results.as_ref().unwrap().snapshots.len() as f32;
-    let x_snapshots = Array1::range(0.0, num_snapshots, 1.0);
-    let mut losses_owned: Vec<BatchWiseMetric> = Vec::new();
-
-    losses_owned.push(
-        scenario
-            .results
-            .as_ref()
-            .unwrap()
-            .metrics
-            .loss_mse_batch
-            .clone(),
-    );
+    let losses_owned: Vec<BatchWiseMetric> = vec![scenario
+        .results
+        .as_ref()
+        .unwrap()
+        .metrics
+        .loss_mse_batch
+        .clone()];
 
     let losses = losses_owned
         .iter()
@@ -295,5 +289,5 @@ fn create_and_run(
         scenario.load_results();
     }
 
-    plot_results(img_path, base_title, scenario);
+    plot_results(img_path, base_title, &scenario);
 }

@@ -1,15 +1,12 @@
 use ndarray_npy::WriteNpyExt;
-use ndarray_stats::QuantileExt;
-use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
-    ops::{Deref, DerefMut},
 };
 use std::{path::Path, sync::mpsc::channel, thread};
 
 use nalgebra::ComplexField;
-use ndarray::{Array1, Array2};
+use ndarray::Array1;
 
 use super::{RUN_IN_TESTS, SAVE_NPY};
 

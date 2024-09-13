@@ -1,5 +1,4 @@
 use std::{
-    fmt::format,
     fs::{self, File},
     io::BufWriter,
     path::Path,
@@ -57,7 +56,7 @@ fn no_roll_down_dif_reg() {
         target_velocity,
         initial_velocity,
         difference_regularization_strength,
-        slow_down_strength,
+        &slow_down_strength,
         &base_id,
         &path,
         base_title,
@@ -97,7 +96,7 @@ fn no_roll_down_slow_down() {
         target_velocity,
         initial_velocity,
         difference_regularization_stregth,
-        slow_down_strength,
+        &slow_down_strength,
         &base_id,
         &path,
         base_title,
@@ -137,7 +136,7 @@ fn no_roll_up_dif_reg() {
         target_velocity,
         initial_velocity,
         difference_regularization_stregth,
-        slow_down_strength,
+        &slow_down_strength,
         &base_id,
         &path,
         base_title,
@@ -521,7 +520,7 @@ fn create_and_run(
     target_velocity: f32,
     initial_velocity: f32,
     difference_regularization_strengths: Vec<f32>,
-    slow_down_strengths: Vec<f32>,
+    slow_down_strengths: &Vec<f32>,
     base_id: &str,
     img_path: &Path,
     base_title: &str,
@@ -530,7 +529,7 @@ fn create_and_run(
     let mut scenarios = Vec::new();
 
     for difference_regularization_strength in difference_regularization_strengths {
-        for slow_down_strength in &slow_down_strengths {
+        for slow_down_strength in slow_down_strengths {
             let id = format!(
             "{base_id} r_d: {difference_regularization_strength:.2e} - s_d: {slow_down_strength:.2e}",
         );
