@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use bevy::prelude::*;
 use bevy_editor_cam::controller::component::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
@@ -6,11 +8,11 @@ use egui_plot::{Line, Plot, PlotPoints, VLine};
 use crate::{
     vis::{
         cutting_plane::CuttingPlaneSettings,
-        heart::{MaterialAtlas, MeshAtlas, VoxelData},
+        heart::{HeartSettings, MaterialAtlas, MeshAtlas, VoxelData},
         options::{VisMode, VisOptions},
         sample_tracker::SampleTracker,
         sensors::{SensorBracket, SensorData, SensorSettings},
-        setup_heart_and_sensors,
+        SetupHeartAndSensors,
     },
     ScenarioList, SelectedSenario,
 };
@@ -29,21 +31,15 @@ use crate::{
 #[tracing::instrument(skip_all, level = "trace")]
 pub fn draw_ui_volumetric(
     mut contexts: EguiContexts,
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    material_atlas: Res<MaterialAtlas>,
-    mut mesh_atlas: ResMut<MeshAtlas>,
     mut sample_tracker: ResMut<SampleTracker>,
     mut vis_options: ResMut<VisOptions>,
     mut cutting_plane: ResMut<CuttingPlaneSettings>,
+    mut heart_settings: ResMut<HeartSettings>,
     mut sensor_bracket_settings: ResMut<SensorSettings>,
     mut cameras: Query<(&mut Transform, &mut EditorCam), With<Camera>>,
-    ass: Res<AssetServer>,
+    mut ev_setup: EventWriter<SetupHeartAndSensors>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
-    sensors: Query<(Entity, &SensorData)>,
-    voxels: Query<(Entity, &VoxelData)>,
 ) {
     trace!("Running system to draw volumetric UI.");
     for (_, mut camera) in &mut cameras {
@@ -66,33 +62,22 @@ pub fn draw_ui_volumetric(
         None
     };
     egui::SidePanel::left("volumetric_left_panel").show(contexts.ctx_mut(), |ui| {
+        if ui.ui_contains_pointer() {
+            for (_, mut camera) in &mut cameras {
+                camera.enabled_motion = EnabledMotion {
+                    pan: false,
+                    orbit: false,
+                    zoom: false,
+                };
+            }
+        }
         ui.label("Volumetric");
         if ui
             .add_enabled(scenario.is_some(), egui::Button::new("Init Voxels"))
             .clicked()
         {
-            setup_heart_and_sensors(
-                &mut commands,
-                &mut meshes,
-                &mut materials,
-                &material_atlas,
-                &mut mesh_atlas,
-                &mut sample_tracker,
-                &mut sensor_bracket_settings,
-                scenario.as_ref().expect("Scenario to be some."),
-                ass,
-                sensors,
-                voxels,
-            );
-            if ui.ui_contains_pointer() {
-                for (_, mut camera) in &mut cameras {
-                    camera.enabled_motion = EnabledMotion {
-                        pan: false,
-                        orbit: false,
-                        zoom: false,
-                    };
-                }
-            }
+            let scenario = (**scenario.as_ref().unwrap()).clone();
+            ev_setup.send(SetupHeartAndSensors(scenario));
         };
         let mut vis_mode = vis_options.mode.clone();
         egui::ComboBox::new("cb_vis_mode", "")
@@ -217,6 +202,11 @@ pub fn draw_ui_volumetric(
             if motion_step != sample_tracker.selected_beat {
                 sample_tracker.selected_beat = motion_step;
             }
+        }
+        let mut visible = heart_settings.visible;
+        ui.checkbox(&mut visible, "Show heart");
+        if visible != heart_settings.visible {
+            heart_settings.visible = visible;
         }
         let mut visible = cutting_plane.visible;
         ui.checkbox(&mut visible, "Show cutting plane");

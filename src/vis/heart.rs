@@ -27,6 +27,17 @@ pub struct VoxelData {
     posision_mm: Vec3,
 }
 
+#[derive(Resource, Debug)]
+pub struct HeartSettings {
+    pub visible: bool,
+}
+
+impl Default for HeartSettings {
+    fn default() -> Self {
+        Self { visible: true }
+    }
+}
+
 #[derive(Resource)]
 pub struct MaterialAtlas {
     pub voxel_types: [Handle<StandardMaterial>; VoxelType::COUNT],
@@ -103,7 +114,7 @@ pub fn init_voxels(
     mesh_atlas: &mut ResMut<MeshAtlas>,
     scenario: &Scenario,
     sample_tracker: &SampleTracker,
-    voxels: Query<(Entity, &VoxelData)>,
+    voxels: &Query<(Entity, &VoxelData)>,
 ) {
     debug!("Running system to initialize voxel components.");
     // Despawn current voxels
@@ -180,26 +191,16 @@ pub(crate) fn update_heart_voxel_colors(
 
 #[allow(clippy::needless_pass_by_value)]
 pub(crate) fn update_heart_voxel_visibility(
-    mut commands: Commands,
-    voxels: Query<(Entity, &VoxelData)>,
+    mut voxels: Query<(&mut Visibility, &VoxelData)>,
     cutting_plane: Res<CuttingPlaneSettings>,
-    mesh_atlas: Res<MeshAtlas>,
+    heart_settings: Res<HeartSettings>,
 ) {
-    if cutting_plane.is_changed() {
-        for (entity, data) in voxels.iter() {
-            if voxel_is_visible(data.posision_mm, &cutting_plane) {
-                commands.entity(entity).insert(PbrBundle {
-                    mesh: mesh_atlas.voxels.clone(),
-                    material: data.colors[0].clone(),
-                    transform: Transform::from_xyz(
-                        data.posision_mm[0],
-                        data.posision_mm[1],
-                        data.posision_mm[2],
-                    ),
-                    ..Default::default()
-                });
+    if cutting_plane.is_changed() || heart_settings.is_changed() {
+        for (mut visibility, data) in &mut voxels {
+            if heart_settings.visible && voxel_is_visible(data.posision_mm, &cutting_plane) {
+                *visibility = Visibility::Visible;
             } else {
-                commands.entity(entity).remove::<PbrBundle>();
+                *visibility = Visibility::Hidden;
             }
         }
     }

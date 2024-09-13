@@ -12,9 +12,9 @@ use bevy::prelude::*;
 
 use bevy_editor_cam::controller::component::{EditorCam, OrbitConstraint};
 use bevy_obj::ObjPlugin;
-use heart::VoxelData;
+use heart::{HeartSettings, VoxelData};
 use room::spawn_room;
-use sensors::{update_sensor_bracket_visibility, SensorSettings, SensorData};
+use sensors::{update_sensor_bracket_visibility, SensorBracket, SensorData, SensorSettings};
 
 use self::{
     body::spawn_torso,
@@ -35,6 +35,9 @@ use crate::{
     },
 };
 
+#[derive(Event)]
+pub struct SetupHeartAndSensors(pub Scenario);
+
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
 pub struct VisPlugin;
@@ -49,45 +52,38 @@ impl Plugin for VisPlugin {
             .init_resource::<SampleTracker>()
             .init_resource::<VisOptions>()
             .init_resource::<SensorSettings>()
-            .add_systems(Startup, setup_material_atlas)
-            .add_systems(Startup, setup_coordinate_system)
-            .add_systems(Startup, setup_mesh_atlas)
-            .add_systems(Startup, setup_light_and_camera)
-            .add_systems(Startup, spawn_torso)
-            .add_systems(Startup, spawn_room)
-            .add_systems(Startup, spawn_cutting_plane)
+            .init_resource::<HeartSettings>()
+            .add_event::<SetupHeartAndSensors>()
             .add_systems(
-                Update,
-                update_cutting_plane.run_if(in_state(UiState::Volumetric)),
-            )
-            .add_systems(Update, update_sensors.run_if(in_state(UiState::Volumetric)))
-            .add_systems(
-                Update,
-                update_sensor_bracket_position.run_if(in_state(UiState::Volumetric)),
+                Startup,
+                (
+                    setup_material_atlas,
+                    setup_coordinate_system,
+                    setup_mesh_atlas,
+                    setup_light_and_camera,
+                    spawn_torso,
+                    spawn_room,
+                    spawn_cutting_plane,
+                ),
             )
             .add_systems(
                 Update,
-                update_sensor_bracket_visibility.run_if(in_state(UiState::Volumetric)),
+                (
+                    update_cutting_plane,
+                    update_sensors,
+                    update_sensor_bracket_position,
+                    update_sensor_bracket_visibility,
+                    update_sample_index,
+                    on_vis_mode_changed,
+                    handle_setup_heart_and_sensors,
+                )
+                    .run_if(in_state(UiState::Volumetric)),
             )
             .add_systems(
                 Update,
-                update_sample_index.run_if(in_state(UiState::Volumetric)),
-            )
-            .add_systems(
-                Update,
-                update_heart_voxel_colors
+                (update_heart_voxel_colors, update_heart_voxel_visibility)
                     .run_if(in_state(UiState::Volumetric))
                     .after(update_sample_index),
-            )
-            .add_systems(
-                Update,
-                update_heart_voxel_visibility
-                    .run_if(in_state(UiState::Volumetric))
-                    .after(update_sample_index),
-            )
-            .add_systems(
-                Update,
-                on_vis_mode_changed.run_if(in_state(UiState::Volumetric)),
             );
     }
 }
@@ -177,30 +173,39 @@ fn spawn_axis(
 /// scenario as well.
 #[allow(clippy::cast_precision_loss, clippy::too_many_arguments)]
 #[tracing::instrument(level = "info", skip_all)]
-pub fn setup_heart_and_sensors(
-    commands: &mut Commands,
-    meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<StandardMaterial>,
-    material_atlas: &Res<MaterialAtlas>,
-    mesh_atlas: &mut ResMut<MeshAtlas>,
-    sample_tracker: &mut SampleTracker,
-    sensor_bracket_settings: &mut ResMut<SensorSettings>,
-    scenario: &Scenario,
+pub fn handle_setup_heart_and_sensors(
+    mut ev_setup: EventReader<SetupHeartAndSensors>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut sample_tracker: ResMut<SampleTracker>,
+    mut sensor_bracket_settings: ResMut<SensorSettings>,
+    mut mesh_atlas: ResMut<MeshAtlas>,
+    material_atlas: Res<MaterialAtlas>,
     ass: Res<AssetServer>,
     sensors: Query<(Entity, &SensorData)>,
     voxels: Query<(Entity, &VoxelData)>,
+    brackets: Query<(Entity, &SensorBracket)>,
 ) {
-    info!("Setting up heart and sensors.");
-    init_sample_tracker(sample_tracker, scenario);
-    spawn_sensors(commands, &ass, materials, scenario, sensors);
-    spawn_sensor_bracket(&ass, sensor_bracket_settings, commands, scenario);
-    init_voxels(
-        commands,
-        meshes,
-        material_atlas,
-        mesh_atlas,
-        scenario,
-        sample_tracker,
-        voxels,
-    );
+    for SetupHeartAndSensors(scenario) in ev_setup.read() {
+        info!("Setting up heart and sensors.");
+        init_sample_tracker(&mut sample_tracker, scenario);
+        spawn_sensors(&mut commands, &ass, &mut materials, scenario, &sensors);
+        spawn_sensor_bracket(
+            &ass,
+            &mut sensor_bracket_settings,
+            &mut commands,
+            scenario,
+            &brackets,
+        );
+        init_voxels(
+            &mut commands,
+            &mut meshes,
+            &material_atlas,
+            &mut mesh_atlas,
+            scenario,
+            &sample_tracker,
+            &voxels,
+        );
+    }
 }

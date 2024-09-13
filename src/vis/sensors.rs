@@ -24,7 +24,7 @@ pub(crate) fn spawn_sensors(
     ass: &Res<AssetServer>,
     materials: &mut Assets<StandardMaterial>,
     scenario: &Scenario,
-    sensors: Query<(Entity, &SensorData)>,
+    sensors: &Query<(Entity, &SensorData)>,
 ) {
     debug!("Running system to spawn sensors.");
     // despawn current sensors
@@ -153,7 +153,12 @@ pub(crate) fn spawn_sensor_bracket(
     sensor_bracket_settings: &mut ResMut<SensorSettings>,
     commands: &mut Commands,
     scenario: &Scenario,
+    brackets: &Query<(Entity, &SensorBracket)>,
 ) {
+    for (entity, _) in brackets.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
     let sensors = &scenario
         .data
         .as_ref()
@@ -186,7 +191,7 @@ pub(crate) fn spawn_sensor_bracket(
 
     sensor_bracket_settings.bracket_radius = radius;
     sensor_bracket_settings.bracket_positions = positions;
-    sensor_bracket_settings.bracket_visible = true;
+    sensor_bracket_settings.bracket_visible = false;
     sensor_bracket_settings.bracket_offset = Vec3::ZERO;
 }
 
