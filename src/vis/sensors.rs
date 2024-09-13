@@ -121,16 +121,36 @@ pub(crate) fn update_sensors(
 /// A struct representing a sensor bracket in the visualization.
 ///
 /// The sensor bracket has a radius, an array of positions, and an offset all given in mm.
-pub(crate) struct SensorBracket {
-    pub radius: f32,
-    pub positions: Array2<f32>,
-    pub offset: Vec3,
+pub(crate) struct SensorBracket {}
+
+#[derive(Resource, Debug)]
+pub(crate) struct SensorSettings {
+    pub bracket_radius: f32,
+    pub bracket_positions: Array2<f32>,
+    pub bracket_offset: Vec3,
+    pub bracket_visible: bool,
+    pub sensor_visible: bool,
+}
+
+impl Default for SensorSettings {
+    #[tracing::instrument(level = "debug")]
+    fn default() -> Self {
+        debug!("Initializing default sensor bracket options.");
+        Self {
+            bracket_radius: 1.0,
+            bracket_positions: Array2::zeros((1, 3)),
+            bracket_offset: Vec3::new(0.0, 0.0, 0.0),
+            bracket_visible: true,
+            sensor_visible: true,
+        }
+    }
 }
 
 #[allow(clippy::needless_pass_by_value)]
 #[tracing::instrument(level = "debug", skip_all)]
 pub(crate) fn spawn_sensor_bracket(
     ass: &Res<AssetServer>,
+    sensor_bracket_settings: &mut ResMut<SensorSettings>,
     commands: &mut Commands,
     scenario: &Scenario,
 ) {
@@ -161,31 +181,51 @@ pub(crate) fn spawn_sensor_bracket(
             transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::ONE * 1000.0),
             ..Default::default()
         },
-        SensorBracket {
-            radius,
-            positions,
-            offset: Vec3::ZERO,
-        },
+        SensorBracket {},
     ));
+
+    sensor_bracket_settings.bracket_radius = radius;
+    sensor_bracket_settings.bracket_positions = positions;
+    sensor_bracket_settings.bracket_visible = true;
+    sensor_bracket_settings.bracket_offset = Vec3::ZERO;
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub(crate) fn update_sensor_bracket(
+pub(crate) fn update_sensor_bracket_position(
     mut sensor_brackets: Query<(&mut Transform, &SensorBracket)>,
     sample_tracker: Res<SampleTracker>,
+    settings: Res<SensorSettings>,
 ) {
-    let beat_index = sample_tracker.selected_beat;
-    let sensor_bracket = sensor_brackets.get_single_mut();
+    if sample_tracker.is_changed() || settings.is_changed() {
+        let beat_index = sample_tracker.selected_beat;
+        let sensor_bracket = sensor_brackets.get_single_mut();
 
-    if let Ok((mut transform, sensor_bracket)) = sensor_bracket {
-        let position = Vec3 {
-            x: sensor_bracket.positions[(beat_index, 0)] + sensor_bracket.offset[0],
-            y: sensor_bracket.positions[(beat_index, 1)] + sensor_bracket.offset[1],
-            z: sensor_bracket.positions[(beat_index, 2)] + sensor_bracket.offset[2],
-        };
-        transform.translation = position;
-        // has to be multiplied by 2.5 to get the correct scale (due to blender model size)
-        transform.scale.x = sensor_bracket.radius * 2.5;
-        transform.scale.z = sensor_bracket.radius * 2.5;
+        if let Ok((mut transform, _)) = sensor_bracket {
+            let position = Vec3 {
+                x: settings.bracket_positions[(beat_index, 0)] + settings.bracket_offset[0],
+                y: settings.bracket_positions[(beat_index, 1)] + settings.bracket_offset[1],
+                z: settings.bracket_positions[(beat_index, 2)] + settings.bracket_offset[2],
+            };
+            transform.translation = position;
+            // has to be multiplied by 2.5 to get the correct scale (due to blender model size)
+            transform.scale.x = settings.bracket_radius * 2.5;
+            transform.scale.z = settings.bracket_radius * 2.5;
+        }
+    }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn update_sensor_bracket_visibility(
+    mut sensor_brackets: Query<(&mut Visibility, &SensorBracket)>,
+    settings: Res<SensorSettings>,
+) {
+    if settings.is_changed() {
+        for (mut visibility, _) in &mut sensor_brackets {
+            if settings.bracket_visible {
+                *visibility = Visibility::Visible;
+            } else {
+                *visibility = Visibility::Hidden;
+            }
+        }
     }
 }

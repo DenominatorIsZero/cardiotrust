@@ -9,7 +9,7 @@ use crate::{
         heart::{MaterialAtlas, MeshAtlas, VoxelData},
         options::{VisMode, VisOptions},
         sample_tracker::SampleTracker,
-        sensors::{SensorBracket, SensorData},
+        sensors::{SensorBracket, SensorData, SensorSettings},
         setup_heart_and_sensors,
     },
     ScenarioList, SelectedSenario,
@@ -37,13 +37,13 @@ pub fn draw_ui_volumetric(
     mut sample_tracker: ResMut<SampleTracker>,
     mut vis_options: ResMut<VisOptions>,
     mut cutting_plane: ResMut<CuttingPlaneSettings>,
+    mut sensor_bracket_settings: ResMut<SensorSettings>,
     mut cameras: Query<(&mut Transform, &mut EditorCam), With<Camera>>,
-    mut sensor_brackets: Query<&mut SensorBracket>,
     ass: Res<AssetServer>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
-    mut sensors: Query<(Entity, &SensorData)>,
-    mut voxels: Query<(Entity, &VoxelData)>,
+    sensors: Query<(Entity, &SensorData)>,
+    voxels: Query<(Entity, &VoxelData)>,
 ) {
     trace!("Running system to draw volumetric UI.");
     for (_, mut camera) in &mut cameras {
@@ -78,6 +78,7 @@ pub fn draw_ui_volumetric(
                 &material_atlas,
                 &mut mesh_atlas,
                 &mut sample_tracker,
+                &mut sensor_bracket_settings,
                 scenario.as_ref().expect("Scenario to be some."),
                 ass,
                 sensors,
@@ -269,26 +270,28 @@ pub fn draw_ui_volumetric(
             }
         }
 
-        let sensor_bracket = sensor_brackets.get_single_mut();
-        if let Ok(mut sensor_bracket) = sensor_bracket {
-            ui.label("Sensor positon mm (x, y, z):");
-            let mut position = sensor_bracket.offset;
-            ui.horizontal(|ui| {
-                ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
-                ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
-                ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
-            });
-            if position != sensor_bracket.offset {
-                sensor_bracket.offset = position;
-            }
+        ui.label("Sensor positon mm (x, y, z):");
+        let mut position = sensor_bracket_settings.bracket_offset;
+        ui.horizontal(|ui| {
+            ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
+            ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
+            ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
+        });
+        if position != sensor_bracket_settings.bracket_offset {
+            sensor_bracket_settings.bracket_offset = position;
+        }
 
-            ui.label("Sensor radius mm:");
+        ui.label("Sensor radius mm:");
 
-            let mut radius = sensor_bracket.radius;
-            ui.add(egui::DragValue::new(&mut radius).speed(1));
-            if (radius - sensor_bracket.radius).abs() > 10.0 * f32::EPSILON {
-                sensor_bracket.radius = radius;
-            }
+        let mut radius = sensor_bracket_settings.bracket_radius;
+        ui.add(egui::DragValue::new(&mut radius).speed(1));
+        if (radius - sensor_bracket_settings.bracket_radius).abs() > 10.0 * f32::EPSILON {
+            sensor_bracket_settings.bracket_radius = radius;
+        }
+        let mut visible = sensor_bracket_settings.bracket_visible;
+        ui.checkbox(&mut visible, "Show sensor bracket");
+        if visible != sensor_bracket_settings.bracket_visible {
+            sensor_bracket_settings.bracket_visible = visible;
         }
     });
     if let Some(scenario) = scenario {

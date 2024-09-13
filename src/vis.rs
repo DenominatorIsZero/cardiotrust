@@ -14,7 +14,7 @@ use bevy_editor_cam::controller::component::{EditorCam, OrbitConstraint};
 use bevy_obj::ObjPlugin;
 use heart::VoxelData;
 use room::spawn_room;
-use sensors::SensorData;
+use sensors::{update_sensor_bracket_visibility, SensorSettings, SensorData};
 
 use self::{
     body::spawn_torso,
@@ -31,7 +31,7 @@ use crate::{
     vis::{
         cutting_plane::{spawn_cutting_plane, update_cutting_plane},
         heart::{setup_material_atlas, setup_mesh_atlas, update_heart_voxel_visibility},
-        sensors::{spawn_sensor_bracket, update_sensor_bracket, update_sensors},
+        sensors::{spawn_sensor_bracket, update_sensor_bracket_position, update_sensors},
     },
 };
 
@@ -48,6 +48,7 @@ impl Plugin for VisPlugin {
             .add_plugins(ObjPlugin)
             .init_resource::<SampleTracker>()
             .init_resource::<VisOptions>()
+            .init_resource::<SensorSettings>()
             .add_systems(Startup, setup_material_atlas)
             .add_systems(Startup, setup_coordinate_system)
             .add_systems(Startup, setup_mesh_atlas)
@@ -62,7 +63,11 @@ impl Plugin for VisPlugin {
             .add_systems(Update, update_sensors.run_if(in_state(UiState::Volumetric)))
             .add_systems(
                 Update,
-                update_sensor_bracket.run_if(in_state(UiState::Volumetric)),
+                update_sensor_bracket_position.run_if(in_state(UiState::Volumetric)),
+            )
+            .add_systems(
+                Update,
+                update_sensor_bracket_visibility.run_if(in_state(UiState::Volumetric)),
             )
             .add_systems(
                 Update,
@@ -179,6 +184,7 @@ pub fn setup_heart_and_sensors(
     material_atlas: &Res<MaterialAtlas>,
     mesh_atlas: &mut ResMut<MeshAtlas>,
     sample_tracker: &mut SampleTracker,
+    sensor_bracket_settings: &mut ResMut<SensorSettings>,
     scenario: &Scenario,
     ass: Res<AssetServer>,
     sensors: Query<(Entity, &SensorData)>,
@@ -187,7 +193,7 @@ pub fn setup_heart_and_sensors(
     info!("Setting up heart and sensors.");
     init_sample_tracker(sample_tracker, scenario);
     spawn_sensors(commands, &ass, materials, scenario, sensors);
-    spawn_sensor_bracket(&ass, commands, scenario);
+    spawn_sensor_bracket(&ass, sensor_bracket_settings, commands, scenario);
     init_voxels(
         commands,
         meshes,
