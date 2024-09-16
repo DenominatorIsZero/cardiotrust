@@ -36,13 +36,16 @@ pub(crate) fn spawn_cutting_plane(
 
     commands.insert_resource(cutting_plane);
 
+    let mut material = StandardMaterial::from(Color::srgba(1.0, 1.0, 1.0, 0.5));
+    material.cull_mode = None;
+
     commands.spawn((
         PbrBundle {
             mesh: meshes.add(Mesh::from(Plane3d {
                 normal: Dir3::Y,
                 half_size: Vec2 { x: 1.0, y: 1.0 },
             })),
-            material: materials.add(StandardMaterial::from(Color::srgba(1.0, 1.0, 1.0, 0.5))),
+            material: materials.add(material),
             transform: Transform {
                 translation: position,
                 rotation,
