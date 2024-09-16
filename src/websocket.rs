@@ -19,7 +19,7 @@ use crate::{
         model::{spatial::voxels::VoxelType, Model},
         scenario::{calculate_plotting_arrays, results::Results, Scenario},
     },
-    vis::{options::VisOptions, sample_tracker::SampleTracker},
+    vis::{options::ColorOptions, sample_tracker::SampleTracker},
     ScenarioBundle, ScenarioList, SelectedSenario,
 };
 
@@ -99,7 +99,7 @@ fn handle_websocket_messages(
     mut sample_tracker: ResMut<SampleTracker>,
     mut selected_scenario: ResMut<SelectedSenario>,
     mut scenario_list: ResMut<ScenarioList>,
-    mut vis_options: ResMut<VisOptions>,
+    mut vis_options: ResMut<ColorOptions>,
 ) {
     trace!("Running handle_websocket_messages system");
     if let Some(message) = message_buffer.messages.lock().unwrap().pop() {

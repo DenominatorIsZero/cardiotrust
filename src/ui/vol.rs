@@ -8,10 +8,10 @@ use egui_plot::{Line, Plot, PlotPoints, VLine};
 use crate::{
     vis::{
         cutting_plane::CuttingPlaneSettings,
-        heart::{HeartSettings, MaterialAtlas, MeshAtlas, VoxelData},
-        options::{VisMode, VisOptions},
+        heart::{MaterialAtlas, MeshAtlas, VoxelData},
+        options::{ColorMode, ColorOptions, VisibilityOptions},
         sample_tracker::SampleTracker,
-        sensors::{SensorBracket, SensorData, SensorSettings},
+        sensors::{BacketSettings, SensorBracket, SensorData},
         SetupHeartAndSensors,
     },
     ScenarioList, SelectedSenario,
@@ -32,10 +32,10 @@ use crate::{
 pub fn draw_ui_volumetric(
     mut contexts: EguiContexts,
     mut sample_tracker: ResMut<SampleTracker>,
-    mut vis_options: ResMut<VisOptions>,
+    mut color_options: ResMut<ColorOptions>,
+    mut visibility_options: ResMut<VisibilityOptions>,
     mut cutting_plane: ResMut<CuttingPlaneSettings>,
-    mut heart_settings: ResMut<HeartSettings>,
-    mut sensor_bracket_settings: ResMut<SensorSettings>,
+    mut sensor_bracket_settings: ResMut<BacketSettings>,
     mut cameras: Query<(&mut Transform, &mut EditorCam), With<Camera>>,
     mut ev_setup: EventWriter<SetupHeartAndSensors>,
     selected_scenario: Res<SelectedSenario>,
@@ -73,20 +73,25 @@ pub fn draw_ui_volumetric(
         }
         ui.label(egui::RichText::new("Visibility").underline());
         ui.group(|ui| {
-            let mut visible = heart_settings.visible;
-            ui.checkbox(&mut visible, "Show heart");
-            if visible != heart_settings.visible {
-                heart_settings.visible = visible;
+            let mut visible = visibility_options.heart_visible;
+            ui.checkbox(&mut visible, "Heart");
+            if visible != visibility_options.heart_visible {
+                visibility_options.heart_visible = visible;
             }
-            let mut visible = cutting_plane.visible;
-            ui.checkbox(&mut visible, "Show cutting plane");
-            if visible != cutting_plane.visible {
-                cutting_plane.visible = visible;
+            let mut visible = visibility_options.cutting_plane_visible;
+            ui.checkbox(&mut visible, "Cutting plane");
+            if visible != visibility_options.cutting_plane_visible {
+                visibility_options.cutting_plane_visible = visible;
             }
-            let mut visible = sensor_bracket_settings.bracket_visible;
-            ui.checkbox(&mut visible, "Show sensor bracket");
-            if visible != sensor_bracket_settings.bracket_visible {
-                sensor_bracket_settings.bracket_visible = visible;
+            let mut visible = visibility_options.sensors_visible;
+            ui.checkbox(&mut visible, "Sensors");
+            if visible != visibility_options.sensors_visible {
+                visibility_options.sensors_visible = visible;
+            }
+            let mut visible = visibility_options.sensor_bracket_visible;
+            ui.checkbox(&mut visible, "Sensor bracket");
+            if visible != visibility_options.sensor_bracket_visible {
+                visibility_options.sensor_bracket_visible = visible;
             }
         });
         let mut enabled = cutting_plane.enabled;
@@ -101,70 +106,70 @@ pub fn draw_ui_volumetric(
             let scenario = (**scenario.as_ref().unwrap()).clone();
             ev_setup.send(SetupHeartAndSensors(scenario));
         };
-        let mut vis_mode = vis_options.mode.clone();
+        let mut vis_mode = color_options.mode.clone();
         egui::ComboBox::new("cb_vis_mode", "")
             .selected_text(format!("{vis_mode:?}"))
             .show_ui(ui, |ui| {
                 ui.selectable_value(
                     &mut vis_mode,
-                    VisMode::EstimationVoxelTypes,
+                    ColorMode::EstimationVoxelTypes,
                     "Voxel types (estimation)",
                 );
                 ui.selectable_value(
                     &mut vis_mode,
-                    VisMode::SimulationVoxelTypes,
+                    ColorMode::SimulationVoxelTypes,
                     "Voxel types (simulation)",
                 );
                 ui.selectable_value(
                     &mut vis_mode,
-                    VisMode::EstimatedCdeNorm,
+                    ColorMode::EstimatedCdeNorm,
                     "Cde norm (estimation)",
                 );
                 ui.selectable_value(
                     &mut vis_mode,
-                    VisMode::SimulatedCdeNorm,
+                    ColorMode::SimulatedCdeNorm,
                     "Cde norm (simulation)",
                 );
                 ui.selectable_value(
                     &mut vis_mode,
-                    VisMode::EstimatedCdeMax,
+                    ColorMode::EstimatedCdeMax,
                     "Cde max (estimation)",
                 );
                 ui.selectable_value(
                     &mut vis_mode,
-                    VisMode::SimulatedCdeMax,
+                    ColorMode::SimulatedCdeMax,
                     "Cde max (simulation)",
                 );
-                ui.selectable_value(&mut vis_mode, VisMode::DeltaCdeMax, "Cde max (delta)");
+                ui.selectable_value(&mut vis_mode, ColorMode::DeltaCdeMax, "Cde max (delta)");
                 ui.selectable_value(
                     &mut vis_mode,
-                    VisMode::EstimatedActivationTime,
+                    ColorMode::EstimatedActivationTime,
                     "Activation time (estimation)",
                 );
                 ui.selectable_value(
                     &mut vis_mode,
-                    VisMode::SimulatedActivationTime,
+                    ColorMode::SimulatedActivationTime,
                     "Activation time (simulation)",
                 );
                 ui.selectable_value(
                     &mut vis_mode,
-                    VisMode::DeltaActivationTime,
+                    ColorMode::DeltaActivationTime,
                     "Activation time (delta)",
                 );
             });
-        if vis_mode != vis_options.mode {
-            vis_options.mode = vis_mode;
+        if vis_mode != color_options.mode {
+            color_options.mode = vis_mode;
         }
-        let mut relative_coloring = vis_options.relative_coloring;
+        let mut relative_coloring = color_options.relative_coloring;
         ui.checkbox(&mut relative_coloring, "Relative coloring");
-        if relative_coloring != vis_options.relative_coloring {
-            vis_options.relative_coloring = relative_coloring;
+        if relative_coloring != color_options.relative_coloring {
+            color_options.relative_coloring = relative_coloring;
         }
         ui.label("Playback speed:");
-        let mut playbackspeed = vis_options.playbackspeed;
+        let mut playbackspeed = color_options.playbackspeed;
         ui.add(egui::Slider::new(&mut playbackspeed, 0.01..=1.0).logarithmic(true));
-        if (playbackspeed - vis_options.playbackspeed).abs() > f32::EPSILON {
-            vis_options.playbackspeed = playbackspeed;
+        if (playbackspeed - color_options.playbackspeed).abs() > f32::EPSILON {
+            color_options.playbackspeed = playbackspeed;
         }
         let mut manual = sample_tracker.manual;
         ui.checkbox(&mut manual, "Manual");
@@ -268,22 +273,22 @@ pub fn draw_ui_volumetric(
         }
 
         ui.label("Sensor positon mm (x, y, z):");
-        let mut position = sensor_bracket_settings.bracket_offset;
+        let mut position = sensor_bracket_settings.offset;
         ui.horizontal(|ui| {
             ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
             ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
             ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
         });
-        if position != sensor_bracket_settings.bracket_offset {
-            sensor_bracket_settings.bracket_offset = position;
+        if position != sensor_bracket_settings.offset {
+            sensor_bracket_settings.offset = position;
         }
 
         ui.label("Sensor radius mm:");
 
-        let mut radius = sensor_bracket_settings.bracket_radius;
+        let mut radius = sensor_bracket_settings.radius;
         ui.add(egui::DragValue::new(&mut radius).speed(1));
-        if (radius - sensor_bracket_settings.bracket_radius).abs() > 10.0 * f32::EPSILON {
-            sensor_bracket_settings.bracket_radius = radius;
+        if (radius - sensor_bracket_settings.radius).abs() > 10.0 * f32::EPSILON {
+            sensor_bracket_settings.radius = radius;
         }
     });
     if let Some(scenario) = scenario {

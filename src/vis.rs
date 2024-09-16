@@ -12,16 +12,21 @@ use bevy::prelude::*;
 
 use bevy_editor_cam::controller::component::{EditorCam, OrbitConstraint};
 use bevy_obj::ObjPlugin;
-use heart::{HeartSettings, VoxelData};
+use cutting_plane::update_cutting_plane_visibility;
+use heart::VoxelData;
+use options::VisibilityOptions;
 use room::spawn_room;
-use sensors::{update_sensor_bracket_visibility, SensorBracket, SensorData, SensorSettings};
+use sensors::{
+    update_sensor_bracket_visibility, update_sensor_visibility, BacketSettings, SensorBracket,
+    SensorData,
+};
 
 use self::{
     body::spawn_torso,
     heart::{
-        init_voxels, on_vis_mode_changed, update_heart_voxel_colors, MaterialAtlas, MeshAtlas,
+        init_voxels, on_color_mode_changed, update_heart_voxel_colors, MaterialAtlas, MeshAtlas,
     },
-    options::VisOptions,
+    options::ColorOptions,
     sample_tracker::{init_sample_tracker, update_sample_index, SampleTracker},
     sensors::spawn_sensors,
 };
@@ -29,9 +34,9 @@ use crate::{
     core::scenario::Scenario,
     ui::UiState,
     vis::{
-        cutting_plane::{spawn_cutting_plane, update_cutting_plane},
+        cutting_plane::{spawn_cutting_plane, update_cutting_plane_position},
         heart::{setup_material_atlas, setup_mesh_atlas, update_heart_voxel_visibility},
-        sensors::{spawn_sensor_bracket, update_sensor_bracket_position, update_sensors},
+        sensors::{spawn_sensor_bracket, update_sensor_bracket_position, update_sensor_positions},
     },
 };
 
@@ -50,9 +55,9 @@ impl Plugin for VisPlugin {
             .add_plugins(bevy_editor_cam::DefaultEditorCamPlugins)
             .add_plugins(ObjPlugin)
             .init_resource::<SampleTracker>()
-            .init_resource::<VisOptions>()
-            .init_resource::<SensorSettings>()
-            .init_resource::<HeartSettings>()
+            .init_resource::<ColorOptions>()
+            .init_resource::<VisibilityOptions>()
+            .init_resource::<BacketSettings>()
             .add_event::<SetupHeartAndSensors>()
             .add_systems(
                 Startup,
@@ -69,12 +74,14 @@ impl Plugin for VisPlugin {
             .add_systems(
                 Update,
                 (
-                    update_cutting_plane,
-                    update_sensors,
+                    update_cutting_plane_position,
+                    update_sensor_positions,
+                    update_sensor_visibility,
                     update_sensor_bracket_position,
                     update_sensor_bracket_visibility,
+                    update_cutting_plane_visibility,
                     update_sample_index,
-                    on_vis_mode_changed,
+                    on_color_mode_changed,
                     handle_setup_heart_and_sensors,
                 )
                     .run_if(in_state(UiState::Volumetric)),
@@ -179,7 +186,7 @@ pub fn handle_setup_heart_and_sensors(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut sample_tracker: ResMut<SampleTracker>,
-    mut sensor_bracket_settings: ResMut<SensorSettings>,
+    mut sensor_bracket_settings: ResMut<BacketSettings>,
     mut mesh_atlas: ResMut<MeshAtlas>,
     material_atlas: Res<MaterialAtlas>,
     ass: Res<AssetServer>,

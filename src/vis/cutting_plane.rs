@@ -1,6 +1,8 @@
 use bevy::math::prelude::*;
 use bevy::prelude::*;
 
+use super::options::VisibilityOptions;
+
 #[derive(Resource, Clone)]
 #[allow(clippy::module_name_repetitions)]
 pub struct CuttingPlaneSettings {
@@ -13,7 +15,7 @@ pub struct CuttingPlaneSettings {
 
 #[derive(Component)]
 #[allow(clippy::module_name_repetitions)]
-pub struct CuttingPlaneComponent;
+pub struct CuttingPlane;
 
 #[tracing::instrument(level = "debug", skip_all)]
 pub(crate) fn spawn_cutting_plane(
@@ -53,30 +55,36 @@ pub(crate) fn spawn_cutting_plane(
             },
             ..default()
         },
-        CuttingPlaneComponent,
+        CuttingPlane,
     ));
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub(crate) fn update_cutting_plane(
-    mut cutting_planes: Query<
-        (&mut Transform, &Handle<StandardMaterial>),
-        With<CuttingPlaneComponent>,
-    >,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+pub(crate) fn update_cutting_plane_position(
+    mut cutting_planes: Query<&mut Transform, With<CuttingPlane>>,
     settings: Res<CuttingPlaneSettings>,
 ) {
     if settings.is_changed() {
-        let (mut transform, material) = cutting_planes.single_mut();
-        let opacity = if settings.visible {
-            settings.opacity
-        } else {
-            0.0
-        };
-        materials.get_mut(material).unwrap().base_color = Color::srgba(1.0, 1.0, 1.0, opacity);
+        let mut transform = cutting_planes.single_mut();
 
         transform.translation = settings.position;
         let rotation = Quat::from_rotation_arc(Vec3::Y, settings.normal);
         transform.rotation = rotation;
+    }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn update_cutting_plane_visibility(
+    mut cutting_plane: Query<&mut Visibility, With<CuttingPlane>>,
+    options: Res<VisibilityOptions>,
+) {
+    if options.is_changed() {
+        for mut visibility in &mut cutting_plane {
+            if options.cutting_plane_visible {
+                *visibility = Visibility::Visible;
+            } else {
+                *visibility = Visibility::Hidden;
+            }
+        }
     }
 }

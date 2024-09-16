@@ -1,9 +1,9 @@
-use bevy::prelude::*;
+use bevy::{math::vec3, prelude::*};
 use ndarray::Array2;
 
 use crate::core::scenario::Scenario;
 
-use super::sample_tracker::SampleTracker;
+use super::{options::VisibilityOptions, sample_tracker::SampleTracker};
 
 #[derive(Component)]
 pub(crate) struct SensorData {
@@ -100,7 +100,7 @@ pub(crate) fn spawn_sensors(
 }
 
 #[allow(clippy::needless_pass_by_value)]
-pub(crate) fn update_sensors(
+pub(crate) fn update_sensor_positions(
     mut sensors: Query<(&mut Transform, &SensorData)>,
     sample_tracker: Res<SampleTracker>,
 ) {
@@ -124,24 +124,20 @@ pub(crate) fn update_sensors(
 pub(crate) struct SensorBracket {}
 
 #[derive(Resource, Debug)]
-pub(crate) struct SensorSettings {
-    pub bracket_radius: f32,
-    pub bracket_positions: Array2<f32>,
-    pub bracket_offset: Vec3,
-    pub bracket_visible: bool,
-    pub sensor_visible: bool,
+pub(crate) struct BacketSettings {
+    pub radius: f32,
+    pub positions: Array2<f32>,
+    pub offset: Vec3,
 }
 
-impl Default for SensorSettings {
+impl Default for BacketSettings {
     #[tracing::instrument(level = "debug")]
     fn default() -> Self {
         debug!("Initializing default sensor bracket options.");
         Self {
-            bracket_radius: 1.0,
-            bracket_positions: Array2::zeros((1, 3)),
-            bracket_offset: Vec3::new(0.0, 0.0, 0.0),
-            bracket_visible: true,
-            sensor_visible: true,
+            radius: 1.0,
+            positions: Array2::zeros((1, 3)),
+            offset: Vec3::new(0.0, 0.0, 0.0),
         }
     }
 }
@@ -150,7 +146,7 @@ impl Default for SensorSettings {
 #[tracing::instrument(level = "debug", skip_all)]
 pub(crate) fn spawn_sensor_bracket(
     ass: &Res<AssetServer>,
-    sensor_bracket_settings: &mut ResMut<SensorSettings>,
+    sensor_bracket_settings: &mut ResMut<BacketSettings>,
     commands: &mut Commands,
     scenario: &Scenario,
     brackets: &Query<(Entity, &SensorBracket)>,
@@ -183,23 +179,30 @@ pub(crate) fn spawn_sensor_bracket(
     commands.spawn((
         SceneBundle {
             scene: glb_handle,
-            transform: Transform::from_xyz(0.0, 0.0, 0.0).with_scale(Vec3::ONE * 1000.0),
+            transform: Transform::from_xyz(0.0, 0.0, 0.0)
+                .with_scale(Vec3::ONE * 1000.0)
+                .with_translation(vec3(
+                    positions[(0, 0)],
+                    positions[(0, 1)],
+                    positions[(0, 2)],
+                ))
+                .with_scale(vec3(radius * 2.5, 1000.0, radius * 2.5)),
+            visibility: Visibility::Hidden,
             ..Default::default()
         },
         SensorBracket {},
     ));
 
-    sensor_bracket_settings.bracket_radius = radius;
-    sensor_bracket_settings.bracket_positions = positions;
-    sensor_bracket_settings.bracket_visible = false;
-    sensor_bracket_settings.bracket_offset = Vec3::ZERO;
+    sensor_bracket_settings.radius = radius;
+    sensor_bracket_settings.positions = positions;
+    sensor_bracket_settings.offset = Vec3::ZERO;
 }
 
 #[allow(clippy::needless_pass_by_value)]
 pub(crate) fn update_sensor_bracket_position(
     mut sensor_brackets: Query<(&mut Transform, &SensorBracket)>,
     sample_tracker: Res<SampleTracker>,
-    settings: Res<SensorSettings>,
+    settings: Res<BacketSettings>,
 ) {
     if sample_tracker.is_changed() || settings.is_changed() {
         let beat_index = sample_tracker.selected_beat;
@@ -207,26 +210,42 @@ pub(crate) fn update_sensor_bracket_position(
 
         if let Ok((mut transform, _)) = sensor_bracket {
             let position = Vec3 {
-                x: settings.bracket_positions[(beat_index, 0)] + settings.bracket_offset[0],
-                y: settings.bracket_positions[(beat_index, 1)] + settings.bracket_offset[1],
-                z: settings.bracket_positions[(beat_index, 2)] + settings.bracket_offset[2],
+                x: settings.positions[(beat_index, 0)] + settings.offset[0],
+                y: settings.positions[(beat_index, 1)] + settings.offset[1],
+                z: settings.positions[(beat_index, 2)] + settings.offset[2],
             };
             transform.translation = position;
             // has to be multiplied by 2.5 to get the correct scale (due to blender model size)
-            transform.scale.x = settings.bracket_radius * 2.5;
-            transform.scale.z = settings.bracket_radius * 2.5;
+            transform.scale.x = settings.radius * 2.5;
+            transform.scale.z = settings.radius * 2.5;
         }
     }
 }
 
 #[allow(clippy::needless_pass_by_value)]
 pub(crate) fn update_sensor_bracket_visibility(
-    mut sensor_brackets: Query<(&mut Visibility, &SensorBracket)>,
-    settings: Res<SensorSettings>,
+    mut sensor_brackets: Query<&mut Visibility, With<SensorBracket>>,
+    options: Res<VisibilityOptions>,
 ) {
-    if settings.is_changed() {
-        for (mut visibility, _) in &mut sensor_brackets {
-            if settings.bracket_visible {
+    if options.is_changed() {
+        for mut visibility in &mut sensor_brackets {
+            if options.sensor_bracket_visible {
+                *visibility = Visibility::Visible;
+            } else {
+                *visibility = Visibility::Hidden;
+            }
+        }
+    }
+}
+
+#[allow(clippy::needless_pass_by_value)]
+pub(crate) fn update_sensor_visibility(
+    mut sensors: Query<&mut Visibility, With<SensorData>>,
+    options: Res<VisibilityOptions>,
+) {
+    if options.is_changed() {
+        for mut visibility in &mut sensors {
+            if options.sensors_visible {
                 *visibility = Visibility::Visible;
             } else {
                 *visibility = Visibility::Hidden;

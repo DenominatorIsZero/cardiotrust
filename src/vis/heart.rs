@@ -10,12 +10,12 @@ use strum::EnumCount;
 
 use super::{
     cutting_plane::CuttingPlaneSettings,
-    options::{VisMode, VisOptions},
+    options::{ColorMode, ColorOptions, VisibilityOptions},
     sample_tracker::SampleTracker,
 };
 use crate::{
     core::{model::spatial::voxels::VoxelType, scenario::Scenario},
-    vis::options::VisSource,
+    vis::options::ColorSource,
     ScenarioList, SelectedSenario,
 };
 
@@ -25,17 +25,6 @@ pub struct VoxelData {
     colors: Array1<Handle<StandardMaterial>>,
     position_xyz: Array1<usize>,
     posision_mm: Vec3,
-}
-
-#[derive(Resource, Debug)]
-pub struct HeartSettings {
-    pub visible: bool,
-}
-
-impl Default for HeartSettings {
-    fn default() -> Self {
-        Self { visible: true }
-    }
 }
 
 #[derive(Resource)]
@@ -193,11 +182,11 @@ pub(crate) fn update_heart_voxel_colors(
 pub(crate) fn update_heart_voxel_visibility(
     mut voxels: Query<(&mut Visibility, &VoxelData)>,
     cutting_plane: Res<CuttingPlaneSettings>,
-    heart_settings: Res<HeartSettings>,
+    options: Res<VisibilityOptions>,
 ) {
-    if cutting_plane.is_changed() || heart_settings.is_changed() {
+    if cutting_plane.is_changed() || options.is_changed() {
         for (mut visibility, data) in &mut voxels {
-            if heart_settings.visible && voxel_is_visible(data.posision_mm, &cutting_plane) {
+            if options.heart_visible && voxel_is_visible(data.posision_mm, &cutting_plane) {
                 *visibility = Visibility::Visible;
             } else {
                 *visibility = Visibility::Hidden;
@@ -220,8 +209,8 @@ fn voxel_is_visible(position: Vec3, cutting_plane: &CuttingPlaneSettings) -> boo
 /// Panics if selected scenario is corrupted.
 #[allow(clippy::needless_pass_by_value)]
 #[tracing::instrument(level = "debug", skip_all)]
-pub fn on_vis_mode_changed(
-    vis_options: Res<VisOptions>,
+pub fn on_color_mode_changed(
+    color_options: Res<ColorOptions>,
     query: Query<&mut VoxelData>,
     scenario_list: Res<ScenarioList>,
     selected_scenario: Res<SelectedSenario>,
@@ -231,78 +220,78 @@ pub fn on_vis_mode_changed(
     if selected_scenario.index.is_none() {
         return;
     }
-    if !vis_options.is_changed() {
+    if !color_options.is_changed() {
         return;
     }
-    debug!("Visualization mode changed to {:?}.", vis_options.mode);
+    debug!("Visualization mode changed to {:?}.", color_options.mode);
     let scenario =
         &scenario_list.entries[selected_scenario.index.expect("index to be some.")].scenario;
 
-    match vis_options.mode {
-        VisMode::EstimationVoxelTypes => {
+    match color_options.mode {
+        ColorMode::EstimationVoxelTypes => {
             set_heart_voxel_colors_to_types(query, materials, scenario, false);
         }
-        VisMode::SimulationVoxelTypes => {
+        ColorMode::SimulationVoxelTypes => {
             set_heart_voxel_colors_to_types(query, materials, scenario, true);
         }
-        VisMode::EstimatedCdeNorm => {
+        ColorMode::EstimatedCdeNorm => {
             set_heart_voxel_colors_to_norm(query, materials, scenario, false);
         }
-        VisMode::SimulatedCdeNorm => {
+        ColorMode::SimulatedCdeNorm => {
             set_heart_voxel_colors_to_norm(query, materials, scenario, true);
         }
-        VisMode::EstimatedCdeMax => {
+        ColorMode::EstimatedCdeMax => {
             set_heart_voxel_colors_to_max(
                 query,
                 materials,
                 scenario,
-                VisSource::Estimation,
-                vis_options.relative_coloring,
+                ColorSource::Estimation,
+                color_options.relative_coloring,
             );
         }
-        VisMode::SimulatedCdeMax => {
+        ColorMode::SimulatedCdeMax => {
             set_heart_voxel_colors_to_max(
                 query,
                 materials,
                 scenario,
-                VisSource::Simulation,
-                vis_options.relative_coloring,
+                ColorSource::Simulation,
+                color_options.relative_coloring,
             );
         }
-        VisMode::DeltaCdeMax => {
+        ColorMode::DeltaCdeMax => {
             set_heart_voxel_colors_to_max(
                 query,
                 materials,
                 scenario,
-                VisSource::Delta,
-                vis_options.relative_coloring,
+                ColorSource::Delta,
+                color_options.relative_coloring,
             );
         }
-        VisMode::EstimatedActivationTime => {
+        ColorMode::EstimatedActivationTime => {
             set_heart_voxel_colors_to_activation_time(
                 query,
                 materials,
                 scenario,
-                VisSource::Estimation,
-                vis_options.relative_coloring,
+                ColorSource::Estimation,
+                color_options.relative_coloring,
             );
         }
-        VisMode::SimulatedActivationTime => {
+        ColorMode::SimulatedActivationTime => {
             set_heart_voxel_colors_to_activation_time(
                 query,
                 materials,
                 scenario,
-                VisSource::Simulation,
-                vis_options.relative_coloring,
+                ColorSource::Simulation,
+                color_options.relative_coloring,
             );
         }
-        VisMode::DeltaActivationTime => {
+        ColorMode::DeltaActivationTime => {
             set_heart_voxel_colors_to_activation_time(
                 query,
                 materials,
                 scenario,
-                VisSource::Delta,
-                vis_options.relative_coloring,
+                ColorSource::Delta,
+                color_options.relative_coloring,
             );
         }
     }
@@ -468,12 +457,12 @@ fn set_heart_voxel_colors_to_max(
     mut query: Query<&mut VoxelData>,
     materials: Res<MaterialAtlas>,
     scenario: &Scenario,
-    source: VisSource,
+    source: ColorSource,
     relative_coloring: bool,
 ) {
     debug!("Setting heart voxel colors to max.");
     let system_states = match source {
-        VisSource::Simulation => {
+        ColorSource::Simulation => {
             &scenario
                 .data
                 .as_ref()
@@ -482,7 +471,7 @@ fn set_heart_voxel_colors_to_max(
                 .system_states_spherical_max
                 .magnitude
         }
-        VisSource::Estimation => {
+        ColorSource::Estimation => {
             &scenario
                 .results
                 .as_ref()
@@ -491,7 +480,7 @@ fn set_heart_voxel_colors_to_max(
                 .system_states_spherical_max
                 .magnitude
         }
-        VisSource::Delta => {
+        ColorSource::Delta => {
             &scenario
                 .results
                 .as_ref()
@@ -532,12 +521,12 @@ fn set_heart_voxel_colors_to_activation_time(
     mut query: Query<&mut VoxelData>,
     materials: Res<MaterialAtlas>,
     scenario: &Scenario,
-    source: VisSource,
+    source: ColorSource,
     relative_coloring: bool,
 ) {
     debug!("Setting heart voxel colors to max.");
     let activation_time_ms = match source {
-        VisSource::Simulation => {
+        ColorSource::Simulation => {
             &scenario
                 .data
                 .as_ref()
@@ -545,7 +534,7 @@ fn set_heart_voxel_colors_to_activation_time(
                 .simulation
                 .activation_times
         }
-        VisSource::Estimation => {
+        ColorSource::Estimation => {
             &scenario
                 .results
                 .as_ref()
@@ -553,7 +542,7 @@ fn set_heart_voxel_colors_to_activation_time(
                 .estimations
                 .activation_times
         }
-        VisSource::Delta => {
+        ColorSource::Delta => {
             &scenario
                 .results
                 .as_ref()

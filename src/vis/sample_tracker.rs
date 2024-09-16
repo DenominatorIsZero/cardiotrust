@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::options::VisOptions;
+use super::options::ColorOptions;
 use crate::core::scenario::Scenario;
 
 /// Used for animation. Tracks current sample, max sample, and sample rate.
@@ -69,7 +69,7 @@ pub fn init_sample_tracker(sample_tracker: &mut SampleTracker, scenario: &Scenar
 pub fn update_sample_index(
     mut sample_tracker: ResMut<SampleTracker>,
     time: Res<Time>,
-    vis_options: Res<VisOptions>,
+    vis_options: Res<ColorOptions>,
 ) {
     trace!("Running system to update sample index.");
     if !sample_tracker.manual {
