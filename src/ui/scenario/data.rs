@@ -6,7 +6,10 @@ use super::{common::draw_ui_scenario_common, ROW_HEIGHT};
 use crate::{
     core::{
         config::{
-            model::{SensorArrayGeometry, SensorArrayMotion},
+            model::{
+                SensorArrayGeometry, SensorArrayMotion, DEFAULT_SENSOR_ORIGIN_CUBE,
+                DEFAULT_SENSOR_ORIGIN_CYLINDER,
+            },
             simulation::Simulation,
         },
         scenario::{Scenario, Status},
@@ -129,6 +132,7 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
             })
             .body(|mut body| {
                 // sensor_type
+                let last_value = simulation.model.common.sensor_array_geometry.clone();
                 let sensor_geometry = &mut simulation.model.common.sensor_array_geometry;
                 body.row(ROW_HEIGHT, |mut row| {
                     row.col(|ui| {
@@ -159,6 +163,18 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                         );
                     });
                 });// end row
+                if last_value != *sensor_geometry {
+                    match sensor_geometry {
+                        SensorArrayGeometry::Cube => {
+                            simulation.model.common.sensor_array_origin_mm =
+                                DEFAULT_SENSOR_ORIGIN_CUBE;
+                        }
+                        SensorArrayGeometry::Cylinder => {
+                            simulation.model.common.sensor_array_origin_mm =
+                                DEFAULT_SENSOR_ORIGIN_CYLINDER;
+                        }
+                    }
+                }
                 // sensor_motion
                 let sensor_motion = &mut simulation.model.common.sensor_array_motion;
                 body.row(ROW_HEIGHT, |mut row| {

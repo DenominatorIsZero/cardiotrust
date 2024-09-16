@@ -18,11 +18,18 @@ impl Default for Model {
     #[tracing::instrument(level = "debug")]
     fn default() -> Self {
         debug!("Creating default model");
-        Self {
+        let mut config = Self {
             common: Common::default(),
             handcrafted: Some(Handcrafted::default()),
             mri: None,
+        };
+
+        if config.handcrafted.is_some() {
+            config.common.heart_offset_mm = DEFAULT_HEART_OFFSET_HANDCRAFTED;
+        } else {
+            config.common.heart_offset_mm = DEFAULT_HEART_OFFSET_MRI;
         }
+        config
     }
 }
 
@@ -146,6 +153,11 @@ pub struct Common {
     pub current_factor_in_pathology: f32,
 }
 
+pub const DEFAULT_HEART_OFFSET_HANDCRAFTED: [f32; 3] = [25.0, -250.0, 150.0];
+pub const DEFAULT_HEART_OFFSET_MRI: [f32; 3] = [-130.0, -300.0, -30.0];
+pub const DEFAULT_SENSOR_ORIGIN_CUBE: [f32; 3] = [-50.0, -300.0, 260.0];
+pub const DEFAULT_SENSOR_ORIGIN_CYLINDER: [f32; 3] = [0.0, -200.0, 100.0];
+
 impl Default for Common {
     #[tracing::instrument(level = "debug")]
     fn default() -> Self {
@@ -158,7 +170,7 @@ impl Default for Common {
         propagation_velocities_m_per_s.insert(VoxelType::Ventricle, 1.1);
         propagation_velocities_m_per_s.insert(VoxelType::Pathological, 0.1);
 
-        Self {
+        let mut config = Self {
             control_function: ControlFunction::Ohara,
             pathological: false,
             sensor_array_geometry: SensorArrayGeometry::Cube,
@@ -180,6 +192,15 @@ impl Default for Common {
             apply_system_update: false,
             propagation_velocities_m_per_s,
             current_factor_in_pathology: 0.00,
+        };
+        match config.sensor_array_geometry {
+            SensorArrayGeometry::Cube => {
+                config.sensor_array_origin_mm = DEFAULT_SENSOR_ORIGIN_CUBE;
+            }
+            SensorArrayGeometry::Cylinder => {
+                config.sensor_array_origin_mm = DEFAULT_SENSOR_ORIGIN_CYLINDER;
+            }
         }
+        config
     }
 }

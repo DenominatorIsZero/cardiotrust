@@ -9,7 +9,9 @@ use egui::Align;
 use self::{algorithm::draw_ui_scenario_algoriothm, data::draw_ui_scenario_data};
 use crate::{
     core::{
-        config::model::{Handcrafted, Mri},
+        config::model::{
+            Handcrafted, Mri, DEFAULT_HEART_OFFSET_HANDCRAFTED, DEFAULT_HEART_OFFSET_MRI,
+        },
         scenario::{Scenario, Status},
     },
     ScenarioBundle, ScenarioList, SelectedSenario,
@@ -82,11 +84,13 @@ fn draw_ui_scenario_topbar(
                         scenario.config.algorithm.model.mri = None;
                         simulation.model.handcrafted = Some(Handcrafted::default());
                         simulation.model.mri = None;
+                        simulation.model.common.heart_offset_mm = DEFAULT_HEART_OFFSET_HANDCRAFTED;
                     } else {
                         scenario.config.algorithm.model.handcrafted = None;
                         scenario.config.algorithm.model.mri = Some(Mri::default());
                         simulation.model.handcrafted = None;
                         simulation.model.mri = Some(Mri::default());
+                        simulation.model.common.heart_offset_mm = DEFAULT_HEART_OFFSET_MRI;
                     }
                 }
             });
