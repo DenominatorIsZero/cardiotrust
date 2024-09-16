@@ -73,25 +73,35 @@ pub fn draw_ui_volumetric(
         }
         ui.label(egui::RichText::new("Visibility").underline());
         ui.group(|ui| {
-            let mut visible = visibility_options.heart_visible;
+            let mut visible = visibility_options.heart;
             ui.checkbox(&mut visible, "Heart");
-            if visible != visibility_options.heart_visible {
-                visibility_options.heart_visible = visible;
+            if visible != visibility_options.heart {
+                visibility_options.heart = visible;
             }
-            let mut visible = visibility_options.cutting_plane_visible;
+            let mut visible = visibility_options.cutting_plane;
             ui.checkbox(&mut visible, "Cutting plane");
-            if visible != visibility_options.cutting_plane_visible {
-                visibility_options.cutting_plane_visible = visible;
+            if visible != visibility_options.cutting_plane {
+                visibility_options.cutting_plane = visible;
             }
-            let mut visible = visibility_options.sensors_visible;
+            let mut visible = visibility_options.sensors;
             ui.checkbox(&mut visible, "Sensors");
-            if visible != visibility_options.sensors_visible {
-                visibility_options.sensors_visible = visible;
+            if visible != visibility_options.sensors {
+                visibility_options.sensors = visible;
             }
-            let mut visible = visibility_options.sensor_bracket_visible;
+            let mut visible = visibility_options.sensor_bracket;
             ui.checkbox(&mut visible, "Sensor bracket");
-            if visible != visibility_options.sensor_bracket_visible {
-                visibility_options.sensor_bracket_visible = visible;
+            if visible != visibility_options.sensor_bracket {
+                visibility_options.sensor_bracket = visible;
+            }
+            let mut visible = visibility_options.torso;
+            ui.checkbox(&mut visible, "Torso");
+            if visible != visibility_options.torso {
+                visibility_options.torso = visible;
+            }
+            let mut visible = visibility_options.room;
+            ui.checkbox(&mut visible, "Room");
+            if visible != visibility_options.room {
+                visibility_options.room = visible;
             }
         });
         let mut enabled = cutting_plane.enabled;

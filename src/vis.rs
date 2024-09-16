@@ -1,4 +1,3 @@
-pub mod body;
 pub mod cutting_plane;
 pub mod heart;
 pub mod options;
@@ -6,6 +5,7 @@ pub mod plotting;
 pub mod room;
 pub mod sample_tracker;
 pub mod sensors;
+pub mod torso;
 
 use bevy::color::palettes::css::{BLUE, GREEN, RED};
 use bevy::prelude::*;
@@ -15,20 +15,21 @@ use bevy_obj::ObjPlugin;
 use cutting_plane::update_cutting_plane_visibility;
 use heart::VoxelData;
 use options::VisibilityOptions;
-use room::spawn_room;
+use room::{spawn_room, update_room_visibility};
 use sensors::{
     update_sensor_bracket_visibility, update_sensor_visibility, BacketSettings, SensorBracket,
     SensorData,
 };
+use torso::update_torso_visibility;
 
 use self::{
-    body::spawn_torso,
     heart::{
         init_voxels, on_color_mode_changed, update_heart_voxel_colors, MaterialAtlas, MeshAtlas,
     },
     options::ColorOptions,
     sample_tracker::{init_sample_tracker, update_sample_index, SampleTracker},
     sensors::spawn_sensors,
+    torso::spawn_torso,
 };
 use crate::{
     core::scenario::Scenario,
@@ -80,6 +81,8 @@ impl Plugin for VisPlugin {
                     update_sensor_bracket_position,
                     update_sensor_bracket_visibility,
                     update_cutting_plane_visibility,
+                    update_torso_visibility,
+                    update_room_visibility,
                     update_sample_index,
                     on_color_mode_changed,
                     handle_setup_heart_and_sensors,

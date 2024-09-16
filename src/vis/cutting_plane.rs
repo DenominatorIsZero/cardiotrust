@@ -80,7 +80,7 @@ pub(crate) fn update_cutting_plane_visibility(
 ) {
     if options.is_changed() {
         for mut visibility in &mut cutting_plane {
-            if options.cutting_plane_visible {
+            if options.cutting_plane {
                 *visibility = Visibility::Visible;
             } else {
                 *visibility = Visibility::Hidden;

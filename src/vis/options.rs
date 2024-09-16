@@ -54,10 +54,12 @@ pub enum ColorSource {
 #[allow(clippy::module_name_repetitions, clippy::struct_excessive_bools)]
 #[derive(Resource, Debug)]
 pub struct VisibilityOptions {
-    pub sensors_visible: bool,
-    pub sensor_bracket_visible: bool,
-    pub heart_visible: bool,
-    pub cutting_plane_visible: bool,
+    pub sensors: bool,
+    pub sensor_bracket: bool,
+    pub heart: bool,
+    pub cutting_plane: bool,
+    pub torso: bool,
+    pub room: bool,
 }
 
 impl Default for VisibilityOptions {
@@ -65,10 +67,12 @@ impl Default for VisibilityOptions {
     fn default() -> Self {
         debug!("Initializing default visibility options.");
         Self {
-            sensors_visible: true,
-            sensor_bracket_visible: false,
-            heart_visible: true,
-            cutting_plane_visible: false,
+            sensors: true,
+            sensor_bracket: false,
+            heart: true,
+            cutting_plane: false,
+            torso: true,
+            room: true,
         }
     }
 }

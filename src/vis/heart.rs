@@ -186,7 +186,7 @@ pub(crate) fn update_heart_voxel_visibility(
 ) {
     if cutting_plane.is_changed() || options.is_changed() {
         for (mut visibility, data) in &mut voxels {
-            if options.heart_visible && voxel_is_visible(data.posision_mm, &cutting_plane) {
+            if options.heart && voxel_is_visible(data.posision_mm, &cutting_plane) {
                 *visibility = Visibility::Visible;
             } else {
                 *visibility = Visibility::Hidden;

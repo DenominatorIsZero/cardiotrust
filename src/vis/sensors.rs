@@ -229,7 +229,7 @@ pub(crate) fn update_sensor_bracket_visibility(
 ) {
     if options.is_changed() {
         for mut visibility in &mut sensor_brackets {
-            if options.sensor_bracket_visible {
+            if options.sensor_bracket {
                 *visibility = Visibility::Visible;
             } else {
                 *visibility = Visibility::Hidden;
@@ -245,7 +245,7 @@ pub(crate) fn update_sensor_visibility(
 ) {
     if options.is_changed() {
         for mut visibility in &mut sensors {
-            if options.sensors_visible {
+            if options.sensors {
                 *visibility = Visibility::Visible;
             } else {
                 *visibility = Visibility::Hidden;
