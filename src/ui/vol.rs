@@ -71,7 +71,29 @@ pub fn draw_ui_volumetric(
                 };
             }
         }
-        ui.label("Volumetric");
+        ui.label(egui::RichText::new("Visibility").underline());
+        ui.group(|ui| {
+            let mut visible = heart_settings.visible;
+            ui.checkbox(&mut visible, "Show heart");
+            if visible != heart_settings.visible {
+                heart_settings.visible = visible;
+            }
+            let mut visible = cutting_plane.visible;
+            ui.checkbox(&mut visible, "Show cutting plane");
+            if visible != cutting_plane.visible {
+                cutting_plane.visible = visible;
+            }
+            let mut visible = sensor_bracket_settings.bracket_visible;
+            ui.checkbox(&mut visible, "Show sensor bracket");
+            if visible != sensor_bracket_settings.bracket_visible {
+                sensor_bracket_settings.bracket_visible = visible;
+            }
+        });
+        let mut enabled = cutting_plane.enabled;
+        ui.checkbox(&mut enabled, "Enable cutting plane");
+        if enabled != cutting_plane.enabled {
+            cutting_plane.enabled = enabled;
+        }
         if ui
             .add_enabled(scenario.is_some(), egui::Button::new("Init Voxels"))
             .clicked()
@@ -203,21 +225,6 @@ pub fn draw_ui_volumetric(
                 sample_tracker.selected_beat = motion_step;
             }
         }
-        let mut visible = heart_settings.visible;
-        ui.checkbox(&mut visible, "Show heart");
-        if visible != heart_settings.visible {
-            heart_settings.visible = visible;
-        }
-        let mut visible = cutting_plane.visible;
-        ui.checkbox(&mut visible, "Show cutting plane");
-        if visible != cutting_plane.visible {
-            cutting_plane.visible = visible;
-        }
-        let mut enabled = cutting_plane.enabled;
-        ui.checkbox(&mut enabled, "Enable cutting plane");
-        if enabled != cutting_plane.enabled {
-            cutting_plane.enabled = enabled;
-        }
         ui.label("Cutting plane origin (x, y, z):");
 
         let mut position = cutting_plane.position;
@@ -277,11 +284,6 @@ pub fn draw_ui_volumetric(
         ui.add(egui::DragValue::new(&mut radius).speed(1));
         if (radius - sensor_bracket_settings.bracket_radius).abs() > 10.0 * f32::EPSILON {
             sensor_bracket_settings.bracket_radius = radius;
-        }
-        let mut visible = sensor_bracket_settings.bracket_visible;
-        ui.checkbox(&mut visible, "Show sensor bracket");
-        if visible != sensor_bracket_settings.bracket_visible {
-            sensor_bracket_settings.bracket_visible = visible;
         }
     });
     if let Some(scenario) = scenario {
