@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
 use egui::ProgressBar;
 use egui_extras::{Column, TableBuilder};
@@ -19,15 +20,25 @@ use crate::{
 /// from the `ScenarioList` resource to populate the rows. Inserts a new row
 /// when the New button is clicked.
 #[allow(clippy::module_name_repetitions, clippy::too_many_lines)]
-#[tracing::instrument(skip(commands, contexts), level = "trace")]
+#[tracing::instrument(skip_all, level = "trace")]
 pub fn draw_ui_explorer(
     mut commands: Commands,
     mut contexts: EguiContexts,
     mut scenario_list: ResMut<ScenarioList>,
     mut selected_scenario: ResMut<SelectedSenario>,
+    mut cameras: Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Drawing UI for explorer tab");
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
+        for mut camera in &mut cameras {
+            if ui.ui_contains_pointer() {
+                camera.enabled_motion = EnabledMotion {
+                    pan: false,
+                    orbit: false,
+                    zoom: false,
+                };
+            }
+        }
         TableBuilder::new(ui)
             .column(Column::auto().resizable(true))
             .column(Column::initial(150.0).resizable(true))

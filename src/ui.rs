@@ -5,6 +5,7 @@ mod topbar;
 mod vol;
 
 use bevy::prelude::*;
+use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
 use bevy_egui::EguiPlugin;
 
 use self::{
@@ -30,7 +31,8 @@ impl Plugin for UiPlugin {
             .init_resource::<SelectedResultImage>()
             .init_resource::<PlaybackSpeed>()
             .add_plugins(EguiPlugin)
-            .add_systems(Update, draw_ui_topbar)
+            .add_systems(Update, enable_camera_motion)
+            .add_systems(Update, draw_ui_topbar.after(enable_camera_motion))
             .add_systems(
                 Update,
                 draw_ui_explorer
@@ -98,5 +100,16 @@ impl Plugin for ClientUiPlugin {
             .init_resource::<PlaybackSpeed>()
             .add_plugins(EguiPlugin)
             .add_systems(Update, draw_ui_volumetric);
+    }
+}
+
+#[tracing::instrument(skip_all, level = "trace")]
+pub fn enable_camera_motion(mut cameras: Query<&mut EditorCam, With<Camera>>) {
+    for mut camera in &mut cameras {
+        camera.enabled_motion = EnabledMotion {
+            pan: true,
+            orbit: true,
+            zoom: true,
+        };
     }
 }

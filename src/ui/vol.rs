@@ -36,19 +36,12 @@ pub fn draw_ui_volumetric(
     mut visibility_options: ResMut<VisibilityOptions>,
     mut cutting_plane: ResMut<CuttingPlaneSettings>,
     mut sensor_bracket_settings: ResMut<BacketSettings>,
-    mut cameras: Query<(&mut Transform, &mut EditorCam), With<Camera>>,
+    mut cameras: Query<&mut EditorCam, With<Camera>>,
     mut ev_setup: EventWriter<SetupHeartAndSensors>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
 ) {
     trace!("Running system to draw volumetric UI.");
-    for (_, mut camera) in &mut cameras {
-        camera.enabled_motion = EnabledMotion {
-            pan: true,
-            orbit: true,
-            zoom: true,
-        };
-    }
     let scenario = if let Some(index) = selected_scenario.index {
         Some(
             &scenario_list
@@ -62,15 +55,6 @@ pub fn draw_ui_volumetric(
         None
     };
     egui::SidePanel::left("volumetric_left_panel").show(contexts.ctx_mut(), |ui| {
-        if ui.ui_contains_pointer() {
-            for (_, mut camera) in &mut cameras {
-                camera.enabled_motion = EnabledMotion {
-                    pan: false,
-                    orbit: false,
-                    zoom: false,
-                };
-            }
-        }
         ui.label(egui::RichText::new("Visibility").underline());
         ui.group(|ui| {
             let mut visible = visibility_options.heart;
@@ -272,16 +256,6 @@ pub fn draw_ui_volumetric(
             cutting_plane.opacity = opacity;
         }
 
-        if ui.ui_contains_pointer() {
-            for (_, mut camera) in &mut cameras {
-                camera.enabled_motion = EnabledMotion {
-                    pan: false,
-                    orbit: false,
-                    zoom: false,
-                };
-            }
-        }
-
         ui.label("Sensor positon mm (x, y, z):");
         let mut position = sensor_bracket_settings.offset;
         ui.horizontal(|ui| {
@@ -300,11 +274,29 @@ pub fn draw_ui_volumetric(
         if (radius - sensor_bracket_settings.radius).abs() > 10.0 * f32::EPSILON {
             sensor_bracket_settings.radius = radius;
         }
+        for mut camera in &mut cameras {
+            if ui.ui_contains_pointer() {
+                camera.enabled_motion = EnabledMotion {
+                    pan: false,
+                    orbit: false,
+                    zoom: false,
+                };
+            }
+        }
     });
     if let Some(scenario) = scenario {
         egui::TopBottomPanel::bottom("Volumetric bottom panel")
             .exact_height(400.0)
             .show(contexts.ctx_mut(), |ui| {
+                for mut camera in &mut cameras {
+                    if ui.ui_contains_pointer() {
+                        camera.enabled_motion = EnabledMotion {
+                            pan: false,
+                            orbit: false,
+                            zoom: false,
+                        };
+                    }
+                }
                 let samplerate_hz = f64::from(scenario.config.simulation.sample_rate_hz);
                 let signal: PlotPoints = (0..sample_tracker.max_sample)
                     .map(|i| {
@@ -337,16 +329,6 @@ pub fn draw_ui_volumetric(
                         plot_ui.line(sin_line);
                         plot_ui.vline(v_line);
                     });
-
-                if ui.ui_contains_pointer() {
-                    for (_, mut camera) in &mut cameras {
-                        camera.enabled_motion = EnabledMotion {
-                            pan: false,
-                            orbit: false,
-                            zoom: false,
-                        };
-                    }
-                }
             });
     }
 }

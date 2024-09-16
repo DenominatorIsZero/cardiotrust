@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
 use egui::Separator;
 
@@ -13,7 +14,7 @@ use crate::{
 /// and start/stop the scheduler. Also contains a slider to control the number
 /// of scheduler jobs.
 #[allow(clippy::module_name_repetitions, clippy::needless_pass_by_value)]
-#[tracing::instrument(skip(commands, contexts), level = "trace")]
+#[tracing::instrument(skip_all, level = "trace")]
 pub fn draw_ui_topbar(
     mut commands: Commands,
     mut contexts: EguiContexts,
@@ -22,9 +23,19 @@ pub fn draw_ui_topbar(
     mut scenario_list: ResMut<ScenarioList>,
     selected_scenario: Res<SelectedSenario>,
     mut number_of_jobs: ResMut<NumberOfJobs>,
+    mut cameras: Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Running system to draw topbar.");
     egui::TopBottomPanel::top("menu_panel").show(contexts.ctx_mut(), |ui| {
+        for mut camera in &mut cameras {
+            if ui.ui_contains_pointer() {
+                camera.enabled_motion = EnabledMotion {
+                    pan: false,
+                    orbit: false,
+                    zoom: false,
+                };
+            }
+        }
         ui.horizontal(|ui| {
             if ui
                 .add_enabled(

@@ -3,6 +3,7 @@ pub mod common;
 mod data;
 
 use bevy::prelude::*;
+use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
 use egui::Align;
 
@@ -28,20 +29,26 @@ const ROW_HEIGHT: f32 = 30.0;
 /// - The top bar with scenario list and controls
 /// - The central panel showing details of the selected scenario
 #[allow(clippy::module_name_repetitions)]
-#[tracing::instrument(skip(contexts), level = "trace")]
+#[tracing::instrument(skip_all, level = "trace")]
 pub fn draw_ui_scenario(
     mut contexts: EguiContexts,
     mut scenarios: ResMut<ScenarioList>,
     mut selected_scenario: ResMut<SelectedSenario>,
+    mut cameras: Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Running system to draw scenario UI.");
     let context = contexts.ctx_mut();
 
-    draw_ui_scenario_topbar(context, &mut scenarios, &mut selected_scenario);
+    draw_ui_scenario_topbar(
+        context,
+        &mut scenarios,
+        &mut selected_scenario,
+        &mut cameras,
+    );
 
     let index = selected_scenario.index.unwrap();
     let scenario = &mut scenarios.entries[index].scenario;
-    draw_ui_scenario_central_panel(context, scenario);
+    draw_ui_scenario_central_panel(context, scenario, &mut cameras);
 }
 
 /// Draws the top bar UI for the scenario view.
@@ -56,9 +63,19 @@ fn draw_ui_scenario_topbar(
     context: &egui::Context,
     scenarios: &mut ResMut<ScenarioList>,
     selected_scenario: &mut ResMut<SelectedSenario>,
+    cameras: &mut Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Running system to draw scenario topbar.");
     egui::TopBottomPanel::top("scenario_status").show(context, |ui| {
+        for mut camera in cameras {
+            if ui.ui_contains_pointer() {
+                camera.enabled_motion = EnabledMotion {
+                    pan: false,
+                    orbit: false,
+                    zoom: false,
+                };
+            }
+        }
         ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
             let index = selected_scenario.index.unwrap();
             let scenario = &mut scenarios.entries[index].scenario;
@@ -145,9 +162,22 @@ fn draw_ui_scenario_topbar(
 /// The left column calls `draw_ui_scenario_data` to show scenario data.
 /// The right column calls `draw_ui_scenario_algorithm` to show algorithm settings.
 #[tracing::instrument(skip(context), level = "trace")]
-fn draw_ui_scenario_central_panel(context: &egui::Context, scenario: &mut Scenario) {
+fn draw_ui_scenario_central_panel(
+    context: &egui::Context,
+    scenario: &mut Scenario,
+    cameras: &mut Query<&mut EditorCam, With<Camera>>,
+) {
     trace!("Running system to draw scenario central panel");
     egui::CentralPanel::default().show(context, |ui| {
+        for mut camera in cameras {
+            if ui.ui_contains_pointer() {
+                camera.enabled_motion = EnabledMotion {
+                    pan: false,
+                    orbit: false,
+                    zoom: false,
+                };
+            }
+        }
         ui.columns(2, |columns| {
             draw_ui_scenario_data(&mut columns[0], scenario);
             draw_ui_scenario_algoriothm(&mut columns[1], scenario);

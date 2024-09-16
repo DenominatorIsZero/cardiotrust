@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
 use egui::{Slider, Spinner};
 use ndarray::s;
@@ -159,7 +160,7 @@ pub fn reset_result_images(
 /// and loading/displaying the image. Handles async image loading in the background.
 /// Resets images when switching scenarios.
 #[allow(clippy::module_name_repetitions, clippy::needless_pass_by_value)]
-#[tracing::instrument(skip(contexts), level = "trace")]
+#[tracing::instrument(skip_all, level = "trace")]
 pub fn draw_ui_results(
     mut contexts: EguiContexts,
     mut result_images: ResMut<ResultImages>,
@@ -167,10 +168,20 @@ pub fn draw_ui_results(
     scenario_list: Res<ScenarioList>,
     selected_scenario: Res<SelectedSenario>,
     mut playback_speed: ResMut<PlaybackSpeed>,
+    mut cameras: Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Runing system to draw results UI");
     egui_extras::install_image_loaders(contexts.ctx_mut());
     egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
+        for mut camera in &mut cameras {
+            if ui.ui_contains_pointer() {
+                camera.enabled_motion = EnabledMotion {
+                    pan: false,
+                    orbit: false,
+                    zoom: false,
+                };
+            }
+        }
         ui.label("");
         ui.horizontal(|ui| {
             egui::ComboBox::new("cb_result_image", "")
