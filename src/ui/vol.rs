@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use bevy::prelude::*;
 use bevy_editor_cam::controller::component::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
@@ -8,10 +6,9 @@ use egui_plot::{Line, Plot, PlotPoints, VLine};
 use crate::{
     vis::{
         cutting_plane::CuttingPlaneSettings,
-        heart::{MaterialAtlas, MeshAtlas, VoxelData},
         options::{ColorMode, ColorOptions, VisibilityOptions},
         sample_tracker::SampleTracker,
-        sensors::{BacketSettings, SensorBracket, SensorData},
+        sensors::BacketSettings,
         SetupHeartAndSensors,
     },
     ScenarioList, SelectedSenario,
