@@ -73,6 +73,11 @@ fn loss_decreases() {
     );
 
     (0..algorithm_config.epochs - 1).for_each(|i| {
+        println!(
+            "i: {}, i+1: {}",
+            results.metrics.loss_batch[i],
+            results.metrics.loss_batch[i + 1]
+        );
         assert!(results.metrics.loss_batch[i] > results.metrics.loss_batch[i + 1]);
     });
 }

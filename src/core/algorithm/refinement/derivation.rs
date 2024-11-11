@@ -113,7 +113,6 @@ impl Derivatives {
         self.coefs.fill(0.0);
         self.coefs_iir.fill(0.0);
         self.coefs_fir.fill(0.0);
-        self.mapped_residuals.fill(0.0);
         self.maximum_regularization.fill(0.0);
         self.maximum_regularization_sum = 0.0;
     }

@@ -86,15 +86,7 @@ impl Estimations {
     #[tracing::instrument(level = "debug")]
     pub fn reset(&mut self) {
         debug!("Resetting estimations");
-        self.ap_outputs.fill(0.0);
         self.system_states.fill(0.0);
-        self.state_covariance_pred.fill(0.0);
-        self.state_covariance_est.fill(0.0);
-        self.residuals.fill(0.0);
-        self.post_update_residuals.fill(0.0);
-        self.system_states_delta.fill(0.0);
-        self.gains_delta.fill(0.0);
-        self.delays_delta.fill(0.0);
     }
 
     /// Saves the system states and measurements to .npy files at the given path.
