@@ -336,6 +336,29 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     let mut delays_owned: Vec<Array1<f32>> = Vec::new();
     let mut delays_error_owned: Vec<Array1<f32>> = Vec::new();
     let mut labels_owned: Vec<String> = Vec::new();
+    let mut gt_states = Vec::new();
+    let mut gt_measurements = Vec::new();
+
+    let initial_states = scenarios
+        .first()
+        .as_ref()
+        .unwrap()
+        .results
+        .as_ref()
+        .unwrap()
+        .estimations
+        .system_states
+        .clone();
+    let initial_measurements = scenarios
+        .first()
+        .as_ref()
+        .unwrap()
+        .results
+        .as_ref()
+        .unwrap()
+        .estimations
+        .measurements
+        .clone();
 
     println!("{}", scenarios.len());
     for scenario in scenarios {
@@ -352,6 +375,25 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         let mut delays = Array1::<f32>::zeros(num_snapshots as usize);
         let mut delays_error = Array1::<f32>::zeros(num_snapshots as usize);
         let mut ap_param_error = Array1::<f32>::zeros(num_snapshots as usize);
+
+        gt_states.push(
+            scenario
+                .data
+                .as_ref()
+                .unwrap()
+                .simulation
+                .system_states
+                .clone(),
+        );
+        gt_measurements.push(
+            scenario
+                .data
+                .as_ref()
+                .unwrap()
+                .simulation
+                .measurements
+                .clone(),
+        );
 
         let target_param = scenario
             .data
@@ -434,6 +476,10 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         x_epochs.write_npy(writer).unwrap();
         let writer = BufWriter::new(File::create(path.join("x_snapshots.npy")).unwrap());
         x_snapshots.write_npy(writer).unwrap();
+        let writer = BufWriter::new(File::create(path.join("initial_states.npy")).unwrap());
+        initial_states.write_npy(writer).unwrap();
+        let writer = BufWriter::new(File::create(path.join("initial_measurements.npy")).unwrap());
+        initial_measurements.write_npy(writer).unwrap();
         for (n, label) in labels.iter().enumerate() {
             let writer =
                 BufWriter::new(File::create(path.join(format!("loss_{label}.npy"))).unwrap());
@@ -452,6 +498,13 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
                 File::create(path.join(format!("delay_error_{label}.npy"))).unwrap(),
             );
             delays_error[n].write_npy(writer).unwrap();
+            let writer =
+                BufWriter::new(File::create(path.join(format!("gt_states_{label}.npy"))).unwrap());
+            gt_states[n].write_npy(writer).unwrap();
+            let writer = BufWriter::new(
+                File::create(path.join(format!("gt_measurements_{label}.npy"))).unwrap(),
+            );
+            gt_measurements[n].write_npy(writer).unwrap();
         }
     }
 
