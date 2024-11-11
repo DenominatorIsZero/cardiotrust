@@ -55,6 +55,149 @@ pub fn draw_ui_volumetric(
         None
     };
     egui::SidePanel::left("volumetric_left_panel").show(contexts.ctx_mut(), |ui| {
+        for mut camera in &mut cameras {
+            if ui.ui_contains_pointer() {
+                camera.enabled_motion = EnabledMotion {
+                    pan: false,
+                    orbit: false,
+                    zoom: false,
+                };
+            }
+        }
+        if ui
+            .add_enabled(scenario.is_some(), egui::Button::new("Init Voxels"))
+            .clicked()
+        {
+            let scenario = (**scenario.as_ref().unwrap()).clone();
+            ev_setup.send(SetupHeartAndSensors(scenario));
+        };
+        ui.label(egui::RichText::new("Voxel coloring").underline());
+        ui.group(|ui| {
+            let mut vis_mode = color_options.mode.clone();
+            egui::ComboBox::new("cb_vis_mode", "")
+                .selected_text(format!("{vis_mode:?}"))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(
+                        &mut vis_mode,
+                        ColorMode::EstimationVoxelTypes,
+                        "Voxel types (estimation)",
+                    );
+                    ui.selectable_value(
+                        &mut vis_mode,
+                        ColorMode::SimulationVoxelTypes,
+                        "Voxel types (simulation)",
+                    );
+                    ui.selectable_value(
+                        &mut vis_mode,
+                        ColorMode::EstimatedCdeNorm,
+                        "Cde norm (estimation)",
+                    );
+                    ui.selectable_value(
+                        &mut vis_mode,
+                        ColorMode::SimulatedCdeNorm,
+                        "Cde norm (simulation)",
+                    );
+                    ui.selectable_value(
+                        &mut vis_mode,
+                        ColorMode::EstimatedCdeMax,
+                        "Cde max (estimation)",
+                    );
+                    ui.selectable_value(
+                        &mut vis_mode,
+                        ColorMode::SimulatedCdeMax,
+                        "Cde max (simulation)",
+                    );
+                    ui.selectable_value(&mut vis_mode, ColorMode::DeltaCdeMax, "Cde max (delta)");
+                    ui.selectable_value(
+                        &mut vis_mode,
+                        ColorMode::EstimatedActivationTime,
+                        "Activation time (estimation)",
+                    );
+                    ui.selectable_value(
+                        &mut vis_mode,
+                        ColorMode::SimulatedActivationTime,
+                        "Activation time (simulation)",
+                    );
+                    ui.selectable_value(
+                        &mut vis_mode,
+                        ColorMode::DeltaActivationTime,
+                        "Activation time (delta)",
+                    );
+                });
+            if vis_mode != color_options.mode {
+                color_options.mode = vis_mode;
+            }
+            let mut relative_coloring = color_options.relative_coloring;
+            ui.checkbox(&mut relative_coloring, "Relative coloring");
+            if relative_coloring != color_options.relative_coloring {
+                color_options.relative_coloring = relative_coloring;
+            }
+            ui.label("Playback speed:");
+            let mut playbackspeed = color_options.playbackspeed;
+            ui.add(egui::Slider::new(&mut playbackspeed, 0.01..=1.0).logarithmic(true));
+            if (playbackspeed - color_options.playbackspeed).abs() > f32::EPSILON {
+                color_options.playbackspeed = playbackspeed;
+            }
+            let mut manual = sample_tracker.manual;
+            ui.checkbox(&mut manual, "Manual");
+            if manual != sample_tracker.manual {
+                sample_tracker.manual = manual;
+            }
+            ui.label("Sample:");
+            let mut current_sample = sample_tracker.current_sample;
+            ui.add_enabled(
+                sample_tracker.manual,
+                egui::Slider::new(&mut current_sample, 0..=sample_tracker.max_sample)
+                    .drag_value_speed(1.0),
+            );
+            if current_sample != sample_tracker.current_sample {
+                sample_tracker.current_sample = current_sample;
+            }
+            if scenario.is_some() {
+                ui.label("Motion Step:");
+                let mut motion_step = sample_tracker.selected_beat;
+                #[allow(clippy::range_minus_one)]
+                ui.add(egui::Slider::new(
+                    &mut motion_step,
+                    0..=scenario
+                        .as_ref()
+                        .expect("Scenario to be some")
+                        .results
+                        .as_ref()
+                        .expect("Results to be some.")
+                        .model
+                        .as_ref()
+                        .expect("Model to be some.")
+                        .spatial_description
+                        .sensors
+                        .array_offsets_mm
+                        .shape()[0]
+                        - 1,
+                ));
+                if motion_step != sample_tracker.selected_beat {
+                    sample_tracker.selected_beat = motion_step;
+                }
+                ui.label("Sensor:");
+                let mut selected_sensor = sample_tracker.selected_sensor; // TODO: This needs to live in something like plot options.
+                #[allow(clippy::range_minus_one)]
+                ui.add(egui::Slider::new(
+                    &mut selected_sensor,
+                    0..=scenario
+                        .as_ref()
+                        .expect("Scenario to be some")
+                        .results
+                        .as_ref()
+                        .expect("Results to be some.")
+                        .estimations
+                        .measurements
+                        .num_sensors()
+                        - 1,
+                ));
+                if selected_sensor != sample_tracker.selected_sensor {
+                    sample_tracker.selected_sensor = selected_sensor;
+                }
+            }
+        });
         ui.label(egui::RichText::new("Visibility").underline());
         ui.group(|ui| {
             let mut visible = visibility_options.heart;
@@ -88,201 +231,64 @@ pub fn draw_ui_volumetric(
                 visibility_options.room = visible;
             }
         });
-        let mut enabled = cutting_plane.enabled;
-        ui.checkbox(&mut enabled, "Enable cutting plane");
-        if enabled != cutting_plane.enabled {
-            cutting_plane.enabled = enabled;
-        }
-        if ui
-            .add_enabled(scenario.is_some(), egui::Button::new("Init Voxels"))
-            .clicked()
-        {
-            let scenario = (**scenario.as_ref().unwrap()).clone();
-            ev_setup.send(SetupHeartAndSensors(scenario));
-        };
-        let mut vis_mode = color_options.mode.clone();
-        egui::ComboBox::new("cb_vis_mode", "")
-            .selected_text(format!("{vis_mode:?}"))
-            .show_ui(ui, |ui| {
-                ui.selectable_value(
-                    &mut vis_mode,
-                    ColorMode::EstimationVoxelTypes,
-                    "Voxel types (estimation)",
-                );
-                ui.selectable_value(
-                    &mut vis_mode,
-                    ColorMode::SimulationVoxelTypes,
-                    "Voxel types (simulation)",
-                );
-                ui.selectable_value(
-                    &mut vis_mode,
-                    ColorMode::EstimatedCdeNorm,
-                    "Cde norm (estimation)",
-                );
-                ui.selectable_value(
-                    &mut vis_mode,
-                    ColorMode::SimulatedCdeNorm,
-                    "Cde norm (simulation)",
-                );
-                ui.selectable_value(
-                    &mut vis_mode,
-                    ColorMode::EstimatedCdeMax,
-                    "Cde max (estimation)",
-                );
-                ui.selectable_value(
-                    &mut vis_mode,
-                    ColorMode::SimulatedCdeMax,
-                    "Cde max (simulation)",
-                );
-                ui.selectable_value(&mut vis_mode, ColorMode::DeltaCdeMax, "Cde max (delta)");
-                ui.selectable_value(
-                    &mut vis_mode,
-                    ColorMode::EstimatedActivationTime,
-                    "Activation time (estimation)",
-                );
-                ui.selectable_value(
-                    &mut vis_mode,
-                    ColorMode::SimulatedActivationTime,
-                    "Activation time (simulation)",
-                );
-                ui.selectable_value(
-                    &mut vis_mode,
-                    ColorMode::DeltaActivationTime,
-                    "Activation time (delta)",
-                );
+        ui.label(egui::RichText::new("Cutting Plane").underline());
+        ui.group(|ui| {
+            let mut enabled = cutting_plane.enabled;
+            ui.checkbox(&mut enabled, "Enabled");
+            if enabled != cutting_plane.enabled {
+                cutting_plane.enabled = enabled;
+            }
+            ui.label("Origin (x, y, z):");
+
+            let mut position = cutting_plane.position;
+            ui.horizontal(|ui| {
+                ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
+                ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
+                ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
             });
-        if vis_mode != color_options.mode {
-            color_options.mode = vis_mode;
-        }
-        let mut relative_coloring = color_options.relative_coloring;
-        ui.checkbox(&mut relative_coloring, "Relative coloring");
-        if relative_coloring != color_options.relative_coloring {
-            color_options.relative_coloring = relative_coloring;
-        }
-        ui.label("Playback speed:");
-        let mut playbackspeed = color_options.playbackspeed;
-        ui.add(egui::Slider::new(&mut playbackspeed, 0.01..=1.0).logarithmic(true));
-        if (playbackspeed - color_options.playbackspeed).abs() > f32::EPSILON {
-            color_options.playbackspeed = playbackspeed;
-        }
-        let mut manual = sample_tracker.manual;
-        ui.checkbox(&mut manual, "Manual");
-        if manual != sample_tracker.manual {
-            sample_tracker.manual = manual;
-        }
-        ui.label("Sample:");
-        let mut current_sample = sample_tracker.current_sample;
-        ui.add_enabled(
-            sample_tracker.manual,
-            egui::Slider::new(&mut current_sample, 0..=sample_tracker.max_sample)
-                .drag_value_speed(1.0),
-        );
-        if current_sample != sample_tracker.current_sample {
-            sample_tracker.current_sample = current_sample;
-        }
-        if scenario.is_some() {
-            ui.label("Sensor:");
-            let mut selected_sensor = sample_tracker.selected_sensor; // TODO: This needs to live in something like plot options.
-            #[allow(clippy::range_minus_one)]
-            ui.add(egui::Slider::new(
-                &mut selected_sensor,
-                0..=scenario
-                    .as_ref()
-                    .expect("Scenario to be some")
-                    .results
-                    .as_ref()
-                    .expect("Results to be some.")
-                    .estimations
-                    .measurements
-                    .num_sensors()
-                    - 1,
-            ));
-            if selected_sensor != sample_tracker.selected_sensor {
-                sample_tracker.selected_sensor = selected_sensor;
+            if position != cutting_plane.position {
+                cutting_plane.position = position;
             }
-            ui.label("Motion Step:");
-            let mut motion_step = sample_tracker.selected_beat;
-            #[allow(clippy::range_minus_one)]
-            ui.add(egui::Slider::new(
-                &mut motion_step,
-                0..=scenario
-                    .as_ref()
-                    .expect("Scenario to be some")
-                    .results
-                    .as_ref()
-                    .expect("Results to be some.")
-                    .model
-                    .as_ref()
-                    .expect("Model to be some.")
-                    .spatial_description
-                    .sensors
-                    .array_offsets_mm
-                    .shape()[0]
-                    - 1,
-            ));
-            if motion_step != sample_tracker.selected_beat {
-                sample_tracker.selected_beat = motion_step;
+
+            ui.label("Normal (x, y, z):");
+
+            let mut normal = cutting_plane.normal;
+            ui.horizontal(|ui| {
+                ui.add(egui::DragValue::new(&mut normal.x).speed(0.01));
+                ui.add(egui::DragValue::new(&mut normal.y).speed(0.01));
+                ui.add(egui::DragValue::new(&mut normal.z).speed(0.01));
+            });
+            if normal != cutting_plane.normal {
+                cutting_plane.normal = normal.normalize();
             }
-        }
-        ui.label("Cutting plane origin (x, y, z):");
 
-        let mut position = cutting_plane.position;
-        ui.horizontal(|ui| {
-            ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
-            ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
-            ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
-        });
-        if position != cutting_plane.position {
-            cutting_plane.position = position;
-        }
-
-        ui.label("Cutting plane normal (x, y, z):");
-
-        let mut normal = cutting_plane.normal;
-        ui.horizontal(|ui| {
-            ui.add(egui::DragValue::new(&mut normal.x).speed(0.01));
-            ui.add(egui::DragValue::new(&mut normal.y).speed(0.01));
-            ui.add(egui::DragValue::new(&mut normal.z).speed(0.01));
-        });
-        if normal != cutting_plane.normal {
-            cutting_plane.normal = normal.normalize();
-        }
-
-        ui.label("Oppacity:");
-        let mut opacity = cutting_plane.opacity;
-        ui.add(egui::DragValue::new(&mut opacity).speed(0.01));
-        #[allow(clippy::float_cmp)]
-        if opacity != cutting_plane.opacity {
-            cutting_plane.opacity = opacity;
-        }
-
-        ui.label("Sensor positon mm (x, y, z):");
-        let mut position = sensor_bracket_settings.offset;
-        ui.horizontal(|ui| {
-            ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
-            ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
-            ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
-        });
-        if position != sensor_bracket_settings.offset {
-            sensor_bracket_settings.offset = position;
-        }
-
-        ui.label("Sensor radius mm:");
-
-        let mut radius = sensor_bracket_settings.radius;
-        ui.add(egui::DragValue::new(&mut radius).speed(1));
-        if (radius - sensor_bracket_settings.radius).abs() > 10.0 * f32::EPSILON {
-            sensor_bracket_settings.radius = radius;
-        }
-        for mut camera in &mut cameras {
-            if ui.ui_contains_pointer() {
-                camera.enabled_motion = EnabledMotion {
-                    pan: false,
-                    orbit: false,
-                    zoom: false,
-                };
+            ui.label("Oppacity:");
+            let mut opacity = cutting_plane.opacity;
+            ui.add(egui::DragValue::new(&mut opacity).speed(0.01));
+            #[allow(clippy::float_cmp)]
+            if opacity != cutting_plane.opacity {
+                cutting_plane.opacity = opacity;
             }
-        }
+        });
+        ui.label(egui::RichText::new("Sensor bracket").underline());
+        ui.group(|ui| {
+            ui.label("Positon mm (x, y, z):");
+            let mut position = sensor_bracket_settings.offset;
+            ui.horizontal(|ui| {
+                ui.add(egui::DragValue::new(&mut position.x).speed(1.0));
+                ui.add(egui::DragValue::new(&mut position.y).speed(1.0));
+                ui.add(egui::DragValue::new(&mut position.z).speed(1.0));
+            });
+            if position != sensor_bracket_settings.offset {
+                sensor_bracket_settings.offset = position;
+            }
+            ui.label("Radius mm:");
+            let mut radius = sensor_bracket_settings.radius;
+            ui.add(egui::DragValue::new(&mut radius).speed(1));
+            if (radius - sensor_bracket_settings.radius).abs() > 10.0 * f32::EPSILON {
+                sensor_bracket_settings.radius = radius;
+            }
+        });
     });
     if let Some(scenario) = scenario {
         egui::TopBottomPanel::bottom("Volumetric bottom panel")
