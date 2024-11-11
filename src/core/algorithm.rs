@@ -118,7 +118,6 @@ pub fn calculate_pseudo_inverse(
             config,
             step,
             num_sensors,
-            config.difference_regularization_strength,
         );
 
         let estimated_system_states = estimations.system_states.at_step_mut(step);
@@ -240,7 +239,6 @@ pub fn run_epoch(
                 config,
                 step,
                 num_sensors,
-                config.difference_regularization_strength,
             );
 
             if config.model.common.apply_system_update {

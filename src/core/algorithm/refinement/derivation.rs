@@ -145,7 +145,6 @@ pub fn calculate_derivatives(
     config: &Algorithm,
     step: usize,
     number_of_sensors: usize,
-    difference_regularization: f32,
 ) {
     debug!("Calculating derivatives");
     calculate_mapped_residuals(mapped_residuals, residuals, measurement_matrix);
@@ -178,7 +177,8 @@ pub fn calculate_derivatives(
             mapped_residuals,
             step,
             number_of_sensors,
-            difference_regularization,
+            config.difference_regularization_strength,
+            config.difference_regularization_strength,
         );
     }
 }
@@ -231,6 +231,7 @@ pub fn calculate_derivatives_coefs(
     step: usize,
     number_of_sensors: usize,
     difference_regulariztion: f32,
+    smoothness_regularization: f32,
 ) {
     trace!("Calculating derivatives for coefficients");
     derivatives_fir
@@ -442,6 +443,7 @@ mod tests {
             step,
             1,
             0.0,
+            0.0,
         );
     }
 
@@ -455,6 +457,7 @@ mod tests {
         let voxels_in_dims = Dim([1000, 1, 1]);
         let config = Algorithm {
             maximum_regularization_strength: 0.0,
+            smoothness_regularization_strength: 0.0,
             ..Default::default()
         };
 
@@ -489,7 +492,6 @@ mod tests {
             &config,
             step,
             estimations.measurements.num_sensors(),
-            0.0,
         );
     }
 }

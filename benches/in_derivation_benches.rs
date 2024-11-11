@@ -171,6 +171,7 @@ fn bench_coefs(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
                     STEP,
                     results.estimations.measurements.num_sensors(),
                     config.algorithm.difference_regularization_strength,
+                    config.algorithm.smoothness_regularization_strength,
                 );
             })
         });

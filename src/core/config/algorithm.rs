@@ -40,6 +40,8 @@ pub struct Algorithm {
     #[serde(default)]
     pub difference_regularization_strength: f32,
     #[serde(default)]
+    pub smoothness_regularization_strength: f32,
+    #[serde(default)]
     pub freeze_gains: bool,
     pub freeze_delays: bool,
     pub update_kalman_gain: bool,
@@ -63,6 +65,7 @@ impl Default for Algorithm {
             maximum_regularization_strength: 1.0,
             maximum_regularization_threshold: 1.01,
             difference_regularization_strength: 0.0,
+            smoothness_regularization_strength: 0.0,
             model: Model::default(),
             freeze_gains: false,
             freeze_delays: true,
