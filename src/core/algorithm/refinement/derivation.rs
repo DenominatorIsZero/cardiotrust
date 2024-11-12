@@ -1,7 +1,9 @@
 use std::ops::{Deref, DerefMut};
 
+use approx::AbsDiffEq;
 use bevy::scene::ron::de;
-use ndarray::Array1;
+use itertools::Itertools;
+use ndarray::{s, Array1};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
@@ -52,6 +54,8 @@ pub struct Derivatives {
     /// the measurement matrix.
     /// Stored internally to avoid redundant computation
     pub mapped_residuals: MappedResiduals,
+    /// Stored internally to avoid redundant computation
+    pub average_delays_in_voxel: AverageDelays,
     pub maximum_regularization: MaximumRegularization,
     pub maximum_regularization_sum: f32,
 }
@@ -99,6 +103,7 @@ impl Derivatives {
             coefs_iir: Gains::empty(number_of_states),
             coefs_fir: Gains::empty(number_of_states),
             mapped_residuals: MappedResiduals::new(number_of_states),
+            average_delays_in_voxel: AverageDelays::new(number_of_states),
             maximum_regularization: MaximumRegularization::new(number_of_states),
             maximum_regularization_sum: 0.0,
         }
@@ -130,7 +135,7 @@ impl Derivatives {
 /// Panics if `ap_params` is not set.
 #[inline]
 #[tracing::instrument(level = "debug", skip_all)]
-pub fn calculate_derivatives(
+pub fn calculate_step_derivatives(
     derivates: &mut Derivatives,
     estimations: &Estimations,
     functional_description: &FunctionalDescription,
@@ -166,6 +171,69 @@ pub fn calculate_derivatives(
     if !config.freeze_delays {
         calculate_derivatives_coefs(derivates, estimations, functional_description, step, config);
     }
+}
+
+/// Calculates batch-wise derivatives.
+///
+/// CAUTION: adds to old values. use "reset" after using the
+/// derivatives to update the parameters.
+///
+/// # Panics
+///
+/// Panics if `ap_params` is not set.
+#[inline]
+#[tracing::instrument(level = "debug", skip_all)]
+pub fn calculate_batch_derivatives(
+    derivates: &mut Derivatives,
+    functional_description: &FunctionalDescription,
+    config: &Algorithm,
+) {
+    if config.freeze_delays
+        && config
+            .smoothness_regularization_strength
+            .abs_diff_ne(&0.0, f32::EPSILON)
+    {
+        calculate_average_delays(
+            &mut derivates.average_delays_in_voxel,
+            &functional_description.ap_params,
+        );
+        calculate_smoothness_derivatives(derivates, functional_description, config);
+    }
+}
+
+#[allow(clippy::cast_precision_loss)]
+#[tracing::instrument(level = "trace")]
+fn calculate_smoothness_derivatives(
+    derivates: &mut Derivatives,
+    functional_description: &FunctionalDescription,
+    config: &Algorithm,
+) {
+    derivates
+        .coefs
+        .indexed_iter_mut()
+        .for_each(|((voxel_index, output_offset), derivative)| {
+            let delay = functional_description.ap_params.delays[[voxel_index, output_offset]]
+                as f32
+                + from_coef_to_samples(
+                    functional_description.ap_params.coefs[(voxel_index, output_offset)],
+                );
+            let mut average_delay = derivates.average_delays_in_voxel[voxel_index];
+            let mut divisor = 1.0;
+            for voxel_offset in 0..functional_description.ap_params.delays.shape()[1] {
+                let neighbor_index = functional_description.ap_params.output_state_indices
+                    [(voxel_index * 3, voxel_offset * 3)];
+                if neighbor_index.is_none() {
+                    continue;
+                }
+                let neighor_index = neighbor_index.unwrap() / 3;
+                average_delay += derivates.average_delays_in_voxel[neighor_index];
+                divisor += 1.0;
+            }
+            average_delay /= divisor;
+
+            let difference = average_delay - delay;
+            *derivative += config.smoothness_regularization_strength * difference;
+        });
 }
 
 /// Calculates the derivatives for the allpass filter gains.
@@ -314,6 +382,33 @@ pub fn calculate_mapped_residuals(
     mapped_residuals.assign(&measurement_matrix.t().dot(&**residuals));
 }
 
+#[allow(clippy::cast_precision_loss)]
+#[tracing::instrument(level = "trace", skip_all)]
+pub fn calculate_average_delays(average_delays: &mut AverageDelays, ap_params: &APParameters) {
+    trace!("Calculating average delays");
+    average_delays
+        .indexed_iter_mut()
+        .for_each(|(voxel_index, average_delay)| {
+            let mut delay_sum = 0.0;
+            let mut gain_sum = 0.0;
+            for offset in 0..ap_params.delays.shape()[1] {
+                let delay = ap_params.delays[[voxel_index, offset]] as f32
+                    + from_coef_to_samples(ap_params.coefs[[voxel_index, offset]]);
+                for input_dimension in 0..3 {
+                    for output_dimension in 0..3 {
+                        let gain = ap_params.gains[[
+                            voxel_index * 3 + input_dimension,
+                            offset * 3 + output_dimension,
+                        ]];
+                        delay_sum += gain * delay;
+                        gain_sum += gain;
+                    }
+                }
+            }
+            *average_delay = delay_sum / gain_sum;
+        });
+}
+
 /// Shape for the mapped residuals.
 ///
 /// Has dimensions (`number_of_states`)
@@ -345,6 +440,38 @@ impl Deref for MappedResiduals {
 }
 
 impl DerefMut for MappedResiduals {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// Shape for the average delays in each voxel.
+///
+/// Has dimensions (`number_of_states / 3`)
+///
+/// The average delays are calculated as a
+/// weighted sum of the delays by the gains in that direction.
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct AverageDelays(Array1<f32>);
+
+impl AverageDelays {
+    #[must_use]
+    #[tracing::instrument(level = "trace")]
+    pub fn new(number_of_states: usize) -> Self {
+        trace!("Creating AverageDelays");
+        Self(Array1::zeros(number_of_states / 3))
+    }
+}
+
+impl Deref for AverageDelays {
+    type Target = Array1<f32>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for AverageDelays {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -468,7 +595,7 @@ mod tests {
             number_of_beats,
         );
 
-        calculate_derivatives(
+        calculate_step_derivatives(
             &mut derivates,
             &estimations,
             &functional_description,

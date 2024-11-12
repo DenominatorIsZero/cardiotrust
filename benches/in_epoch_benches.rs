@@ -8,7 +8,7 @@ use cardiotrust::core::{
             update_kalman_gain_and_check_convergence,
         },
         metrics,
-        refinement::derivation::calculate_derivatives,
+        refinement::derivation::calculate_step_derivatives,
     },
     config::Config,
     data::Data,
@@ -134,7 +134,7 @@ fn bench_derivation(group: &mut criterion::BenchmarkGroup<criterion::measurement
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("derivation", voxel_size), |b| {
             b.iter(|| {
-                calculate_derivatives(
+                calculate_step_derivatives(
                     &mut results.derivatives,
                     &results.estimations,
                     &model.functional_description,

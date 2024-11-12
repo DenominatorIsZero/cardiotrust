@@ -31,7 +31,7 @@ use super::{
 };
 use crate::core::algorithm::{
     estimation::update_kalman_gain_and_check_convergence,
-    refinement::derivation::calculate_derivatives,
+    refinement::derivation::calculate_step_derivatives,
 };
 
 /// Calculates a pseudo inverse of the measurement matrix and estimates the system states, residuals, derivatives, and metrics.
@@ -99,7 +99,7 @@ pub fn calculate_pseudo_inverse(
             &actual_measurements,
         );
 
-        calculate_derivatives(
+        calculate_step_derivatives(
             derivatives,
             estimations,
             functional_description,
@@ -206,7 +206,7 @@ pub fn run_epoch(
                 &actual_measurements,
             );
 
-            calculate_derivatives(
+            calculate_step_derivatives(
                 derivatives,
                 estimations,
                 functional_description,
