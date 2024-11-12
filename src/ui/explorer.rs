@@ -1,9 +1,10 @@
+use std::mem::discriminant;
+
 use bevy::prelude::*;
 use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
 use egui::ProgressBar;
 use egui_extras::{Column, TableBuilder};
-use std::mem::discriminant;
 
 use super::UiState;
 use crate::{

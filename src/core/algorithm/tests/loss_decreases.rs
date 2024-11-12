@@ -1,16 +1,20 @@
 use std::path::Path;
 
-use crate::core::config::model::{SensorArrayGeometry, SensorArrayMotion};
-use crate::core::config::simulation::Simulation as SimulationConfig;
-use crate::core::model::Model;
-
-use crate::vis::plotting::gif::states::states_spherical_plot_over_time;
-use crate::vis::plotting::png::line::standard_y_plot;
-use crate::vis::plotting::png::states::states_spherical_plot;
-use crate::vis::plotting::{PlotSlice, StateSphericalPlotMode};
-
-use super::super::*;
-use super::run;
+use super::{super::*, run};
+use crate::{
+    core::{
+        config::{
+            model::{SensorArrayGeometry, SensorArrayMotion},
+            simulation::Simulation as SimulationConfig,
+        },
+        model::Model,
+    },
+    vis::plotting::{
+        gif::states::states_spherical_plot_over_time,
+        png::{line::standard_y_plot, states::states_spherical_plot},
+        PlotSlice, StateSphericalPlotMode,
+    },
+};
 
 const COMMON_PATH: &str = "tests/core/algorithm/loss_decreases";
 

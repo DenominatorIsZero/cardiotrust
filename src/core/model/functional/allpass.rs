@@ -3,12 +3,13 @@ mod direction;
 mod gain;
 pub mod shapes;
 
+use std::error::Error;
+
 use approx::relative_eq;
 use itertools::Itertools;
 use ndarray::{arr1, s, Array1, Array3, Array4, Dim};
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use tracing::{debug, trace};
 
 use self::{
@@ -495,8 +496,9 @@ pub fn from_coef_to_samples(coef: f32) -> f32 {
 mod test {
     use approx::assert_relative_eq;
 
-    use crate::core::model::functional::allpass::offset_to_gain_index;
-    use crate::core::model::functional::allpass::{from_samples_to_coef, from_samples_to_usize};
+    use crate::core::model::functional::allpass::{
+        from_samples_to_coef, from_samples_to_usize, offset_to_gain_index,
+    };
 
     #[test]
     fn from_samples_to_usize_1() {

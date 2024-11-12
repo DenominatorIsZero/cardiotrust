@@ -1,14 +1,15 @@
+use std::{
+    fs::{self, File},
+    io::BufWriter,
+    ops::{Deref, DerefMut},
+};
+
 use ndarray::{
     s, Array1, Array2, Array3, ArrayView1, ArrayView2, ArrayViewMut1, ArrayViewMut2, Axis,
 };
 use ndarray_npy::WriteNpyExt;
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
-use std::{
-    fs::{self, File},
-    io::BufWriter,
-    ops::{Deref, DerefMut},
-};
 use tracing::trace;
 
 /// Shape for the simulated/estimated system states

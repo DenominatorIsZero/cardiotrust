@@ -3,9 +3,10 @@ pub mod spatial;
 #[cfg(test)]
 mod tests;
 
+use std::error::Error;
+
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use tracing::{debug, trace};
 
 use self::{functional::FunctionalDescription, spatial::SpatialDescription};

@@ -1,18 +1,12 @@
-use gif::{Encoder, Frame, Repeat};
+use std::{error::Error, fs::File, io::BufWriter, path::Path};
 
+use gif::{Encoder, Frame, Repeat};
 use ndarray::{ArrayBase, Axis, Ix3};
 use ndarray_stats::QuantileExt;
-
-use std::fs::File;
-
-use std::io::BufWriter;
-use std::{error::Error, path::Path};
 use tracing::trace;
 
-use crate::vis::plotting::gif::_DEFAULT_TIME_PER_FRAME_MS;
-use crate::vis::plotting::png::matrix::matrix_plot;
-
 use super::GifBundle;
+use crate::vis::plotting::{gif::_DEFAULT_TIME_PER_FRAME_MS, png::matrix::matrix_plot};
 
 #[allow(
     clippy::too_many_arguments,
@@ -129,10 +123,8 @@ mod test {
 
     use ndarray::Array3;
 
-    use crate::tests::clean_files;
-    use crate::tests::setup_folder;
-
     use super::*;
+    use crate::tests::{clean_files, setup_folder};
 
     const COMMON_PATH: &str = "tests/vis/plotting/gif/matrix";
 

@@ -1,17 +1,17 @@
+use std::{error::Error, f32::consts::PI, io, path::Path};
+
 use ndarray::{ArrayBase, Ix2};
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
 use scarlet::colormap::{ColorMap, ListedColorMap};
-use std::{error::Error, f32::consts::PI, io, path::Path};
 use tracing::trace;
 
+use super::PngBundle;
 use crate::vis::plotting::{
     allocate_buffer, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, AXIS_STYLE, CAPTION_STYLE, CHART_MARGIN,
     COLORBAR_BOTTOM_MARGIN, COLORBAR_COLOR_NUMBERS, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH,
     LABEL_AREA_RIGHT_MARGIN, LABEL_AREA_WIDTH, STANDARD_RESOLUTION, UNIT_AREA_TOP_MARGIN,
 };
-
-use super::PngBundle;
 
 /// Generates a 2D matrix plot from the given input data array.
 ///
@@ -556,9 +556,8 @@ mod test {
 
     use ndarray::Array2;
 
-    use crate::tests::{clean_files, setup_folder};
-
     use super::*;
+    use crate::tests::{clean_files, setup_folder};
     const COMMON_PATH: &str = "tests/vis/plotting/png/matrix";
 
     #[test]

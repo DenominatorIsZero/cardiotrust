@@ -73,13 +73,12 @@ mod tests {
 
     use ndarray::Axis;
 
+    use super::*;
     use crate::{
         core::config::model::{Common, Handcrafted, Mri},
         tests::setup_folder,
         vis::plotting::gif::voxel_type::voxel_types_over_slices_plot,
     };
-
-    use super::*;
 
     const COMMON_PATH: &str = "tests/core/model/spatial";
 

@@ -1,9 +1,8 @@
 use bevy::{math::vec3, prelude::*};
 use ndarray::Array2;
 
-use crate::core::scenario::Scenario;
-
 use super::{options::VisibilityOptions, sample_tracker::SampleTracker};
+use crate::core::scenario::Scenario;
 
 #[derive(Component)]
 pub(crate) struct SensorData {

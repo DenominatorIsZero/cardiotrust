@@ -4,6 +4,7 @@ use ndarray::Array1;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
+use super::Optimizer;
 use crate::core::{
     algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
@@ -18,8 +19,6 @@ use crate::core::{
         FunctionalDescription,
     },
 };
-
-use super::Optimizer;
 
 /// Stuct to calculate and store the derivatives
 /// of the model parameters with regards to the
@@ -405,6 +404,7 @@ impl DerefMut for MaximumRegularization {
 mod tests {
     use ndarray::Dim;
 
+    use super::*;
     use crate::core::{
         algorithm::estimation::Estimations,
         model::functional::{
@@ -412,8 +412,6 @@ mod tests {
             FunctionalDescription,
         },
     };
-
-    use super::*;
     #[test]
     fn coef_no_crash() {
         let number_of_steps = 2000;

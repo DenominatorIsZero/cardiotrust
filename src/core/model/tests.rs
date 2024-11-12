@@ -1,8 +1,7 @@
 use ndarray::s;
 
-use crate::core::config;
-
 use super::Model;
+use crate::core::config;
 
 #[test]
 fn test_ap_gain_init_sum_default() {

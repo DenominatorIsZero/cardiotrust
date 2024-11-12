@@ -1,8 +1,3 @@
-use bevy::prelude::*;
-use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
-use bevy_egui::{egui, EguiContexts};
-use egui::{Slider, Spinner};
-use ndarray::s;
 use std::{
     collections::HashMap,
     error::Error,
@@ -10,6 +5,12 @@ use std::{
     path::Path,
     thread::{self, JoinHandle},
 };
+
+use bevy::prelude::*;
+use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
+use bevy_egui::{egui, EguiContexts};
+use egui::{Slider, Spinner};
+use ndarray::s;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 

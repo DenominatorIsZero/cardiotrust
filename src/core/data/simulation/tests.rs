@@ -1,10 +1,10 @@
 use std::path::Path;
 
 use approx::{assert_relative_eq, RelativeEq};
-
 use ndarray::s;
 use ndarray_stats::QuantileExt;
 
+use super::*;
 use crate::{
     core::{config::model::Mri, model::spatial::voxels::VoxelType},
     tests::setup_folder,
@@ -17,8 +17,6 @@ use crate::{
         PlotSlice, StateSphericalPlotMode,
     },
 };
-
-use super::*;
 
 const COMMON_PATH: &str = "tests/core/data/simulation";
 

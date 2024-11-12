@@ -1,10 +1,11 @@
-use ndarray::{arr1, s, Array1, Array2};
-use ndarray_npy::WriteNpyExt;
-use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
 };
+
+use ndarray::{arr1, s, Array1, Array2};
+use ndarray_npy::WriteNpyExt;
+use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use crate::core::config::model::{Common, SensorArrayGeometry, SensorArrayMotion};

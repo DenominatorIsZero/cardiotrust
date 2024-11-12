@@ -1,13 +1,13 @@
 pub mod shapes;
 pub mod simulation;
 
+use std::error::Error;
+
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use tracing::{debug, trace};
 
 use self::simulation::Simulation;
-
 use crate::core::{config::simulation::Simulation as SimulationConfig, data::shapes::Measurements};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

@@ -3,12 +3,11 @@ use std::path::PathBuf;
 use egui_extras::{Column, TableBuilder};
 use tracing::trace;
 
+use super::{FIRST_COLUMN_WIDTH, PADDING, ROW_HEIGHT, SECOND_COLUMN_WIDTH};
 use crate::core::{
     config::model::{ControlFunction, Handcrafted, Model, Mri},
     model::spatial::voxels::VoxelType,
 };
-
-use super::{FIRST_COLUMN_WIDTH, PADDING, ROW_HEIGHT, SECOND_COLUMN_WIDTH};
 
 /// Draws ui for settings common to data generation and optimization.
 #[allow(clippy::too_many_lines, clippy::module_name_repetitions)]

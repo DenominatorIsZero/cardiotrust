@@ -1,14 +1,12 @@
 use std::path::Path;
 
 use ndarray::{s, Ix3};
-
 use nifti::{IntoNdArray, NiftiObject, ReaderOptions};
 use strum::EnumCount;
 use tracing::{debug, trace};
 
-use crate::core::config::model::Model;
-
 use super::voxels::VoxelType;
+use crate::core::config::model::Model;
 
 #[derive(Debug)]
 pub struct MriData {
@@ -110,9 +108,8 @@ mod tests {
 
     use ndarray::Axis;
 
-    use crate::{tests::setup_folder, vis::plotting::gif::matrix::matrix_over_slices_plot};
-
     use super::*;
+    use crate::{tests::setup_folder, vis::plotting::gif::matrix::matrix_over_slices_plot};
 
     const COMMON_PATH: &str = "tests/core/model/spatial/nifti";
 

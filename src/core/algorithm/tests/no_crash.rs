@@ -1,12 +1,14 @@
 use ndarray::Dim;
 
-use crate::core::config::algorithm::Algorithm as AlgorithmConfig;
-use crate::core::config::model::{SensorArrayGeometry, SensorArrayMotion};
-use crate::core::config::simulation::Simulation as SimulationConfig;
-use crate::core::model::Model;
-
-use super::super::*;
-use super::run;
+use super::{super::*, run};
+use crate::core::{
+    config::{
+        algorithm::Algorithm as AlgorithmConfig,
+        model::{SensorArrayGeometry, SensorArrayMotion},
+        simulation::Simulation as SimulationConfig,
+    },
+    model::Model,
+};
 
 #[test]
 fn run_epoch_no_crash() {

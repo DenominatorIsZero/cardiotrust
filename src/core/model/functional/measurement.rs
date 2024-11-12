@@ -1,15 +1,16 @@
-use approx::relative_eq;
-use ndarray::{s, Array2, Array3, ArrayView2};
-use ndarray_npy::WriteNpyExt;
-use physical_constants::VACUUM_MAG_PERMEABILITY;
-use rand_distr::{Distribution, Normal};
-use serde::{Deserialize, Serialize};
 use std::{
     f32::consts::PI,
     fs::{self, File},
     io::BufWriter,
     ops::{Deref, DerefMut},
 };
+
+use approx::relative_eq;
+use ndarray::{s, Array2, Array3, ArrayView2};
+use ndarray_npy::WriteNpyExt;
+use physical_constants::VACUUM_MAG_PERMEABILITY;
+use rand_distr::{Distribution, Normal};
+use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use crate::core::{config::model::Model, model::spatial::SpatialDescription};
@@ -217,9 +218,8 @@ impl DerefMut for MeasurementCovariance {
 mod tests {
     use std::path::Path;
 
-    use crate::{core::config::model::Common, vis::plotting::png::matrix::matrix_plot};
-
     use super::*;
+    use crate::{core::config::model::Common, vis::plotting::png::matrix::matrix_plot};
 
     const COMMON_PATH: &str = "tests/core/model/functional/measurement/";
 

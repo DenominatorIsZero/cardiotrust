@@ -1,14 +1,13 @@
-use ndarray::Axis;
-
 use std::{error::Error, path::Path};
+
+use ndarray::Axis;
 use tracing::trace;
 
+use super::PngBundle;
 use crate::{
     core::model::{functional::allpass::shapes::ActivationTimeMs, spatial::voxels::VoxelPositions},
     vis::plotting::{png::matrix::matrix_plot, PlotSlice},
 };
-
-use super::PngBundle;
 
 /// Plots the activation time for a given slice (x, y or z) of the
 /// activation time matrix.
@@ -93,12 +92,11 @@ pub(crate) fn activation_time_plot(
 #[cfg(test)]
 mod test {
 
+    use super::*;
     use crate::{
         core::{config::simulation::Simulation as SimulationConfig, data::Data},
         tests::{clean_files, setup_folder},
     };
-
-    use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/png/actovation_time";
 
     #[test]

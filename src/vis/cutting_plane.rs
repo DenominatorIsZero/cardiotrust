@@ -1,5 +1,4 @@
-use bevy::math::prelude::*;
-use bevy::prelude::*;
+use bevy::{math::prelude::*, prelude::*};
 
 use super::options::VisibilityOptions;
 

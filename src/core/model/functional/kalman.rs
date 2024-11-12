@@ -1,14 +1,15 @@
+use std::{
+    fs::{self, File},
+    io::BufWriter,
+    ops::{Deref, DerefMut},
+};
+
 use approx::relative_eq;
 use nalgebra::DMatrix;
 use ndarray::{s, Array2, ArrayBase, Dim, ViewRepr};
 use ndarray_npy::WriteNpyExt;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
-use std::{
-    fs::{self, File},
-    io::BufWriter,
-    ops::{Deref, DerefMut},
-};
 use tracing::{debug, trace};
 
 use super::measurement::MeasurementMatrix;
@@ -121,9 +122,8 @@ impl DerefMut for KalmanGain {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::model::spatial::SpatialDescription;
-
     use super::*;
+    use crate::core::model::spatial::SpatialDescription;
 
     #[test]
     fn from_model_config_no_crash() {

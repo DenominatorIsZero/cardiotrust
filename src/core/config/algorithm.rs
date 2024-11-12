@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
-use crate::core::algorithm::refinement::Optimizer;
-
 use super::model::Model;
+use crate::core::algorithm::refinement::Optimizer;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Default)]
 #[allow(clippy::module_name_repetitions)]

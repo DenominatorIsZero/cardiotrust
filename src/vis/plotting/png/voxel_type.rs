@@ -1,26 +1,24 @@
+use std::{error::Error, path::Path};
+
 use bevy::color::ColorToPacked;
 use ndarray::Axis;
 use plotters::prelude::*;
 use scarlet::colormap::ListedColorMap;
-use std::{error::Error, path::Path};
 use strum::IntoEnumIterator;
 use tracing::trace;
 
+use super::PngBundle;
 use crate::{
     core::model::spatial::voxels::{VoxelPositions, VoxelType, VoxelTypes},
     vis::{
         heart::type_to_color,
         plotting::{
-            allocate_buffer, PlotSlice, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, CHART_MARGIN,
-            COLORBAR_BOTTOM_MARGIN, COLORBAR_TOP_MARGIN, COLORBAR_WIDTH, LABEL_AREA_RIGHT_MARGIN,
-            LABEL_AREA_WIDTH,
+            allocate_buffer, PlotSlice, AXIS_LABEL_AREA, AXIS_LABEL_NUM_MAX, AXIS_STYLE,
+            CAPTION_STYLE, CHART_MARGIN, COLORBAR_BOTTOM_MARGIN, COLORBAR_TOP_MARGIN,
+            COLORBAR_WIDTH, LABEL_AREA_RIGHT_MARGIN, LABEL_AREA_WIDTH, STANDARD_RESOLUTION,
         },
     },
 };
-
-use crate::vis::plotting::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION};
-
-use super::PngBundle;
 
 #[allow(
     clippy::cast_precision_loss,
@@ -241,12 +239,11 @@ pub fn voxel_type_plot(
 #[cfg(test)]
 mod test {
 
+    use super::*;
     use crate::{
         core::{config::simulation::Simulation as SimulationConfig, data::Data},
         tests::{clean_files, setup_folder},
     };
-
-    use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/png/voxel_types";
 
     #[test]

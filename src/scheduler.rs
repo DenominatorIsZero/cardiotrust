@@ -1,9 +1,10 @@
-use bevy::prelude::*;
 use std::{
     mem::discriminant,
     sync::{mpsc::channel, Mutex},
     thread,
 };
+
+use bevy::prelude::*;
 
 use crate::{
     core::scenario::{run, Status},

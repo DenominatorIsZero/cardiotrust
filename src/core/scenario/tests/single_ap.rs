@@ -1,15 +1,16 @@
-use ndarray_npy::WriteNpyExt;
 use std::{
     fs::{self, File},
     io::BufWriter,
+    path::Path,
+    sync::mpsc::channel,
+    thread,
 };
-use std::{path::Path, sync::mpsc::channel, thread};
 
 use nalgebra::ComplexField;
 use ndarray::Array1;
+use ndarray_npy::WriteNpyExt;
 
 use super::{RUN_IN_TESTS, SAVE_NPY};
-
 use crate::{
     core::{
         algorithm::metrics::BatchWiseMetric,

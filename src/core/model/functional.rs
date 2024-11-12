@@ -3,11 +3,12 @@ pub mod control;
 pub mod kalman;
 pub mod measurement;
 
+use std::error::Error;
+
 use approx::relative_eq;
 use ndarray::Dim;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use tracing::{debug, trace};
 
 use self::{
@@ -171,9 +172,8 @@ fn process_covariance_from_model_config(
 #[cfg(test)]
 mod tests {
 
-    use crate::core::config::model::{Common, Mri};
-
     use super::*;
+    use crate::core::config::model::{Common, Mri};
 
     #[test]
     fn ap_empty() {

@@ -7,9 +7,10 @@ pub mod sample_tracker;
 pub mod sensors;
 pub mod torso;
 
-use bevy::color::palettes::css::{BLUE, GREEN, RED};
-use bevy::prelude::*;
-
+use bevy::{
+    color::palettes::css::{BLUE, GREEN, RED},
+    prelude::*,
+};
 use bevy_editor_cam::controller::component::{EditorCam, OrbitConstraint};
 use bevy_obj::ObjPlugin;
 use cutting_plane::update_cutting_plane_visibility;

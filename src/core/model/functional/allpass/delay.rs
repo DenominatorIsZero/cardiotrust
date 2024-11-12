@@ -1,6 +1,7 @@
+use std::{collections::HashMap, error::Error};
+
 use itertools::Itertools;
 use ndarray::{s, ArrayBase, Dim, ViewRepr};
-use std::{collections::HashMap, error::Error};
 use tracing::trace;
 
 use super::{offset_to_delay_index, shapes::Coefs};
@@ -104,12 +105,11 @@ mod test {
     use ndarray::{arr1, Array1};
     use ndarray_stats::QuantileExt;
 
+    use super::{calculate_delay_s, calculate_delay_samples_array};
     use crate::core::{
         config::model::Model,
         model::spatial::{voxels::VoxelType, SpatialDescription},
     };
-
-    use super::{calculate_delay_s, calculate_delay_samples_array};
 
     #[test]
     fn calculate_delay_s_1() {

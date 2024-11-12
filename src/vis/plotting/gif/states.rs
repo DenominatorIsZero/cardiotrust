@@ -1,25 +1,21 @@
+use std::{error::Error, fs::File, io::BufWriter, path::Path};
+
 use gif::{Encoder, Frame, Repeat};
-
 use ndarray_stats::QuantileExt;
-
-use std::fs::File;
-
-use std::io::BufWriter;
-use std::{error::Error, path::Path};
 use tracing::trace;
 
-use crate::vis::plotting::gif::{DEFAULT_FPS, DEFAULT_PLAYBACK_SPEED};
-use crate::vis::plotting::png::states::states_spherical_plot;
-use crate::vis::plotting::StateSphericalPlotMode;
+use super::GifBundle;
 use crate::{
     core::{
         data::shapes::{SystemStatesSpherical, SystemStatesSphericalMax},
         model::spatial::voxels::{VoxelNumbers, VoxelPositions},
     },
-    vis::plotting::PlotSlice,
+    vis::plotting::{
+        gif::{DEFAULT_FPS, DEFAULT_PLAYBACK_SPEED},
+        png::states::states_spherical_plot,
+        PlotSlice, StateSphericalPlotMode,
+    },
 };
-
-use super::GifBundle;
 
 #[allow(
     clippy::too_many_arguments,
@@ -127,11 +123,11 @@ mod test {
 
     use std::path::Path;
 
-    use crate::core::{config::simulation::Simulation as SimulationConfig, data::Data};
-    use crate::tests::clean_files;
-    use crate::tests::setup_folder;
-
     use super::*;
+    use crate::{
+        core::{config::simulation::Simulation as SimulationConfig, data::Data},
+        tests::{clean_files, setup_folder},
+    };
 
     const COMMON_PATH: &str = "tests/vis/plotting/gif/states";
 

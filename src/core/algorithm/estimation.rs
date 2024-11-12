@@ -523,15 +523,14 @@ pub fn predict_state_covariance(
 mod tests {
     use ndarray::Dim;
 
+    use super::{
+        calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
+        Estimations,
+    };
     use crate::core::{
         config::algorithm::Algorithm,
         data::shapes::{Measurements, Residuals, SystemStates},
         model::functional::{allpass::shapes::Gains, FunctionalDescription},
-    };
-
-    use super::{
-        calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
-        Estimations,
     };
 
     #[test]

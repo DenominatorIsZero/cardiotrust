@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use cardiotrust::core::{
     algorithm::{
         calculate_deltas,
@@ -14,7 +16,6 @@ use cardiotrust::core::{
     scenario::results::Results,
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::time::Duration;
 
 const VOXEL_SIZES: [f32; 1] = [2.5];
 const LEARNING_RATE: f32 = 1e-3;

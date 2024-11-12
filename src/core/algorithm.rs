@@ -4,17 +4,10 @@ pub mod refinement;
 #[cfg(test)]
 mod tests;
 
-use metrics::calculate_step;
 use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::{seq::SliceRandom, thread_rng};
 use tracing::{debug, trace};
-
-use crate::core::algorithm::{
-    estimation::update_kalman_gain_and_check_convergence,
-    refinement::derivation::calculate_derivatives,
-};
 
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
@@ -35,6 +28,10 @@ use super::{
         FunctionalDescription,
     },
     scenario::results::Results,
+};
+use crate::core::algorithm::{
+    estimation::update_kalman_gain_and_check_convergence,
+    refinement::derivation::calculate_derivatives,
 };
 
 /// Calculates a pseudo inverse of the measurement matrix and estimates the system states, residuals, derivatives, and metrics.

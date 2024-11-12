@@ -1,19 +1,14 @@
+use std::{error::Error, fs::File, io::BufWriter, path::Path};
+
 use gif::{Encoder, Frame, Repeat};
-
 use ndarray::Axis;
-
-use std::fs::File;
-
-use std::io::BufWriter;
-use std::{error::Error, path::Path};
 use tracing::trace;
 
-use crate::core::model::spatial::voxels::{VoxelPositions, VoxelTypes};
-use crate::vis::plotting::gif::_DEFAULT_TIME_PER_FRAME_MS;
-use crate::vis::plotting::png::voxel_type::voxel_type_plot;
-use crate::vis::plotting::PlotSlice;
-
 use super::GifBundle;
+use crate::{
+    core::model::spatial::voxels::{VoxelPositions, VoxelTypes},
+    vis::plotting::{gif::_DEFAULT_TIME_PER_FRAME_MS, png::voxel_type::voxel_type_plot, PlotSlice},
+};
 
 #[allow(
     clippy::too_many_arguments,

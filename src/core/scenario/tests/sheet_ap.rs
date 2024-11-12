@@ -3,7 +3,6 @@ use std::{path::Path, sync::mpsc::channel, thread};
 use ndarray::Array1;
 
 use super::RUN_IN_TESTS;
-
 use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},

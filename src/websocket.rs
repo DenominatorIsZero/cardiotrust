@@ -1,11 +1,11 @@
-use bevy::{prelude::*, time::common_conditions::on_timer};
-
-use ndarray::Dim;
-use serde_json::Value;
 use std::{
     sync::{Arc, Mutex},
     time::Duration,
 };
+
+use bevy::{prelude::*, time::common_conditions::on_timer};
+use ndarray::Dim;
+use serde_json::Value;
 use wasm_bindgen::prelude::*;
 use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 

@@ -3,21 +3,19 @@ pub mod summary;
 #[cfg(test)]
 mod tests;
 
-use bincode;
-
-use chrono::{self, DateTime, Utc};
-use ndarray_stats::QuantileExt;
-use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::{BufReader, BufWriter, Write},
     path::Path,
     sync::mpsc::Sender,
 };
+
+use bincode;
+use chrono::{self, DateTime, Utc};
+use ndarray_stats::QuantileExt;
+use serde::{Deserialize, Serialize};
 use toml;
 use tracing::{debug, info, trace};
-
-use crate::core::algorithm::metrics;
 
 use self::{
     results::{Results, Snapshot},
@@ -29,6 +27,7 @@ use super::{
     data::Data,
     model::Model,
 };
+use crate::core::algorithm::metrics;
 
 /// Struct representing a scenario configuration and results.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]

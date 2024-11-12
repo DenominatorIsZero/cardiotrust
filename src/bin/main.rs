@@ -1,13 +1,11 @@
 use std::process::Command;
 
 use bevy::{log::LogPlugin, prelude::*};
-use tracing::info;
-use tracing_subscriber::fmt;
-use tracing_subscriber::layer::SubscriberExt;
-
 use cardiotrust::{
     scheduler::SchedulerPlugin, ui::UiPlugin, vis::VisPlugin, ScenarioList, SelectedSenario,
 };
+use tracing::info;
+use tracing_subscriber::{fmt, layer::SubscriberExt};
 
 #[tracing::instrument(level = "info")]
 fn main() {

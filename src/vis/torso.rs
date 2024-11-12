@@ -1,5 +1,6 @@
-use bevy::prelude::*;
 use std::f32::consts::PI;
+
+use bevy::prelude::*;
 
 use super::options::VisibilityOptions;
 

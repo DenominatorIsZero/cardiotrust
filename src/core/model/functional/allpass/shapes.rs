@@ -1,13 +1,13 @@
-use approx::assert_relative_eq;
-use ndarray::{Array2, Array3, Dim};
-use ndarray_npy::WriteNpyExt;
-
-use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
     ops::{Deref, DerefMut},
 };
+
+use approx::assert_relative_eq;
+use ndarray::{Array2, Array3, Dim};
+use ndarray_npy::WriteNpyExt;
+use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

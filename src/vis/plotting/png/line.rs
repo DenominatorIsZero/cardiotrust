@@ -1,19 +1,18 @@
+use std::{error::Error, io, path::Path};
+
 use ndarray::{s, Array1, ArrayBase, Data, Ix1};
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;
-use std::{error::Error, io, path::Path};
 use tracing::trace;
 
+use super::PngBundle;
 use crate::{
     core::data::shapes::SystemStates,
     vis::plotting::{
-        allocate_buffer, AXIS_LABEL_AREA, CHART_MARGIN, COLORS, LEGEND_OPACITY, LEGEND_PATH_LENGTH,
+        allocate_buffer, AXIS_LABEL_AREA, AXIS_STYLE, CAPTION_STYLE, CHART_MARGIN, COLORS,
+        LEGEND_OPACITY, LEGEND_PATH_LENGTH, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN,
     },
 };
-
-use crate::vis::plotting::{AXIS_STYLE, CAPTION_STYLE, STANDARD_RESOLUTION, X_MARGIN, Y_MARGIN};
-
-use super::PngBundle;
 
 /// Generates an XY plot from the provided x and y data.
 ///
@@ -461,9 +460,8 @@ pub fn plot_state_xyz(
 #[cfg(test)]
 mod test {
 
-    use crate::tests::{clean_files, setup_folder};
-
     use super::*;
+    use crate::tests::{clean_files, setup_folder};
     const COMMON_PATH: &str = "tests/vis/plotting/png/line";
 
     #[test]

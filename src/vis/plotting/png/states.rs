@@ -1,9 +1,9 @@
-use ndarray::{Array2, Axis};
-
 use std::{error::Error, path::Path};
+
+use ndarray::{Array2, Axis};
 use tracing::trace;
 
-use crate::vis::plotting::StateSphericalPlotMode;
+use super::PngBundle;
 use crate::{
     core::{
         data::shapes::{SystemStates, SystemStatesSpherical, SystemStatesSphericalMax},
@@ -11,11 +11,9 @@ use crate::{
     },
     vis::plotting::{
         png::matrix::{matrix_angle_plot, matrix_plot},
-        PlotSlice, StatePlotMode,
+        PlotSlice, StatePlotMode, StateSphericalPlotMode,
     },
 };
-
-use super::PngBundle;
 
 #[allow(clippy::too_many_arguments)]
 #[tracing::instrument(level = "trace")]
@@ -255,12 +253,11 @@ pub(crate) fn states_spherical_plot(
 #[cfg(test)]
 mod test {
 
+    use super::*;
     use crate::{
         core::{config::simulation::Simulation as SimulationConfig, data::Data},
         tests::{clean_files, setup_folder},
     };
-
-    use super::*;
     const COMMON_PATH: &str = "tests/vis/plotting/png/states";
 
     #[test]

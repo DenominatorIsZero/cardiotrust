@@ -1,13 +1,14 @@
-use approx::RelativeEq;
-use ndarray::Array1;
-use ndarray_npy::{read_npy, WriteNpyExt};
-use rubato::{Resampler, SincFixedIn, SincInterpolationParameters};
-use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
     ops::{Deref, DerefMut},
 };
+
+use approx::RelativeEq;
+use ndarray::Array1;
+use ndarray_npy::{read_npy, WriteNpyExt};
+use rubato::{Resampler, SincFixedIn, SincInterpolationParameters};
+use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use crate::core::{
@@ -196,9 +197,8 @@ mod test {
 
     use approx::assert_relative_eq;
 
-    use crate::{core::config::model::Model, vis::plotting::png::line::standard_time_plot};
-
     use super::*;
+    use crate::{core::config::model::Model, vis::plotting::png::line::standard_time_plot};
 
     const COMMON_PATH: &str = "tests/core/model/functional/control/";
 

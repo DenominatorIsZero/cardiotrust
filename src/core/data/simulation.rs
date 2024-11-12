@@ -1,12 +1,13 @@
 #[cfg(test)]
 mod tests;
 
+use std::error::Error;
+
 use ndarray::Dim;
 use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
-use std::error::Error;
 use tracing::{debug, info, trace};
 
 use super::shapes::{

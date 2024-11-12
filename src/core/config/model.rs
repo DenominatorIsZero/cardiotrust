@@ -1,8 +1,9 @@
-use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
+
+use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 use crate::core::model::spatial::voxels::VoxelType;

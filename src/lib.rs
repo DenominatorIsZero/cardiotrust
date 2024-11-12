@@ -7,15 +7,16 @@ pub mod ui;
 pub mod vis;
 pub mod websocket;
 
-use bevy::prelude::*;
-
-use crate::core::scenario::{summary::Summary, Scenario};
 use std::{
     fs::{self, create_dir_all},
     path::Path,
     sync::{mpsc::Receiver, Mutex},
     thread::JoinHandle,
 };
+
+use bevy::prelude::*;
+
+use crate::core::scenario::{summary::Summary, Scenario};
 
 #[derive(Resource, Debug, Default)]
 pub struct SelectedSenario {

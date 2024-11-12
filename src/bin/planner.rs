@@ -1,16 +1,13 @@
 use std::process::Command;
 
 use bevy::prelude::*;
-
-use tracing::info;
-use tracing_subscriber::fmt;
-use tracing_subscriber::layer::SubscriberExt;
-
 use cardiotrust::core::{
     algorithm::refinement::Optimizer,
     config::{algorithm::Algorithm, model::SensorArrayMotion, simulation::Simulation},
     scenario::Scenario,
 };
+use tracing::info;
+use tracing_subscriber::{fmt, layer::SubscriberExt};
 
 fn main() {
     let file_appender = tracing_appender::rolling::daily("./logs", "CardioPlanner.log");

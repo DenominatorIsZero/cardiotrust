@@ -1,19 +1,18 @@
-use ndarray::{arr1, s, Array3, Array4, Dim};
-use ndarray_npy::WriteNpyExt;
-
-use num_derive::FromPrimitive;
-use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File},
     io::BufWriter,
     ops::{Deref, DerefMut},
 };
+
+use ndarray::{arr1, s, Array3, Array4, Dim};
+use ndarray_npy::WriteNpyExt;
+use num_derive::FromPrimitive;
+use serde::{Deserialize, Serialize};
 use strum_macros::{EnumCount, EnumIter};
 use tracing::{debug, trace};
 
-use crate::core::{config::model::Model, model::spatial::nifti::load_from_nii};
-
 use super::nifti::{determine_voxel_type, MriData};
+use crate::core::{config::model::Model, model::spatial::nifti::load_from_nii};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Voxels {
@@ -648,9 +647,8 @@ pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &V
 #[cfg(test)]
 mod tests {
 
-    use crate::core::config::model::{Common, Handcrafted};
-
     use super::*;
+    use crate::core::config::model::{Common, Handcrafted};
 
     const _COMMON_PATH: &str = "tests/core/model/spatial/voxel/";
 
