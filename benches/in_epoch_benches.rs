@@ -5,6 +5,7 @@ use cardiotrust::core::{
             calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
             update_kalman_gain_and_check_convergence,
         },
+        metrics,
         refinement::derivation::calculate_derivatives,
     },
     config::Config,
@@ -255,15 +256,11 @@ fn bench_metrics(group: &mut criterion::BenchmarkGroup<criterion::measurement::W
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("metrics", voxel_size), |b| {
             b.iter(|| {
-                results.metrics.calculate_step(
-                    &results.estimations.residuals,
-                    &results.estimations.system_states_delta.at_step_mut(STEP),
-                    &results.estimations.post_update_residuals,
-                    &results.estimations.gains_delta,
-                    &results.estimations.delays_delta,
+                metrics::calculate_step(
+                    &mut results.metrics,
+                    &results.estimations,
                     results.derivatives.maximum_regularization_sum,
                     config.algorithm.maximum_regularization_strength,
-                    results.estimations.measurements.num_sensors(),
                     STEP,
                 );
             })

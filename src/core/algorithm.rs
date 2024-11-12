@@ -4,6 +4,7 @@ pub mod refinement;
 #[cfg(test)]
 mod tests;
 
+use metrics::calculate_step;
 use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
 use rand::seq::SliceRandom;
@@ -127,19 +128,15 @@ pub fn calculate_pseudo_inverse(
             &actual_system_states,
         );
 
-        results.metrics.calculate_step(
-            &estimations.residuals,
-            &system_states_delta,
-            &estimations.post_update_residuals,
-            &estimations.gains_delta,
-            &estimations.delays_delta,
+        metrics::calculate_step(
+            &mut results.metrics,
+            estimations,
             derivatives.maximum_regularization_sum,
             config.maximum_regularization_strength,
-            num_sensors,
             step,
         );
     }
-    results.metrics.calculate_batch(0);
+    metrics::calculate_batch(&mut results.metrics, 0);
 }
 
 /// Runs the algorithm for one epoch.
@@ -267,15 +264,11 @@ pub fn run_epoch(
                 actual_coefs,
             );
 
-            results.metrics.calculate_step(
-                &estimations.residuals,
-                &system_states_delta,
-                &estimations.post_update_residuals,
-                &estimations.gains_delta,
-                &estimations.delays_delta,
+            metrics::calculate_step(
+                &mut results.metrics,
+                estimations,
                 derivatives.maximum_regularization_sum,
                 config.maximum_regularization_strength,
-                num_sensors,
                 step,
             );
         }
@@ -288,7 +281,7 @@ pub fn run_epoch(
                 derivatives.reset();
                 estimations.kalman_gain_converged = false;
                 *n = 0;
-                results.metrics.calculate_batch(*batch_index);
+                metrics::calculate_batch(&mut results.metrics, *batch_index);
                 *batch_index += 1;
             }
         }
@@ -300,7 +293,7 @@ pub fn run_epoch(
                 .update(&mut results.derivatives, config, num_steps, n);
             results.derivatives.reset();
             results.estimations.kalman_gain_converged = false;
-            results.metrics.calculate_batch(*batch_index);
+            metrics::calculate_batch(&mut results.metrics, *batch_index);
             *batch_index += 1;
         }
     } else {
@@ -312,7 +305,7 @@ pub fn run_epoch(
         );
         results.derivatives.reset();
         results.estimations.kalman_gain_converged = false;
-        results.metrics.calculate_batch(*batch_index);
+        metrics::calculate_batch(&mut results.metrics, *batch_index);
         *batch_index += 1;
     }
 }

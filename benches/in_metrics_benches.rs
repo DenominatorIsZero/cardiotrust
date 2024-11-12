@@ -1,5 +1,5 @@
 use cardiotrust::core::{
-    algorithm::{calculate_deltas, run_epoch},
+    algorithm::{calculate_deltas, metrics, run_epoch},
     config::Config,
     data::Data,
     model::Model,
@@ -100,15 +100,11 @@ fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wall
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("step", voxel_size), |b| {
             b.iter(|| {
-                results.metrics.calculate_step(
-                    &results.estimations.residuals,
-                    &results.estimations.system_states_delta.at_step_mut(STEP),
-                    &results.estimations.post_update_residuals,
-                    &results.estimations.gains_delta,
-                    &results.estimations.delays_delta,
+                metrics::calculate_step(
+                    &mut results.metrics,
+                    &results.estimations,
                     results.derivatives.maximum_regularization_sum,
                     config.algorithm.maximum_regularization_strength,
-                    results.estimations.measurements.num_sensors(),
                     STEP,
                 );
             })
@@ -128,7 +124,7 @@ fn bench_epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("epoch", voxel_size), |b| {
             b.iter(|| {
-                results.metrics.calculate_batch(0);
+                metrics::calculate_batch(&mut results.metrics, 0);
             })
         });
     }

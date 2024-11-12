@@ -111,112 +111,6 @@ impl Metrics {
         }
     }
 
-    /// Calculates metrics for the current step.
-    ///
-    /// Updates the metrics fields with calculations for the current step:
-    /// - MSE loss
-    /// - Maximum regularization loss
-    /// - Total loss
-    /// - Mean and max of absolute deltas for:
-    ///   - System states
-    ///   - Measurements (residuals)
-    ///   - Gains
-    ///   - Delays
-    ///
-    /// # Panics
-    ///
-    /// Panics if any array is None.
-    #[allow(clippy::cast_precision_loss)]
-    #[tracing::instrument(level = "trace", skip_all)]
-    pub fn calculate_step(
-        &mut self,
-        residuals: &Residuals,
-        system_states_delta: &SystemStatesAtStepMut,
-        post_update_residuals: &Residuals,
-        gains_delta: &Gains,
-        delays_delta: &Coefs,
-        maximum_regularization_sum: f32,
-        regularization_strength: f32,
-        num_sensors: usize,
-        time_index: usize,
-    ) {
-        trace!("Calculating metrics for step {}", time_index);
-        let index = time_index;
-
-        self.loss_mse[index] = residuals.mapv(|v| v.powi(2)).sum() / num_sensors as f32;
-        self.loss_maximum_regularization[index] = maximum_regularization_sum;
-        self.loss[index] = regularization_strength.mul_add(
-            self.loss_maximum_regularization[index],
-            self.loss_mse[index],
-        );
-
-        let states_delta_abs = system_states_delta.mapv(f32::abs);
-        self.delta_states_mean[index] = states_delta_abs.mean().unwrap();
-        self.delta_states_max[index] = *states_delta_abs.max_skipnan();
-
-        let measurements_delta_abs = post_update_residuals.mapv(f32::abs);
-        self.delta_measurements_mean[index] = measurements_delta_abs.mean().unwrap();
-        self.delta_measurements_max[index] = *measurements_delta_abs.max_skipnan();
-
-        let gains_delta_abs = gains_delta.mapv(f32::abs);
-        self.delta_gains_mean[index] = gains_delta_abs.mean().unwrap();
-        self.delta_gains_max[index] = *gains_delta_abs.max_skipnan();
-
-        let delays_delta_abs = delays_delta.mapv(f32::abs);
-        self.delta_delays_mean[index] = delays_delta_abs.mean().unwrap();
-        self.delta_delays_max[index] = *delays_delta_abs.max_skipnan();
-    }
-
-    /// Calculates epoch metrics by taking the mean of step metrics.
-    ///
-    /// # Panics
-    ///
-    /// Panics if any loss array is None.
-    #[tracing::instrument(level = "debug")]
-    pub fn calculate_batch(&mut self, epoch_index: usize) {
-        debug!("Calculating metrics for epoch {}", epoch_index);
-        self.loss_mse_batch[epoch_index] = self.loss_mse.mean().unwrap();
-        self.loss_maximum_regularization_batch[epoch_index] =
-            self.loss_maximum_regularization.mean().unwrap();
-        self.loss_batch[epoch_index] = self.loss.mean().unwrap();
-
-        self.delta_states_mean_batch[epoch_index] = self.delta_states_mean.mean().unwrap();
-        self.delta_states_max_batch[epoch_index] = *self.delta_states_max.max_skipnan();
-
-        self.delta_measurements_mean_batch[epoch_index] =
-            self.delta_measurements_mean.mean().unwrap();
-        self.delta_measurements_max_batch[epoch_index] = *self.delta_measurements_max.max_skipnan();
-
-        self.delta_gains_mean_batch[epoch_index] = *self.delta_gains_mean.last().unwrap();
-        self.delta_gains_max_batch[epoch_index] = *self.delta_gains_max.last().unwrap();
-
-        self.delta_delays_mean_batch[epoch_index] = *self.delta_delays_mean.last().unwrap();
-        self.delta_delays_max_batch[epoch_index] = *self.delta_delays_max.last().unwrap();
-    }
-
-    /// Calculates metrics over the full range of thresholds from 0 to 1 by incrementing
-    /// in steps of 0.01. Stores the dice score, `IoU`, precision, and recall for each
-    /// threshold value in the given metric arrays.
-    #[allow(clippy::cast_precision_loss)]
-    #[tracing::instrument(level = "debug", skip_all)]
-    pub fn calculate_final(
-        &mut self,
-        estimations: &Estimations,
-        ground_truth: &VoxelTypes,
-        voxel_numbers: &VoxelNumbers,
-    ) {
-        debug!("Calculating final metrics");
-        for i in 0..=100 {
-            let threshold = i as f32 / 100.0;
-            let (dice, iou, precision, recall) =
-                calculate_for_threshold(estimations, ground_truth, voxel_numbers, threshold);
-            self.dice_score_over_threshold[i] = dice;
-            self.iou_over_threshold[i] = iou;
-            self.precision_over_threshold[i] = precision;
-            self.recall_over_threshold[i] = recall;
-        }
-    }
-
     /// Saves all metric arrays to .npy files in the given path.
     /// Creates the directory if it does not exist.
     #[tracing::instrument(level = "trace")]
@@ -280,6 +174,107 @@ impl Metrics {
     }
 }
 
+/// Calculates metrics for the current step.
+///
+/// Updates the metrics fields with calculations for the current step:
+/// - MSE loss
+/// - Maximum regularization loss
+/// - Total loss
+/// - Mean and max of absolute deltas for:
+///   - System states
+///   - Measurements (residuals)
+///   - Gains
+///   - Delays
+///
+/// # Panics
+///
+/// Panics if any array is None.
+#[allow(clippy::cast_precision_loss)]
+#[tracing::instrument(level = "trace", skip_all)]
+pub fn calculate_step(
+    metrics: &mut Metrics,
+    estimations: &Estimations,
+    maximum_regularization_sum: f32,
+    regularization_strength: f32,
+    step: usize,
+) {
+    trace!("Calculating metrics for step {}", step);
+
+    metrics.loss_mse[step] = estimations.residuals.mapv(|v| v.powi(2)).sum()
+        / estimations.measurements.num_sensors() as f32;
+    metrics.loss_maximum_regularization[step] = maximum_regularization_sum;
+    metrics.loss[step] = regularization_strength.mul_add(
+        metrics.loss_maximum_regularization[step],
+        metrics.loss_mse[step],
+    );
+
+    let states_delta_abs = estimations.system_states_delta.at_step(step).mapv(f32::abs);
+    metrics.delta_states_mean[step] = states_delta_abs.mean().unwrap();
+    metrics.delta_states_max[step] = *states_delta_abs.max_skipnan();
+
+    let measurements_delta_abs = estimations.post_update_residuals.mapv(f32::abs);
+    metrics.delta_measurements_mean[step] = measurements_delta_abs.mean().unwrap();
+    metrics.delta_measurements_max[step] = *measurements_delta_abs.max_skipnan();
+
+    let gains_delta_abs = estimations.gains_delta.mapv(f32::abs);
+    metrics.delta_gains_mean[step] = gains_delta_abs.mean().unwrap();
+    metrics.delta_gains_max[step] = *gains_delta_abs.max_skipnan();
+
+    let delays_delta_abs = estimations.delays_delta.mapv(f32::abs);
+    metrics.delta_delays_mean[step] = delays_delta_abs.mean().unwrap();
+    metrics.delta_delays_max[step] = *delays_delta_abs.max_skipnan();
+}
+
+/// Calculates epoch metrics by taking the mean of step metrics.
+///
+/// # Panics
+///
+/// Panics if any loss array is None.
+#[tracing::instrument(level = "debug")]
+pub fn calculate_batch(metrics: &mut Metrics, epoch_index: usize) {
+    debug!("Calculating metrics for epoch {}", epoch_index);
+    metrics.loss_mse_batch[epoch_index] = metrics.loss_mse.mean().unwrap();
+    metrics.loss_maximum_regularization_batch[epoch_index] =
+        metrics.loss_maximum_regularization.mean().unwrap();
+    metrics.loss_batch[epoch_index] = metrics.loss.mean().unwrap();
+
+    metrics.delta_states_mean_batch[epoch_index] = metrics.delta_states_mean.mean().unwrap();
+    metrics.delta_states_max_batch[epoch_index] = *metrics.delta_states_max.max_skipnan();
+
+    metrics.delta_measurements_mean_batch[epoch_index] =
+        metrics.delta_measurements_mean.mean().unwrap();
+    metrics.delta_measurements_max_batch[epoch_index] =
+        *metrics.delta_measurements_max.max_skipnan();
+
+    metrics.delta_gains_mean_batch[epoch_index] = *metrics.delta_gains_mean.last().unwrap();
+    metrics.delta_gains_max_batch[epoch_index] = *metrics.delta_gains_max.last().unwrap();
+
+    metrics.delta_delays_mean_batch[epoch_index] = *metrics.delta_delays_mean.last().unwrap();
+    metrics.delta_delays_max_batch[epoch_index] = *metrics.delta_delays_max.last().unwrap();
+}
+
+/// Calculates metrics over the full range of thresholds from 0 to 1 by incrementing
+/// in steps of 0.01. Stores the dice score, `IoU`, precision, and recall for each
+/// threshold value in the given metric arrays.
+#[allow(clippy::cast_precision_loss)]
+#[tracing::instrument(level = "debug", skip_all)]
+pub fn calculate_final(
+    metrics: &mut Metrics,
+    estimations: &Estimations,
+    ground_truth: &VoxelTypes,
+    voxel_numbers: &VoxelNumbers,
+) {
+    debug!("Calculating final metrics");
+    for i in 0..=100 {
+        let threshold = i as f32 / 100.0;
+        let (dice, iou, precision, recall) =
+            calculate_for_threshold(estimations, ground_truth, voxel_numbers, threshold);
+        metrics.dice_score_over_threshold[i] = dice;
+        metrics.iou_over_threshold[i] = iou;
+        metrics.precision_over_threshold[i] = precision;
+        metrics.recall_over_threshold[i] = recall;
+    }
+}
 /// Calculates Dice score, `IoU`, precision, and recall for the given estimations, ground truth, and voxel numbers at the specified threshold.
 ///
 /// The estimations, ground truth, and voxel numbers are used to generate voxel type predictions at the given threshold.

@@ -17,6 +17,8 @@ use std::{
 use toml;
 use tracing::{debug, info, trace};
 
+use crate::core::algorithm::metrics;
+
 use self::{
     results::{Results, Snapshot},
     summary::Summary,
@@ -523,7 +525,8 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
     results.model = Some(model);
     calculate_plotting_arrays(&mut results, &data);
 
-    results.metrics.calculate_final(
+    metrics::calculate_final(
+        &mut results.metrics,
         &results.estimations,
         &data.simulation.model.spatial_description.voxels.types,
         &results
