@@ -27,7 +27,7 @@ fn run_benches(c: &mut Criterion) {
     bench_resetting(&mut group);
     bench_system_prediction(&mut group);
     bench_residuals(&mut group);
-    //bench_kalman(&mut group);
+    bench_kalman(&mut group);
     bench_system_update(&mut group);
     bench_derivation(&mut group);
     bench_deltas(&mut group);
@@ -148,7 +148,7 @@ fn bench_derivation(group: &mut criterion::BenchmarkGroup<criterion::measurement
     }
 }
 
-fn _bench_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn bench_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
@@ -163,15 +163,9 @@ fn _bench_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::W
             |b| {
                 b.iter(|| {
                     update_kalman_gain_and_check_convergence(
-                        &mut model.functional_description.kalman_gain,
-                        &mut results.estimations.kalman_gain_converged,
-                        &mut results.estimations.state_covariance_est,
-                        &mut results.estimations.state_covariance_pred,
-                        &mut results.estimations.innovation_covariance,
-                        &model.functional_description.ap_params,
-                        &model.functional_description.process_covariance,
-                        &model.functional_description.measurement_covariance,
-                        &model.functional_description.measurement_matrix.at_beat(0),
+                        &mut model.functional_description,
+                        &mut results.estimations,
+                        BEAT,
                     );
                     results.estimations.kalman_gain_converged = false;
                 })

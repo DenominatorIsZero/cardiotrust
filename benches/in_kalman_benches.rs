@@ -35,20 +35,13 @@ fn bench_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
-        let measurement_matrix = model.functional_description.measurement_matrix.at_beat(0);
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("update_and_check", voxel_size), |b| {
             b.iter(|| {
                 update_kalman_gain_and_check_convergence(
-                    &mut model.functional_description.kalman_gain,
-                    &mut results.estimations.kalman_gain_converged,
-                    &mut results.estimations.state_covariance_est,
-                    &mut results.estimations.state_covariance_pred,
-                    &mut results.estimations.innovation_covariance,
-                    &model.functional_description.ap_params,
-                    &model.functional_description.process_covariance,
-                    &model.functional_description.measurement_covariance,
-                    &measurement_matrix,
+                    &mut model.functional_description,
+                    &mut results.estimations,
+                    0,
                 );
                 results.estimations.kalman_gain_converged = false;
             })
@@ -65,19 +58,13 @@ fn bench_calculation(group: &mut criterion::BenchmarkGroup<criterion::measuremen
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
-        let measurement_matrix = model.functional_description.measurement_matrix.at_beat(0);
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("calculate", voxel_size), |b| {
             b.iter(|| {
                 calculate_kalman_gain(
-                    &mut model.functional_description.kalman_gain,
-                    &mut results.estimations.state_covariance_est,
-                    &mut results.estimations.state_covariance_pred,
-                    &mut results.estimations.innovation_covariance,
-                    &model.functional_description.ap_params,
-                    &model.functional_description.process_covariance,
-                    &model.functional_description.measurement_covariance,
-                    &measurement_matrix,
+                    &mut model.functional_description,
+                    &mut results.estimations,
+                    0,
                 );
             })
         });

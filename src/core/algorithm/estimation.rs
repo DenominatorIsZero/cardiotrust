@@ -21,6 +21,7 @@ use crate::core::{
         },
         kalman::KalmanGain,
         measurement::{MeasurementCovariance, MeasurementMatrixAtBeat},
+        FunctionalDescription,
     },
 };
 
@@ -204,34 +205,19 @@ pub fn calculate_system_update(
 #[inline]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn update_kalman_gain_and_check_convergence(
-    kalman_gain: &mut KalmanGain,
-    kalman_gain_converged: &mut bool,
-    state_covariance_est: &mut Gains,
-    state_covariance_pred: &mut Gains,
-    innovation_covariance: &mut DMatrix<f32>,
-    ap_params: &APParameters,
-    process_covariance: &Gains,
-    measurement_covariance: &MeasurementCovariance,
-    measurement_matrix: &MeasurementMatrixAtBeat,
+    functional_description: &mut FunctionalDescription,
+    estimations: &mut Estimations,
+    beat: usize,
 ) {
     trace!("Updating Kalman gain and checking convergence");
-    if !*kalman_gain_converged {
-        let kalman_gain_old = kalman_gain.clone();
-        calculate_kalman_gain(
-            kalman_gain,
-            state_covariance_est,
-            state_covariance_pred,
-            innovation_covariance,
-            ap_params,
-            process_covariance,
-            measurement_covariance,
-            measurement_matrix,
-        );
-        let difference = (&*kalman_gain_old - &**kalman_gain)
+    if !estimations.kalman_gain_converged {
+        let kalman_gain_old = functional_description.kalman_gain.clone();
+        calculate_kalman_gain(functional_description, estimations, beat);
+        let difference = (&*kalman_gain_old - &*functional_description.kalman_gain)
             .mapv(|v| v.powi(2))
             .sum();
         if difference < 1e-6 {
-            *kalman_gain_converged = true;
+            estimations.kalman_gain_converged = true;
         }
     }
 }
@@ -241,42 +227,37 @@ pub fn update_kalman_gain_and_check_convergence(
 #[inline]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_kalman_gain(
-    kalman_gain: &mut KalmanGain,
-    state_covariance_est: &mut Gains,
-    state_covariance_pred: &mut Gains,
-    innovation_covariance: &mut DMatrix<f32>,
-    ap_params: &APParameters,
-    process_covariance: &Gains,
-    measurement_covariance: &MeasurementCovariance,
-    measurement_matrix: &MeasurementMatrixAtBeat,
+    functional_description: &mut FunctionalDescription,
+    estimations: &mut Estimations,
+    beat: usize,
 ) {
     trace!("Calculating Kalman gain");
     predict_state_covariance(
-        state_covariance_pred,
-        state_covariance_est,
-        ap_params,
-        process_covariance,
+        &mut estimations.state_covariance_pred,
+        &estimations.state_covariance_est,
+        &functional_description.ap_params,
+        &functional_description.process_covariance,
     );
     calculate_s_inv(
-        innovation_covariance,
-        state_covariance_pred,
-        measurement_covariance,
-        ap_params,
-        measurement_matrix,
+        &mut estimations.innovation_covariance,
+        &mut estimations.state_covariance_pred,
+        &functional_description.measurement_covariance,
+        &functional_description.ap_params,
+        &functional_description.measurement_matrix.at_beat(beat),
     );
     calculate_k(
-        kalman_gain,
-        state_covariance_pred,
-        innovation_covariance,
-        ap_params,
-        measurement_matrix,
+        &mut functional_description.kalman_gain,
+        &estimations.state_covariance_pred,
+        &estimations.innovation_covariance,
+        &functional_description.ap_params,
+        &functional_description.measurement_matrix.at_beat(beat),
     );
     estimate_state_covariance(
-        state_covariance_est,
-        state_covariance_pred,
-        ap_params,
-        measurement_matrix,
-        kalman_gain,
+        &mut estimations.state_covariance_est,
+        &estimations.state_covariance_pred,
+        &functional_description.ap_params,
+        &functional_description.measurement_matrix.at_beat(beat),
+        &functional_description.kalman_gain,
     );
 }
 

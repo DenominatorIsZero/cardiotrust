@@ -180,7 +180,6 @@ pub fn run_epoch(
     for beat in beat_indices {
         estimations.reset();
         estimations.kalman_gain_converged = false;
-        let measurement_matrix = functional_description.measurement_matrix.at_beat(beat);
         let actual_measurements = data.simulation.measurements.at_beat(beat);
 
         for step in 0..num_steps {
@@ -190,13 +189,12 @@ pub fn run_epoch(
             let mut estimated_measurements = estimated_measurements.at_step_mut(step);
             let actual_measurements = actual_measurements.at_step(step);
 
-            let estimated_system_states = &mut estimations.system_states;
             calculate_system_prediction(
                 &mut estimations.ap_outputs,
-                estimated_system_states,
+                &mut estimations.system_states,
                 &mut estimated_measurements,
                 &functional_description.ap_params,
-                &measurement_matrix,
+                &functional_description.measurement_matrix.at_beat(beat),
                 functional_description.control_function_values[step],
                 &functional_description.control_matrix,
                 step,
@@ -211,30 +209,23 @@ pub fn run_epoch(
             calculate_derivatives(
                 derivatives,
                 estimations,
-                &functional_description,
+                functional_description,
                 config,
                 step,
                 beat,
                 num_sensors,
             );
-            let estimated_system_states = &mut estimations.system_states;
 
             if config.model.common.apply_system_update {
                 if config.update_kalman_gain {
                     update_kalman_gain_and_check_convergence(
-                        &mut functional_description.kalman_gain,
-                        &mut estimations.kalman_gain_converged,
-                        &mut estimations.state_covariance_est,
-                        &mut estimations.state_covariance_pred,
-                        &mut estimations.innovation_covariance,
-                        &functional_description.ap_params,
-                        &functional_description.process_covariance,
-                        &functional_description.measurement_covariance,
-                        &measurement_matrix,
+                        functional_description,
+                        estimations,
+                        beat,
                     );
                 }
                 calculate_system_update(
-                    estimated_system_states,
+                    &mut estimations.system_states,
                     &functional_description.kalman_gain,
                     &estimations.residuals,
                     step,
@@ -242,14 +233,14 @@ pub fn run_epoch(
                 );
             }
 
-            let estimated_system_states = estimated_system_states.at_step_mut(step);
+            let estimated_system_states = estimations.system_states.at_step_mut(step);
             let mut system_states_delta = estimations.system_states_delta.at_step_mut(step);
             calculate_deltas(
                 &mut estimations.post_update_residuals,
                 &mut system_states_delta,
                 &mut estimations.gains_delta,
                 &mut estimations.delays_delta,
-                &measurement_matrix,
+                &functional_description.measurement_matrix.at_beat(beat),
                 &actual_measurements,
                 &estimated_system_states,
                 &actual_system_states,

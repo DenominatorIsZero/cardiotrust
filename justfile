@@ -15,11 +15,12 @@ lint:
     cargo clippy
 
 bench:
-  cargo bench
+  cargo bench --bench in_epoch_benches
 
 work: lint test bench
 
-fmt: cargo +nightly fmt
+fmt:
+  cargo +nightly fmt
 
 flamegraph:
   CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph --bin main --release --root
