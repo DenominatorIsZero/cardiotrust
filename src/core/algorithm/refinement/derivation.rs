@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use crate::core::{
+    algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
     data::shapes::{Residuals, SystemStates, SystemStatesAtStep},
     model::functional::{
@@ -14,6 +15,7 @@ use crate::core::{
             APParameters,
         },
         measurement::MeasurementMatrixAtBeat,
+        FunctionalDescription,
     },
 };
 
@@ -129,51 +131,47 @@ impl Derivatives {
 #[inline]
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn calculate_derivatives(
-    derivatives_gains: &mut Gains,
-    derivatives_coefs: &mut Coefs,
-    derivatives_iir: &mut Gains,
-    derivatives_fir: &mut Gains,
-    mapped_residuals: &mut MappedResiduals,
-    maximum_regularization: &mut MaximumRegularization,
-    maximum_regularization_sum: &mut f32,
-    residuals: &Residuals,
-    estimated_system_states: &SystemStates,
-    ap_outputs: &Gains,
-    ap_params: &APParameters,
-    measurement_matrix: &MeasurementMatrixAtBeat,
+    derivates: &mut Derivatives,
+    estimations: &Estimations,
+    functional_description: &FunctionalDescription,
     config: &Algorithm,
     step: usize,
+    beat: usize,
     number_of_sensors: usize,
 ) {
     debug!("Calculating derivatives");
-    calculate_mapped_residuals(mapped_residuals, residuals, measurement_matrix);
+    calculate_mapped_residuals(
+        &mut derivates.mapped_residuals,
+        &estimations.residuals,
+        &functional_description.measurement_matrix.at_beat(beat),
+    );
 
     calculate_maximum_regularization(
-        maximum_regularization,
-        maximum_regularization_sum,
-        &estimated_system_states.at_step(step),
+        &mut derivates.maximum_regularization,
+        &mut derivates.maximum_regularization_sum,
+        &estimations.system_states.at_step(step),
         config.maximum_regularization_threshold,
     );
 
     if !config.freeze_gains {
         calculate_derivatives_gains(
-            derivatives_gains,
-            ap_outputs,
-            maximum_regularization,
-            mapped_residuals,
+            &mut derivates.gains,
+            &estimations.ap_outputs,
+            &derivates.maximum_regularization,
+            &derivates.mapped_residuals,
             config.maximum_regularization_strength,
             number_of_sensors,
         );
     }
     if !config.freeze_delays {
         calculate_derivatives_coefs(
-            derivatives_coefs,
-            derivatives_iir,
-            derivatives_fir,
-            ap_outputs,
-            estimated_system_states,
-            ap_params,
-            mapped_residuals,
+            &mut derivates.coefs,
+            &mut derivates.coefs_iir,
+            &mut derivates.coefs_fir,
+            &estimations.ap_outputs,
+            &estimations.system_states,
+            &functional_description.ap_params,
+            &derivates.mapped_residuals,
             step,
             number_of_sensors,
             config.difference_regularization_strength,
@@ -476,20 +474,12 @@ mod tests {
         );
 
         calculate_derivatives(
-            &mut derivates.gains,
-            &mut derivates.coefs,
-            &mut derivates.coefs_iir,
-            &mut derivates.coefs_fir,
-            &mut derivates.mapped_residuals,
-            &mut derivates.maximum_regularization,
-            &mut derivates.maximum_regularization_sum,
-            &estimations.residuals,
-            &estimations.system_states,
-            &estimations.ap_outputs,
-            &functional_description.ap_params,
-            &functional_description.measurement_matrix.at_beat(0),
+            &mut derivates,
+            &estimations,
+            &functional_description,
             &config,
             step,
+            0,
             estimations.measurements.num_sensors(),
         );
     }

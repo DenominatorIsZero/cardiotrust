@@ -133,23 +133,12 @@ fn bench_derivation(group: &mut criterion::BenchmarkGroup<criterion::measurement
         group.bench_function(BenchmarkId::new("derivation", voxel_size), |b| {
             b.iter(|| {
                 calculate_derivatives(
-                    &mut results.derivatives.gains,
-                    &mut results.derivatives.coefs,
-                    &mut results.derivatives.coefs_iir,
-                    &mut results.derivatives.coefs_fir,
-                    &mut results.derivatives.mapped_residuals,
-                    &mut results.derivatives.maximum_regularization,
-                    &mut results.derivatives.maximum_regularization_sum,
-                    &results.estimations.residuals,
-                    &results.estimations.system_states,
-                    &results.estimations.ap_outputs,
-                    &model.functional_description.ap_params,
-                    &model
-                        .functional_description
-                        .measurement_matrix
-                        .at_beat(BEAT),
+                    &mut results.derivatives,
+                    &results.estimations,
+                    &model.functional_description,
                     &config.algorithm,
                     STEP,
+                    BEAT,
                     results.estimations.measurements.num_sensors(),
                 );
             })

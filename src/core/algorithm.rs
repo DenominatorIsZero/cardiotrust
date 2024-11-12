@@ -74,7 +74,6 @@ pub fn calculate_pseudo_inverse(
     for step in 0..estimations.system_states.num_steps() {
         let mut estimated_measurements = estimations.measurements.at_beat_mut(0);
         let actual_measurements = data.simulation.measurements.at_beat(0);
-        let mut system_states_delta = estimations.system_states_delta.at_step_mut(step);
         let mut estimated_system_states = estimations.system_states.at_step_mut(step);
         let actual_system_states = data.simulation.system_states.at_step(step);
         let mut estimated_measurements = estimated_measurements.at_step_mut(step);
@@ -103,20 +102,12 @@ pub fn calculate_pseudo_inverse(
         );
 
         calculate_derivatives(
-            &mut derivatives.gains,
-            &mut derivatives.coefs,
-            &mut derivatives.coefs_iir,
-            &mut derivatives.coefs_fir,
-            &mut derivatives.mapped_residuals,
-            &mut derivatives.maximum_regularization,
-            &mut derivatives.maximum_regularization_sum,
-            &estimations.residuals,
-            &estimations.system_states,
-            &estimations.ap_outputs,
-            &functional_description.ap_params,
-            &measurement_matrix,
+            derivatives,
+            estimations,
+            functional_description,
             config,
             step,
+            0,
             num_sensors,
         );
 
@@ -127,6 +118,9 @@ pub fn calculate_pseudo_inverse(
             &estimated_system_states,
             &actual_measurements,
         );
+
+        let mut system_states_delta = estimations.system_states_delta.at_step_mut(step);
+
         calculate_system_states_delta(
             &mut system_states_delta,
             &estimated_system_states,
@@ -187,30 +181,27 @@ pub fn run_epoch(
         .ap_params
         .delays;
 
-    let estimated_ap_params = &mut functional_description.ap_params;
-
     let num_sensors = data.simulation.measurements.num_sensors();
 
     for beat in beat_indices {
         estimations.reset();
         estimations.kalman_gain_converged = false;
-        let estimated_system_states = &mut estimations.system_states;
         let measurement_matrix = functional_description.measurement_matrix.at_beat(beat);
-        let mut estimated_measurements = estimations.measurements.at_beat_mut(beat);
         let actual_measurements = data.simulation.measurements.at_beat(beat);
 
         for step in 0..num_steps {
             let actual_system_states = data.simulation.system_states.at_step(step);
-            let mut system_states_delta = estimations.system_states_delta.at_step_mut(step);
 
+            let mut estimated_measurements = estimations.measurements.at_beat_mut(beat);
             let mut estimated_measurements = estimated_measurements.at_step_mut(step);
             let actual_measurements = actual_measurements.at_step(step);
 
+            let estimated_system_states = &mut estimations.system_states;
             calculate_system_prediction(
                 &mut estimations.ap_outputs,
                 estimated_system_states,
                 &mut estimated_measurements,
-                estimated_ap_params,
+                &functional_description.ap_params,
                 &measurement_matrix,
                 functional_description.control_function_values[step],
                 &functional_description.control_matrix,
@@ -224,22 +215,15 @@ pub fn run_epoch(
             );
 
             calculate_derivatives(
-                &mut derivatives.gains,
-                &mut derivatives.coefs,
-                &mut derivatives.coefs_iir,
-                &mut derivatives.coefs_fir,
-                &mut derivatives.mapped_residuals,
-                &mut derivatives.maximum_regularization,
-                &mut derivatives.maximum_regularization_sum,
-                &estimations.residuals,
-                estimated_system_states,
-                &estimations.ap_outputs,
-                estimated_ap_params,
-                &measurement_matrix,
+                derivatives,
+                estimations,
+                &functional_description,
                 config,
                 step,
+                beat,
                 num_sensors,
             );
+            let estimated_system_states = &mut estimations.system_states;
 
             if config.model.common.apply_system_update {
                 if config.update_kalman_gain {
@@ -249,7 +233,7 @@ pub fn run_epoch(
                         &mut estimations.state_covariance_est,
                         &mut estimations.state_covariance_pred,
                         &mut estimations.innovation_covariance,
-                        estimated_ap_params,
+                        &functional_description.ap_params,
                         &functional_description.process_covariance,
                         &functional_description.measurement_covariance,
                         &measurement_matrix,
@@ -265,6 +249,7 @@ pub fn run_epoch(
             }
 
             let estimated_system_states = estimated_system_states.at_step_mut(step);
+            let mut system_states_delta = estimations.system_states_delta.at_step_mut(step);
             calculate_deltas(
                 &mut estimations.post_update_residuals,
                 &mut system_states_delta,
@@ -274,11 +259,11 @@ pub fn run_epoch(
                 &actual_measurements,
                 &estimated_system_states,
                 &actual_system_states,
-                &estimated_ap_params.gains,
+                &functional_description.ap_params.gains,
                 actual_gains,
-                &estimated_ap_params.delays,
+                &functional_description.ap_params.delays,
                 actual_delays,
-                &estimated_ap_params.coefs,
+                &functional_description.ap_params.coefs,
                 actual_coefs,
             );
 
@@ -297,7 +282,9 @@ pub fn run_epoch(
         if let Some(n) = batch.as_mut() {
             *n += 1;
             if *n == config.batch_size {
-                estimated_ap_params.update(derivatives, config, num_steps, *n);
+                functional_description
+                    .ap_params
+                    .update(derivatives, config, num_steps, *n);
                 derivatives.reset();
                 estimations.kalman_gain_converged = false;
                 *n = 0;
