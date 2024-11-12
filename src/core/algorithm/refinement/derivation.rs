@@ -1,5 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
+use bevy::scene::ron::de;
 use ndarray::Array1;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -163,19 +164,7 @@ pub fn calculate_derivatives(
         );
     }
     if !config.freeze_delays {
-        calculate_derivatives_coefs(
-            &mut derivates.coefs,
-            &mut derivates.coefs_iir,
-            &mut derivates.coefs_fir,
-            &estimations.ap_outputs,
-            &estimations.system_states,
-            &functional_description.ap_params,
-            &derivates.mapped_residuals,
-            step,
-            number_of_sensors,
-            config.difference_regularization_strength,
-            config.difference_regularization_strength,
-        );
+        calculate_derivatives_coefs(derivates, estimations, functional_description, step, config);
     }
 }
 
@@ -217,64 +206,66 @@ pub fn calculate_derivatives_gains(
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn calculate_derivatives_coefs(
-    derivatives_coefs: &mut Coefs,
-    derivatives_iir: &mut Gains,
-    derivatives_fir: &mut Gains,
-    ap_outputs: &Gains,
-    estimated_system_states: &SystemStates,
-    ap_params: &APParameters,
-    mapped_residuals: &MappedResiduals,
+    derivatives: &mut Derivatives,
+    estimations: &Estimations,
+    functional_description: &FunctionalDescription,
     step: usize,
-    number_of_sensors: usize,
-    difference_regulariztion: f32,
-    smoothness_regularization: f32,
+    config: &Algorithm,
 ) {
     trace!("Calculating derivatives for coefficients");
-    derivatives_fir
+    derivatives
+        .coefs_fir
         .indexed_iter_mut()
-        .zip(ap_params.output_state_indices.iter())
+        .zip(functional_description.ap_params.output_state_indices.iter())
         .filter(|(_, output_state_index)| output_state_index.is_some())
         .for_each(
             |(((state_index, offset_index), derivative), output_state_index)| {
                 let coef_index = (state_index / 3, offset_index / 3);
-                if step >= ap_params.delays[coef_index] {
-                    *derivative = (1.0 - ap_params.coefs[coef_index]).mul_add(
-                        *derivative,
-                        -estimated_system_states[(
-                            step - ap_params.delays[coef_index],
-                            output_state_index.unwrap(),
-                        )],
-                    );
+                if step >= functional_description.ap_params.delays[coef_index] {
+                    *derivative = (1.0 - functional_description.ap_params.coefs[coef_index])
+                        .mul_add(
+                            *derivative,
+                            -estimations.system_states[(
+                                step - functional_description.ap_params.delays[coef_index],
+                                output_state_index.unwrap(),
+                            )],
+                        );
                 }
             },
         );
-    derivatives_iir
+    derivatives
+        .coefs_iir
         .indexed_iter_mut()
-        .zip(ap_outputs.iter())
+        .zip(estimations.ap_outputs.iter())
         .for_each(|(((state_index, offset_index), derivative), ap_output)| {
             let coef_index = (state_index / 3, offset_index / 3);
-            if step >= ap_params.delays[coef_index] {
+            if step >= functional_description.ap_params.delays[coef_index] {
                 let coef_index = (state_index / 3, offset_index / 3);
-                *derivative = ap_params.coefs[coef_index].mul_add(*derivative, -*ap_output);
+                *derivative = functional_description.ap_params.coefs[coef_index]
+                    .mul_add(*derivative, -*ap_output);
             }
         });
     #[allow(clippy::cast_precision_loss)]
-    let scaling = 1.0 / number_of_sensors as f32;
+    let scaling = 1.0 / estimations.measurements.num_sensors() as f32;
     #[allow(clippy::cast_precision_loss)]
-    derivatives_iir
+    derivatives
+        .coefs_iir
         .indexed_iter()
-        .zip(derivatives_fir.iter())
-        .zip(ap_params.gains.iter())
+        .zip(derivatives.coefs_fir.iter())
+        .zip(functional_description.ap_params.gains.iter())
         .for_each(|((((state_index, offset_index), iir), fir), ap_gain)| {
             let coef_index = (state_index / 3, offset_index / 3);
-            let delay = ap_params.delays[coef_index] as f32
-                + from_coef_to_samples(ap_params.coefs[coef_index]);
-            let delay_delta = (ap_params.initial_delays[coef_index] - delay).powi(5);
+            let delay = functional_description.ap_params.delays[coef_index] as f32
+                + from_coef_to_samples(functional_description.ap_params.coefs[coef_index]);
+            let delay_delta =
+                (functional_description.ap_params.initial_delays[coef_index] - delay).powi(5);
             // Idea: regularization based on neighboring voxels?
             // Idea: divide by accumulated gradient to prevent ossilations?
-            derivatives_coefs[coef_index] +=
-                ((fir + iir) * ap_gain * mapped_residuals[state_index])
-                    .mul_add(scaling, difference_regulariztion * delay_delta);
+            derivatives.coefs[coef_index] +=
+                ((fir + iir) * ap_gain * derivatives.mapped_residuals[state_index]).mul_add(
+                    scaling,
+                    config.difference_regularization_strength * delay_delta,
+                );
         });
 }
 
@@ -402,7 +393,7 @@ impl DerefMut for MaximumRegularization {
 
 #[cfg(test)]
 mod tests {
-    use ndarray::Dim;
+    use ndarray::{arr3, Dim};
 
     use super::*;
     use crate::core::{
@@ -416,29 +407,35 @@ mod tests {
     fn coef_no_crash() {
         let number_of_steps = 2000;
         let number_of_states = 3000;
-        let ap_outputs = Gains::empty(number_of_states);
-        let estimated_system_states = SystemStates::empty(number_of_steps, number_of_states);
-        let ap_params = APParameters::empty(number_of_states, Dim([1000, 1, 1]));
-        let mut delays = UnitDelays::empty(number_of_states);
-        delays.fill(30);
-        let mut output_state_indices = Indices::empty(number_of_states);
-        output_state_indices.fill(Some(3));
+        let number_of_sensors = 10;
+        let number_of_beats = 1;
         let step = 10;
-
         let mut derivatives = Derivatives::new(number_of_states, Optimizer::Sgd);
+        let estimations = Estimations::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            number_of_beats,
+        );
+        let functional_description = FunctionalDescription::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            number_of_beats,
+            Dim([1000, 1, 1]),
+        );
+        let config = Algorithm {
+            maximum_regularization_strength: 0.0,
+            smoothness_regularization_strength: 0.0,
+            ..Default::default()
+        };
 
         calculate_derivatives_coefs(
-            &mut derivatives.coefs,
-            &mut derivatives.coefs_iir,
-            &mut derivatives.coefs_fir,
-            &ap_outputs,
-            &estimated_system_states,
-            &ap_params,
-            &derivatives.mapped_residuals,
+            &mut derivatives,
+            &estimations,
+            &functional_description,
             step,
-            1,
-            0.0,
-            0.0,
+            &config,
         );
     }
 

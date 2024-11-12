@@ -27,7 +27,7 @@ fn run_benches(c: &mut Criterion) {
     bench_resetting(&mut group);
     bench_system_prediction(&mut group);
     bench_residuals(&mut group);
-    bench_kalman(&mut group);
+    //bench_kalman(&mut group);
     bench_system_update(&mut group);
     bench_derivation(&mut group);
     bench_deltas(&mut group);
@@ -148,7 +148,7 @@ fn bench_derivation(group: &mut criterion::BenchmarkGroup<criterion::measurement
     }
 }
 
-fn bench_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn _bench_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 

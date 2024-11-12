@@ -162,17 +162,11 @@ fn bench_coefs(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         group.bench_function(BenchmarkId::new("coefs", voxel_size), |b| {
             b.iter(|| {
                 calculate_derivatives_coefs(
-                    &mut results.derivatives.coefs,
-                    &mut results.derivatives.coefs_iir,
-                    &mut results.derivatives.coefs_fir,
-                    &results.estimations.ap_outputs,
-                    &results.estimations.system_states,
-                    &model.functional_description.ap_params,
-                    &results.derivatives.mapped_residuals,
+                    &mut results.derivatives,
+                    &results.estimations,
+                    &model.functional_description,
                     STEP,
-                    results.estimations.measurements.num_sensors(),
-                    config.algorithm.difference_regularization_strength,
-                    config.algorithm.smoothness_regularization_strength,
+                    &config.algorithm,
                 );
             })
         });
