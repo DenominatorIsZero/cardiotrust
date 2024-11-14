@@ -1,5 +1,6 @@
 use tracing::trace;
 
+use super::Estimations;
 use crate::core::{
     data::shapes::{MeasurementsAtStepMut, SystemStates, SystemStatesAtStepMut},
     model::functional::{
@@ -9,8 +10,6 @@ use crate::core::{
         FunctionalDescription,
     },
 };
-
-use super::Estimations;
 
 /// Calculates the system prediction by innovating the system states,
 /// adding the control function, and predicting measurements.
