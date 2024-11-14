@@ -15,7 +15,7 @@ use cardiotrust::core::{
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
+const VOXEL_SIZES: [f32; 1] = [2.5];
 const LEARNING_RATE: f32 = 1e-3;
 const STEP: usize = 42;
 const BEAT: usize = 0;

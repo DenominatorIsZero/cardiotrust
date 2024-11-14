@@ -325,8 +325,6 @@ pub fn calculate_derivatives_coefs(
                 + from_coef_to_samples(functional_description.ap_params.coefs[coef_index]);
             let delay_delta =
                 (functional_description.ap_params.initial_delays[coef_index] - delay).powi(5);
-            // Idea: regularization based on neighboring voxels?
-            // Idea: divide by accumulated gradient to prevent ossilations?
             derivatives.coefs[coef_index] +=
                 ((fir + iir) * ap_gain * derivatives.mapped_residuals[state_index]).mul_add(
                     scaling,
@@ -368,7 +366,6 @@ pub fn calculate_maximum_regularization(
         }
     }
 }
-
 #[inline]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_mapped_residuals(
@@ -377,9 +374,14 @@ pub fn calculate_mapped_residuals(
     measurement_matrix: &MeasurementMatrixAtBeat,
 ) {
     trace!("Calculating mapped residuals");
-    mapped_residuals.assign(&measurement_matrix.t().dot(&**residuals));
+    ndarray::linalg::general_mat_mul(
+        1.0,
+        &measurement_matrix.t(),
+        &residuals.view().insert_axis(ndarray::Axis(1)),
+        0.0,
+        &mut mapped_residuals.view_mut().insert_axis(ndarray::Axis(1)),
+    );
 }
-
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_average_delays(average_delays: &mut AverageDelays, ap_params: &APParameters) {
