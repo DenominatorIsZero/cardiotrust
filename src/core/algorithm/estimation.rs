@@ -10,9 +10,9 @@ use crate::core::{
     config::algorithm::Algorithm,
     data::{
         shapes::{
-            ActivationTimePerStateMs, Measurements, MeasurementsAtStep, MeasurementsAtStepMut,
-            Residuals, SystemStates, SystemStatesAtStep, SystemStatesAtStepMut,
-            SystemStatesSpherical, SystemStatesSphericalMax,
+            ActivationTimePerStateMs, Measurements, MeasurementsAtStep, Residuals, SystemStates,
+            SystemStatesAtStep, SystemStatesAtStepMut, SystemStatesSpherical,
+            SystemStatesSphericalMax,
         },
         Data,
     },
@@ -511,12 +511,7 @@ mod tests {
         Estimations,
     };
     use crate::core::{
-        config::algorithm::Algorithm,
-        data::{
-            shapes::{Measurements, Residuals, SystemStates},
-            Data,
-        },
-        model::functional::{allpass::shapes::Gains, FunctionalDescription},
+        config::algorithm::Algorithm, data::Data, model::functional::FunctionalDescription,
     };
 
     #[test]

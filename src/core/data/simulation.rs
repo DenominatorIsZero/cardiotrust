@@ -17,7 +17,7 @@ use crate::core::{
     algorithm::estimation::{prediction::calculate_system_prediction, Estimations},
     config::{model::SensorArrayMotion, simulation::Simulation as SimulationConfig},
     data::Measurements,
-    model::{functional::allpass::shapes::Gains, Model},
+    model::Model,
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]

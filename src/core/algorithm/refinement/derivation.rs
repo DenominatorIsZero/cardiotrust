@@ -1,9 +1,7 @@
 use std::ops::{Deref, DerefMut};
 
 use approx::AbsDiffEq;
-use bevy::scene::ron::de;
-use itertools::Itertools;
-use ndarray::{s, Array1};
+use ndarray::Array1;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
@@ -11,7 +9,7 @@ use super::Optimizer;
 use crate::core::{
     algorithm::estimation::Estimations,
     config::algorithm::Algorithm,
-    data::shapes::{Residuals, SystemStates, SystemStatesAtStep},
+    data::shapes::{Residuals, SystemStatesAtStep},
     model::functional::{
         allpass::{
             from_coef_to_samples,
@@ -526,15 +524,11 @@ impl DerefMut for MaximumRegularization {
 
 #[cfg(test)]
 mod tests {
-    use ndarray::{arr3, Dim};
+    use ndarray::Dim;
 
     use super::*;
     use crate::core::{
-        algorithm::estimation::Estimations,
-        model::functional::{
-            allpass::shapes::{Indices, UnitDelays},
-            FunctionalDescription,
-        },
+        algorithm::estimation::Estimations, model::functional::FunctionalDescription,
     };
     #[test]
     fn coef_no_crash() {
