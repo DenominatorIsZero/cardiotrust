@@ -59,6 +59,7 @@ pub(crate) fn spawn_cutting_plane(
 }
 
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn update_cutting_plane_position(
     mut cutting_planes: Query<&mut Transform, With<CuttingPlane>>,
     settings: Res<CuttingPlaneSettings>,
@@ -73,6 +74,7 @@ pub(crate) fn update_cutting_plane_position(
 }
 
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn update_cutting_plane_visibility(
     mut cutting_plane: Query<&mut Visibility, With<CuttingPlane>>,
     options: Res<VisibilityOptions>,

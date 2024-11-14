@@ -9,6 +9,7 @@ use cardiotrust::core::{
 use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt};
 
+#[tracing::instrument(level = "info")]
 fn main() {
     let file_appender = tracing_appender::rolling::daily("./logs", "CardioPlanner.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);

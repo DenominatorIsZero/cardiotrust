@@ -32,6 +32,7 @@ pub(crate) fn spawn_room(mut commands: Commands, ass: Res<AssetServer>) {
 }
 
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn update_room_visibility(
     mut room: Query<&mut Visibility, With<Room>>,
     options: Res<VisibilityOptions>,

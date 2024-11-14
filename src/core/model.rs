@@ -86,6 +86,7 @@ impl Model {
         self.spatial_description.save_npy(path);
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_activation_time(
         &mut self,
         activation_times: &super::data::shapes::ActivationTimePerStateMs,

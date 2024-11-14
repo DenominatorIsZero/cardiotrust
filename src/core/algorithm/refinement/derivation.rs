@@ -434,12 +434,14 @@ impl MappedResiduals {
 impl Deref for MappedResiduals {
     type Target = Array1<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for MappedResiduals {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -466,12 +468,14 @@ impl AverageDelays {
 impl Deref for AverageDelays {
     type Target = Array1<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for AverageDelays {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -507,12 +511,14 @@ impl MaximumRegularization {
 impl Deref for MaximumRegularization {
     type Target = Array1<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for MaximumRegularization {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

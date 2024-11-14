@@ -99,6 +99,7 @@ pub(crate) fn spawn_sensors(
 }
 
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn update_sensor_positions(
     mut sensors: Query<(&mut Transform, &SensorData)>,
     sample_tracker: Res<SampleTracker>,
@@ -198,6 +199,7 @@ pub(crate) fn spawn_sensor_bracket(
 }
 
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn update_sensor_bracket_position(
     mut sensor_brackets: Query<(&mut Transform, &SensorBracket)>,
     sample_tracker: Res<SampleTracker>,
@@ -222,6 +224,7 @@ pub(crate) fn update_sensor_bracket_position(
 }
 
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn update_sensor_bracket_visibility(
     mut sensor_brackets: Query<&mut Visibility, With<SensorBracket>>,
     options: Res<VisibilityOptions>,
@@ -238,6 +241,7 @@ pub(crate) fn update_sensor_bracket_visibility(
 }
 
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn update_sensor_visibility(
     mut sensors: Query<&mut Visibility, With<SensorData>>,
     options: Res<VisibilityOptions>,

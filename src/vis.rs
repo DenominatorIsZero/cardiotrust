@@ -153,6 +153,7 @@ pub fn setup_coordinate_system(
     }
 }
 
+#[tracing::instrument(level = "info", skip_all)]
 fn spawn_axis(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,

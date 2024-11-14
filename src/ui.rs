@@ -79,10 +79,12 @@ pub enum UiState {
 
 impl Default for UiState {
     #[cfg(target_arch = "wasm32")]
+    #[tracing::instrument(level = "trace")]
     fn default() -> Self {
         Self::Volumetric
     }
     #[cfg(not(target_arch = "wasm32"))]
+    #[tracing::instrument(level = "trace")]
     fn default() -> Self {
         Self::Explorer
     }

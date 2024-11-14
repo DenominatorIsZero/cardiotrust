@@ -186,6 +186,7 @@ fn yes_roll_up() {
     );
 }
 
+#[tracing::instrument(level = "trace")]
 fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: &str) -> Scenario {
     let mut scenario = Scenario::build(Some(format!(
         "{base_id} {initial_velocity:.2} [m per s] to {target_velocity:.2} [m per s]"
@@ -302,6 +303,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: &str) ->
     clippy::cast_sign_loss,
     clippy::cast_precision_loss
 )]
+#[tracing::instrument(level = "trace")]
 fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     setup_folder(path);
     let files = vec![
@@ -572,6 +574,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     .unwrap();
 }
 
+#[tracing::instrument(level = "trace")]
 fn create_and_run(
     target_velocities: Vec<f32>,
     initial_velocity: f32,

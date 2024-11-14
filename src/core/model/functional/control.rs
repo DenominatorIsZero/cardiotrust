@@ -69,12 +69,14 @@ impl ControlMatrix {
 impl Deref for ControlMatrix {
     type Target = Array1<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for ControlMatrix {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -179,12 +181,14 @@ impl ControlFunction {
 impl Deref for ControlFunction {
     type Target = Array1<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for ControlFunction {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

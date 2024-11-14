@@ -299,12 +299,14 @@ impl VoxelTypes {
 impl Deref for VoxelTypes {
     type Target = Array3<VoxelType>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for VoxelTypes {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -381,12 +383,14 @@ impl VoxelNumbers {
 impl Deref for VoxelNumbers {
     type Target = Array3<Option<usize>>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for VoxelNumbers {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -542,12 +546,14 @@ impl VoxelPositions {
 impl Deref for VoxelPositions {
     type Target = Array4<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for VoxelPositions {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

@@ -345,6 +345,7 @@ fn run_simulation_mri() {
     }
 }
 
+#[tracing::instrument(level = "trace", skip_all)]
 fn crawl_through_states(simulation: &Simulation, state: usize) {
     let voxel = state / 3;
 

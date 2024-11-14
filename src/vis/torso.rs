@@ -45,6 +45,7 @@ pub(crate) fn spawn_torso(
 }
 
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn update_torso_visibility(
     mut room: Query<&mut Visibility, With<Torso>>,
     options: Res<VisibilityOptions>,

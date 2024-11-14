@@ -503,12 +503,14 @@ impl SampleWiseMetric {
 impl Deref for SampleWiseMetric {
     type Target = Array1<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for SampleWiseMetric {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -541,12 +543,14 @@ impl BatchWiseMetric {
 impl Deref for BatchWiseMetric {
     type Target = Array1<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for BatchWiseMetric {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

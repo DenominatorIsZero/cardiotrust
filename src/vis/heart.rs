@@ -39,6 +39,7 @@ pub struct MeshAtlas {
 }
 
 #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn setup_material_atlas(
     mut commands: Commands,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -74,6 +75,7 @@ pub(crate) fn setup_material_atlas(
     commands.insert_resource(atlas);
 }
 
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn setup_mesh_atlas(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
     let mesh = meshes.add(Mesh::from(Cuboid {
         half_size: Vec3::new(1.0, 1.0, 1.0),
@@ -179,6 +181,7 @@ pub(crate) fn update_heart_voxel_colors(
 }
 
 #[allow(clippy::needless_pass_by_value)]
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn update_heart_voxel_visibility(
     mut voxels: Query<(&mut Visibility, &VoxelData)>,
     cutting_plane: Res<CuttingPlaneSettings>,
@@ -195,6 +198,7 @@ pub(crate) fn update_heart_voxel_visibility(
     }
 }
 
+#[tracing::instrument(level = "trace", skip_all)]
 fn voxel_is_visible(position: Vec3, cutting_plane: &CuttingPlaneSettings) -> bool {
     !cutting_plane.enabled || ((position - cutting_plane.position).dot(cutting_plane.normal) < 0.0)
 }

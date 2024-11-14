@@ -109,12 +109,14 @@ impl KalmanGain {
 impl Deref for KalmanGain {
     type Target = Array2<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for KalmanGain {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Array2<f32> {
         &mut self.0
     }

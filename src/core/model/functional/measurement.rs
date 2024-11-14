@@ -114,6 +114,7 @@ impl MeasurementMatrix {
     }
 
     #[must_use]
+    #[tracing::instrument(level = "trace")]
     pub fn at_beat(&self, beat: usize) -> MeasurementMatrixAtBeat {
         MeasurementMatrixAtBeat(self.slice(s![beat, .., ..]))
     }
@@ -122,12 +123,14 @@ impl MeasurementMatrix {
 impl Deref for MeasurementMatrix {
     type Target = Array3<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for MeasurementMatrix {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -138,6 +141,7 @@ pub struct MeasurementMatrixAtBeat<'a>(ArrayView2<'a, f32>);
 
 impl<'a> Deref for MeasurementMatrixAtBeat<'a> {
     type Target = ArrayView2<'a, f32>;
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -203,12 +207,14 @@ impl MeasurementCovariance {
 impl Deref for MeasurementCovariance {
     type Target = Array2<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for MeasurementCovariance {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

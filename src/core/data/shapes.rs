@@ -46,21 +46,25 @@ impl SystemStates {
     }
 
     #[must_use]
+    #[tracing::instrument(level = "trace")]
     pub fn num_steps(&self) -> usize {
         self.raw_dim()[0]
     }
 
     #[must_use]
+    #[tracing::instrument(level = "trace")]
     pub fn num_states(&self) -> usize {
         self.raw_dim()[1]
     }
 
     #[must_use]
+    #[tracing::instrument(level = "trace")]
     pub fn at_step(&self, step: usize) -> SystemStatesAtStep {
         SystemStatesAtStep(self.slice(s![step, ..]))
     }
 
     #[must_use]
+    #[tracing::instrument(level = "trace")]
     pub fn at_step_mut(&mut self, step: usize) -> SystemStatesAtStepMut {
         SystemStatesAtStepMut(self.slice_mut(s![step, ..]))
     }
@@ -69,12 +73,14 @@ impl SystemStates {
 impl Deref for SystemStates {
     type Target = Array2<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for SystemStates {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -85,6 +91,7 @@ pub struct SystemStatesAtStep<'a>(ArrayView1<'a, f32>);
 
 impl<'a> Deref for SystemStatesAtStep<'a> {
     type Target = ArrayView1<'a, f32>;
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -94,12 +101,14 @@ pub struct SystemStatesAtStepMut<'a>(ArrayViewMut1<'a, f32>);
 
 impl<'a> Deref for SystemStatesAtStepMut<'a> {
     type Target = ArrayViewMut1<'a, f32>;
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<'a> DerefMut for SystemStatesAtStepMut<'a> {
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -231,7 +240,7 @@ impl SystemStatesSphericalMax {
 impl<'a> std::ops::Sub for &'a SystemStatesSphericalMax {
     type Output = SystemStatesSphericalMax;
 
-    #[tracing::instrument(level = "trace")]
+    #[tracing::instrument(level = "trace", skip_all)]
     fn sub(self, rhs: Self) -> Self::Output {
         trace!("Subtracting spherical states max");
         SystemStatesSphericalMax {
@@ -279,12 +288,14 @@ impl ActivationTimePerStateMs {
 impl Deref for ActivationTimePerStateMs {
     type Target = Array1<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for ActivationTimePerStateMs {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -321,26 +332,31 @@ impl Measurements {
     }
 
     #[must_use]
+    #[tracing::instrument(level = "trace")]
     pub fn num_beats(&self) -> usize {
         self.raw_dim()[0]
     }
 
     #[must_use]
+    #[tracing::instrument(level = "trace")]
     pub fn num_steps(&self) -> usize {
         self.raw_dim()[1]
     }
 
     #[must_use]
+    #[tracing::instrument(level = "trace")]
     pub fn num_sensors(&self) -> usize {
         self.raw_dim()[2]
     }
 
     #[must_use]
+    #[tracing::instrument(level = "trace")]
     pub fn at_beat(&self, beat: usize) -> MeasurementsAtBeat {
         MeasurementsAtBeat(self.slice(s![beat, .., ..]))
     }
 
     #[must_use]
+    #[tracing::instrument(level = "trace")]
     pub fn at_beat_mut(&mut self, beat: usize) -> MeasurementsAtBeatMut {
         MeasurementsAtBeatMut(self.slice_mut(s![beat, .., ..]))
     }
@@ -349,12 +365,14 @@ impl Measurements {
 impl Deref for Measurements {
     type Target = Array3<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for Measurements {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -365,6 +383,7 @@ pub struct MeasurementsAtBeat<'a>(ArrayView2<'a, f32>);
 
 impl MeasurementsAtBeat<'_> {
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn at_step(&self, step: usize) -> MeasurementsAtStep {
         MeasurementsAtStep(self.slice(s![step, ..]))
     }
@@ -372,6 +391,7 @@ impl MeasurementsAtBeat<'_> {
 
 impl<'a> Deref for MeasurementsAtBeat<'a> {
     type Target = ArrayView2<'a, f32>;
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -381,6 +401,7 @@ pub struct MeasurementsAtBeatMut<'a>(ArrayViewMut2<'a, f32>);
 
 impl MeasurementsAtBeatMut<'_> {
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn at_step_mut(&mut self, step: usize) -> MeasurementsAtStepMut {
         MeasurementsAtStepMut(self.slice_mut(s![step, ..]))
     }
@@ -388,12 +409,14 @@ impl MeasurementsAtBeatMut<'_> {
 
 impl<'a> Deref for MeasurementsAtBeatMut<'a> {
     type Target = ArrayViewMut2<'a, f32>;
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<'a> DerefMut for MeasurementsAtBeatMut<'a> {
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -404,6 +427,7 @@ pub struct MeasurementsAtStep<'a>(ArrayView1<'a, f32>);
 
 impl<'a> Deref for MeasurementsAtStep<'a> {
     type Target = ArrayView1<'a, f32>;
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -413,12 +437,14 @@ pub struct MeasurementsAtStepMut<'a>(ArrayViewMut1<'a, f32>);
 
 impl<'a> Deref for MeasurementsAtStepMut<'a> {
     type Target = ArrayViewMut1<'a, f32>;
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl<'a> DerefMut for MeasurementsAtStepMut<'a> {
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -457,12 +483,14 @@ impl Residuals {
 impl Deref for Residuals {
     type Target = Array1<f32>;
 
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for Residuals {
+    #[tracing::instrument(level = "trace", skip_all)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

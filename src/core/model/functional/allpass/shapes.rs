@@ -48,12 +48,14 @@ impl ActivationTimeMs {
 impl Deref for ActivationTimeMs {
     type Target = Array3<Option<f32>>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.values
     }
 }
 
 impl DerefMut for ActivationTimeMs {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.values
     }
@@ -92,12 +94,14 @@ impl Gains {
 impl Deref for Gains {
     type Target = Array2<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for Gains {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -141,12 +145,14 @@ impl Indices {
 impl Deref for Indices {
     type Target = Array2<Option<usize>>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for Indices {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -191,12 +197,14 @@ impl Coefs {
 impl Deref for Coefs {
     type Target = Array2<f32>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for Coefs {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -236,12 +244,14 @@ impl UnitDelays {
 impl Deref for UnitDelays {
     type Target = Array2<usize>;
 
+    #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for UnitDelays {
+    #[tracing::instrument(level = "trace")]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

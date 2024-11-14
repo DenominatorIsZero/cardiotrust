@@ -148,6 +148,7 @@ fn no_roll_up_dif_reg() {
     clippy::cast_precision_loss,
     clippy::too_many_lines
 )]
+#[tracing::instrument(level = "trace")]
 fn build_scenario(
     target_velocity: f32,
     initial_velocity: f32,
@@ -283,6 +284,7 @@ fn build_scenario(
     clippy::cast_sign_loss,
     clippy::cast_precision_loss
 )]
+#[tracing::instrument(level = "trace")]
 fn plot_results(path: &Path, base_title: &str, scenarios: &Vec<Scenario>) {
     setup_folder(path);
     let files = vec![
@@ -515,6 +517,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: &Vec<Scenario>) {
     .unwrap();
 }
 
+#[tracing::instrument(level = "trace")]
 fn create_and_run(
     target_velocity: f32,
     initial_velocity: f32,

@@ -181,6 +181,7 @@ impl Scenario {
     /// Returns a string representation of the scenario's status.
     /// Matches the Status enum variant names.
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn get_status_str(&self) -> String {
         match self.status {
             Status::Planning => "Planning".to_string(),
@@ -561,6 +562,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
     let _ = summary_tx.send(summary);
 }
 
+#[tracing::instrument(level = "trace", skip_all)]
 pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
     results
         .estimations

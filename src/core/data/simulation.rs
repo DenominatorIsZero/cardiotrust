@@ -163,6 +163,7 @@ impl Simulation {
         self.calculate_plotting_arrays();
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn calculate_plotting_arrays(&mut self) {
         let system_states = &mut self.system_states;
         self.system_states_spherical.calculate(system_states);
@@ -182,6 +183,7 @@ impl Simulation {
         self.model.save_npy(path);
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_activation_time(&mut self) {
         self.model.update_activation_time(&self.activation_times);
     }
