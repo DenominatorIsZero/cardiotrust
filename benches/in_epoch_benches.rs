@@ -70,25 +70,13 @@ fn bench_system_prediction(
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
-        let measurement_matrix = model
-            .functional_description
-            .measurement_matrix
-            .at_beat(BEAT);
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("system_prediction", voxel_size), |b| {
             b.iter(|| {
                 calculate_system_prediction(
-                    &mut results.estimations.ap_outputs,
-                    &mut results.estimations.system_states,
-                    &mut results
-                        .estimations
-                        .measurements
-                        .at_beat_mut(BEAT)
-                        .at_step_mut(STEP),
-                    &model.functional_description.ap_params,
-                    &measurement_matrix,
-                    model.functional_description.control_function_values[STEP],
-                    &model.functional_description.control_matrix,
+                    &mut results.estimations,
+                    &model.functional_description,
+                    BEAT,
                     STEP,
                 )
             })
@@ -108,15 +96,7 @@ fn bench_residuals(group: &mut criterion::BenchmarkGroup<criterion::measurement:
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("residuals", voxel_size), |b| {
             b.iter(|| {
-                calculate_residuals(
-                    &mut results.estimations.residuals,
-                    &results
-                        .estimations
-                        .measurements
-                        .at_beat_mut(BEAT)
-                        .at_step_mut(STEP),
-                    &data.simulation.measurements.at_beat(BEAT).at_step(STEP),
-                );
+                calculate_residuals(&mut results.estimations, &data, BEAT, STEP);
             })
         });
     }

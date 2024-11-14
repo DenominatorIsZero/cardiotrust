@@ -14,7 +14,7 @@ use super::shapes::{
     ActivationTimePerStateMs, SystemStates, SystemStatesSpherical, SystemStatesSphericalMax,
 };
 use crate::core::{
-    algorithm::estimation::prediction::calculate_system_prediction,
+    algorithm::estimation::{prediction::calculate_system_prediction, Estimations},
     config::{model::SensorArrayMotion, simulation::Simulation as SimulationConfig},
     data::Measurements,
     model::{functional::allpass::shapes::Gains, Model},
@@ -122,43 +122,40 @@ impl Simulation {
     #[tracing::instrument(level = "info", skip_all)]
     pub fn run(&mut self) {
         info!("Running simulation");
-        let measurements = &mut self.measurements;
-        let system_states = &mut self.system_states;
-        let model = &self.model;
 
-        let mut ap_outputs: Gains = Gains::empty(system_states.shape()[1]);
-        for beat in 0..measurements.num_beats() {
-            ap_outputs.fill(0.0);
-            system_states.fill(0.0);
-            let measurement_matrix = &model
-                .functional_description
-                .measurement_matrix
-                .at_beat(beat);
-            let mut measurements = measurements.at_beat_mut(beat);
-            for step in 0..system_states.shape()[0] {
-                let mut measurements = measurements.at_step_mut(step);
+        let mut estimations = Estimations::empty(
+            self.system_states.num_states(),
+            self.measurements.num_sensors(),
+            self.measurements.num_steps(),
+            self.measurements.num_beats(),
+        );
+
+        for beat in 0..self.measurements.num_beats() {
+            estimations.reset();
+            for step in 0..self.measurements.num_steps() {
                 calculate_system_prediction(
-                    &mut ap_outputs,
-                    system_states,
-                    &mut measurements,
-                    &model.functional_description.ap_params,
-                    measurement_matrix,
-                    model.functional_description.control_function_values[step],
-                    &model.functional_description.control_matrix,
+                    &mut estimations,
+                    &self.model.functional_description,
+                    beat,
                     step,
                 );
             }
         }
+
+        self.measurements.assign(&*estimations.measurements);
+        self.system_states.assign(&*estimations.system_states);
+
         let mut rng = ChaCha8Rng::seed_from_u64(42);
-        for sensor_index in 0..measurements.num_sensors() {
+        for sensor_index in 0..self.measurements.num_sensors() {
             let dist = Normal::new(
                 0.0,
-                model.functional_description.measurement_covariance[[sensor_index, sensor_index]],
+                self.model.functional_description.measurement_covariance
+                    [[sensor_index, sensor_index]],
             )
             .unwrap();
-            for beat_index in 0..measurements.num_beats() {
-                for time_index in 0..measurements.num_sensors() {
-                    measurements[[beat_index, time_index, sensor_index]] += dist.sample(&mut rng);
+            for beat_index in 0..self.measurements.num_beats() {
+                for time_index in 0..self.measurements.num_sensors() {
+                    self.measurements[[beat_index, time_index, sensor_index]] += dist.sample(&mut rng);
                 }
             }
         }

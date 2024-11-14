@@ -6,8 +6,11 @@ use crate::core::{
         allpass::{shapes::Gains, APParameters},
         control::ControlMatrix,
         measurement::MeasurementMatrixAtBeat,
+        FunctionalDescription,
     },
 };
+
+use super::Estimations;
 
 /// Calculates the system prediction by innovating the system states,
 /// adding the control function, and predicting measurements.
@@ -18,20 +21,15 @@ use crate::core::{
 #[allow(clippy::module_name_repetitions)]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_system_prediction(
-    ap_outputs: &mut Gains,
-    system_states: &mut SystemStates,
-    measurements: &mut MeasurementsAtStepMut,
-    ap_params: &APParameters,
-    measurement_matrix: &MeasurementMatrixAtBeat,
-    control_function_value: f32,
-    control_matrix: &ControlMatrix,
+    estimations: &mut Estimations,
+    functional_description: &FunctionalDescription,
+    beat: usize,
     step: usize,
 ) {
     trace!("Calculating system prediction");
-    innovate_system_states_v1(ap_outputs, ap_params, step, system_states);
-    let mut system_states = system_states.at_step_mut(step);
-    add_control_function(&mut system_states, control_function_value, control_matrix);
-    predict_measurements(measurements, measurement_matrix, &system_states);
+    innovate_system_states_v1(estimations, functional_description, step);
+    add_control_function(estimations, functional_description, step);
+    predict_measurements(estimations, functional_description, beat, step);
 }
 
 /// Innovates the system states by calculating the all-pass filter outputs,
@@ -47,13 +45,16 @@ pub fn calculate_system_prediction(
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn innovate_system_states_v1(
-    ap_outputs: &mut Gains,
-    ap_params: &APParameters,
-    time_index: usize,
-    system_states: &mut SystemStates,
+    estimations: &mut Estimations,
+    functional_description: &FunctionalDescription,
+    step: usize,
 ) {
     trace!("Innovating system states");
     // Calculate ap outputs and system states
+    let ap_params = &functional_description.ap_params;
+    let ap_outputs = &mut estimations.ap_outputs;
+    let system_states = &mut estimations.system_states;
+
     let output_state_indices = &ap_params.output_state_indices;
     for index_state in 0..ap_outputs.shape()[0] {
         for index_offset in 0..ap_outputs.shape()[1] {
@@ -66,13 +67,13 @@ pub fn innovate_system_states_v1(
             let coef_index = (index_state / 3, index_offset / 3);
             let coef = unsafe { *ap_params.coefs.uget(coef_index) };
             let delay = unsafe { *ap_params.delays.uget(coef_index) };
-            let input = if delay <= time_index {
-                unsafe { *system_states.uget((time_index - delay, output_state_index)) }
+            let input = if delay <= step {
+                unsafe { *system_states.uget((step - delay, output_state_index)) }
             } else {
                 0.0
             };
-            let input_delayed = if delay < time_index {
-                *unsafe { system_states.uget((time_index - delay - 1, output_state_index)) }
+            let input_delayed = if delay < step {
+                *unsafe { system_states.uget((step - delay - 1, output_state_index)) }
             } else {
                 0.0
             };
@@ -80,7 +81,7 @@ pub fn innovate_system_states_v1(
             *ap_output = coef.mul_add(input - *ap_output, input_delayed);
             let gain = unsafe { *ap_params.gains.uget((index_state, index_offset)) };
             unsafe {
-                *system_states.uget_mut((time_index, index_state)) += gain * *ap_output;
+                *system_states.uget_mut((step, index_state)) += gain * *ap_output;
             };
         }
     }
@@ -92,13 +93,16 @@ pub fn innovate_system_states_v1(
 #[inline]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn add_control_function(
-    system_states: &mut SystemStatesAtStepMut,
-    control_function_value: f32,
-    control_matrix: &ControlMatrix,
+    estimations: &mut Estimations,
+    functional_description: &FunctionalDescription,
+    step: usize,
 ) {
     trace!("Adding control function");
     // Add control function
-    system_states.scaled_add(control_function_value, &**control_matrix);
+    estimations.system_states.at_step_mut(step).scaled_add(
+        functional_description.control_function_values[step],
+        &*functional_description.control_matrix,
+    );
 }
 
 /// Predicts the measurements by multiplying the measurement matrix with the
@@ -107,11 +111,21 @@ pub fn add_control_function(
 #[inline]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn predict_measurements(
-    measurements: &mut MeasurementsAtStepMut,
-    measurement_matrix: &MeasurementMatrixAtBeat,
-    system_states: &SystemStatesAtStepMut,
+    estimations: &mut Estimations,
+    functional_description: &FunctionalDescription,
+    beat: usize,
+    step: usize,
 ) {
     trace!("Predicting measurements");
     // Prediction of measurements H * x
-    measurements.assign(&measurement_matrix.dot(&**system_states));
+    estimations
+        .measurements
+        .at_beat_mut(beat)
+        .at_step_mut(step)
+        .assign(
+            &functional_description
+                .measurement_matrix
+                .at_beat(beat)
+                .dot(&*estimations.system_states.at_step(step)),
+        );
 }

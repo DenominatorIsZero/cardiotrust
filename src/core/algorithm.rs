@@ -93,11 +93,7 @@ pub fn calculate_pseudo_inverse(
 
         estimated_measurements.assign(&measurement_matrix.dot(&*estimated_system_states));
 
-        calculate_residuals(
-            &mut estimations.residuals,
-            &estimated_measurements,
-            &actual_measurements,
-        );
+        calculate_residuals(estimations, data, 0, step);
 
         calculate_step_derivatives(
             derivatives,
@@ -185,26 +181,11 @@ pub fn run_epoch(
         for step in 0..num_steps {
             let actual_system_states = data.simulation.system_states.at_step(step);
 
-            let mut estimated_measurements = estimations.measurements.at_beat_mut(beat);
-            let mut estimated_measurements = estimated_measurements.at_step_mut(step);
             let actual_measurements = actual_measurements.at_step(step);
 
-            calculate_system_prediction(
-                &mut estimations.ap_outputs,
-                &mut estimations.system_states,
-                &mut estimated_measurements,
-                &functional_description.ap_params,
-                &functional_description.measurement_matrix.at_beat(beat),
-                functional_description.control_function_values[step],
-                &functional_description.control_matrix,
-                step,
-            );
+            calculate_system_prediction(estimations, functional_description, beat, step);
 
-            calculate_residuals(
-                &mut estimations.residuals,
-                &estimated_measurements,
-                &actual_measurements,
-            );
+            calculate_residuals(estimations, data, beat, step);
 
             calculate_step_derivatives(
                 derivatives,

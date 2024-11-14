@@ -207,26 +207,13 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         config.algorithm.batch_size,
         config.algorithm.optimizer,
     );
-    let estimations = &mut results.estimations;
-    let measurement_matrix = model
-        .functional_description
-        .measurement_matrix
-        .at_beat(BEAT);
     calculate_system_prediction(
-        &mut estimations.ap_outputs,
-        &mut estimations.system_states,
-        &mut estimations.measurements.at_beat_mut(BEAT).at_step_mut(STEP),
-        &model.functional_description.ap_params,
-        &measurement_matrix,
-        model.functional_description.control_function_values[STEP],
-        &model.functional_description.control_matrix,
+        &mut results.estimations,
+        &model.functional_description,
+        BEAT,
         STEP,
     );
-    calculate_residuals(
-        &mut estimations.residuals,
-        &estimations.measurements.at_beat_mut(BEAT).at_step_mut(STEP),
-        &data.simulation.measurements.at_beat(BEAT).at_step(STEP),
-    );
+    calculate_residuals(&mut results.estimations, &data, BEAT, STEP);
     (data, model, results)
 }
 

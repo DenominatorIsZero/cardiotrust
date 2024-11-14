@@ -39,10 +39,9 @@ fn bench_innovate(group: &mut criterion::BenchmarkGroup<criterion::measurement::
             |b| {
                 b.iter(|| {
                     innovate_system_states_v1(
-                        &mut results.estimations.ap_outputs,
-                        &model.functional_description.ap_params,
+                        &mut results.estimations,
+                        &model.functional_description,
                         STEP,
-                        &mut results.estimations.system_states,
                     );
                 })
             },
@@ -59,13 +58,14 @@ fn bench_control_function(group: &mut criterion::BenchmarkGroup<criterion::measu
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
-        let mut system_states = results.estimations.system_states.at_step_mut(STEP);
-        let control_function_value = model.functional_description.control_function_values[STEP];
-        let control_matrix = &model.functional_description.control_matrix;
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("add_control_funciton", voxel_size), |b| {
             b.iter(|| {
-                add_control_function(&mut system_states, control_function_value, control_matrix);
+                add_control_function(
+                    &mut results.estimations,
+                    &model.functional_description,
+                    STEP,
+                );
             })
         });
     }
@@ -80,16 +80,16 @@ fn bench_measurements(group: &mut criterion::BenchmarkGroup<criterion::measureme
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
-        let mut measurements_at_beat = results.estimations.measurements.at_beat_mut(BEAT);
-        let mut measurements = measurements_at_beat.at_step_mut(STEP);
-        let measurement_matrix = model
-            .functional_description
-            .measurement_matrix
-            .at_beat(BEAT);
-        let system_states = results.estimations.system_states.at_step_mut(STEP);
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("predict_measurements", voxel_size), |b| {
-            b.iter(|| predict_measurements(&mut measurements, &measurement_matrix, &system_states));
+            b.iter(|| {
+                predict_measurements(
+                    &mut results.estimations,
+                    &model.functional_description,
+                    BEAT,
+                    STEP,
+                )
+            });
         });
     }
 }

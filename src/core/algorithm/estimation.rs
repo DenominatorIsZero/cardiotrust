@@ -8,10 +8,13 @@ use tracing::{debug, trace};
 
 use crate::core::{
     config::algorithm::Algorithm,
-    data::shapes::{
-        ActivationTimePerStateMs, Measurements, MeasurementsAtStep, MeasurementsAtStepMut,
-        Residuals, SystemStates, SystemStatesAtStep, SystemStatesAtStepMut, SystemStatesSpherical,
-        SystemStatesSphericalMax,
+    data::{
+        shapes::{
+            ActivationTimePerStateMs, Measurements, MeasurementsAtStep, MeasurementsAtStepMut,
+            Residuals, SystemStates, SystemStatesAtStep, SystemStatesAtStepMut,
+            SystemStatesSpherical, SystemStatesSphericalMax,
+        },
+        Data,
     },
     model::functional::{
         allpass::{
@@ -104,13 +107,12 @@ impl Estimations {
 /// The residuals are stored in the provided `residuals` array.
 #[inline]
 #[tracing::instrument(level = "trace", skip_all)]
-pub fn calculate_residuals(
-    residuals: &mut Residuals,
-    predicted_measurements: &MeasurementsAtStepMut,
-    actual_measurements: &MeasurementsAtStep,
-) {
+pub fn calculate_residuals(estimations: &mut Estimations, data: &Data, beat: usize, step: usize) {
     trace!("Calculating residuals");
-    residuals.assign(&(&**predicted_measurements - &**actual_measurements));
+    estimations.residuals.assign(
+        &(&*estimations.measurements.at_beat(beat).at_step(step)
+            - &*data.simulation.measurements.at_beat(beat).at_step(step)),
+    );
 }
 
 /// Calculates the residuals between the estimated measurements from the
@@ -510,7 +512,10 @@ mod tests {
     };
     use crate::core::{
         config::algorithm::Algorithm,
-        data::shapes::{Measurements, Residuals, SystemStates},
+        data::{
+            shapes::{Measurements, Residuals, SystemStates},
+            Data,
+        },
         model::functional::{allpass::shapes::Gains, FunctionalDescription},
     };
 
@@ -524,10 +529,12 @@ mod tests {
         let beat = 4;
         let voxels_in_dims = Dim([1000, 1, 1]);
 
-        let mut ap_outputs = Gains::empty(number_of_states);
-        let mut system_states = SystemStates::empty(number_of_steps, number_of_states);
-        let mut measurements =
-            Measurements::empty(number_of_beats, number_of_steps, number_of_sensors);
+        let mut estimations = Estimations::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            number_of_beats,
+        );
         let functional_description = FunctionalDescription::empty(
             number_of_states,
             number_of_sensors,
@@ -536,18 +543,7 @@ mod tests {
             voxels_in_dims,
         );
 
-        let measurement_matrix = functional_description.measurement_matrix.at_beat(beat);
-
-        calculate_system_prediction(
-            &mut ap_outputs,
-            &mut system_states,
-            &mut measurements.at_beat_mut(beat).at_step_mut(step),
-            &functional_description.ap_params,
-            &measurement_matrix,
-            functional_description.control_function_values[step],
-            &functional_description.control_matrix,
-            step,
-        );
+        calculate_system_prediction(&mut estimations, &functional_description, beat, step);
     }
 
     #[test]
@@ -585,21 +581,27 @@ mod tests {
     #[test]
     fn residuals_no_crash() {
         let number_of_sensors = 300;
+        let number_of_states = 3000;
+        let voxels_in_dims = Dim([1000, 1, 1]);
         let number_of_steps = 2000;
         let number_of_beats = 10;
         let step = 333;
         let beat = 2;
 
-        let mut residuals = Residuals::empty(number_of_sensors);
-        let mut predicted_measurements =
-            Measurements::empty(number_of_beats, number_of_steps, number_of_sensors);
-        let actual_measurements =
-            Measurements::empty(number_of_beats, number_of_steps, number_of_sensors);
-
-        calculate_residuals(
-            &mut residuals,
-            &predicted_measurements.at_beat_mut(beat).at_step_mut(step),
-            &actual_measurements.at_beat(beat).at_step(step),
+        let mut estimations = Estimations::empty(
+            number_of_states,
+            number_of_sensors,
+            number_of_steps,
+            number_of_beats,
         );
+        let data = Data::empty(
+            number_of_sensors,
+            number_of_states,
+            number_of_steps,
+            voxels_in_dims,
+            number_of_beats,
+        );
+
+        calculate_residuals(&mut estimations, &data, beat, step);
     }
 }
