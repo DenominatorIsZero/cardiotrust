@@ -4,8 +4,9 @@ use cardiotrust::core::{
     algorithm::{
         estimation::{calculate_residuals, prediction::calculate_system_prediction},
         refinement::derivation::{
-            calculate_derivatives_coefs, calculate_derivatives_gains, calculate_mapped_residuals,
-            calculate_maximum_regularization,
+            calculate_average_delays, calculate_derivatives_coefs, calculate_derivatives_gains,
+            calculate_mapped_residuals, calculate_maximum_regularization,
+            calculate_smoothness_derivatives,
         },
     },
     config::Config,
@@ -24,9 +25,59 @@ fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Derivation");
     bench_residual_mapping(&mut group);
     bench_maximum_regularization(&mut group);
+    bench_smoothness_derivatives(&mut group);
+    bench_average_delays(&mut group);
     bench_gains(&mut group);
     bench_coefs(&mut group);
     group.finish();
+}
+
+fn bench_average_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+    for voxel_size in VOXEL_SIZES.iter() {
+        let config = setup_config(voxel_size);
+
+        // setup inputs
+        let (_, model, mut results) = setup_inputs(&config);
+
+        // run bench
+        let number_of_voxels = model.spatial_description.voxels.count();
+        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
+        group.bench_function(BenchmarkId::new("average_delays", voxel_size), |b| {
+            b.iter(|| {
+                calculate_average_delays(
+                    &mut results.derivatives.average_delays_in_voxel,
+                    &model.functional_description.ap_params,
+                );
+            })
+        });
+    }
+}
+
+fn bench_smoothness_derivatives(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) {
+    for voxel_size in VOXEL_SIZES.iter() {
+        let config = setup_config(voxel_size);
+
+        // setup inputs
+        let (_, model, mut results) = setup_inputs(&config);
+
+        // run bench
+        let number_of_voxels = model.spatial_description.voxels.count();
+        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
+        group.bench_function(
+            BenchmarkId::new("smoothness_derivatives", voxel_size),
+            |b| {
+                b.iter(|| {
+                    calculate_smoothness_derivatives(
+                        &mut results.derivatives,
+                        &model.functional_description,
+                        &config.algorithm,
+                    );
+                })
+            },
+        );
+    }
 }
 
 fn bench_residual_mapping(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {

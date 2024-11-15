@@ -201,7 +201,7 @@ pub fn calculate_batch_derivatives(
 
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace")]
-fn calculate_smoothness_derivatives(
+pub fn calculate_smoothness_derivatives(
     derivates: &mut Derivatives,
     functional_description: &FunctionalDescription,
     config: &Algorithm,
@@ -233,9 +233,9 @@ fn calculate_smoothness_derivatives(
             *derivative += config.smoothness_regularization_strength * difference;
         });
 }
-
 /// Calculates the derivatives for the allpass filter gains.
 #[inline]
+#[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace")]
 pub fn calculate_derivatives_gains(
     derivatives_gains: &mut Gains,
@@ -245,24 +245,20 @@ pub fn calculate_derivatives_gains(
     regularization_strength: f32,
     number_of_sensors: usize,
 ) {
-    trace!("Calculating derivatives for gains");
-    #[allow(clippy::cast_precision_loss)]
     let scaling = 1.0 / number_of_sensors as f32;
-    #[allow(clippy::cast_precision_loss)]
     let regularization_scaling = regularization_strength;
 
-    derivatives_gains
-        .indexed_iter_mut()
-        .zip(ap_outputs.iter())
-        .for_each(|((gain_index, derivative), ap_output)| {
-            let maximum_regularization = maximum_regularization[gain_index.0];
+    for gain_index in 0..derivatives_gains.shape()[0] {
+        for offset_index in 0..derivatives_gains.shape()[1] {
+            let ap_output = unsafe { ap_outputs.uget((gain_index, offset_index)) };
+            let max_reg = unsafe { maximum_regularization.uget(gain_index) };
+            let residual = unsafe { mapped_residuals.uget(gain_index) };
+            let derivative = unsafe { derivatives_gains.uget_mut((gain_index, offset_index)) };
 
-            *derivative += ap_output
-                * mapped_residuals[gain_index.0]
-                    .mul_add(scaling, maximum_regularization * regularization_scaling);
-        });
+            *derivative += ap_output * residual.mul_add(scaling, max_reg * regularization_scaling);
+        }
+    }
 }
-
 /// Calculates the derivatives for the allpass filter coefficients.
 ///
 /// This mutates the `self.coefs` values based on the provided `ap_outputs`,
@@ -270,6 +266,7 @@ pub fn calculate_derivatives_gains(
 /// It calculates the FIR and IIR coefficient derivatives separately,
 /// then combines them to update `self.coefs`.
 #[inline]
+#[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace")]
 pub fn calculate_derivatives_coefs(
     derivatives: &mut Derivatives,
