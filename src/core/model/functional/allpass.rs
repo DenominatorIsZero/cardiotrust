@@ -446,6 +446,32 @@ pub const fn offset_to_delay_index(x_offset: i32, y_offset: i32, z_offset: i32) 
     Some(index)
 }
 
+/// Converts a 1D index into the delay array to the corresponding
+/// x, y, z offset values. Returns None if the index
+/// is out of bounds of the gains array.
+#[allow(
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap
+)]
+#[must_use]
+pub const fn delay_index_to_offset(delay_index: usize) -> Option<[i32; 3]> {
+    if delay_index > 26 {
+        return None;
+    }
+    let corrected_index = if delay_index >= 9 + 3 + 1 {
+        delay_index + 1
+    } else {
+        delay_index
+    };
+
+    let z_offset = (corrected_index % 3) as i32 - 1;
+    let y_offset = ((corrected_index / 3) % 3) as i32 - 1;
+    let x_offset = ((corrected_index / 9) % 3) as i32 - 1;
+
+    Some([x_offset, y_offset, z_offset])
+}
+
 /// Finds candidate voxels that are activated at the given `current_time_s`.
 ///
 /// Filters the `activation_time_s` array for voxels with activation time

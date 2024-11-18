@@ -12,7 +12,7 @@ use crate::core::{
     data::shapes::{Residuals, SystemStatesAtStep},
     model::functional::{
         allpass::{
-            from_coef_to_samples,
+            delay_index_to_offset, from_coef_to_samples,
             shapes::{Coefs, Gains},
             APParameters,
         },
@@ -208,7 +208,11 @@ pub fn calculate_smoothness_derivatives(
 ) {
     for voxel_index in 0..derivates.coefs.shape()[0] {
         for output_offset in 0..derivates.coefs.shape()[1] {
-            let mut average_delay = unsafe { *derivates.average_delays_in_voxel.uget(voxel_index) };
+            let average_delay = unsafe { *derivates.average_delays_in_voxel.uget(voxel_index) };
+            if average_delay.is_none() {
+                continue;
+            }
+            let mut average_delay = average_delay.unwrap();
             let mut divisor = 1.0;
 
             for voxel_offset in 0..functional_description.ap_params.delays.shape()[1] {
@@ -222,8 +226,11 @@ pub fn calculate_smoothness_derivatives(
                     continue;
                 }
                 let neighbor_index = neighbor_index.unwrap() / 3;
-                average_delay += unsafe { *derivates.average_delays_in_voxel.uget(neighbor_index) };
-                divisor += 1.0;
+                let delay = unsafe { *derivates.average_delays_in_voxel.uget(neighbor_index) };
+                if delay.is_some() {
+                    average_delay += delay.unwrap();
+                    divisor += 1.0;
+                }
             }
             average_delay /= divisor;
 
@@ -428,8 +435,13 @@ pub fn calculate_average_delays(average_delays: &mut AverageDelays, ap_params: &
         let mut gain_sum = 0.0;
 
         for offset in 0..ap_params.delays.shape()[1] {
+            let x_y_z_offset = delay_index_to_offset(offset).unwrap();
+            let x_y_z_sum: f32 = x_y_z_offset.map(i32::abs).iter().sum::<i32>() as f32;
+
             let delay = unsafe { *ap_params.delays.uget((voxel_index, offset)) } as f32
                 + from_coef_to_samples(unsafe { *ap_params.coefs.uget((voxel_index, offset)) });
+
+            let delay_corrected = delay / (x_y_z_sum.sqrt());
 
             for input_dimension in 0..3 {
                 for output_dimension in 0..3 {
@@ -439,14 +451,18 @@ pub fn calculate_average_delays(average_delays: &mut AverageDelays, ap_params: &
                             offset * 3 + output_dimension,
                         ))
                     };
-                    delay_sum += gain * delay;
-                    gain_sum += gain;
+                    delay_sum += gain.abs() * delay_corrected;
+                    gain_sum += gain.abs();
                 }
             }
         }
 
         let average_delay = unsafe { average_delays.uget_mut(voxel_index) };
-        *average_delay = delay_sum / gain_sum;
+        if gain_sum == 0.0 {
+            *average_delay = None;
+        } else {
+            *average_delay = Some(delay_sum / gain_sum);
+        }
     }
 }
 
@@ -495,19 +511,19 @@ impl DerefMut for MappedResiduals {
 /// The average delays are calculated as a
 /// weighted sum of the delays by the gains in that direction.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct AverageDelays(Array1<f32>);
+pub struct AverageDelays(Array1<Option<f32>>);
 
 impl AverageDelays {
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn new(number_of_states: usize) -> Self {
         trace!("Creating AverageDelays");
-        Self(Array1::zeros(number_of_states / 3))
+        Self(Array1::from_elem(number_of_states / 3, None))
     }
 }
 
 impl Deref for AverageDelays {
-    type Target = Array1<f32>;
+    type Target = Array1<Option<f32>>;
 
     #[tracing::instrument(level = "trace")]
     fn deref(&self) -> &Self::Target {
@@ -665,7 +681,7 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params);
-        assert_relative_eq!(average_delays[0], 2.5, epsilon = 1e-6);
+        assert_relative_eq!(average_delays[0].unwrap(), 2.5, epsilon = 1e-6);
     }
 
     #[test]
@@ -682,8 +698,8 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params);
-        assert_relative_eq!(average_delays[0], 2.4, epsilon = 1e-4);
-        assert_relative_eq!(average_delays[1], 2.4, epsilon = 1e-4);
+        assert_relative_eq!(average_delays[0].unwrap(), 2.4, epsilon = 1e-4);
+        assert_relative_eq!(average_delays[1].unwrap(), 2.4, epsilon = 1e-4);
     }
 
     #[test]
@@ -700,7 +716,7 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params);
-        assert!(average_delays[0].is_nan());
+        assert!(average_delays[0].is_none());
     }
 
     #[test]
@@ -720,6 +736,6 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params);
-        assert_relative_eq!(average_delays[0], 2.1, epsilon = 1e-6);
+        assert_relative_eq!(average_delays[0].unwrap(), 2.1, epsilon = 1e-6);
     }
 }
