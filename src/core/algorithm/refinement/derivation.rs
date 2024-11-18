@@ -206,32 +206,45 @@ pub fn calculate_smoothness_derivatives(
     functional_description: &FunctionalDescription,
     config: &Algorithm,
 ) {
-    derivates
-        .coefs
-        .indexed_iter_mut()
-        .for_each(|((voxel_index, output_offset), derivative)| {
-            let delay = functional_description.ap_params.delays[[voxel_index, output_offset]]
-                as f32
-                + from_coef_to_samples(
-                    functional_description.ap_params.coefs[(voxel_index, output_offset)],
-                );
-            let mut average_delay = derivates.average_delays_in_voxel[voxel_index];
+    for voxel_index in 0..derivates.coefs.shape()[0] {
+        for output_offset in 0..derivates.coefs.shape()[1] {
+            let mut average_delay = unsafe { *derivates.average_delays_in_voxel.uget(voxel_index) };
             let mut divisor = 1.0;
+
             for voxel_offset in 0..functional_description.ap_params.delays.shape()[1] {
-                let neighbor_index = functional_description.ap_params.output_state_indices
-                    [(voxel_index * 3, voxel_offset * 3)];
+                let neighbor_index = unsafe {
+                    functional_description
+                        .ap_params
+                        .output_state_indices
+                        .uget((voxel_index * 3, voxel_offset * 3))
+                };
                 if neighbor_index.is_none() {
                     continue;
                 }
-                let neighor_index = neighbor_index.unwrap() / 3;
-                average_delay += derivates.average_delays_in_voxel[neighor_index];
+                let neighbor_index = neighbor_index.unwrap() / 3;
+                average_delay += unsafe { *derivates.average_delays_in_voxel.uget(neighbor_index) };
                 divisor += 1.0;
             }
             average_delay /= divisor;
 
+            let delay = unsafe {
+                *functional_description
+                    .ap_params
+                    .delays
+                    .uget((voxel_index, output_offset))
+            } as f32
+                + from_coef_to_samples(unsafe {
+                    *functional_description
+                        .ap_params
+                        .coefs
+                        .uget((voxel_index, output_offset))
+                });
             let difference = average_delay - delay;
+
+            let derivative = unsafe { derivates.coefs.uget_mut((voxel_index, output_offset)) };
             *derivative += config.smoothness_regularization_strength * difference;
-        });
+        }
+    }
 }
 /// Calculates the derivatives for the allpass filter gains.
 #[inline]
@@ -410,28 +423,31 @@ pub fn calculate_mapped_residuals(
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_average_delays(average_delays: &mut AverageDelays, ap_params: &APParameters) {
-    trace!("Calculating average delays");
-    average_delays
-        .indexed_iter_mut()
-        .for_each(|(voxel_index, average_delay)| {
-            let mut delay_sum = 0.0;
-            let mut gain_sum = 0.0;
-            for offset in 0..ap_params.delays.shape()[1] {
-                let delay = ap_params.delays[[voxel_index, offset]] as f32
-                    + from_coef_to_samples(ap_params.coefs[[voxel_index, offset]]);
-                for input_dimension in 0..3 {
-                    for output_dimension in 0..3 {
-                        let gain = ap_params.gains[[
+    for voxel_index in 0..average_delays.shape()[0] {
+        let mut delay_sum = 0.0;
+        let mut gain_sum = 0.0;
+
+        for offset in 0..ap_params.delays.shape()[1] {
+            let delay = unsafe { *ap_params.delays.uget((voxel_index, offset)) } as f32
+                + from_coef_to_samples(unsafe { *ap_params.coefs.uget((voxel_index, offset)) });
+
+            for input_dimension in 0..3 {
+                for output_dimension in 0..3 {
+                    let gain = unsafe {
+                        *ap_params.gains.uget((
                             voxel_index * 3 + input_dimension,
                             offset * 3 + output_dimension,
-                        ]];
-                        delay_sum += gain * delay;
-                        gain_sum += gain;
-                    }
+                        ))
+                    };
+                    delay_sum += gain * delay;
+                    gain_sum += gain;
                 }
             }
-            *average_delay = delay_sum / gain_sum;
-        });
+        }
+
+        let average_delay = unsafe { average_delays.uget_mut(voxel_index) };
+        *average_delay = delay_sum / gain_sum;
+    }
 }
 
 /// Shape for the mapped residuals.
