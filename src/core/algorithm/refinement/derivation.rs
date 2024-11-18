@@ -567,11 +567,13 @@ impl DerefMut for MaximumRegularization {
 
 #[cfg(test)]
 mod tests {
-    use ndarray::Dim;
+    use approx::assert_relative_eq;
+    use ndarray::{Array2, Dim};
 
     use super::*;
     use crate::core::{
-        algorithm::estimation::Estimations, model::functional::FunctionalDescription,
+        algorithm::estimation::Estimations,
+        model::functional::{allpass::from_samples_to_coef, FunctionalDescription},
     };
     #[test]
     fn coef_no_crash() {
@@ -647,5 +649,77 @@ mod tests {
             0,
             estimations.measurements.num_sensors(),
         );
+    }
+
+    #[test]
+    fn calculate_average_delays_single_voxel() {
+        let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
+
+        let mut average_delays = AverageDelays::new(3);
+        let delays = Array2::from_elem((1, 26), 2);
+        let coefs = Array2::from_elem((1, 26), from_samples_to_coef(0.5));
+        let gains = Array2::from_elem((3, 78), 1.0);
+
+        ap_params.delays.assign(&delays);
+        ap_params.coefs.assign(&coefs);
+        ap_params.gains.assign(&gains);
+
+        calculate_average_delays(&mut average_delays, &ap_params);
+        assert_relative_eq!(average_delays[0], 2.5, epsilon = 1e-6);
+    }
+
+    #[test]
+    fn test_calculate_average_delays_multiple_voxels() {
+        let mut ap_params = APParameters::empty(6, Dim([2, 1, 1]));
+
+        let mut average_delays = AverageDelays::new(6);
+        let delays = Array2::from_elem((2, 26), 2);
+        let coefs = Array2::from_elem((2, 26), from_samples_to_coef(0.4));
+        let gains = Array2::from_elem((6, 78), 1.0);
+
+        ap_params.delays.assign(&delays);
+        ap_params.coefs.assign(&coefs);
+        ap_params.gains.assign(&gains);
+
+        calculate_average_delays(&mut average_delays, &ap_params);
+        assert_relative_eq!(average_delays[0], 2.4, epsilon = 1e-4);
+        assert_relative_eq!(average_delays[1], 2.4, epsilon = 1e-4);
+    }
+
+    #[test]
+    fn test_calculate_average_delays_zero_gains() {
+        let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
+
+        let mut average_delays = AverageDelays::new(3);
+        let delays = Array2::from_elem((1, 26), 2);
+        let coefs = Array2::from_elem((1, 26), from_samples_to_coef(0.5));
+        let gains = Array2::from_elem((3, 78), 0.0);
+
+        ap_params.delays.assign(&delays);
+        ap_params.coefs.assign(&coefs);
+        ap_params.gains.assign(&gains);
+
+        calculate_average_delays(&mut average_delays, &ap_params);
+        assert!(average_delays[0].is_nan());
+    }
+
+    #[test]
+    fn test_calculate_average_delays_mixed_gains() {
+        let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
+
+        let mut average_delays = AverageDelays::new(3);
+        let delays = Array2::from_elem((1, 26), 2);
+        let coefs = Array2::from_elem((1, 26), from_samples_to_coef(0.1));
+        let mut gains = Array2::from_elem((3, 78), 0.0);
+        gains[[0, 10]] = 1.0;
+        gains[[1, 20]] = 4.0;
+        gains[[2, 30]] = 2.0;
+
+        ap_params.delays.assign(&delays);
+        ap_params.coefs.assign(&coefs);
+        ap_params.gains.assign(&gains);
+
+        calculate_average_delays(&mut average_delays, &ap_params);
+        assert_relative_eq!(average_delays[0], 2.1, epsilon = 1e-6);
     }
 }

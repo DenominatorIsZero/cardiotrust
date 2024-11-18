@@ -467,7 +467,7 @@ fn find_candidate_voxels(
 /// Converts a sample value in the range to the corresponding
 /// all-pass filter coefficient.
 #[tracing::instrument(level = "trace")]
-fn from_samples_to_coef(samples: f32) -> f32 {
+pub fn from_samples_to_coef(samples: f32) -> f32 {
     trace!("Converting {} samples to coefficient", samples);
     let fractional = samples % 1.0;
     (1.0 - fractional) / (1.0 + fractional)
@@ -480,7 +480,7 @@ fn from_samples_to_coef(samples: f32) -> f32 {
     clippy::cast_possible_truncation
 )]
 #[must_use]
-const fn from_samples_to_usize(samples: f32) -> usize {
+pub const fn from_samples_to_usize(samples: f32) -> usize {
     samples as usize
 }
 
