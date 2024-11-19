@@ -14,7 +14,10 @@ use super::shapes::{
     ActivationTimePerStateMs, SystemStates, SystemStatesSpherical, SystemStatesSphericalMax,
 };
 use crate::core::{
-    algorithm::estimation::{prediction::calculate_system_prediction, Estimations},
+    algorithm::{
+        estimation::{prediction::calculate_system_prediction, Estimations},
+        refinement::derivation::{calculate_average_delays, AverageDelays},
+    },
     config::{model::SensorArrayMotion, simulation::Simulation as SimulationConfig},
     data::Measurements,
     model::Model,
@@ -27,6 +30,7 @@ pub struct Simulation {
     pub system_states_spherical: SystemStatesSpherical,
     pub system_states_spherical_max: SystemStatesSphericalMax,
     pub activation_times: ActivationTimePerStateMs,
+    pub average_delays: AverageDelays,
     pub sample_rate_hz: f32,
     pub model: Model,
 }
@@ -56,6 +60,7 @@ impl Simulation {
             ),
             system_states_spherical_max: SystemStatesSphericalMax::empty(number_of_states),
             activation_times: ActivationTimePerStateMs::empty(number_of_states),
+            average_delays: AverageDelays::empty(number_of_states),
             sample_rate_hz: 1.0,
             model: Model::empty(
                 number_of_states,
@@ -101,6 +106,7 @@ impl Simulation {
             SystemStatesSpherical::empty(number_of_steps, number_of_states);
         let system_states_spherical_max = SystemStatesSphericalMax::empty(number_of_states);
         let activation_times = ActivationTimePerStateMs::empty(number_of_states);
+        let average_delays = AverageDelays::empty(number_of_states);
 
         Ok(Self {
             measurements,
@@ -108,6 +114,7 @@ impl Simulation {
             system_states_spherical,
             system_states_spherical_max,
             activation_times,
+            average_delays,
             sample_rate_hz: config.sample_rate_hz,
             model,
         })
@@ -171,6 +178,10 @@ impl Simulation {
             .calculate(&self.system_states_spherical);
         self.activation_times
             .calculate(&self.system_states_spherical, self.sample_rate_hz);
+        calculate_average_delays(
+            &mut self.average_delays,
+            &self.model.functional_description.ap_params,
+        );
     }
 
     /// Saves the simulation data (measurements, system states, model) to `NumPy` files at the given path.

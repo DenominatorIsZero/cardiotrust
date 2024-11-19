@@ -23,7 +23,9 @@ use crate::{
         gif::states::states_spherical_plot_over_time,
         png::{
             activation_time::activation_time_plot,
+            delay::average_delay_plot,
             line::{standard_log_y_plot, standard_time_plot, standard_y_plot},
+            propagation_speed::average_propagation_speed_plot,
             states::states_spherical_plot,
             voxel_type::voxel_type_plot,
         },
@@ -53,6 +55,10 @@ pub enum ImageType {
     VoxelTypesAlgorithm,
     VoxelTypesSimulation,
     VoxelTypesPrediction,
+    AverageDelaySimulation,
+    AveragePropagationSpeedSimulation,
+    AverageDelayAlgorithm,
+    AveragePropagationSpeedAlgorithm,
     // Metrics
     Dice,
     IoU,
@@ -420,6 +426,52 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
             Some(&path),
+            None,
+        ),
+        ImageType::AverageDelaySimulation => average_delay_plot(
+            &data.simulation.average_delays,
+            &data.simulation.model.spatial_description.voxels.numbers,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            &path,
+            None,
+            None,
+        ),
+        ImageType::AveragePropagationSpeedSimulation => average_propagation_speed_plot(
+            &data.simulation.average_delays,
+            &data.simulation.model.spatial_description.voxels.numbers,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            data.simulation.model.spatial_description.voxels.size_mm,
+            data.simulation.sample_rate_hz,
+            &path,
+            None,
+        ),
+        ImageType::AverageDelayAlgorithm => average_delay_plot(
+            &estimations.average_delays,
+            &model.spatial_description.voxels.numbers,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            &path,
+            None,
+            None,
+        ),
+        ImageType::AveragePropagationSpeedAlgorithm => average_propagation_speed_plot(
+            &estimations.average_delays,
+            &model.spatial_description.voxels.numbers,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            data.simulation.sample_rate_hz,
+            &path,
             None,
         ),
         ImageType::LossEpoch => standard_log_y_plot(

@@ -45,7 +45,7 @@ fn bench_average_delays(group: &mut criterion::BenchmarkGroup<criterion::measure
         group.bench_function(BenchmarkId::new("average_delays", voxel_size), |b| {
             b.iter(|| {
                 calculate_average_delays(
-                    &mut results.derivatives.average_delays_in_voxel,
+                    &mut results.estimations.average_delays,
                     &model.functional_description.ap_params,
                 );
             })
@@ -71,6 +71,7 @@ fn bench_smoothness_derivatives(
                 b.iter(|| {
                     calculate_smoothness_derivatives(
                         &mut results.derivatives,
+                        &results.estimations,
                         &model.functional_description,
                         &config.algorithm,
                     );

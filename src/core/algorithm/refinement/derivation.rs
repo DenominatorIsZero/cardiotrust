@@ -53,7 +53,6 @@ pub struct Derivatives {
     /// Stored internally to avoid redundant computation
     pub mapped_residuals: MappedResiduals,
     /// Stored internally to avoid redundant computation
-    pub average_delays_in_voxel: AverageDelays,
     pub maximum_regularization: MaximumRegularization,
     pub maximum_regularization_sum: f32,
 }
@@ -101,7 +100,6 @@ impl Derivatives {
             coefs_iir: Gains::empty(number_of_states),
             coefs_fir: Gains::empty(number_of_states),
             mapped_residuals: MappedResiduals::new(number_of_states),
-            average_delays_in_voxel: AverageDelays::new(number_of_states),
             maximum_regularization: MaximumRegularization::new(number_of_states),
             maximum_regularization_sum: 0.0,
         }
@@ -183,6 +181,7 @@ pub fn calculate_step_derivatives(
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn calculate_batch_derivatives(
     derivates: &mut Derivatives,
+    estimations: &Estimations,
     functional_description: &FunctionalDescription,
     config: &Algorithm,
 ) {
@@ -191,11 +190,7 @@ pub fn calculate_batch_derivatives(
             .smoothness_regularization_strength
             .abs_diff_ne(&0.0, f32::EPSILON)
     {
-        calculate_average_delays(
-            &mut derivates.average_delays_in_voxel,
-            &functional_description.ap_params,
-        );
-        calculate_smoothness_derivatives(derivates, functional_description, config);
+        calculate_smoothness_derivatives(derivates, estimations, functional_description, config);
     }
 }
 
@@ -203,12 +198,13 @@ pub fn calculate_batch_derivatives(
 #[tracing::instrument(level = "trace")]
 pub fn calculate_smoothness_derivatives(
     derivates: &mut Derivatives,
+    estimations: &Estimations,
     functional_description: &FunctionalDescription,
     config: &Algorithm,
 ) {
     for voxel_index in 0..derivates.coefs.shape()[0] {
         for output_offset in 0..derivates.coefs.shape()[1] {
-            let average_delay = unsafe { *derivates.average_delays_in_voxel.uget(voxel_index) };
+            let average_delay = unsafe { *estimations.average_delays.uget(voxel_index) };
             if average_delay.is_none() {
                 continue;
             }
@@ -226,7 +222,7 @@ pub fn calculate_smoothness_derivatives(
                     continue;
                 }
                 let neighbor_index = neighbor_index.unwrap() / 3;
-                let delay = unsafe { *derivates.average_delays_in_voxel.uget(neighbor_index) };
+                let delay = unsafe { *estimations.average_delays.uget(neighbor_index) };
                 if delay.is_some() {
                     average_delay += delay.unwrap();
                     divisor += 1.0;
@@ -516,7 +512,7 @@ pub struct AverageDelays(Array1<Option<f32>>);
 impl AverageDelays {
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn new(number_of_states: usize) -> Self {
+    pub fn empty(number_of_states: usize) -> Self {
         trace!("Creating AverageDelays");
         Self(Array1::from_elem(number_of_states / 3, None))
     }
@@ -671,7 +667,7 @@ mod tests {
     fn calculate_average_delays_single_voxel() {
         let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
 
-        let mut average_delays = AverageDelays::new(3);
+        let mut average_delays = AverageDelays::empty(3);
         let delays = Array2::from_elem((1, 26), 2);
         let coefs = Array2::from_elem((1, 26), from_samples_to_coef(0.5));
         let gains = Array2::from_elem((3, 78), 1.0);
@@ -681,14 +677,14 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params);
-        assert_relative_eq!(average_delays[0].unwrap(), 2.5, epsilon = 1e-6);
+        assert_relative_eq!(average_delays[0].unwrap(), 1.8369317, epsilon = 1e-6);
     }
 
     #[test]
     fn test_calculate_average_delays_multiple_voxels() {
         let mut ap_params = APParameters::empty(6, Dim([2, 1, 1]));
 
-        let mut average_delays = AverageDelays::new(6);
+        let mut average_delays = AverageDelays::empty(6);
         let delays = Array2::from_elem((2, 26), 2);
         let coefs = Array2::from_elem((2, 26), from_samples_to_coef(0.4));
         let gains = Array2::from_elem((6, 78), 1.0);
@@ -698,15 +694,15 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params);
-        assert_relative_eq!(average_delays[0].unwrap(), 2.4, epsilon = 1e-4);
-        assert_relative_eq!(average_delays[1].unwrap(), 2.4, epsilon = 1e-4);
+        assert_relative_eq!(average_delays[0].unwrap(), 1.7634532, epsilon = 1e-4);
+        assert_relative_eq!(average_delays[1].unwrap(), 1.763453, epsilon = 1e-4);
     }
 
     #[test]
     fn test_calculate_average_delays_zero_gains() {
         let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
 
-        let mut average_delays = AverageDelays::new(3);
+        let mut average_delays = AverageDelays::empty(3);
         let delays = Array2::from_elem((1, 26), 2);
         let coefs = Array2::from_elem((1, 26), from_samples_to_coef(0.5));
         let gains = Array2::from_elem((3, 78), 0.0);
@@ -723,7 +719,7 @@ mod tests {
     fn test_calculate_average_delays_mixed_gains() {
         let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
 
-        let mut average_delays = AverageDelays::new(3);
+        let mut average_delays = AverageDelays::empty(3);
         let delays = Array2::from_elem((1, 26), 2);
         let coefs = Array2::from_elem((1, 26), from_samples_to_coef(0.1));
         let mut gains = Array2::from_elem((3, 78), 0.0);
@@ -736,6 +732,6 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params);
-        assert_relative_eq!(average_delays[0].unwrap(), 2.1, epsilon = 1e-6);
+        assert_relative_eq!(average_delays[0].unwrap(), 1.5049525, epsilon = 1e-6);
     }
 }

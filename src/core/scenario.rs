@@ -27,7 +27,7 @@ use super::{
     data::Data,
     model::Model,
 };
-use crate::core::algorithm::metrics;
+use crate::core::algorithm::{metrics, refinement::derivation::calculate_average_delays};
 
 /// Struct representing a scenario configuration and results.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
@@ -715,6 +715,10 @@ fn run_model_based(
             break;
         }
     }
+    calculate_average_delays(
+        &mut results.estimations.average_delays,
+        &model.functional_description.ap_params,
+    );
     scenario.config.algorithm.learning_rate = original_learning_rate;
 }
 

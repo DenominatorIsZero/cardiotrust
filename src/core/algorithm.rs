@@ -7,6 +7,7 @@ mod tests;
 use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
 use rand::{seq::SliceRandom, thread_rng};
+use refinement::derivation::calculate_average_delays;
 use tracing::{debug, trace};
 
 use self::estimation::{
@@ -244,6 +245,10 @@ pub fn run_epoch(
         if let Some(n) = batch.as_mut() {
             *n += 1;
             if *n == config.batch_size {
+                calculate_average_delays(
+                    &mut estimations.average_delays,
+                    &functional_description.ap_params,
+                );
                 functional_description
                     .ap_params
                     .update(derivatives, config, num_steps, *n);
@@ -257,6 +262,10 @@ pub fn run_epoch(
     }
     if let Some(n) = batch {
         if n > 0 {
+            calculate_average_delays(
+                &mut estimations.average_delays,
+                &functional_description.ap_params,
+            );
             functional_description
                 .ap_params
                 .update(&mut results.derivatives, config, num_steps, n);
@@ -266,6 +275,10 @@ pub fn run_epoch(
             *batch_index += 1;
         }
     } else {
+        calculate_average_delays(
+            &mut estimations.average_delays,
+            &functional_description.ap_params,
+        );
         functional_description.ap_params.update(
             &mut results.derivatives,
             config,

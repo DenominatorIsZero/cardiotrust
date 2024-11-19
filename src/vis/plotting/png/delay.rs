@@ -125,7 +125,7 @@ mod test {
         let data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
-        let mut average_delays = AverageDelays::new(data.simulation.system_states.num_states());
+        let mut average_delays = AverageDelays::empty(data.simulation.system_states.num_states());
         calculate_average_delays(
             &mut average_delays,
             &data.simulation.model.functional_description.ap_params,
