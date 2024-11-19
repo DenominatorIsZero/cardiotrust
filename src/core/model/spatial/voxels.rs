@@ -4,6 +4,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use egui::has_gif_magic_header;
 use ndarray::{arr1, s, Array3, Array4, Dim};
 use ndarray_npy::WriteNpyExt;
 use num_derive::FromPrimitive;
@@ -238,18 +239,22 @@ impl VoxelTypes {
                     && (pathology_y_start_index <= y && y <= pathology_y_stop_index)
                 {
                     *voxel_type = VoxelType::Pathological;
-                } else if x == av_x_center_index && y == atrium_y_start_index {
+                } else if x == av_x_center_index
+                    && y == atrium_y_start_index
+                    && handcrafted.include_av
+                {
                     *voxel_type = VoxelType::Atrioventricular;
-                } else if (x == av_x_center_index
+                } else if ((x == av_x_center_index
                     && y < atrium_y_start_index
                     && y >= hps_y_stop_index)
                     || (x >= hps_x_start_index && x <= hps_x_stop_index && y == hps_y_stop_index)
                     || ((x == hps_x_start_index || x == hps_x_stop_index)
                         && y < hps_y_up_index
-                        && y >= hps_y_stop_index)
+                        && y >= hps_y_stop_index))
+                    && handcrafted.include_hps
                 {
                     *voxel_type = VoxelType::HPS;
-                } else if y > atrium_y_start_index {
+                } else if y > atrium_y_start_index && handcrafted.include_atrium {
                     *voxel_type = VoxelType::Atrium;
                 } else {
                     *voxel_type = VoxelType::Ventricle;
@@ -620,9 +625,12 @@ pub fn is_connection_allowed(output_voxel_type: &VoxelType, input_voxel_type: &V
     trace!("Checking if connection is allowed");
     match output_voxel_type {
         VoxelType::None | VoxelType::Vessel | VoxelType::Torso | VoxelType::Chamber => false,
-        VoxelType::Sinoatrial => {
-            [VoxelType::Atrium, VoxelType::Pathological].contains(input_voxel_type)
-        }
+        VoxelType::Sinoatrial => [
+            VoxelType::Atrium,
+            VoxelType::Pathological,
+            VoxelType::Ventricle,
+        ]
+        .contains(input_voxel_type),
         VoxelType::Atrium => [
             VoxelType::Sinoatrial,
             VoxelType::Atrium,

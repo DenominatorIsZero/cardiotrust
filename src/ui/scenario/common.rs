@@ -481,134 +481,179 @@ fn draw_handcrafted_settings(ui: &mut egui::Ui, handcrafted: &mut Handcrafted, p
                         );
                     });
                 });
-                // atrium y stop
+                // include atrium
                 body.row(ROW_HEIGHT, |mut row| {
                     row.col(|ui| {
-                        ui.label("Y Stop Atrium");
+                        ui.label("Include Atrium");
                     });
                     row.col(|ui| {
-                        ui.add(egui::Slider::new(
-                            &mut handcrafted.atrium_y_start_percentage,
-                            0.0..=1.0,
-                        ));
+                        ui.checkbox(&mut handcrafted.include_atrium, "");
                     });
                     row.col(|ui| {
                         ui.add(
-                            egui::Label::new(
-                                "The end of the atrium \
+                            egui::Label::new("Wether to include atrial tissue or not.").truncate(),
+                        );
+                    });
+                });
+                if handcrafted.include_atrium {
+                    // atrium y stop
+                    body.row(ROW_HEIGHT, |mut row| {
+                        row.col(|ui| {
+                            ui.label("Y Stop Atrium");
+                        });
+                        row.col(|ui| {
+                            ui.add(egui::Slider::new(
+                                &mut handcrafted.atrium_y_start_percentage,
+                                0.0..=1.0,
+                            ));
+                        });
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new(
+                                    "The end of the atrium \
                                     / start of the ventricles
                                     in y-direction in percent.",
-                            )
-                            .truncate(),
-                        );
+                                )
+                                .truncate(),
+                            );
+                        });
                     });
-                });
-                // av x center
+                }
+                // include av
                 body.row(ROW_HEIGHT, |mut row| {
                     row.col(|ui| {
-                        ui.label("X Center AV");
+                        ui.label("Include AV");
                     });
                     row.col(|ui| {
-                        ui.add(egui::Slider::new(
-                            &mut handcrafted.av_x_center_percentage,
-                            0.0..=1.0,
-                        ));
+                        ui.checkbox(&mut handcrafted.include_av, "");
                     });
                     row.col(|ui| {
-                        ui.add(
-                            egui::Label::new(
-                                "The center of the atrioventricular node \
+                        ui.add(egui::Label::new("Wether to include av tissue or not.").truncate());
+                    });
+                });
+                if handcrafted.include_av {
+                    // av x center
+                    body.row(ROW_HEIGHT, |mut row| {
+                        row.col(|ui| {
+                            ui.label("X Center AV");
+                        });
+                        row.col(|ui| {
+                            ui.add(egui::Slider::new(
+                                &mut handcrafted.av_x_center_percentage,
+                                0.0..=1.0,
+                            ));
+                        });
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new(
+                                    "The center of the atrioventricular node \
                                     in x-direction in percent.",
-                            )
-                            .truncate(),
-                        );
+                                )
+                                .truncate(),
+                            );
+                        });
                     });
-                });
-                // hps y stop
+                }
+
+                // include hps
                 body.row(ROW_HEIGHT, |mut row| {
                     row.col(|ui| {
-                        ui.label("Y Stop HPS");
+                        ui.label("Include HPS");
                     });
                     row.col(|ui| {
-                        ui.add(egui::Slider::new(
-                            &mut handcrafted.hps_y_stop_percentage,
-                            0.0..=1.0,
-                        ));
+                        ui.checkbox(&mut handcrafted.include_hps, "");
                     });
                     row.col(|ui| {
-                        ui.add(
-                            egui::Label::new(
-                                "The end of the His-Purkinje-System \
+                        ui.add(egui::Label::new("Wether to include hps tissue or not.").truncate());
+                    });
+                });
+                if handcrafted.include_hps {
+                    // hps y stop
+                    body.row(ROW_HEIGHT, |mut row| {
+                        row.col(|ui| {
+                            ui.label("Y Stop HPS");
+                        });
+                        row.col(|ui| {
+                            ui.add(egui::Slider::new(
+                                &mut handcrafted.hps_y_stop_percentage,
+                                0.0..=1.0,
+                            ));
+                        });
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new(
+                                    "The end of the His-Purkinje-System \
                                     in y-direction in percent.",
-                            )
-                            .truncate(),
-                        );
+                                )
+                                .truncate(),
+                            );
+                        });
                     });
-                });
-                // hps x start
-                body.row(ROW_HEIGHT, |mut row| {
-                    row.col(|ui| {
-                        ui.label("X Start HPS");
-                    });
-                    row.col(|ui| {
-                        ui.add(egui::Slider::new(
-                            &mut handcrafted.hps_x_start_percentage,
-                            0.0..=1.0,
-                        ));
-                    });
-                    row.col(|ui| {
-                        ui.add(
-                            egui::Label::new(
-                                "The start of the His-Purkinje-System \
+                    // hps x start
+                    body.row(ROW_HEIGHT, |mut row| {
+                        row.col(|ui| {
+                            ui.label("X Start HPS");
+                        });
+                        row.col(|ui| {
+                            ui.add(egui::Slider::new(
+                                &mut handcrafted.hps_x_start_percentage,
+                                0.0..=1.0,
+                            ));
+                        });
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new(
+                                    "The start of the His-Purkinje-System \
                                     in x-direction in percent.",
-                            )
-                            .truncate(),
-                        );
+                                )
+                                .truncate(),
+                            );
+                        });
                     });
-                });
-                // hps x stop
-                body.row(ROW_HEIGHT, |mut row| {
-                    row.col(|ui| {
-                        ui.label("X Stop HPS");
-                    });
-                    row.col(|ui| {
-                        ui.add(egui::Slider::new(
-                            &mut handcrafted.hps_x_stop_percentage,
-                            0.0..=1.0,
-                        ));
-                    });
-                    row.col(|ui| {
-                        ui.add(
-                            egui::Label::new(
-                                "The end of the His-Purkinje-System \
+                    // hps x stop
+                    body.row(ROW_HEIGHT, |mut row| {
+                        row.col(|ui| {
+                            ui.label("X Stop HPS");
+                        });
+                        row.col(|ui| {
+                            ui.add(egui::Slider::new(
+                                &mut handcrafted.hps_x_stop_percentage,
+                                0.0..=1.0,
+                            ));
+                        });
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new(
+                                    "The end of the His-Purkinje-System \
                                     in x-direction in percent.",
-                            )
-                            .truncate(),
-                        );
+                                )
+                                .truncate(),
+                            );
+                        });
                     });
-                });
-                // hps y up
-                body.row(ROW_HEIGHT, |mut row| {
-                    row.col(|ui| {
-                        ui.label("Y Up HPS");
-                    });
-                    row.col(|ui| {
-                        ui.add(egui::Slider::new(
-                            &mut handcrafted.hps_y_up_percentage,
-                            0.0..=1.0,
-                        ));
-                    });
-                    row.col(|ui| {
-                        ui.add(
-                            egui::Label::new(
-                                "The end of the upwards portion \
+                    // hps y up
+                    body.row(ROW_HEIGHT, |mut row| {
+                        row.col(|ui| {
+                            ui.label("Y Up HPS");
+                        });
+                        row.col(|ui| {
+                            ui.add(egui::Slider::new(
+                                &mut handcrafted.hps_y_up_percentage,
+                                0.0..=1.0,
+                            ));
+                        });
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new(
+                                    "The end of the upwards portion \
                                     of the His-Purkinje-System \
                                     in x-direction in percent.",
-                            )
-                            .truncate(),
-                        );
+                                )
+                                .truncate(),
+                            );
+                        });
                     });
-                });
+                }
                 if patholoical {
                     // pathology x start
                     body.row(ROW_HEIGHT, |mut row| {

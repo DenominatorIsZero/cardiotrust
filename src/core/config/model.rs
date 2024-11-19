@@ -49,6 +49,9 @@ pub struct Handcrafted {
     pub pathology_x_stop_percentage: f32,
     pub pathology_y_start_percentage: f32,
     pub pathology_y_stop_percentage: f32,
+    pub include_atrium: bool,
+    pub include_av: bool,
+    pub include_hps: bool,
 }
 
 impl Default for Handcrafted {
@@ -83,6 +86,9 @@ impl Default for Handcrafted {
             pathology_x_stop_percentage: 0.2,
             pathology_y_start_percentage: 0.5,
             pathology_y_stop_percentage: 0.7,
+            include_atrium: true,
+            include_av: true,
+            include_hps: true,
         }
     }
 }
