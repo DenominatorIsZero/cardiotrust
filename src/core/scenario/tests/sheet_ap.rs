@@ -23,7 +23,7 @@ const COMMON_PATH: &str = "tests/core/scenario/sheet_ap/";
 )]
 #[test]
 #[ignore]
-fn no_roll_down() {
+fn heavy_no_roll_down() {
     let base_id = "Sheet AP - No Roll - Down - ".to_string();
     let base_title = "Sheet AP - No Roll - Down";
     let path = Path::new(COMMON_PATH).join("no_roll_down");
@@ -59,7 +59,7 @@ fn no_roll_down() {
 )]
 #[test]
 #[ignore]
-fn no_roll_up() {
+fn heavy_no_roll_up() {
     let base_id = "Sheet AP - No Roll - Up - ".to_string();
     let base_title = "Sheet AP - No Roll - Up";
     let path = Path::new(COMMON_PATH).join("no_roll_up");

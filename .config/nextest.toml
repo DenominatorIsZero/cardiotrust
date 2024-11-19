@@ -1,0 +1,6 @@
+[test-groups]
+memory-heavy = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = 'test(heavy)'
+test-group = 'memory-heavy'

@@ -5,7 +5,7 @@ release:
   cargo run --release --bin main
 
 test:
-  cargo nextest run
+  cargo nextest run --no-fail-fast
 
 test-all:
   cargo nextest run -- --ignored

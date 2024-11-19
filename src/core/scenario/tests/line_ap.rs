@@ -30,7 +30,7 @@ const NUM_AP: i32 = 3;
     clippy::too_many_lines
 )]
 #[test]
-fn no_roll_down_dif_reg() {
+fn heavy_no_roll_down_dif_reg() {
     let base_id = "Line AP - No Roll - Down - Difference Regularization".to_string();
     let base_title = "Line AP - No Roll - Down - Difference Regularization";
     let path = Path::new(COMMON_PATH).join("no_roll_down/dif_reg");
@@ -69,7 +69,8 @@ fn no_roll_down_dif_reg() {
     clippy::too_many_lines
 )]
 #[test]
-fn no_roll_down_slow_down() {
+
+fn heavy_no_roll_down_slow_down() {
     let base_id = "Line AP - No Roll - Down - Slow Down".to_string();
     let base_title = "Line AP - No Roll - Down - Slow Down";
     let path = Path::new(COMMON_PATH).join("no_roll_down/slow_down");
@@ -109,7 +110,7 @@ fn no_roll_down_slow_down() {
     clippy::too_many_lines
 )]
 #[test]
-fn no_roll_up_dif_reg() {
+fn heavy_no_roll_up_dif_reg() {
     let base_id = "Line AP - No Roll - Up - Difference Regularization".to_string();
     let base_title = "Line AP - No Roll - Up - Difference Regularization";
     let path = Path::new(COMMON_PATH).join("no_roll_up/dif_reg");
