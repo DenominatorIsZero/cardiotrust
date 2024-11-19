@@ -459,7 +459,7 @@ pub const fn delay_index_to_offset(delay_index: usize) -> Option<[i32; 3]> {
     if delay_index > 26 {
         return None;
     }
-    let corrected_index = if delay_index >= 9 + 3 + 1 {
+    let corrected_index = if delay_index > 9 + 3 {
         delay_index + 1
     } else {
         delay_index

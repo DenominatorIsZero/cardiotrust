@@ -677,7 +677,7 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params);
-        assert_relative_eq!(average_delays[0].unwrap(), 1.8369317, epsilon = 1e-6);
+        assert_relative_eq!(average_delays[0].unwrap(), 1.836_931_7, epsilon = 1e-6);
     }
 
     #[test]
@@ -694,8 +694,8 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params);
-        assert_relative_eq!(average_delays[0].unwrap(), 1.7634532, epsilon = 1e-4);
-        assert_relative_eq!(average_delays[1].unwrap(), 1.763453, epsilon = 1e-4);
+        assert_relative_eq!(average_delays[0].unwrap(), 1.763_453_2, epsilon = 1e-4);
+        assert_relative_eq!(average_delays[1].unwrap(), 1.763_453, epsilon = 1e-4);
     }
 
     #[test]
@@ -732,6 +732,6 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params);
-        assert_relative_eq!(average_delays[0].unwrap(), 1.5049525, epsilon = 1e-6);
+        assert_relative_eq!(average_delays[0].unwrap(), 1.504_952_5, epsilon = 1e-6);
     }
 }

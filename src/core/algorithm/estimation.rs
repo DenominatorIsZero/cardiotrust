@@ -6,6 +6,7 @@ use ndarray::s;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
+use super::refinement::derivation::AverageDelays;
 use crate::core::{
     config::algorithm::Algorithm,
     data::{
@@ -27,8 +28,6 @@ use crate::core::{
         FunctionalDescription,
     },
 };
-
-use super::refinement::derivation::AverageDelays;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Estimations {
