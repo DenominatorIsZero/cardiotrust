@@ -4,7 +4,6 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use egui::has_gif_magic_header;
 use ndarray::{arr1, s, Array3, Array4, Dim};
 use ndarray_npy::WriteNpyExt;
 use num_derive::FromPrimitive;
