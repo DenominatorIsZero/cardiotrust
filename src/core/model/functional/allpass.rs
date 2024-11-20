@@ -379,6 +379,7 @@ fn assign_gain(
 }
 
 /// Converts the given x, y, z offset values to an index in the 2D gains array.
+///
 /// The offsets are relative to a given input voxel. The output dimension
 /// indicates which output voxel the gain value is for. Handles converting the
 /// 3D coordinate offsets to 1D index. Returns None if offsets are all zero.

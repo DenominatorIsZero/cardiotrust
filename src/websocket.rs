@@ -102,7 +102,8 @@ fn handle_websocket_messages(
     mut vis_options: ResMut<ColorOptions>,
 ) {
     trace!("Running handle_websocket_messages system");
-    if let Some(message) = message_buffer.messages.lock().unwrap().pop() {
+    let value = message_buffer.messages.lock().unwrap().pop();
+    if let Some(message) = value {
         let message: Value = serde_json::from_str(&message).unwrap();
         message.get("h").map_or_else(
             || {

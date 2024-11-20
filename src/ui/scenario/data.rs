@@ -27,7 +27,7 @@ pub fn draw_ui_scenario_data(parent: &mut egui::Ui, scenario: &mut Scenario) {
     }
     let simulation = &mut scenario.config.simulation;
     egui::ScrollArea::vertical()
-        .id_source("simulation")
+        .id_salt("simulation")
         .vscroll(true)
         .hscroll(false)
         .show(parent, |ui| {

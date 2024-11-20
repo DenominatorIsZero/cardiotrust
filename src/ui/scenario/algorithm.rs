@@ -20,7 +20,7 @@ pub fn draw_ui_scenario_algoriothm(parent: &mut egui::Ui, scenario: &mut Scenari
     }
     let algorithm = &mut scenario.config.algorithm;
     egui::ScrollArea::vertical()
-        .id_source("algorithm")
+        .id_salt("algorithm")
         .show(parent, |ui| {
             ui.heading("Algorithm");
             ui.separator();
