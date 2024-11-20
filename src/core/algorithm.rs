@@ -7,7 +7,7 @@ mod tests;
 use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
 use rand::{seq::SliceRandom, thread_rng};
-use refinement::derivation::calculate_average_delays;
+use refinement::derivation::{calculate_average_delays, calculate_batch_derivatives};
 use tracing::{debug, trace};
 
 use self::estimation::{
@@ -249,6 +249,12 @@ pub fn run_epoch(
                     &mut estimations.average_delays,
                     &functional_description.ap_params,
                 );
+                calculate_batch_derivatives(
+                    derivatives,
+                    estimations,
+                    functional_description,
+                    config,
+                );
                 functional_description
                     .ap_params
                     .update(derivatives, config, num_steps, *n);
@@ -266,6 +272,7 @@ pub fn run_epoch(
                 &mut estimations.average_delays,
                 &functional_description.ap_params,
             );
+            calculate_batch_derivatives(derivatives, estimations, functional_description, config);
             functional_description
                 .ap_params
                 .update(&mut results.derivatives, config, num_steps, n);
@@ -279,6 +286,7 @@ pub fn run_epoch(
             &mut estimations.average_delays,
             &functional_description.ap_params,
         );
+        calculate_batch_derivatives(derivatives, estimations, functional_description, config);
         functional_description.ap_params.update(
             &mut results.derivatives,
             config,

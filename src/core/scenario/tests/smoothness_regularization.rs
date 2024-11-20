@@ -1,5 +1,6 @@
 use std::{path::Path, sync::mpsc::channel, thread};
 
+use egui::epaint::tessellator::PathType;
 use ndarray::Array1;
 
 use super::RUN_IN_TESTS;
@@ -39,7 +40,16 @@ fn heavy_center_patch() {
     let patch_delay_s = patch_delay / sample_rate_hz;
     let patch_velocity = voxel_size_mm / 1000.0 / patch_delay_s;
 
-    create_and_run(patch_velocity, bulk_velocity, &base_id, &path, base_title);
+    let smoothness_regularization_stengths = vec![1e-4, 1e-3, 1e-2, 1e-1];
+
+    create_and_run(
+        patch_velocity,
+        bulk_velocity,
+        smoothness_regularization_stengths,
+        &base_id,
+        &path,
+        base_title,
+    );
 }
 
 #[allow(
@@ -49,13 +59,42 @@ fn heavy_center_patch() {
     clippy::too_many_lines
 )]
 #[tracing::instrument(level = "trace")]
-fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: &str) -> Scenario {
+fn build_scenario(
+    patch_velocity: f32,
+    bulk_velocity: f32,
+    smoothness_regularization_stength: f32,
+    base_id: &str,
+) -> Scenario {
     let mut scenario = Scenario::build(Some(format!(
-        "{base_id} {initial_velocity:.2} [m per s] to {target_velocity:.2} [m per s]"
+        "{base_id} bulk: {bulk_velocity:.2} [m per s], patch {patch_velocity:.2} [m per s], srs: {smoothness_regularization_stength:.2e}"
     )));
 
-    // Set pathological true
+    // Set tissue types
     scenario.config.simulation.model.common.pathological = true;
+    scenario
+        .config
+        .simulation
+        .model
+        .handcrafted
+        .as_mut()
+        .unwrap()
+        .include_atrium = false;
+    scenario
+        .config
+        .simulation
+        .model
+        .handcrafted
+        .as_mut()
+        .unwrap()
+        .include_av = false;
+    scenario
+        .config
+        .simulation
+        .model
+        .handcrafted
+        .as_mut()
+        .unwrap()
+        .include_hps = false;
     scenario
         .config
         .simulation
@@ -92,7 +131,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: &str) ->
         .handcrafted
         .as_mut()
         .unwrap()
-        .pathology_y_start_percentage = 0.0;
+        .pathology_y_start_percentage = 0.4;
     scenario
         .config
         .simulation
@@ -100,9 +139,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: &str) ->
         .handcrafted
         .as_mut()
         .unwrap()
-        .pathology_y_stop_percentage = 1.0;
-    // Copy settings to algorithm model
-    scenario.config.algorithm.model = scenario.config.simulation.model.clone();
+        .pathology_y_stop_percentage = 0.6;
     // Adjust propagation velocities
     *scenario
         .config
@@ -111,7 +148,15 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: &str) ->
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = target_velocity;
+        .unwrap() = bulk_velocity;
+    *scenario
+        .config
+        .simulation
+        .model
+        .common
+        .propagation_velocities_m_per_s
+        .get_mut(&VoxelType::Ventricle)
+        .unwrap() = bulk_velocity;
     *scenario
         .config
         .simulation
@@ -119,30 +164,19 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: &str) ->
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = target_velocity;
-    *scenario
-        .config
-        .algorithm
-        .model
-        .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = initial_velocity;
-    *scenario
-        .config
-        .algorithm
-        .model
-        .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Pathological)
-        .unwrap() = initial_velocity;
+        .unwrap() = patch_velocity;
+    // Copy settings to algorithm model
+    scenario.config.algorithm.model = scenario.config.simulation.model.clone();
     // set optimization parameters
-    scenario.config.algorithm.epochs = 5_000;
+    scenario.config.algorithm.epochs = 5_0;
     scenario.config.algorithm.learning_rate = 1e4;
     scenario.config.algorithm.optimizer = Optimizer::Sgd;
     scenario.config.algorithm.freeze_delays = false;
     scenario.config.algorithm.freeze_gains = true;
-    let number_of_snapshots = 1000;
+    scenario.config.algorithm.mse_strength = 0.0;
+    scenario.config.algorithm.smoothness_regularization_strength =
+        smoothness_regularization_stength;
+    let number_of_snapshots = 50;
     scenario.config.algorithm.snapshots_interval =
         scenario.config.algorithm.epochs / number_of_snapshots;
 
@@ -158,14 +192,15 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: &str) ->
     clippy::cast_precision_loss
 )]
 #[tracing::instrument(level = "trace")]
-fn plot_results(path: &Path, base_title: &str, scenario: &Scenario) {
+fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     setup_folder(path);
     let files = vec![path.join("loss.png")];
     clean_files(&files);
 
+    let first_scenario = scenarios.first().unwrap();
     println!(
         "{:?}",
-        scenario
+        first_scenario
             .results
             .as_ref()
             .unwrap()
@@ -177,21 +212,36 @@ fn plot_results(path: &Path, base_title: &str, scenario: &Scenario) {
             .coefs
     );
 
-    let x_epochs = Array1::range(0.0, scenario.config.algorithm.epochs as f32, 1.0);
-    let losses_owned: Vec<BatchWiseMetric> = vec![scenario
-        .results
-        .as_ref()
-        .unwrap()
-        .metrics
-        .loss_mse_batch
-        .clone()];
+    let mut labels_owned: Vec<String> = Vec::new();
+    let x_epochs = Array1::range(0.0, first_scenario.config.algorithm.epochs as f32, 1.0);
+    let num_snapshots = first_scenario.results.as_ref().unwrap().snapshots.len() as f32;
+    let x_snapshots = Array1::range(0.0, num_snapshots, 1.0);
+    let mut losses_owned: Vec<BatchWiseMetric> = Vec::new();
+
+    for scenario in scenarios {
+        losses_owned.push(
+            scenario
+                .results
+                .as_ref()
+                .unwrap()
+                .metrics
+                .loss_mse_batch
+                .clone(),
+        );
+        labels_owned.push(format!(
+            "{:.2e}",
+            scenario.config.algorithm.smoothness_regularization_strength
+        ));
+    }
 
     let losses = losses_owned
         .iter()
         .map(std::ops::Deref::deref)
         .collect::<Vec<&Array1<f32>>>();
-
-    println!("ys length: {}", losses.len());
+    let labels: Vec<&str> = labels_owned
+        .iter()
+        .map(std::string::String::as_str)
+        .collect();
 
     log_y_plot(
         Some(&x_epochs),
@@ -200,7 +250,7 @@ fn plot_results(path: &Path, base_title: &str, scenario: &Scenario) {
         Some(format!("{base_title} - Loss").as_str()),
         Some("Loss MSE"),
         Some("Epoch"),
-        None,
+        Some(&labels),
         None,
     )
     .unwrap();
@@ -210,45 +260,56 @@ fn plot_results(path: &Path, base_title: &str, scenario: &Scenario) {
 fn create_and_run(
     patch_velocity: f32,
     bulk_velocity: f32,
+    smoothness_regularization_strengths: Vec<f32>,
     base_id: &str,
     img_path: &Path,
     base_title: &str,
 ) {
+    let mut scenarios = Vec::new();
     let mut join_handles = Vec::new();
 
-    let id = format!(
-        "{base_id} bulk: {bulk_velocity:.2} [m per s], patch {patch_velocity:.2} [m per s]"
+    for smoothness_regularization_strength in smoothness_regularization_strengths {
+        let id = format!(
+        "{base_id} bulk: {bulk_velocity:.2} [m per s], patch {patch_velocity:.2} [m per s], srs: {smoothness_regularization_strength:.2e}"
     );
-    let path = Path::new("results").join(id);
-    let mut scenario = if path.is_dir() {
-        println!("Found scenario. Loading it!");
-        let mut scenario = Scenario::load(path.as_path());
-        scenario.load_data();
-        scenario.load_results();
-        scenario
-    } else {
-        println!("Didn't find scenario. Building it!");
-        let scenario = build_scenario(patch_velocity, bulk_velocity, base_id);
-        if RUN_IN_TESTS {
-            let send_scenario = scenario.clone();
-            let (epoch_tx, _) = channel();
-            let (summary_tx, _) = channel();
-            let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
-            println!("handle {handle:?}");
-            join_handles.push(handle);
-        }
-        scenario
-    };
+        let path = Path::new("results").join(id);
+        if path.is_dir() {
+            println!("Found scenario. Loading it!");
+            let mut scenario = Scenario::load(path.as_path());
+            scenario.load_data();
+            scenario.load_results();
+            scenarios.push(scenario);
+        } else {
+            println!("Didn't find scenario. Building it!");
+            let scenario = build_scenario(
+                patch_velocity,
+                bulk_velocity,
+                smoothness_regularization_strength,
+                base_id,
+            );
+            if RUN_IN_TESTS {
+                let send_scenario = scenario.clone();
+                let (epoch_tx, _) = channel();
+                let (summary_tx, _) = channel();
+                let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
+                println!("handle {handle:?}");
+                join_handles.push(handle);
+            }
+            scenarios.push(scenario);
+        };
+    }
 
     if RUN_IN_TESTS {
         for handle in join_handles {
             handle.join().unwrap();
         }
-        let path = Path::new("results").join(scenario.id.clone());
-        scenario = Scenario::load(path.as_path());
-        scenario.load_data();
-        scenario.load_results();
+        for scenario in &mut scenarios {
+            let path = Path::new("results").join(scenario.id.clone());
+            *scenario = Scenario::load(path.as_path());
+            scenario.load_data();
+            scenario.load_results();
+        }
     }
 
-    plot_results(img_path, base_title, &scenario);
+    plot_results(img_path, base_title, scenarios);
 }

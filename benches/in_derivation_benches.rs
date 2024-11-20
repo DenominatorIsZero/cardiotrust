@@ -177,7 +177,7 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
                     &results.estimations.ap_outputs,
                     &results.derivatives.maximum_regularization,
                     &results.derivatives.mapped_residuals,
-                    config.algorithm.maximum_regularization_strength,
+                    &config.algorithm,
                     results.estimations.measurements.num_sensors(),
                 );
             })

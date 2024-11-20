@@ -30,6 +30,8 @@ pub struct Algorithm {
     #[serde(default)]
     pub learning_rate_reduction_interval: usize,
     #[serde(default)]
+    pub mse_strength: f32,
+    #[serde(default)]
     // used for SGD optimization of ap coefficients to ensure convergence.
     pub slow_down_stregth: f32,
     #[serde(default)]
@@ -60,6 +62,7 @@ impl Default for Algorithm {
             learning_rate: 200.0,
             learning_rate_reduction_factor: 0.0,
             learning_rate_reduction_interval: 0,
+            mse_strength: 1.0,
             slow_down_stregth: 0.,
             maximum_regularization_strength: 1.0,
             maximum_regularization_threshold: 1.01,

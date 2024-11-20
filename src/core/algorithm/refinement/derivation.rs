@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use approx::AbsDiffEq;
 use ndarray::Array1;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, trace};
+use tracing::{debug, info, trace};
 
 use super::Optimizer;
 use crate::core::{
@@ -160,7 +160,7 @@ pub fn calculate_step_derivatives(
             &estimations.ap_outputs,
             &derivates.maximum_regularization,
             &derivates.mapped_residuals,
-            config.maximum_regularization_strength,
+            config,
             number_of_sensors,
         );
     }
@@ -180,30 +180,32 @@ pub fn calculate_step_derivatives(
 #[inline]
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn calculate_batch_derivatives(
-    derivates: &mut Derivatives,
+    derivatives: &mut Derivatives,
     estimations: &Estimations,
     functional_description: &FunctionalDescription,
     config: &Algorithm,
 ) {
-    if config.freeze_delays
+    debug!("Calculating batch derivatives");
+    if !config.freeze_delays
         && config
             .smoothness_regularization_strength
             .abs_diff_ne(&0.0, f32::EPSILON)
     {
-        calculate_smoothness_derivatives(derivates, estimations, functional_description, config);
+        calculate_smoothness_derivatives(derivatives, estimations, functional_description, config);
     }
 }
 
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace")]
 pub fn calculate_smoothness_derivatives(
-    derivates: &mut Derivatives,
+    derivatives: &mut Derivatives,
     estimations: &Estimations,
     functional_description: &FunctionalDescription,
     config: &Algorithm,
 ) {
-    for voxel_index in 0..derivates.coefs.shape()[0] {
-        for output_offset in 0..derivates.coefs.shape()[1] {
+    debug!("Calculating smoothness derivatives");
+    for voxel_index in 0..derivatives.coefs.shape()[0] {
+        for output_offset in 0..derivatives.coefs.shape()[1] {
             let average_delay = unsafe { *estimations.average_delays.uget(voxel_index) };
             if average_delay.is_none() {
                 continue;
@@ -244,7 +246,7 @@ pub fn calculate_smoothness_derivatives(
                 });
             let difference = average_delay - delay;
 
-            let derivative = unsafe { derivates.coefs.uget_mut((voxel_index, output_offset)) };
+            let derivative = unsafe { derivatives.coefs.uget_mut((voxel_index, output_offset)) };
             *derivative += config.smoothness_regularization_strength * difference;
         }
     }
@@ -258,11 +260,11 @@ pub fn calculate_derivatives_gains(
     ap_outputs: &Gains,
     maximum_regularization: &MaximumRegularization,
     mapped_residuals: &MappedResiduals,
-    regularization_strength: f32,
+    config: &Algorithm,
     number_of_sensors: usize,
 ) {
-    let scaling = 1.0 / number_of_sensors as f32;
-    let regularization_scaling = regularization_strength;
+    let mse_scaling = 1.0 / number_of_sensors as f32 * config.mse_strength;
+    let regularization_scaling = config.maximum_regularization_strength;
 
     for gain_index in 0..derivatives_gains.shape()[0] {
         for offset_index in 0..derivatives_gains.shape()[1] {
@@ -271,7 +273,8 @@ pub fn calculate_derivatives_gains(
             let residual = unsafe { mapped_residuals.uget(gain_index) };
             let derivative = unsafe { derivatives_gains.uget_mut((gain_index, offset_index)) };
 
-            *derivative += ap_output * residual.mul_add(scaling, max_reg * regularization_scaling);
+            *derivative +=
+                ap_output * residual.mul_add(mse_scaling, max_reg * regularization_scaling);
         }
     }
 }
@@ -291,7 +294,7 @@ pub fn calculate_derivatives_coefs(
     step: usize,
     config: &Algorithm,
 ) {
-    let scaling = 1.0 / estimations.measurements.num_sensors() as f32;
+    let mse_scaling = 1.0 / estimations.measurements.num_sensors() as f32 * config.mse_strength;
 
     // FIR derivatives calculation
     for state_index in 0..derivatives.coefs_fir.shape()[0] {
@@ -367,7 +370,7 @@ pub fn calculate_derivatives_coefs(
 
             let coef_derivative = unsafe { derivatives.coefs.uget_mut(coef_index) };
             *coef_derivative += ((fir + iir) * ap_gain * residual).mul_add(
-                scaling,
+                mse_scaling,
                 config.difference_regularization_strength * delay_delta,
             );
         }
