@@ -40,7 +40,7 @@ fn heavy_center_patch() {
     let patch_delay_s = patch_delay / sample_rate_hz;
     let patch_velocity = voxel_size_mm / 1000.0 / patch_delay_s;
 
-    let smoothness_regularization_stengths = vec![1e-4, 1e-3, 1e-2, 1e-1];
+    let smoothness_regularization_stengths = vec![1e-1, 1e-0, 1e+1, 1e+2];
 
     create_and_run(
         patch_velocity,
@@ -168,7 +168,7 @@ fn build_scenario(
     // Copy settings to algorithm model
     scenario.config.algorithm.model = scenario.config.simulation.model.clone();
     // set optimization parameters
-    scenario.config.algorithm.epochs = 5_0;
+    scenario.config.algorithm.epochs = 250;
     scenario.config.algorithm.learning_rate = 1e4;
     scenario.config.algorithm.optimizer = Optimizer::Sgd;
     scenario.config.algorithm.freeze_delays = false;

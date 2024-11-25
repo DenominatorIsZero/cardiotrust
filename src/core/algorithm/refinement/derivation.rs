@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use approx::AbsDiffEq;
 use ndarray::Array1;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info, trace};
+use tracing::{debug, trace};
 
 use super::Optimizer;
 use crate::core::{
@@ -206,11 +206,12 @@ pub fn calculate_smoothness_derivatives(
     debug!("Calculating smoothness derivatives");
     for voxel_index in 0..derivatives.coefs.shape()[0] {
         for output_offset in 0..derivatives.coefs.shape()[1] {
-            let average_delay = unsafe { *estimations.average_delays.uget(voxel_index) };
-            if average_delay.is_none() {
+            let average_delay_in_voxel = unsafe { *estimations.average_delays.uget(voxel_index) };
+            if average_delay_in_voxel.is_none() {
                 continue;
             }
-            let mut average_delay = average_delay.unwrap();
+            let average_delay_in_voxel = average_delay_in_voxel.unwrap();
+            let mut average_delay_in_neighborhood = average_delay_in_voxel;
             let mut divisor = 1.0;
 
             for voxel_offset in 0..functional_description.ap_params.delays.shape()[1] {
@@ -226,25 +227,13 @@ pub fn calculate_smoothness_derivatives(
                 let neighbor_index = neighbor_index.unwrap() / 3;
                 let delay = unsafe { *estimations.average_delays.uget(neighbor_index) };
                 if delay.is_some() {
-                    average_delay += delay.unwrap();
+                    average_delay_in_neighborhood += delay.unwrap();
                     divisor += 1.0;
                 }
             }
-            average_delay /= divisor;
+            average_delay_in_neighborhood /= divisor;
 
-            let delay = unsafe {
-                *functional_description
-                    .ap_params
-                    .delays
-                    .uget((voxel_index, output_offset))
-            } as f32
-                + from_coef_to_samples(unsafe {
-                    *functional_description
-                        .ap_params
-                        .coefs
-                        .uget((voxel_index, output_offset))
-                });
-            let difference = average_delay - delay;
+            let difference = average_delay_in_neighborhood - average_delay_in_voxel;
 
             let derivative = unsafe { derivatives.coefs.uget_mut((voxel_index, output_offset)) };
             *derivative += config.smoothness_regularization_strength * difference;
