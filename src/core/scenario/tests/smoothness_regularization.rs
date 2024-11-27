@@ -1,6 +1,5 @@
 use std::{path::Path, sync::mpsc::channel, thread};
 
-use egui::epaint::tessellator::PathType;
 use ndarray::Array1;
 
 use super::RUN_IN_TESTS;
@@ -214,8 +213,6 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
 
     let mut labels_owned: Vec<String> = Vec::new();
     let x_epochs = Array1::range(0.0, first_scenario.config.algorithm.epochs as f32, 1.0);
-    let num_snapshots = first_scenario.results.as_ref().unwrap().snapshots.len() as f32;
-    let x_snapshots = Array1::range(0.0, num_snapshots, 1.0);
     let mut losses_owned: Vec<BatchWiseMetric> = Vec::new();
 
     for scenario in scenarios {

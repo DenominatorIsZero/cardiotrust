@@ -146,6 +146,7 @@ pub fn run_epoch(
     config: &Algorithm,
 ) {
     results.derivatives.reset();
+    results.estimations.kalman_gain_converged = false;
     let num_steps = results.estimations.system_states.num_steps();
     let num_beats = data.simulation.measurements.num_beats();
 
@@ -276,8 +277,6 @@ pub fn run_epoch(
             functional_description
                 .ap_params
                 .update(&mut results.derivatives, config, num_steps, n);
-            results.derivatives.reset();
-            results.estimations.kalman_gain_converged = false;
             metrics::calculate_batch(&mut results.metrics, *batch_index);
             *batch_index += 1;
         }
@@ -293,8 +292,6 @@ pub fn run_epoch(
             num_steps,
             num_beats,
         );
-        results.derivatives.reset();
-        results.estimations.kalman_gain_converged = false;
         metrics::calculate_batch(&mut results.metrics, *batch_index);
         *batch_index += 1;
     }

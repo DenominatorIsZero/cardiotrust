@@ -7,13 +7,13 @@ use std::{
 };
 
 use nalgebra::ComplexField;
-use ndarray::Array1;
+use ndarray::{s, Array1};
 use ndarray_npy::WriteNpyExt;
 
 use super::{RUN_IN_TESTS, SAVE_NPY};
 use crate::{
     core::{
-        algorithm::metrics::BatchWiseMetric,
+        algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
         model::{functional::allpass::from_coef_to_samples, spatial::voxels::VoxelType},
         scenario::{run, Scenario},
     },
@@ -118,8 +118,8 @@ fn heavy_yes_roll_down() {
     let base_title = "Single AP - Yes Roll - Up";
     let path = Path::new(COMMON_PATH).join("yes_roll_down");
 
-    let integer_part = 2.0;
-    let fractional_part = 0.2;
+    let integer_part = 10.0;
+    let fractional_part = 0.9;
     let steps = 10;
     let voxel_size_mm = 2.5;
     let sample_rate_hz = 2000.0;
@@ -285,7 +285,8 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: &str) ->
         .unwrap() = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 5_000;
-    scenario.config.algorithm.learning_rate = 1e4;
+    scenario.config.algorithm.learning_rate = 1e2;
+    scenario.config.algorithm.optimizer = Optimizer::Adam;
     scenario.config.algorithm.freeze_delays = false;
     scenario.config.algorithm.freeze_gains = true;
     let number_of_snapshots = 1000;
@@ -308,9 +309,11 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     setup_folder(path);
     let files = vec![
         path.join("loss.png"),
+        path.join("loss_close_up.png"),
         path.join("params.png"),
         path.join("params_error.png"),
         path.join("delays.png"),
+        path.join("delays_close_up.png"),
         path.join("delays_error.png"),
     ];
     clean_files(&files);
@@ -525,10 +528,29 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     )
     .unwrap();
 
+    let x_epochs_close_up = x_epochs.slice(s![..10]).to_owned();
+    let losses_owned_close_up = losses_owned
+        .iter()
+        .map(|v| v.slice(s![..10]).to_owned())
+        .collect::<Vec<Array1<f32>>>();
+    let losses_close_up = losses_owned_close_up.iter().collect::<Vec<&Array1<f32>>>();
+
+    log_y_plot(
+        Some(&x_epochs_close_up),
+        losses_close_up,
+        Some(files[1].as_path()),
+        Some(format!("{base_title} - Loss").as_str()),
+        Some("Loss MSE"),
+        Some("Epoch"),
+        Some(&labels),
+        None,
+    )
+    .unwrap();
+
     line_plot(
         Some(&x_snapshots),
         params,
-        Some(files[1].as_path()),
+        Some(files[2].as_path()),
         Some(format!("{base_title} - AP Coef").as_str()),
         Some("AP Coef (Estimated)"),
         Some("Snapshot"),
@@ -540,7 +562,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     line_plot(
         Some(&x_snapshots),
         params_error,
-        Some(files[2].as_path()),
+        Some(files[3].as_path()),
         Some(format!("{base_title} - AP Coef Error").as_str()),
         Some("AP Coef (Target - Estimated)"),
         Some("Snapshot"),
@@ -552,7 +574,26 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     line_plot(
         Some(&x_snapshots),
         delays,
-        Some(files[3].as_path()),
+        Some(files[4].as_path()),
+        Some(format!("{base_title} - AP Delay").as_str()),
+        Some("AP Delay (Estimated)"),
+        Some("Snapshot"),
+        Some(&labels),
+        None,
+    )
+    .unwrap();
+
+    let x_snapshots_close_up = x_snapshots.slice(s![..10]).to_owned();
+    let delays_owned_close_up = delays_owned
+        .iter()
+        .map(|v| v.slice(s![..10]).to_owned())
+        .collect::<Vec<Array1<f32>>>();
+    let delays_close_up = delays_owned_close_up.iter().collect::<Vec<&Array1<f32>>>();
+
+    line_plot(
+        Some(&x_snapshots_close_up),
+        delays_close_up,
+        Some(files[5].as_path()),
         Some(format!("{base_title} - AP Delay").as_str()),
         Some("AP Delay (Estimated)"),
         Some("Snapshot"),
@@ -564,7 +605,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     line_plot(
         Some(&x_snapshots),
         delays_error,
-        Some(files[4].as_path()),
+        Some(files[6].as_path()),
         Some(format!("{base_title} - AP Delay Error").as_str()),
         Some("AP Delay (Target - Estimated)"),
         Some("Snapshot"),

@@ -31,7 +31,20 @@ const AXIS_LABEL_NUM_MAX: usize = 10;
 const LEGEND_PATH_LENGTH: i32 = 20;
 const LEGEND_OPACITY: f64 = 0.8;
 
-const COLORS: [RGBColor; 6] = [BLUE, GREEN, RED, CYAN, MAGENTA, YELLOW];
+const COLORS: [RGBColor; 12] = [
+    RGBColor(0, 114, 178),   // Blue
+    RGBColor(230, 159, 0),   // Orange
+    RGBColor(0, 158, 115),   // Green
+    RGBColor(204, 121, 167), // Purple
+    RGBColor(213, 94, 0),    // Vermillion
+    RGBColor(86, 180, 233),  // Sky Blue
+    RGBColor(0, 103, 91),    // Dark Teal
+    RGBColor(162, 86, 178),  // Violet
+    RGBColor(240, 228, 66),  // Yellow
+    RGBColor(128, 0, 38),    // Dark Red
+    RGBColor(0, 77, 134),    // Navy
+    RGBColor(149, 144, 144), // Gray
+];
 
 /// Allocates a buffer for storing pixel data for an image of the given width and height.
 ///
