@@ -162,7 +162,7 @@ pub struct Common {
 
 pub const DEFAULT_HEART_OFFSET_HANDCRAFTED: [f32; 3] = [25.0, -250.0, 150.0];
 pub const DEFAULT_HEART_OFFSET_MRI: [f32; 3] = [-130.0, -300.0, -30.0];
-pub const DEFAULT_SENSOR_ORIGIN_CUBE: [f32; 3] = [-50.0, -300.0, 260.0];
+pub const DEFAULT_SENSOR_ORIGIN_CUBE: [f32; 3] = [-50.0, -300.0, 270.0];
 pub const DEFAULT_SENSOR_ORIGIN_CYLINDER: [f32; 3] = [0.0, -200.0, 100.0];
 
 impl Default for Common {
@@ -187,7 +187,7 @@ impl Default for Common {
             sensor_array_radius_mm: 400.0,
             sensors_per_axis: [4, 4, 4],
             sensor_array_size_mm: [250.0, 250.0, 100.0],
-            sensor_array_origin_mm: [-50.0, -300.0, 260.0],
+            sensor_array_origin_mm: DEFAULT_SENSOR_ORIGIN_CUBE,
             sensor_array_motion_range_mm: [100.0, 200.0, 100.0],
             sensor_array_motion_steps: [1, 2, 1],
             voxel_size_mm: 2.5,
