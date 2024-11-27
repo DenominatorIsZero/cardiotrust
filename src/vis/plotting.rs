@@ -1,10 +1,7 @@
 pub mod gif;
 pub mod png;
 
-use plotters::style::{
-    colors::{BLUE, CYAN, GREEN, MAGENTA, RED, YELLOW},
-    RGBColor,
-};
+use plotters::style::RGBColor;
 use tracing::trace;
 
 const STANDARD_RESOLUTION: (u32, u32) = (800, 600);

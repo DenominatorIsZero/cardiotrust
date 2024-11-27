@@ -1,6 +1,5 @@
 use std::{
-    fs::{self, File},
-    io::BufWriter,
+    fs::{self},
     path::Path,
     sync::mpsc::channel,
     thread,
@@ -8,13 +7,12 @@ use std::{
 
 use nalgebra::ComplexField;
 use ndarray::Array1;
-use ndarray_npy::WriteNpyExt;
 
 use super::{RUN_IN_TESTS, SAVE_NPY};
 use crate::{
     core::{
-        algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
-        model::{functional::allpass::from_coef_to_samples, spatial::voxels::VoxelType},
+        algorithm::refinement::Optimizer,
+        model::spatial::voxels::VoxelType,
         scenario::{run, Scenario},
     },
     tests::{clean_files, setup_folder},
