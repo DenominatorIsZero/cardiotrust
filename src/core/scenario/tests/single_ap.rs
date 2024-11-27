@@ -30,80 +30,26 @@ const COMMON_PATH: &str = "tests/core/scenario/single_ap/";
     clippy::too_many_lines
 )]
 #[test]
-fn heavy_no_roll_down() {
-    let base_id = "Single AP - No Roll - Down - ".to_string();
-    let base_title = "Single AP - No Roll - Down";
-    let path = Path::new(COMMON_PATH).join("no_roll_down");
-
-    let integer_part = 5.0;
-    let fractional_step = 0.1;
-    let steps = (1.0 / fractional_step).ceil() as usize;
-    let voxel_size_mm = 2.5;
-    let sample_rate_hz = 2000.0;
-
-    let initial_fractional = 0.0;
-    let initial_delay = integer_part + initial_fractional;
-    let initial_delay_s = initial_delay / sample_rate_hz;
-    let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
-
-    let mut target_velocities = Vec::new();
-
-    for target_fractional_part in 1..=steps {
-        let target_fractional = (target_fractional_part as f32 * fractional_step).max(0.01);
-        let target_delay = integer_part + target_fractional;
-        let target_delay_s = target_delay / sample_rate_hz;
-        let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
-        target_velocities.push(target_velocity);
-    }
-
-    create_and_run(
-        target_velocities,
-        initial_velocity,
-        &base_id,
-        &path,
-        base_title,
-    );
-}
-
-#[allow(
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    clippy::cast_precision_loss,
-    clippy::too_many_lines
-)]
-#[test]
 fn heavy_no_roll_up() {
-    let base_id = "Single AP - No Roll - Up - ".to_string();
-    let base_title = "Single AP - No Roll - Up";
+    let base_id = "Single AP - No Roll - up - ".to_string();
     let path = Path::new(COMMON_PATH).join("no_roll_up");
 
     let integer_part = 5.0;
     let fractional_step = 0.1;
     let steps = (1.0 / fractional_step).ceil() as usize;
-    let voxel_size_mm = 2.5;
-    let sample_rate_hz = 2000.0;
 
-    let initial_fractional = 0.99;
+    let initial_fractional = 0.0;
     let initial_delay = integer_part + initial_fractional;
-    let initial_delay_s = initial_delay / sample_rate_hz;
-    let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
 
-    let mut target_velocities = Vec::new();
-    for target_fractional_part in 0..steps {
-        let target_fractional = (target_fractional_part as f32 * fractional_step).min(0.99);
+    let mut target_delays = Vec::new();
+
+    for target_fractional_part in 1..=steps {
+        let target_fractional = (target_fractional_part as f32 * fractional_step).max(0.01);
         let target_delay = integer_part + target_fractional;
-        let target_delay_s = target_delay / sample_rate_hz;
-        let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
-        target_velocities.push(target_velocity);
+        target_delays.push(target_delay);
     }
 
-    create_and_run(
-        target_velocities,
-        initial_velocity,
-        &base_id,
-        &path,
-        base_title,
-    );
+    create_and_run(target_delays, initial_delay, &base_id, &path);
 }
 
 #[allow(
@@ -113,37 +59,25 @@ fn heavy_no_roll_up() {
     clippy::too_many_lines
 )]
 #[test]
-fn heavy_yes_roll_down() {
-    let base_id = "Single AP - Yes Roll - Down - ".to_string();
-    let base_title = "Single AP - Yes Roll - Up";
-    let path = Path::new(COMMON_PATH).join("yes_roll_down");
+fn heavy_no_roll_down() {
+    let base_id = "Single AP - No Roll - down - ".to_string();
+    let path = Path::new(COMMON_PATH).join("no_roll_down");
 
-    let integer_part = 10.0;
-    let fractional_part = 0.9;
-    let steps = 10;
-    let voxel_size_mm = 2.5;
-    let sample_rate_hz = 2000.0;
+    let integer_part = 5.0;
+    let fractional_step = 0.1;
+    let steps = (1.0 / fractional_step).ceil() as usize;
 
-    let initial_delay = integer_part + fractional_part;
-    let initial_delay_s = initial_delay / sample_rate_hz;
-    let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
+    let initial_fractional = 0.99;
+    let initial_delay = integer_part + initial_fractional;
 
-    let mut target_velocities = Vec::new();
-
-    for target_interger_part in 1..=steps {
-        let target_delay = integer_part + target_interger_part as f32 + fractional_part;
-        let target_delay_s = target_delay / sample_rate_hz;
-        let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
-        target_velocities.push(target_velocity);
+    let mut target_delays = Vec::new();
+    for target_fractional_part in 0..steps {
+        let target_fractional = (target_fractional_part as f32 * fractional_step).min(0.99);
+        let target_delay = integer_part + target_fractional;
+        target_delays.push(target_delay);
     }
 
-    create_and_run(
-        target_velocities,
-        initial_velocity,
-        &base_id,
-        &path,
-        base_title,
-    );
+    create_and_run(target_delays, initial_delay, &base_id, &path);
 }
 
 #[allow(
@@ -155,42 +89,90 @@ fn heavy_yes_roll_down() {
 #[test]
 fn heavy_yes_roll_up() {
     let base_id = "Single AP - Yes Roll - Up - ".to_string();
-    let base_title = "Single AP - Yes Roll - Up";
     let path = Path::new(COMMON_PATH).join("yes_roll_up");
+
+    let integer_part = 10.0;
+    let fractional_part = 0.9;
+    let steps = 10;
+
+    let initial_delay = integer_part + fractional_part;
+
+    let mut target_delays = Vec::new();
+
+    for target_interger_part in 1..=steps {
+        let target_delay = integer_part + target_interger_part as f32 + fractional_part;
+        target_delays.push(target_delay);
+    }
+    create_and_run(target_delays, initial_delay, &base_id, &path);
+}
+
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines
+)]
+#[test]
+fn heavy_yes_roll_down() {
+    let base_id = "Single AP - Yes Roll - Down - ".to_string();
+    let path = Path::new(COMMON_PATH).join("yes_roll_down");
 
     let integer_part = 11.0;
     let fractional_part = 0.5;
     let steps = 10;
-    let voxel_size_mm = 2.5;
-    let sample_rate_hz = 2000.0;
 
     let initial_delay = integer_part + fractional_part;
-    let initial_delay_s = initial_delay / sample_rate_hz;
-    let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
 
-    let mut target_velocities = Vec::new();
+    let mut target_delays = Vec::new();
 
     for target_interger_part in 1..=steps {
         let target_delay = integer_part - target_interger_part as f32 + fractional_part;
-        let target_delay_s = target_delay / sample_rate_hz;
-        let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
-        target_velocities.push(target_velocity);
+        target_delays.push(target_delay);
     }
 
-    create_and_run(
-        target_velocities,
-        initial_velocity,
-        &base_id,
-        &path,
-        base_title,
-    );
+    create_and_run(target_delays, initial_delay, &base_id, &path);
 }
 
 #[tracing::instrument(level = "trace")]
-fn build_scenario(target_velocity: f32, initial_velocity: f32, base_id: &str) -> Scenario {
-    let mut scenario = Scenario::build(Some(format!(
-        "{base_id} {initial_velocity:.2} [m per s] to {target_velocity:.2} [m per s]"
-    )));
+fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scenario {
+    let mut scenario = Scenario::build(Some(id.to_string()));
+
+    // configure sensors
+    scenario.config.simulation.model.common.sensors_per_axis = [1, 1, 1];
+    scenario.config.simulation.model.common.three_d_sensors = false;
+    scenario
+        .config
+        .simulation
+        .model
+        .common
+        .sensor_array_origin_mm = [
+        scenario.config.simulation.model.common.heart_offset_mm[0]
+            + scenario
+                .config
+                .simulation
+                .model
+                .handcrafted
+                .as_ref()
+                .unwrap()
+                .heart_size_mm[0]
+                / 2.0,
+        scenario.config.simulation.model.common.heart_offset_mm[1]
+            + scenario
+                .config
+                .simulation
+                .model
+                .handcrafted
+                .as_ref()
+                .unwrap()
+                .heart_size_mm[1]
+                / 2.0,
+        scenario
+            .config
+            .simulation
+            .model
+            .common
+            .sensor_array_origin_mm[2],
+    ];
 
     // Set pathological true
     scenario.config.simulation.model.common.pathological = true;
@@ -452,13 +434,14 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         labels_owned.push(format!(
             "{:.2}",
             scenario
-                .config
+                .data
+                .as_ref()
+                .unwrap()
                 .simulation
                 .model
-                .common
-                .propagation_velocities_m_per_s
-                .get(&VoxelType::Sinoatrial)
-                .unwrap()
+                .functional_description
+                .ap_params
+                .initial_delays[(0, 15)]
         ));
     }
 
@@ -616,19 +599,20 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
 }
 
 #[tracing::instrument(level = "trace")]
-fn create_and_run(
-    target_velocities: Vec<f32>,
-    initial_velocity: f32,
-    base_id: &str,
-    path: &Path,
-    base_title: &str,
-) {
+fn create_and_run(target_delays: Vec<f32>, initial_delay: f32, base_id: &str, path: &Path) {
     let mut scenarios = Vec::new();
     let mut join_handles = Vec::new();
 
-    for target_velocity in target_velocities {
-        let id =
-            format!("{base_id} {initial_velocity:.2} [m per s] to {target_velocity:.2} [m per s]");
+    let voxel_size_mm = 2.5;
+    let sample_rate_hz = 2000.0;
+
+    let initial_delay_s = initial_delay / sample_rate_hz;
+    let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
+
+    for target_delay in target_delays {
+        let target_delay_s = target_delay / sample_rate_hz;
+        let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
+        let id = format!("{base_id} {initial_delay:.2} [samples] to {target_delay:.2} [samples]");
         let path = Path::new("results").join(&id);
         if path.is_dir() {
             println!("Found scenario. Loading it!");
@@ -638,7 +622,7 @@ fn create_and_run(
             scenarios.push(scenario);
         } else {
             println!("Didn't find scenario. Building it!");
-            let scenario = build_scenario(target_velocity, initial_velocity, base_id);
+            let scenario = build_scenario(target_velocity, initial_velocity, &id);
             if RUN_IN_TESTS {
                 let send_scenario = scenario.clone();
                 let (epoch_tx, _) = channel();
@@ -663,5 +647,5 @@ fn create_and_run(
         }
     }
 
-    plot_results(path, base_title, scenarios);
+    plot_results(path, base_id, scenarios);
 }
