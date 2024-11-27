@@ -111,8 +111,8 @@ impl Default for Mri {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum ControlFunction {
-    Sinosodal,
     Ohara,
+    Triangle,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

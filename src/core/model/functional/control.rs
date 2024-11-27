@@ -12,7 +12,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use crate::core::{
-    config::model::Model,
+    config::{
+        self,
+        model::{self, Model},
+    },
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
 
@@ -111,58 +114,79 @@ impl ControlFunction {
     /// Panics if the control function input file is missing.
     #[must_use]
     #[tracing::instrument(level = "debug")]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss
+    )]
+
     pub fn from_model_config(config: &Model, sample_rate_hz: f32, duration_s: f32) -> Self {
         debug!("Creating control function from model config");
-        //let _sample_rate_hz_in = 2000.0;
-        let mut control_function_raw: Array1<f32> =
-            read_npy("assets/control_function_ohara.npy").unwrap();
-
-        let from_sample_rate_hz = 2000.0;
-
-        if !from_sample_rate_hz.relative_eq(&sample_rate_hz, 1e-3, 1e-3) {
-            let params = SincInterpolationParameters {
-                sinc_len: 256,
-                f_cutoff: 0.95,
-                oversampling_factor: 256,
-                interpolation: rubato::SincInterpolationType::Cubic,
-                window: rubato::WindowFunction::BlackmanHarris2,
-            };
-            let mut resampler = SincFixedIn::<f32>::new(
-                f64::from(sample_rate_hz) / f64::from(from_sample_rate_hz),
-                10.0,
-                params,
-                control_function_raw.len(),
-                1,
-            )
-            .unwrap();
-
-            let input_frames: Vec<Vec<f32>> = vec![control_function_raw.to_vec()];
-
-            let output_frames = resampler.process(&input_frames, None).unwrap();
-
-            control_function_raw = output_frames[0].clone().into();
-        }
-
-        #[allow(
-            clippy::cast_possible_truncation,
-            clippy::cast_precision_loss,
-            clippy::cast_sign_loss
-        )]
         let desired_length_samples = (duration_s * sample_rate_hz) as usize;
 
-        #[allow(
-            clippy::cast_possible_truncation,
-            clippy::cast_precision_loss,
-            clippy::cast_sign_loss
-        )]
-        let control_function_values: Vec<f32> = (0..desired_length_samples)
-            .map(|i| {
-                let index = i % control_function_raw.len();
-                control_function_raw[index]
-            })
-            .collect();
+        match config.common.control_function {
+            config::model::ControlFunction::Ohara => {
+                let mut control_function_raw: Array1<f32> =
+                    read_npy("assets/control_function_ohara.npy").unwrap();
 
-        Self(Array1::from(control_function_values))
+                let from_sample_rate_hz = 2000.0;
+
+                if !from_sample_rate_hz.relative_eq(&sample_rate_hz, 1e-3, 1e-3) {
+                    let params = SincInterpolationParameters {
+                        sinc_len: 256,
+                        f_cutoff: 0.95,
+                        oversampling_factor: 256,
+                        interpolation: rubato::SincInterpolationType::Cubic,
+                        window: rubato::WindowFunction::BlackmanHarris2,
+                    };
+                    let mut resampler = SincFixedIn::<f32>::new(
+                        f64::from(sample_rate_hz) / f64::from(from_sample_rate_hz),
+                        10.0,
+                        params,
+                        control_function_raw.len(),
+                        1,
+                    )
+                    .unwrap();
+
+                    let input_frames: Vec<Vec<f32>> = vec![control_function_raw.to_vec()];
+
+                    let output_frames = resampler.process(&input_frames, None).unwrap();
+
+                    control_function_raw = output_frames[0].clone().into();
+                }
+
+                let control_function_values: Vec<f32> = (0..desired_length_samples)
+                    .map(|i| {
+                        let index = i % control_function_raw.len();
+                        control_function_raw[index]
+                    })
+                    .collect();
+
+                return Self(Array1::from(control_function_values));
+            }
+            config::model::ControlFunction::Triangle => {
+                let mut control_function_values = Array1::<f32>::zeros(desired_length_samples);
+
+                let triangle_half_length = (0.01 * sample_rate_hz) as i32;
+
+                let increase_per_step = 1.0 / (triangle_half_length + 1) as f32;
+
+                for i in 0..triangle_half_length {
+                    let value = (i + 1) as f32 * increase_per_step;
+                    control_function_values[triangle_half_length as usize + i as usize] = value;
+                    control_function_values[3 * triangle_half_length as usize - i as usize] = value;
+                }
+
+                control_function_values[triangle_half_length as usize * 2] = 1.0;
+
+                for i in sample_rate_hz as usize..desired_length_samples {
+                    control_function_values[i] =
+                        control_function_values[i % sample_rate_hz as usize];
+                }
+
+                return Self(control_function_values);
+            }
+        }
     }
 
     /// Saves the control function values to a .npy file at the given path.
@@ -256,13 +280,43 @@ mod test {
             clippy::cast_sign_loss
         )]
         let expected_length_samples = (sample_rate_hz * duration_s) as usize;
-        let config = Model::default();
+        let mut config = Model::default();
+        config.common.control_function = config::model::ControlFunction::Ohara;
 
         let control_function =
             ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
         assert_eq!(expected_length_samples, control_function.shape()[0]);
 
-        let path = Path::new(COMMON_PATH).join("control_function.png");
+        let path = Path::new(COMMON_PATH).join("control_function_ohara.png");
+        standard_time_plot(
+            &control_function,
+            sample_rate_hz,
+            path.as_path(),
+            "Control Function",
+            "j [A/mm^2]",
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn triangle_function_from_model_config_no_crash_and_plot() {
+        setup(None);
+        let sample_rate_hz = 3000.0;
+        let duration_s = 1.5;
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_precision_loss,
+            clippy::cast_sign_loss
+        )]
+        let expected_length_samples = (sample_rate_hz * duration_s) as usize;
+        let mut config = Model::default();
+        config.common.control_function = config::model::ControlFunction::Triangle;
+
+        let control_function =
+            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
+        assert_eq!(expected_length_samples, control_function.shape()[0]);
+
+        let path = Path::new(COMMON_PATH).join("control_function_triangle.png");
         standard_time_plot(
             &control_function,
             sample_rate_hz,

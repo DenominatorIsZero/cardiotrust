@@ -139,8 +139,8 @@ fn draw_functional_settings(ui: &mut egui::Ui, model: &mut Model) {
                             .show_ui(ui, |ui| {
                                 ui.selectable_value(
                                     control_function,
-                                    ControlFunction::Sinosodal,
-                                    "Sinosodal",
+                                    ControlFunction::Triangle,
+                                    "Triangle",
                                 );
                                 ui.selectable_value(
                                     control_function,
