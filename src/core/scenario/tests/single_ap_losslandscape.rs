@@ -30,11 +30,43 @@ const COMMON_PATH: &str = "tests/core/scenario/single_ap_losslandscape/";
     clippy::too_many_lines
 )]
 #[test]
-fn loss_landscape() {
+fn heavy_loss_landscape() {
     let base_id = "Single AP - Loss Landscape".to_string();
     let base_title = "Single AP - Loss Landscape";
     let path = Path::new(COMMON_PATH).join("loss_landscape");
 
+    let initial_delay = 11.5;
+    let single_sensor = false;
+
+    let support_points = 10000;
+    let min_delay = 1.5;
+    let max_delay = 21.5;
+
+    create_and_run(
+        initial_delay,
+        min_delay,
+        max_delay,
+        single_sensor,
+        support_points,
+        &base_id,
+        &path,
+        base_title,
+    );
+}
+
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines
+)]
+#[test]
+fn heavy_loss_landscape_single_sensor() {
+    let base_id = "Single AP - Loss Landscape - Single Sensor".to_string();
+    let base_title = "Single AP - Loss Landscape - Single Sensor";
+    let path = Path::new(COMMON_PATH).join("single_sensor");
+
+    let single_sensor = true;
     let initial_delay = 11.5;
 
     let support_points = 10000;
@@ -45,6 +77,7 @@ fn loss_landscape() {
         initial_delay,
         min_delay,
         max_delay,
+        single_sensor,
         support_points,
         &base_id,
         &path,
@@ -63,6 +96,7 @@ fn create_and_run(
     initial_delay: f32,
     min_delay: f32,
     max_delay: f32,
+    single_sensor: bool,
     support_points: usize,
     base_id: &str,
     path: &Path,
@@ -92,7 +126,7 @@ fn create_and_run(
             scenarios.push(scenario);
         } else {
             println!("Didn't find scenario. Building it!");
-            let scenario = build_scenario(gt_velocity, initial_velocity, &id);
+            let scenario = build_scenario(gt_velocity, initial_velocity, single_sensor, &id);
             if RUN_IN_TESTS {
                 let send_scenario = scenario.clone();
                 let (epoch_tx, _) = channel();
@@ -121,9 +155,52 @@ fn create_and_run(
 }
 
 #[tracing::instrument(level = "trace")]
-fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scenario {
+fn build_scenario(
+    target_velocity: f32,
+    initial_velocity: f32,
+    single_sensor: bool,
+    id: &str,
+) -> Scenario {
     let mut scenario = Scenario::build(Some(id.to_string()));
 
+    // Configure Sensor
+    if single_sensor {
+        scenario.config.simulation.model.common.sensors_per_axis = [1, 1, 1];
+        scenario.config.simulation.model.common.three_d_sensors = false;
+        scenario
+            .config
+            .simulation
+            .model
+            .common
+            .sensor_array_origin_mm = [
+            scenario.config.simulation.model.common.heart_offset_mm[0]
+                + scenario
+                    .config
+                    .simulation
+                    .model
+                    .handcrafted
+                    .as_ref()
+                    .unwrap()
+                    .heart_size_mm[0]
+                    / 2.0,
+            scenario.config.simulation.model.common.heart_offset_mm[1]
+                + scenario
+                    .config
+                    .simulation
+                    .model
+                    .handcrafted
+                    .as_ref()
+                    .unwrap()
+                    .heart_size_mm[1]
+                    / 2.0,
+            scenario
+                .config
+                .simulation
+                .model
+                .common
+                .sensor_array_origin_mm[2],
+        ];
+    }
     // Set pathological true
     scenario.config.simulation.model.common.pathological = true;
     scenario
