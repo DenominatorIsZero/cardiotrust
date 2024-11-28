@@ -113,6 +113,7 @@ impl Default for Mri {
 pub enum ControlFunction {
     Ohara,
     Triangle,
+    Ramp,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]

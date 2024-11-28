@@ -186,6 +186,17 @@ impl ControlFunction {
 
                 return Self(control_function_values);
             }
+            config::model::ControlFunction::Ramp => {
+                let mut control_function_values = Array1::<f32>::zeros(desired_length_samples);
+
+                let increase_per_step = 1.0 / (desired_length_samples - 1) as f32;
+
+                for i in 1..desired_length_samples {
+                    let value = i as f32 * increase_per_step;
+                    control_function_values[i] = value;
+                }
+                return Self(control_function_values);
+            }
         }
     }
 
@@ -317,6 +328,35 @@ mod test {
         assert_eq!(expected_length_samples, control_function.shape()[0]);
 
         let path = Path::new(COMMON_PATH).join("control_function_triangle.png");
+        standard_time_plot(
+            &control_function,
+            sample_rate_hz,
+            path.as_path(),
+            "Control Function",
+            "j [A/mm^2]",
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn ramp_function_from_model_config_no_crash_and_plot() {
+        setup(None);
+        let sample_rate_hz = 3000.0;
+        let duration_s = 1.5;
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_precision_loss,
+            clippy::cast_sign_loss
+        )]
+        let expected_length_samples = (sample_rate_hz * duration_s) as usize;
+        let mut config = Model::default();
+        config.common.control_function = config::model::ControlFunction::Ramp;
+
+        let control_function =
+            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
+        assert_eq!(expected_length_samples, control_function.shape()[0]);
+
+        let path = Path::new(COMMON_PATH).join("control_function_ramp.png");
         standard_time_plot(
             &control_function,
             sample_rate_hz,
