@@ -5,13 +5,13 @@ use std::{
     thread,
 };
 
-use nalgebra::ComplexField;
 use ndarray::Array1;
 
 use super::{RUN_IN_TESTS, SAVE_NPY};
 use crate::{
     core::{
         algorithm::refinement::Optimizer,
+        config::model::ControlFunction,
         model::spatial::voxels::VoxelType,
         scenario::{run, Scenario},
     },
@@ -35,6 +35,7 @@ fn heavy_loss_landscape() {
 
     let initial_delay = 11.5;
     let single_sensor = false;
+    let control_function = ControlFunction::Ohara;
 
     let support_points = 10000;
     let min_delay = 1.5;
@@ -45,6 +46,7 @@ fn heavy_loss_landscape() {
         min_delay,
         max_delay,
         single_sensor,
+        control_function,
         support_points,
         &base_id,
         &path,
@@ -65,6 +67,7 @@ fn heavy_loss_landscape_single_sensor() {
     let path = Path::new(COMMON_PATH).join("single_sensor");
 
     let single_sensor = true;
+    let control_function = ControlFunction::Ohara;
     let initial_delay = 11.5;
 
     let support_points = 10000;
@@ -76,6 +79,40 @@ fn heavy_loss_landscape_single_sensor() {
         min_delay,
         max_delay,
         single_sensor,
+        control_function,
+        support_points,
+        &base_id,
+        &path,
+        base_title,
+    );
+}
+
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines
+)]
+#[test]
+fn heavy_loss_landscape_triangle() {
+    let base_id = "Single AP - Loss Landscape - Triangle".to_string();
+    let base_title = "Single AP - Loss Landscape - Triangle";
+    let path = Path::new(COMMON_PATH).join("triangle");
+
+    let single_sensor = true;
+    let control_function = ControlFunction::Triangle;
+    let initial_delay = 11.5;
+
+    let support_points = 10000;
+    let min_delay = 1.5;
+    let max_delay = 21.5;
+
+    create_and_run(
+        initial_delay,
+        min_delay,
+        max_delay,
+        single_sensor,
+        control_function,
         support_points,
         &base_id,
         &path,
@@ -95,6 +132,7 @@ fn create_and_run(
     min_delay: f32,
     max_delay: f32,
     single_sensor: bool,
+    control_function: ControlFunction,
     support_points: usize,
     base_id: &str,
     path: &Path,
@@ -124,7 +162,13 @@ fn create_and_run(
             scenarios.push(scenario);
         } else {
             println!("Didn't find scenario. Building it!");
-            let scenario = build_scenario(gt_velocity, initial_velocity, single_sensor, &id);
+            let scenario = build_scenario(
+                gt_velocity,
+                initial_velocity,
+                single_sensor,
+                control_function,
+                &id,
+            );
             if RUN_IN_TESTS {
                 let send_scenario = scenario.clone();
                 let (epoch_tx, _) = channel();
@@ -157,6 +201,7 @@ fn build_scenario(
     target_velocity: f32,
     initial_velocity: f32,
     single_sensor: bool,
+    control_function: ControlFunction,
     id: &str,
 ) -> Scenario {
     let mut scenario = Scenario::build(Some(id.to_string()));
@@ -199,6 +244,8 @@ fn build_scenario(
                 .sensor_array_origin_mm[2],
         ];
     }
+    // Configure ControlFunction:
+    scenario.config.simulation.model.common.control_function = control_function;
     // Set pathological true
     scenario.config.simulation.model.common.pathological = true;
     scenario
