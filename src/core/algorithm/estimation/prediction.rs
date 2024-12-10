@@ -41,9 +41,13 @@ pub fn innovate_system_states_v1(
     step: usize,
 ) {
     trace!("Innovating system states");
+    // copy last ap outputs (needed for derivative calculation)
+    estimations
+        .ap_outputs_last
+        .assign(&*estimations.ap_outputs_now);
     // Calculate ap outputs and system states
     let ap_params = &functional_description.ap_params;
-    let ap_outputs = &mut estimations.ap_outputs;
+    let ap_outputs = &mut estimations.ap_outputs_now;
     let system_states = &mut estimations.system_states;
 
     let output_state_indices = &ap_params.output_state_indices;

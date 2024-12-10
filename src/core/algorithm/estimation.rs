@@ -31,7 +31,8 @@ use crate::core::{
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Estimations {
-    pub ap_outputs: Gains,
+    pub ap_outputs_now: Gains,
+    pub ap_outputs_last: Gains,
     pub system_states: SystemStates,
     pub system_states_spherical: SystemStatesSpherical,
     pub system_states_spherical_max: SystemStatesSphericalMax,
@@ -63,7 +64,8 @@ impl Estimations {
     ) -> Self {
         debug!("Creating empty estimations");
         Self {
-            ap_outputs: Gains::empty(number_of_states),
+            ap_outputs_now: Gains::empty(number_of_states),
+            ap_outputs_last: Gains::empty(number_of_states),
             system_states: SystemStates::empty(number_of_steps, number_of_states),
             system_states_spherical: SystemStatesSpherical::empty(
                 number_of_steps,

@@ -167,17 +167,18 @@ impl ControlFunction {
             config::model::ControlFunction::Triangle => {
                 let mut control_function_values = Array1::<f32>::zeros(desired_length_samples);
 
-                let triangle_half_length = (0.01 * sample_rate_hz) as i32;
+                let triangle_half_length = (0.5 * sample_rate_hz) as i32;
 
                 let increase_per_step = 1.0 / (triangle_half_length + 1) as f32;
 
                 for i in 0..triangle_half_length {
                     let value = (i + 1) as f32 * increase_per_step;
-                    control_function_values[triangle_half_length as usize + i as usize] = value;
-                    control_function_values[3 * triangle_half_length as usize - i as usize] = value;
+                    control_function_values[i as usize] = value;
+                    control_function_values[2 * triangle_half_length as usize - i as usize - 1] =
+                        value;
                 }
 
-                control_function_values[triangle_half_length as usize * 2] = 1.0;
+                control_function_values[triangle_half_length as usize] = 1.0;
 
                 for i in sample_rate_hz as usize..desired_length_samples {
                     control_function_values[i] =
@@ -193,7 +194,7 @@ impl ControlFunction {
 
                 for i in 1..desired_length_samples {
                     let value = i as f32 * increase_per_step;
-                    control_function_values[i] = value;
+                    control_function_values[i] = -value;
                 }
                 return Self(control_function_values);
             }

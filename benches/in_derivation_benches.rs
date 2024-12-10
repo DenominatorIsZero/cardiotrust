@@ -174,7 +174,7 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
             b.iter(|| {
                 calculate_derivatives_gains(
                     &mut results.derivatives.gains,
-                    &results.estimations.ap_outputs,
+                    &results.estimations.ap_outputs_now,
                     &results.derivatives.maximum_regularization,
                     &results.derivatives.mapped_residuals,
                     &config.algorithm,

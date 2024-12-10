@@ -14,6 +14,7 @@ use super::{RUN_IN_TESTS, SAVE_NPY};
 use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
+        config::model::ControlFunction,
         model::{functional::allpass::from_coef_to_samples, spatial::voxels::VoxelType},
         scenario::{run, Scenario},
     },
@@ -136,7 +137,8 @@ fn heavy_yes_roll_down() {
 #[tracing::instrument(level = "trace")]
 fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scenario {
     let mut scenario = Scenario::build(Some(id.to_string()));
-
+    // configure control function
+    scenario.config.simulation.model.common.control_function = ControlFunction::Ramp;
     // configure sensors
     scenario.config.simulation.model.common.sensors_per_axis = [1, 1, 1];
     scenario.config.simulation.model.common.three_d_sensors = false;
@@ -268,7 +270,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
     // set optimization parameters
     scenario.config.algorithm.epochs = 5_000;
     scenario.config.algorithm.learning_rate = 1e2;
-    scenario.config.algorithm.optimizer = Optimizer::Adam;
+    scenario.config.algorithm.optimizer = Optimizer::Sgd;
     scenario.config.algorithm.freeze_delays = false;
     scenario.config.algorithm.freeze_gains = true;
     let number_of_snapshots = 1000;

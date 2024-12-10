@@ -157,7 +157,7 @@ pub fn calculate_step_derivatives(
     if !config.freeze_gains {
         calculate_derivatives_gains(
             &mut derivates.gains,
-            &estimations.ap_outputs,
+            &estimations.ap_outputs_now,
             &derivates.maximum_regularization,
             &derivates.mapped_residuals,
             config,
@@ -308,9 +308,9 @@ pub fn calculate_derivatives_coefs(
                         .system_states
                         .uget((step - delay, output_state.unwrap()))
                 };
-                let derivative =
+                let derivative_fir =
                     unsafe { derivatives.coefs_fir.uget_mut((state_index, offset_index)) };
-                *derivative = (1.0 - *coef).mul_add(*derivative, -*state_val);
+                *derivative_fir = (*coef).mul_add(*derivative_fir, *state_val);
             }
         }
     }
@@ -323,10 +323,14 @@ pub fn calculate_derivatives_coefs(
 
             if step >= *delay {
                 let coef = unsafe { functional_description.ap_params.coefs.uget(coef_index) };
-                let ap_output = unsafe { estimations.ap_outputs.uget((state_index, offset_index)) };
-                let derivative =
+                let ap_output_last = unsafe {
+                    estimations
+                        .ap_outputs_last
+                        .uget((state_index, offset_index))
+                };
+                let derivative_iir =
                     unsafe { derivatives.coefs_iir.uget_mut((state_index, offset_index)) };
-                *derivative = (*coef).mul_add(*derivative, -*ap_output);
+                *derivative_iir = (*coef).mul_add(*derivative_iir, *ap_output_last);
             }
         }
     }

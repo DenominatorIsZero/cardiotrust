@@ -19,7 +19,7 @@ use crate::{
     vis::plotting::png::line::{line_plot, log_y_plot},
 };
 
-const COMMON_PATH: &str = "tests/core/scenario/single_ap_losslandscape/";
+const COMMON_PATH: &str = "tests/core/scenario/losslandscape/";
 
 #[allow(
     clippy::cast_possible_truncation,
@@ -104,6 +104,39 @@ fn heavy_loss_landscape_triangle() {
     let initial_delay = 11.5;
 
     let support_points = 10000;
+    let min_delay = 1.5;
+    let max_delay = 21.5;
+
+    create_and_run(
+        initial_delay,
+        min_delay,
+        max_delay,
+        single_sensor,
+        control_function,
+        support_points,
+        &base_id,
+        &path,
+        base_title,
+    );
+}
+
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines
+)]
+#[test]
+fn heavy_loss_landscape_ramp() {
+    let base_id = "Single AP - Loss Landscape - Ramp".to_string();
+    let base_title = "Single AP - Loss Landscape - Ramp";
+    let path = Path::new(COMMON_PATH).join("ramp");
+
+    let single_sensor = true;
+    let control_function = ControlFunction::Ramp;
+    let initial_delay = 11.5;
+
+    let support_points = 2001;
     let min_delay = 1.5;
     let max_delay = 21.5;
 
