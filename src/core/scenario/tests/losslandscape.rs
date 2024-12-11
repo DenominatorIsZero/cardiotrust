@@ -37,7 +37,7 @@ fn heavy_loss_landscape() {
     let single_sensor = false;
     let control_function = ControlFunction::Ohara;
 
-    let support_points = 10000;
+    let support_points = 2001;
     let min_delay = 1.5;
     let max_delay = 21.5;
 
@@ -70,7 +70,7 @@ fn heavy_loss_landscape_single_sensor() {
     let control_function = ControlFunction::Ohara;
     let initial_delay = 11.5;
 
-    let support_points = 10000;
+    let support_points = 2001;
     let min_delay = 1.5;
     let max_delay = 21.5;
 
@@ -101,9 +101,9 @@ fn heavy_loss_landscape_triangle() {
 
     let single_sensor = true;
     let control_function = ControlFunction::Triangle;
-    let initial_delay = 11.5;
+    let initial_delay = 11.01;
 
-    let support_points = 10000;
+    let support_points = 2001;
     let min_delay = 1.5;
     let max_delay = 21.5;
 
@@ -134,7 +134,7 @@ fn heavy_loss_landscape_ramp() {
 
     let single_sensor = true;
     let control_function = ControlFunction::Ramp;
-    let initial_delay = 11.5;
+    let initial_delay = 11.01;
 
     let support_points = 2001;
     let min_delay = 1.5;
