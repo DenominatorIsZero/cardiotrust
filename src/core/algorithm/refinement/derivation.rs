@@ -35,8 +35,6 @@ pub struct Derivatives {
     pub gains_second_moment: Option<Gains>,
     /// Derivatives of the All-pass coeficients
     pub coefs: Coefs,
-    /// Sum of the absolute values of the coeficients derivatives
-    pub coefs_abs_sum: Option<Coefs>,
     /// First moment of the coeficients derivatives
     pub coefs_first_moment: Option<Coefs>,
     /// Second moment of the coeficients derivatives
@@ -72,14 +70,6 @@ impl Derivatives {
             Optimizer::Sgd => None,
             Optimizer::Adam => Some(Gains::empty(number_of_states)),
         };
-        let coefs_abs_sum = match optimizer {
-            Optimizer::Sgd => {
-                let mut coefs = Coefs::empty(number_of_states);
-                coefs.fill(1.0);
-                Some(coefs)
-            }
-            Optimizer::Adam => None,
-        };
         let coefs_first_moment = match optimizer {
             Optimizer::Sgd => None,
             Optimizer::Adam => Some(Coefs::empty(number_of_states)),
@@ -93,7 +83,6 @@ impl Derivatives {
             gains_first_moment,
             gains_second_moment,
             coefs: Coefs::empty(number_of_states),
-            coefs_abs_sum,
             coefs_first_moment,
             coefs_second_moment,
             step: 1,

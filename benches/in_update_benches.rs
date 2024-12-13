@@ -50,7 +50,7 @@ fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, mut model, mut results) = setup_inputs(&config);
+        let (_, mut model, results) = setup_inputs(&config);
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -60,7 +60,6 @@ fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
                 update_delays_sgd(
                     &mut model.functional_description.ap_params.coefs,
                     &results.derivatives.coefs,
-                    results.derivatives.coefs_abs_sum.as_mut().unwrap(),
                     config.algorithm.learning_rate,
                     2000,
                     1e-3,

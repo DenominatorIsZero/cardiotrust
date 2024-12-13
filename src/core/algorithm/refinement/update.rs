@@ -61,7 +61,6 @@ impl APParameters {
                 Optimizer::Sgd => update_delays_sgd(
                     &mut self.coefs,
                     &derivatives.coefs,
-                    derivatives.coefs_abs_sum.as_mut().unwrap(),
                     config.learning_rate,
                     batch_size,
                     config.slow_down_stregth,
@@ -143,16 +142,13 @@ pub fn update_gains_adam(
 pub fn update_delays_sgd(
     ap_coefs: &mut Coefs,
     derivatives: &Coefs,
-    abs_sum: &mut Coefs,
     learning_rate: f32,
     batch_size: usize,
     slow_down_strength: f32,
 ) {
     debug!("Updating coefficients and delays");
 
-    **abs_sum = &**abs_sum + slow_down_strength * &derivatives.mapv(f32::abs);
-
-    **ap_coefs -= &(learning_rate / batch_size as f32 * &**derivatives / &**abs_sum);
+    **ap_coefs -= &(learning_rate / batch_size as f32 * &**derivatives);
 }
 
 #[allow(clippy::cast_precision_loss)]
@@ -239,19 +235,10 @@ mod tests {
         let mut ap_coefs = Coefs::empty(number_of_states);
         let mut delays = UnitDelays::empty(number_of_states);
         let mut derivatives = Coefs::empty(number_of_states);
-        let mut abs_sum = Coefs::empty(number_of_states);
-        abs_sum.fill(1.0);
         derivatives.fill(-0.5);
         let learning_rate = 1.0;
 
-        update_delays_sgd(
-            &mut ap_coefs,
-            &derivatives,
-            &mut abs_sum,
-            learning_rate,
-            1,
-            0.,
-        );
+        update_delays_sgd(&mut ap_coefs, &derivatives, learning_rate, 1, 0.);
         roll_delays(&mut ap_coefs, &mut delays);
 
         assert_eq!(-&*derivatives, &*ap_coefs);
