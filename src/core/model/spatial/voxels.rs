@@ -203,10 +203,12 @@ impl VoxelTypes {
             .for_each(|v| *v = if *v == 0 { 1 } else { *v });
 
         // Derived Parameters
-        let sa_x_center_index =
-            (voxels_in_dims[0] as f32 * handcrafted.sa_x_center_percentage) as usize;
-        let sa_y_center_index =
-            (voxels_in_dims[1] as f32 * handcrafted.sa_y_center_percentage) as usize;
+        let sa_x_center_index = ((voxels_in_dims[0] as f32 * handcrafted.sa_x_center_percentage)
+            as usize)
+            .min(voxels_in_dims[0] - 1);
+        let sa_y_center_index = ((voxels_in_dims[1] as f32 * handcrafted.sa_y_center_percentage)
+            as usize)
+            .min(voxels_in_dims[1] - 1);
         let atrium_y_start_index =
             (voxels_in_dims[1] as f32 * handcrafted.atrium_y_start_percentage) as usize;
         let av_x_center_index =
