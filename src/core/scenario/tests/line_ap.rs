@@ -14,14 +14,13 @@ use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
         model::{functional::allpass::from_coef_to_samples, spatial::voxels::VoxelType},
-        scenario::{run, tests::SAVE_NPY, Scenario},
+        scenario::{self, run, tests::SAVE_NPY, Scenario},
     },
     tests::{clean_files, setup_folder},
     vis::plotting::png::line::{line_plot, log_y_plot},
 };
 
 const COMMON_PATH: &str = "tests/core/scenario/line_ap/";
-const NUM_AP: i32 = 3;
 
 #[allow(
     clippy::cast_possible_truncation,
@@ -30,35 +29,26 @@ const NUM_AP: i32 = 3;
     clippy::too_many_lines
 )]
 #[test]
-fn heavy_no_roll_down_dif_reg() {
-    let base_id = "Line AP - No Roll - Down - Difference Regularization".to_string();
-    let base_title = "Line AP - No Roll - Down - Difference Regularization";
-    let path = Path::new(COMMON_PATH).join("no_roll_down/dif_reg");
+fn heavy_sgd() {
+    let base_id = "Line AP";
+    let path = Path::new(COMMON_PATH).join("sgd");
 
-    let integer_part = 5.0;
-    let voxel_size_mm = 2.5;
-    let sample_rate_hz = 2000.0;
+    let lower_delay = 4.1;
+    let upper_delay = 5.2;
 
-    let initial_fractional = 0.25;
-    let initial_delay = integer_part + initial_fractional;
-    let initial_delay_s = initial_delay / sample_rate_hz;
-    let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
+    let optimizer = Optimizer::Sgd;
 
-    let target_fractional = 0.75;
-    let target_delay = integer_part + target_fractional;
-    let target_delay_s = target_delay / sample_rate_hz;
-    let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
+    let number_of_aps = vec![3, 5, 10, 50];
+    let learning_rates = Array1::<f32>::logspace(10.0, 3.0, 6.0, 4).to_vec();
 
-    let difference_regularization_strength = Array1::logspace(10., -7., -6., 10).to_vec();
-    let slow_down_strength = vec![0.0];
     create_and_run(
-        target_velocity,
-        initial_velocity,
-        difference_regularization_strength,
-        &slow_down_strength,
-        &base_id,
+        lower_delay,
+        upper_delay,
+        optimizer,
+        number_of_aps,
+        learning_rates,
+        base_id,
         &path,
-        base_title,
     );
 }
 
@@ -69,77 +59,27 @@ fn heavy_no_roll_down_dif_reg() {
     clippy::too_many_lines
 )]
 #[test]
+fn heavy_adam() {
+    let base_id = "Line AP";
+    let path = Path::new(COMMON_PATH).join("adam");
 
-fn heavy_no_roll_down_slow_down() {
-    let base_id = "Line AP - No Roll - Down - Slow Down".to_string();
-    let base_title = "Line AP - No Roll - Down - Slow Down";
-    let path = Path::new(COMMON_PATH).join("no_roll_down/slow_down");
+    let lower_delay = 4.1;
+    let upper_delay = 5.2;
 
-    let integer_part = 5.0;
-    let voxel_size_mm = 2.5;
-    let sample_rate_hz = 2000.0;
+    let optimizer = Optimizer::Adam;
 
-    let initial_fractional = 0.25;
-    let initial_delay = integer_part + initial_fractional;
-    let initial_delay_s = initial_delay / sample_rate_hz;
-    let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
+    let number_of_aps = vec![3, 5, 10, 50];
 
-    let target_fractional = 0.75;
-    let target_delay = integer_part + target_fractional;
-    let target_delay_s = target_delay / sample_rate_hz;
-    let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
-
-    let difference_regularization_stregth = vec![6e-7];
-    let slow_down_strength = Array1::logspace(10.0, 0.0, 1.0, 10).to_vec();
+    let learning_rates = Array1::<f32>::logspace(10.0, 0.0, 2.0, 3).to_vec();
 
     create_and_run(
-        target_velocity,
-        initial_velocity,
-        difference_regularization_stregth,
-        &slow_down_strength,
-        &base_id,
+        lower_delay,
+        upper_delay,
+        optimizer,
+        number_of_aps,
+        learning_rates,
+        base_id,
         &path,
-        base_title,
-    );
-}
-
-#[allow(
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    clippy::cast_precision_loss,
-    clippy::too_many_lines
-)]
-#[test]
-fn heavy_no_roll_up_dif_reg() {
-    let base_id = "Line AP - No Roll - Up - Difference Regularization".to_string();
-    let base_title = "Line AP - No Roll - Up - Difference Regularization";
-    let path = Path::new(COMMON_PATH).join("no_roll_up/dif_reg");
-
-    let integer_part = 5.0;
-    let voxel_size_mm = 2.5;
-    let sample_rate_hz = 2000.0;
-
-    let initial_fractional = 0.75;
-    let initial_delay = integer_part + initial_fractional;
-    let initial_delay_s = initial_delay / sample_rate_hz;
-    let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
-
-    let target_fractional = 0.25;
-    let target_delay = integer_part + target_fractional;
-    let target_delay_s = target_delay / sample_rate_hz;
-    let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
-
-    let difference_regularization_stregth = Array1::logspace(10., -7., -5., 10).to_vec();
-    let slow_down_strength = vec![0.0];
-
-    create_and_run(
-        target_velocity,
-        initial_velocity,
-        difference_regularization_stregth,
-        &slow_down_strength,
-        &base_id,
-        &path,
-        base_title,
     );
 }
 
@@ -151,18 +91,27 @@ fn heavy_no_roll_up_dif_reg() {
 )]
 #[tracing::instrument(level = "trace")]
 fn build_scenario(
-    target_velocity: f32,
-    initial_velocity: f32,
-    difference_regularization_strength: f32,
-    slow_down_strength: f32,
-    base_id: &str,
+    target_delay_samples: f32,
+    initial_delay_samples: f32,
+    optimizer: Optimizer,
+    learning_rate: f32,
+    number_of_aps: i32,
+    id: &str,
 ) -> Scenario {
-    let mut scenario = Scenario::build(Some(format!(
-        "{base_id} - d_r: {difference_regularization_strength:.2e}, s_d: {slow_down_strength:.2e}"
-    )));
+    let mut scenario = Scenario::build(Some(id.to_string()));
+
+    let voxel_size_mm = 2.5;
+    let sample_rate_hz = 2000.0;
+
+    let target_delay_s = target_delay_samples / sample_rate_hz;
+    let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
+
+    let initial_delay_s = initial_delay_samples / sample_rate_hz;
+    let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
 
     // Set pathological true
     scenario.config.simulation.model.common.pathological = true;
+    scenario.config.simulation.model.common.voxel_size_mm = voxel_size_mm;
     scenario
         .config
         .simulation
@@ -183,7 +132,11 @@ fn build_scenario(
         .handcrafted
         .as_mut()
         .unwrap()
-        .heart_size_mm = [2.5, 2.5 * (NUM_AP + 1) as f32, 2.5];
+        .heart_size_mm = [
+        voxel_size_mm,
+        voxel_size_mm * (number_of_aps + 1) as f32,
+        voxel_size_mm,
+    ];
     // Adjust pathology
     scenario
         .config
@@ -224,8 +177,12 @@ fn build_scenario(
         .handcrafted
         .as_mut()
         .unwrap()
-        .sa_y_center_percentage = 0.8;
-    scenario.config.simulation.model.common.heart_offset_mm = [25.0, -250.0, 180.0];
+        .sa_y_center_percentage = 1.0;
+    scenario.config.simulation.model.common.heart_offset_mm = [
+        25.0,
+        -250.0 - (voxel_size_mm * (number_of_aps + 1) as f32) / 2.0,
+        180.0,
+    ];
     // Copy settings to algorithm model
     scenario.config.algorithm.model = scenario.config.simulation.model.clone();
     // Adjust propagation velocities
@@ -263,13 +220,12 @@ fn build_scenario(
         .unwrap() = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 5_000;
-    scenario.config.algorithm.learning_rate = 1e4;
-    scenario.config.algorithm.optimizer = Optimizer::Sgd;
+    scenario.config.algorithm.learning_rate = learning_rate;
+    scenario.config.algorithm.optimizer = optimizer;
     scenario.config.algorithm.freeze_delays = false;
     scenario.config.algorithm.freeze_gains = true;
-    scenario.config.algorithm.difference_regularization_strength =
-        difference_regularization_strength;
-    scenario.config.algorithm.slow_down_stregth = slow_down_strength;
+    scenario.config.algorithm.difference_regularization_strength = 0.0;
+    scenario.config.algorithm.slow_down_stregth = 0.0;
     let number_of_snapshots = 1000;
     scenario.config.algorithm.snapshots_interval =
         scenario.config.algorithm.epochs / number_of_snapshots;
@@ -286,18 +242,31 @@ fn build_scenario(
     clippy::cast_precision_loss
 )]
 #[tracing::instrument(level = "trace")]
-fn plot_results(path: &Path, base_title: &str, scenarios: &Vec<Scenario>) {
+fn plot_results(
+    path: &Path,
+    base_title: &str,
+    scenarios: &Vec<Scenario>,
+    number_of_aps: Vec<i32>,
+    learning_rates: Vec<f32>,
+) {
     setup_folder(path);
-    let files = vec![
-        path.join("loss.png"),
-        path.join("params.png"),
-        path.join("params_error.png"),
-        path.join("delays.png"),
-        path.join("delays_error.png"),
-    ];
-    clean_files(&files);
+    for number_of_ap in &number_of_aps {
+        let files = vec![
+            path.join(format!("down_{number_of_ap:03}_loss.png")),
+            path.join(format!("down_{number_of_ap:03}_delays.png")),
+            path.join(format!("down_{number_of_ap:03}_delays_error.png")),
+            path.join(format!("up{number_of_ap:03}_loss.png")),
+            path.join(format!("up{number_of_ap:03}_delays.png")),
+            path.join(format!("up{number_of_ap:03}_delays_error.png")),
+        ];
+        clean_files(&files);
+    }
 
-    let first_scenario = scenarios.first().unwrap();
+    let mut first_scenario = scenarios.first().unwrap().clone();
+    println!("Loading data for first scenario");
+    first_scenario.load_data();
+    println!("Loading results for first scenario {:?}", first_scenario.id);
+    first_scenario.load_results();
 
     println!(
         "{:?}",
@@ -312,246 +281,250 @@ fn plot_results(path: &Path, base_title: &str, scenarios: &Vec<Scenario>) {
             .ap_params
             .coefs
     );
-
     let x_epochs = Array1::range(0.0, first_scenario.config.algorithm.epochs as f32, 1.0);
     let num_snapshots = first_scenario.results.as_ref().unwrap().snapshots.len() as f32;
     let x_snapshots = Array1::range(0.0, num_snapshots, 1.0);
-    let mut losses_owned: Vec<BatchWiseMetric> = Vec::new();
-    let mut params_owned: Vec<Array1<f32>> = Vec::new();
-    let mut params_error_owned: Vec<Array1<f32>> = Vec::new();
-    let mut delays_owned: Vec<Array1<f32>> = Vec::new();
-    let mut delays_error_owned: Vec<Array1<f32>> = Vec::new();
-    let mut labels_owned: Vec<String> = Vec::new();
 
-    for scenario in scenarios {
-        losses_owned.push(
-            scenario
-                .results
-                .as_ref()
-                .unwrap()
-                .metrics
-                .loss_mse_batch
-                .clone(),
-        );
-        labels_owned.push(format!(
-            "d_r {:.2e}, s_d {:.2e}",
-            scenario.config.algorithm.difference_regularization_strength,
-            scenario.config.algorithm.slow_down_stregth
-        ));
-    }
+    for number_of_ap in number_of_aps {
+        for key in ["Down", "Up"] {
+            let mut min_loss_n = 0;
+            let mut min_loss = 1e9;
+            let mut losses_owned: Vec<BatchWiseMetric> = Vec::new();
+            let mut labels_owned: Vec<String> = Vec::new();
+            let mut delays_owned: Vec<Array1<f32>> = Vec::new();
+            let mut delays_error_owned: Vec<Array1<f32>> = Vec::new();
 
-    let losses = losses_owned
-        .iter()
-        .map(std::ops::Deref::deref)
-        .collect::<Vec<&Array1<f32>>>();
-    let labels: Vec<&str> = labels_owned
-        .iter()
-        .map(std::string::String::as_str)
-        .collect();
+            for (n, scenario) in scenarios.iter().enumerate() {
+                if !scenario.id.contains(&format!("Num: {number_of_ap},"))
+                    || !scenario.id.contains(key)
+                    || !scenario.summary.as_ref().unwrap().loss.is_finite()
+                {
+                    continue;
+                }
+                let mut scenario = (*scenario).clone();
+                if scenario.summary.as_ref().unwrap().loss_mse < min_loss {
+                    min_loss = scenario.summary.as_ref().unwrap().loss_mse;
+                    min_loss_n = n;
+                }
+                scenario.load_results();
+                losses_owned.push(
+                    scenario
+                        .results
+                        .as_ref()
+                        .unwrap()
+                        .metrics
+                        .loss_mse_batch
+                        .clone(),
+                );
+                labels_owned.push(format!(
+                    "l_r {:.2e}",
+                    scenario.config.algorithm.learning_rate,
+                ));
+                drop(scenario);
+            }
 
-    if SAVE_NPY {
-        let path = path.join("npy");
-        fs::create_dir_all(&path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("x_epochs.npy")).unwrap());
-        x_epochs.write_npy(writer).unwrap();
-        let writer = BufWriter::new(File::create(path.join("x_snapshots.npy")).unwrap());
-        x_snapshots.write_npy(writer).unwrap();
-        for (label, loss) in labels.iter().zip(losses.iter()) {
-            let writer =
-                BufWriter::new(File::create(path.join(format!("loss_{label}.npy"))).unwrap());
-            loss.write_npy(writer).unwrap();
+            let losses = losses_owned
+                .iter()
+                .map(std::ops::Deref::deref)
+                .collect::<Vec<&Array1<f32>>>();
+            let labels: Vec<&str> = labels_owned
+                .iter()
+                .map(std::string::String::as_str)
+                .collect();
+
+            if SAVE_NPY {
+                let path = path.join("npy");
+                fs::create_dir_all(&path).unwrap();
+                let writer = BufWriter::new(File::create(path.join("x_epochs.npy")).unwrap());
+                x_epochs.write_npy(writer).unwrap();
+                let writer = BufWriter::new(File::create(path.join("x_snapshots.npy")).unwrap());
+                x_snapshots.write_npy(writer).unwrap();
+                for (label, loss) in labels.iter().zip(losses.iter()) {
+                    let writer = BufWriter::new(
+                        File::create(path.join(format!("loss_{label}.npy"))).unwrap(),
+                    );
+                    loss.write_npy(writer).unwrap();
+                }
+            }
+
+            log_y_plot(
+                Some(&x_epochs),
+                losses,
+                Some(&path.join(format!("{key}_{number_of_ap:03}_loss.png"))),
+                Some(format!("{base_title} - Loss").as_str()),
+                Some("Loss MSE"),
+                Some("Epoch"),
+                Some(&labels),
+                None,
+            )
+            .unwrap();
+
+            let mut scenario = scenarios[min_loss_n].clone();
+            scenario.load_data();
+            scenario.load_results();
+            let mut labels_owned: Vec<String> = Vec::new();
+
+            for ap in 0..number_of_ap as usize {
+                let mut delays = Array1::<f32>::zeros(num_snapshots as usize);
+                let mut delays_error = Array1::<f32>::zeros(num_snapshots as usize);
+                let target_delay = from_coef_to_samples(
+                    scenario
+                        .data
+                        .as_ref()
+                        .unwrap()
+                        .simulation
+                        .model
+                        .functional_description
+                        .ap_params
+                        .coefs[(ap, 15)],
+                ) + scenario
+                    .data
+                    .as_ref()
+                    .unwrap()
+                    .simulation
+                    .model
+                    .functional_description
+                    .ap_params
+                    .delays[(ap, 15)] as f32;
+
+                for (i, snapshot) in scenario
+                    .results
+                    .as_ref()
+                    .unwrap()
+                    .snapshots
+                    .iter()
+                    .enumerate()
+                {
+                    delays[i] = from_coef_to_samples(
+                        snapshot.functional_description.ap_params.coefs[(ap, 15)],
+                    ) + snapshot.functional_description.ap_params.delays[(ap, 15)]
+                        as f32;
+                    delays_error[i] = target_delay - delays[i];
+                }
+                delays_owned.push(delays);
+                delays_error_owned.push(delays_error);
+                labels_owned.push(format!("AP {ap}"));
+            }
+
+            let delays = delays_owned.iter().collect::<Vec<&Array1<f32>>>();
+            let delays_error = delays_error_owned.iter().collect::<Vec<&Array1<f32>>>();
+            let labels: Vec<&str> = labels_owned
+                .iter()
+                .map(std::string::String::as_str)
+                .collect();
+
+            if SAVE_NPY {
+                let path = path.join("npy");
+                for (i, delay) in delays.iter().enumerate() {
+                    let writer = BufWriter::new(
+                        File::create(path.join(format!(
+                            "delay_{i}_d_r{:.2e}, s_d {:.2e}.npy",
+                            scenario.config.algorithm.difference_regularization_strength,
+                            scenario.config.algorithm.slow_down_stregth
+                        )))
+                        .unwrap(),
+                    );
+                    delay.write_npy(writer).unwrap();
+                }
+            }
+
+            line_plot(
+                Some(&x_snapshots),
+                delays,
+                Some(&path.join(format!("{key}_{number_of_ap:03}_delays.png"))),
+                Some(format!("{base_title} - AP Delay").as_str()),
+                Some("AP Delay (Estimated)"),
+                Some("Snapshot"),
+                Some(&labels),
+                None,
+            )
+            .unwrap();
+
+            line_plot(
+                Some(&x_snapshots),
+                delays_error,
+                Some(&path.join(format!("{key}_{number_of_ap:03}_delays_error.png"))),
+                Some(format!("{base_title} - AP Delay Error").as_str()),
+                Some("AP Delay (Target - Estimated)"),
+                Some("Snapshot"),
+                Some(&labels),
+                None,
+            )
+            .unwrap();
         }
     }
-
-    log_y_plot(
-        Some(&x_epochs),
-        losses,
-        Some(files[0].as_path()),
-        Some(format!("{base_title} - Loss").as_str()),
-        Some("Loss MSE"),
-        Some("Epoch"),
-        Some(&labels),
-        None,
-    )
-    .unwrap();
-
-    let mut labels_owned: Vec<String> = Vec::new();
-
-    let mut min_loss_n = 0;
-    let mut min_loss = 1e9;
-
-    for (n, scenario) in scenarios.iter().enumerate() {
-        if scenario.summary.as_ref().unwrap().loss_mse < min_loss {
-            min_loss = scenario.summary.as_ref().unwrap().loss_mse;
-            min_loss_n = n;
-        }
-    }
-
-    let scenario = &scenarios[min_loss_n];
-
-    for ap in 0..NUM_AP as usize {
-        let mut ap_param = Array1::<f32>::zeros(num_snapshots as usize);
-        let mut delays = Array1::<f32>::zeros(num_snapshots as usize);
-        let mut delays_error = Array1::<f32>::zeros(num_snapshots as usize);
-        let mut ap_param_error = Array1::<f32>::zeros(num_snapshots as usize);
-        let target_param = scenario
-            .data
-            .as_ref()
-            .unwrap()
-            .simulation
-            .model
-            .functional_description
-            .ap_params
-            .coefs[(ap, 15)];
-        let target_delay = from_coef_to_samples(
-            scenario
-                .data
-                .as_ref()
-                .unwrap()
-                .simulation
-                .model
-                .functional_description
-                .ap_params
-                .coefs[(ap, 15)],
-        ) + scenario
-            .data
-            .as_ref()
-            .unwrap()
-            .simulation
-            .model
-            .functional_description
-            .ap_params
-            .delays[(ap, 15)] as f32;
-
-        for (i, snapshot) in scenario
-            .results
-            .as_ref()
-            .unwrap()
-            .snapshots
-            .iter()
-            .enumerate()
-        {
-            delays[i] =
-                from_coef_to_samples(snapshot.functional_description.ap_params.coefs[(ap, 15)])
-                    + snapshot.functional_description.ap_params.delays[(ap, 15)] as f32;
-            delays_error[i] = target_delay - delays[i];
-            ap_param[i] = snapshot.functional_description.ap_params.coefs[(ap, 15)];
-            ap_param_error[i] = target_param - ap_param[i];
-        }
-        params_owned.push(ap_param);
-        params_error_owned.push(ap_param_error);
-        delays_owned.push(delays);
-        delays_error_owned.push(delays_error);
-        labels_owned.push(format!("AP {ap}"));
-    }
-
-    let params = params_owned.iter().collect::<Vec<&Array1<f32>>>();
-    let params_error = params_error_owned.iter().collect::<Vec<&Array1<f32>>>();
-    let delays = delays_owned.iter().collect::<Vec<&Array1<f32>>>();
-    let delays_error = delays_error_owned.iter().collect::<Vec<&Array1<f32>>>();
-    let labels: Vec<&str> = labels_owned
-        .iter()
-        .map(std::string::String::as_str)
-        .collect();
-
-    if SAVE_NPY {
-        let path = path.join("npy");
-        for (i, delay) in delays.iter().enumerate() {
-            let writer = BufWriter::new(
-                File::create(path.join(format!(
-                    "delay_{i}_d_r{:.2e}, s_d {:.2e}.npy",
-                    scenario.config.algorithm.difference_regularization_strength,
-                    scenario.config.algorithm.slow_down_stregth
-                )))
-                .unwrap(),
-            );
-            delay.write_npy(writer).unwrap();
-        }
-    }
-
-    line_plot(
-        Some(&x_snapshots),
-        params,
-        Some(files[1].as_path()),
-        Some(format!("{base_title} - AP Coef").as_str()),
-        Some("AP Coef (Estimated)"),
-        Some("Snapshot"),
-        Some(&labels),
-        None,
-    )
-    .unwrap();
-
-    line_plot(
-        Some(&x_snapshots),
-        params_error,
-        Some(files[2].as_path()),
-        Some(format!("{base_title} - AP Coef Error").as_str()),
-        Some("AP Coef (Target - Estimated)"),
-        Some("Snapshot"),
-        Some(&labels),
-        None,
-    )
-    .unwrap();
-
-    line_plot(
-        Some(&x_snapshots),
-        delays,
-        Some(files[3].as_path()),
-        Some(format!("{base_title} - AP Delay").as_str()),
-        Some("AP Delay (Estimated)"),
-        Some("Snapshot"),
-        Some(&labels),
-        None,
-    )
-    .unwrap();
-
-    line_plot(
-        Some(&x_snapshots),
-        delays_error,
-        Some(files[4].as_path()),
-        Some(format!("{base_title} - AP Delay Error").as_str()),
-        Some("AP Delay (Target - Estimated)"),
-        Some("Snapshot"),
-        Some(&labels),
-        None,
-    )
-    .unwrap();
 }
 
 #[tracing::instrument(level = "trace")]
 fn create_and_run(
-    target_velocity: f32,
-    initial_velocity: f32,
-    difference_regularization_strengths: Vec<f32>,
-    slow_down_strengths: &Vec<f32>,
+    lower_delay_samples: f32,
+    upper_delay_samples: f32,
+    optimizer: Optimizer,
+    number_of_aps: Vec<i32>,
+    learning_rates: Vec<f32>,
     base_id: &str,
-    img_path: &Path,
-    base_title: &str,
+    path: &Path,
 ) {
     let mut join_handles = Vec::new();
     let mut scenarios = Vec::new();
 
-    for difference_regularization_strength in difference_regularization_strengths {
-        for slow_down_strength in slow_down_strengths {
+    // Up
+    for number_of_ap in &number_of_aps {
+        for learning_rate in &learning_rates {
             let id = format!(
-            "{base_id} - d_r: {difference_regularization_strength:.2e}, s_d: {slow_down_strength:.2e}",
-        );
-            let path = Path::new("results").join(id);
+                "{base_id} - {optimizer} - Up - Num: {number_of_ap}, l_r: {learning_rate:.2e}",
+            );
+            let path = Path::new("results").join(&id);
             println!("Looking for scenario {path:?}");
             let scenario = if path.is_dir() {
                 println!("Found scenario. Loading it!");
-                let mut scenario = Scenario::load(path.as_path());
-                scenario.load_data();
-                scenario.load_results();
+                let scenario = Scenario::load(path.as_path());
                 scenario
             } else {
                 println!("Didn't find scenario. Building it!");
                 let scenario = build_scenario(
-                    target_velocity,
-                    initial_velocity,
-                    difference_regularization_strength,
-                    *slow_down_strength,
-                    base_id,
+                    upper_delay_samples,
+                    lower_delay_samples,
+                    optimizer,
+                    *learning_rate,
+                    *number_of_ap,
+                    &id,
+                );
+                if RUN_IN_TESTS {
+                    let send_scenario = scenario.clone();
+                    let (epoch_tx, _) = channel();
+                    let (summary_tx, _) = channel();
+                    let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
+                    println!("handle {handle:?}");
+                    join_handles.push(handle);
+                }
+                scenario
+            };
+            scenarios.push(scenario);
+        }
+    }
+
+    // Down
+    for number_of_ap in &number_of_aps {
+        for learning_rate in &learning_rates {
+            let id = format!(
+                "{base_id} - {optimizer} - Down - Num: {number_of_ap}, l_r: {learning_rate:.2e}",
+            );
+            let path = Path::new("results").join(&id);
+            println!("Looking for scenario {path:?}");
+            let scenario = if path.is_dir() {
+                println!("Found scenario. Loading it!");
+                let scenario = Scenario::load(path.as_path());
+                scenario
+            } else {
+                println!("Didn't find scenario. Building it!");
+                let scenario = build_scenario(
+                    lower_delay_samples,
+                    upper_delay_samples,
+                    optimizer,
+                    *learning_rate,
+                    *number_of_ap,
+                    &id,
                 );
                 if RUN_IN_TESTS {
                     let send_scenario = scenario.clone();
@@ -574,10 +547,7 @@ fn create_and_run(
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
             *scenario = Scenario::load(path.as_path());
-            scenario.load_data();
-            scenario.load_results();
         }
     }
-
-    plot_results(img_path, base_title, &scenarios);
+    plot_results(path, base_id, &scenarios, number_of_aps, learning_rates);
 }
