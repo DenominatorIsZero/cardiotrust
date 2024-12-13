@@ -12,10 +12,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use crate::core::{
-    config::{
-        self,
-        model::{Model},
-    },
+    config::{self, model::Model},
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
 
