@@ -447,7 +447,7 @@ fn plot_results(
                 Some(format!("{base_title} - AP Delay Error").as_str()),
                 Some("AP Delay (Target - Estimated)"),
                 Some("Snapshot"),
-                Some(&labels),
+                None,
                 None,
             )
             .unwrap();
