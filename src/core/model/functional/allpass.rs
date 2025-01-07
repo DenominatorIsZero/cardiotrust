@@ -497,7 +497,8 @@ fn find_candidate_voxels(
 pub fn from_samples_to_coef(samples: f32) -> f32 {
     trace!("Converting {} samples to coefficient", samples);
     let fractional = samples % 1.0;
-    (1.0 - fractional) / (1.0 + fractional)
+    let coef = (1.0 - fractional) / (1.0 + fractional);
+    coef.clamp(1e-4, 1.0 - 1e-4)
 }
 
 /// Computes the integer part of the given samples value.
