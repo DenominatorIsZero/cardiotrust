@@ -7,20 +7,14 @@ use std::{
 };
 
 use approx::RelativeEq;
-use bevy::core_pipeline::core_2d::graph::input;
-use chrono::offset;
 use ndarray::Array1;
 use ndarray_npy::WriteNpyExt;
-use serde::Serialize;
 
 use super::RUN_IN_TESTS;
 use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
-        model::{
-            functional::allpass::{from_coef_to_samples, offset_to_delay_index},
-            spatial::voxels::VoxelType,
-        },
+        model::{functional::allpass::from_coef_to_samples, spatial::voxels::VoxelType},
         scenario::{run, tests::SAVE_NPY, Scenario},
     },
     tests::{clean_files, setup_folder},
@@ -360,7 +354,6 @@ fn plot_results(
         let mut scenario = scenarios[min_loss_n].clone();
         scenario.load_data();
         scenario.load_results();
-        let mut labels_owned: Vec<String> = Vec::new();
 
         for index_x in 0..voxels_per_axis as usize {
             for index_y in 0..voxels_per_axis as usize {
@@ -460,10 +453,6 @@ fn plot_results(
 
         let delays = delays_owned.iter().collect::<Vec<&Array1<f32>>>();
         let delays_error = delays_error_owned.iter().collect::<Vec<&Array1<f32>>>();
-        let labels: Vec<&str> = labels_owned
-            .iter()
-            .map(std::string::String::as_str)
-            .collect();
 
         if SAVE_NPY {
             let path = path.join("npy");

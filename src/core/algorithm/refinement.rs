@@ -12,6 +12,7 @@ pub enum Optimizer {
 }
 
 impl Display for Optimizer {
+    #[tracing::instrument(level = "trace", skip_all)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Sgd => write!(f, "SGD"),
