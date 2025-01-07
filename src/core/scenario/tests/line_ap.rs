@@ -219,7 +219,7 @@ fn build_scenario(
         .get_mut(&VoxelType::Pathological)
         .unwrap() = initial_velocity;
     // set optimization parameters
-    scenario.config.algorithm.epochs = 5_000;
+    scenario.config.algorithm.epochs = 10_000;
     scenario.config.algorithm.learning_rate = learning_rate;
     scenario.config.algorithm.optimizer = optimizer;
     scenario.config.algorithm.freeze_delays = false;
@@ -341,7 +341,10 @@ fn plot_results(
                 x_snapshots.write_npy(writer).unwrap();
                 for (label, loss) in labels.iter().zip(losses.iter()) {
                     let writer = BufWriter::new(
-                        File::create(path.join(format!("loss_{label}.npy"))).unwrap(),
+                        File::create(
+                            path.join(format!("loss - num_ap: {number_of_ap} {label}.npy")),
+                        )
+                        .unwrap(),
                     );
                     loss.write_npy(writer).unwrap();
                 }
@@ -417,12 +420,8 @@ fn plot_results(
                 let path = path.join("npy");
                 for (i, delay) in delays.iter().enumerate() {
                     let writer = BufWriter::new(
-                        File::create(path.join(format!(
-                            "delay_{i}_d_r{:.2e}, s_d {:.2e}.npy",
-                            scenario.config.algorithm.difference_regularization_strength,
-                            scenario.config.algorithm.slow_down_stregth
-                        )))
-                        .unwrap(),
+                        File::create(path.join(format!("num_ap: {number_of_ap}, delay: {i}.npy",)))
+                            .unwrap(),
                     );
                     delay.write_npy(writer).unwrap();
                 }
