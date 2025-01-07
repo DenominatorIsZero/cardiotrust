@@ -59,6 +59,7 @@ pub enum ImageType {
     AveragePropagationSpeedSimulation,
     AverageDelayAlgorithm,
     AveragePropagationSpeedAlgorithm,
+    AverageDelayDelta,
     // Metrics
     Dice,
     IoU,
@@ -472,6 +473,15 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             model.spatial_description.voxels.size_mm,
             data.simulation.sample_rate_hz,
             &path,
+            None,
+        ),
+        ImageType::AverageDelayDelta => average_delay_plot(
+            &(&data.simulation.average_delays - &estimations.average_delays),
+            &model.spatial_description.voxels.numbers,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            &path,
+            None,
             None,
         ),
         ImageType::LossEpoch => standard_log_y_plot(
