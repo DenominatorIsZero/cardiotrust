@@ -1,4 +1,4 @@
-use std::ops::{Deref, DerefMut};
+use std::ops::{Deref, DerefMut, Sub};
 
 use approx::AbsDiffEq;
 use ndarray::Array1;
@@ -550,6 +550,23 @@ impl AverageDelays {
     }
 }
 
+impl<'a, 'b> Sub<&'b AverageDelays> for &'a AverageDelays {
+    type Output = AverageDelays;
+
+    #[tracing::instrument(level = "trace")]
+    fn sub(self, rhs: &'b AverageDelays) -> Self::Output {
+        let result = self
+            .0
+            .iter()
+            .zip(rhs.0.iter())
+            .map(|(a, b)| match (a, b) {
+                (Some(x), Some(y)) => Some(x - y),
+                _ => None,
+            })
+            .collect();
+        AverageDelays(result)
+    }
+}
 impl Deref for AverageDelays {
     type Target = Array1<Option<f32>>;
 
