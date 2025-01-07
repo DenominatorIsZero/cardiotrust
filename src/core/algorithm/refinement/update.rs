@@ -188,13 +188,13 @@ pub fn update_delays_adam(
 #[inline]
 #[tracing::instrument(level = "debug")]
 pub fn roll_delays(ap_coefs: &mut Coefs, delays: &mut UnitDelays) {
-    let margin = 1e-8;
+    let margin = 1e-4;
     ap_coefs
         .iter_mut()
         .zip(delays.iter_mut())
         .for_each(|(ap_coef, delay)| {
             if *ap_coef > 1.0 - margin {
-                if *delay > 0 {
+                if *delay > 1 {
                     *ap_coef = 2.0 * margin;
                     *delay -= 1;
                 } else {
