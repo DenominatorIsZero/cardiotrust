@@ -36,16 +36,15 @@ const COMMON_PATH: &str = "tests/core/scenario/sheet_ap/";
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
 fn heavy_homogeneous_up() {
     let base_id = "Sheet AP - Homogenous - Up - ";
     let path = Path::new(COMMON_PATH).join("homogeneous_up");
 
-    let voxels_per_axis = vec![3, 5, 10];
+    let voxels_per_axis = vec![3, 5, 10, 20];
     let learning_rates = Array1::<f32>::logspace(10.0, 3.0, 6.0, 4).to_vec();
 
-    let initial_delay = 4.1;
-    let target_delay = 4.2;
+    let initial_delay = 4.3;
+    let target_delay = 4.5;
 
     create_and_run(
         initial_delay,
@@ -64,16 +63,15 @@ fn heavy_homogeneous_up() {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
 fn heavy_homogeneous_down() {
     let base_id = "Sheet AP - Homogenous - Down - ";
     let path = Path::new(COMMON_PATH).join("homogeneous_down");
 
-    let voxels_per_axis = vec![3, 5, 10];
+    let voxels_per_axis = vec![3, 5, 10, 20];
     let learning_rates = Array1::<f32>::logspace(10.0, 3.0, 6.0, 4).to_vec();
 
-    let initial_delay = 4.2;
-    let target_delay = 4.1;
+    let initial_delay = 4.5;
+    let target_delay = 4.3;
 
     create_and_run(
         initial_delay,
@@ -224,7 +222,7 @@ fn build_scenario(
         .get_mut(&VoxelType::Pathological)
         .unwrap() = initial_velocity;
     // set optimization parameters
-    scenario.config.algorithm.epochs = 5_000;
+    scenario.config.algorithm.epochs = 20_000;
     scenario.config.algorithm.learning_rate = learning_rate;
     scenario.config.algorithm.optimizer = Optimizer::Sgd;
     scenario.config.algorithm.freeze_delays = false;

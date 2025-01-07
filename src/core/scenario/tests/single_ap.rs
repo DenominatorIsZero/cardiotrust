@@ -39,13 +39,13 @@ fn heavy_no_roll_up() {
     let fractional_step = 0.1;
     let steps = (1.0 / fractional_step).ceil() as usize;
 
-    let initial_fractional = 0.0;
+    let initial_fractional = 0.01;
     let initial_delay = integer_part + initial_fractional;
 
     let mut target_delays = Vec::new();
 
     for target_fractional_part in 1..=steps {
-        let target_fractional = (target_fractional_part as f32 * fractional_step).max(0.01);
+        let target_fractional = (target_fractional_part as f32 * fractional_step).clamp(0.01, 0.99);
         let target_delay = integer_part + target_fractional;
         target_delays.push(target_delay);
     }
@@ -73,7 +73,7 @@ fn heavy_no_roll_down() {
 
     let mut target_delays = Vec::new();
     for target_fractional_part in 0..steps {
-        let target_fractional = (target_fractional_part as f32 * fractional_step).min(0.99);
+        let target_fractional = (target_fractional_part as f32 * fractional_step).clamp(0.01, 0.99);
         let target_delay = integer_part + target_fractional;
         target_delays.push(target_delay);
     }
@@ -268,8 +268,8 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
         .get_mut(&VoxelType::Pathological)
         .unwrap() = initial_velocity;
     // set optimization parameters
-    scenario.config.algorithm.epochs = 5_000;
-    scenario.config.algorithm.learning_rate = 1e3;
+    scenario.config.algorithm.epochs = 10_000;
+    scenario.config.algorithm.learning_rate = 1e4;
     scenario.config.algorithm.optimizer = Optimizer::Sgd;
     scenario.config.algorithm.freeze_delays = false;
     scenario.config.algorithm.freeze_gains = true;
