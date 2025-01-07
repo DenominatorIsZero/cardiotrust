@@ -1,16 +1,30 @@
-use std::{path::Path, sync::mpsc::channel, thread};
+use std::{
+    fs::{self, File},
+    io::BufWriter,
+    path::Path,
+    sync::mpsc::channel,
+    thread,
+};
 
+use approx::RelativeEq;
+use bevy::core_pipeline::core_2d::graph::input;
+use chrono::offset;
 use ndarray::Array1;
+use ndarray_npy::WriteNpyExt;
+use serde::Serialize;
 
 use super::RUN_IN_TESTS;
 use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
-        model::spatial::voxels::VoxelType,
-        scenario::{run, Scenario},
+        model::{
+            functional::allpass::{from_coef_to_samples, offset_to_delay_index},
+            spatial::voxels::VoxelType,
+        },
+        scenario::{run, tests::SAVE_NPY, Scenario},
     },
     tests::{clean_files, setup_folder},
-    vis::plotting::png::line::log_y_plot,
+    vis::plotting::png::line::{line_plot, log_y_plot},
 };
 
 const COMMON_PATH: &str = "tests/core/scenario/sheet_ap/";
@@ -27,10 +41,20 @@ fn heavy_homogeneous_up() {
     let base_id = "Sheet AP - Homogenous - Up - ";
     let path = Path::new(COMMON_PATH).join("homogeneous_up");
 
+    let voxels_per_axis = vec![3, 5, 10];
+    let learning_rates = Array1::<f32>::logspace(10.0, 3.0, 6.0, 4).to_vec();
+
     let initial_delay = 4.1;
     let target_delay = 4.2;
 
-    create_and_run(initial_delay, target_delay, base_id, &path);
+    create_and_run(
+        initial_delay,
+        target_delay,
+        voxels_per_axis,
+        learning_rates,
+        base_id,
+        &path,
+    );
 }
 
 #[allow(
@@ -45,10 +69,20 @@ fn heavy_homogeneous_down() {
     let base_id = "Sheet AP - Homogenous - Down - ";
     let path = Path::new(COMMON_PATH).join("homogeneous_down");
 
+    let voxels_per_axis = vec![3, 5, 10];
+    let learning_rates = Array1::<f32>::logspace(10.0, 3.0, 6.0, 4).to_vec();
+
     let initial_delay = 4.2;
     let target_delay = 4.1;
 
-    create_and_run(initial_delay, target_delay, base_id, &path);
+    create_and_run(
+        initial_delay,
+        target_delay,
+        voxels_per_axis,
+        learning_rates,
+        base_id,
+        &path,
+    );
 }
 
 #[allow(
@@ -58,12 +92,51 @@ fn heavy_homogeneous_down() {
     clippy::too_many_lines
 )]
 #[tracing::instrument(level = "trace")]
-fn build_scenario(initial_delay: f32, target_delay: f32, id: String) -> Scenario {
+fn build_scenario(
+    initial_delay: f32,
+    target_delay: f32,
+    voxels_per_axis: i32,
+    learning_rate: f32,
+    id: String,
+) -> Scenario {
     let mut scenario = Scenario::build(Some(id));
+
+    let voxel_size_mm = 2.5;
+    let sample_rate_hz = 2000.0;
 
     // Set pathological true
     scenario.config.simulation.model.common.pathological = true;
-    //    scenario.config.simulation.duration_s = 0.2;
+    scenario.config.simulation.model.common.voxel_size_mm = voxel_size_mm;
+    scenario
+        .config
+        .simulation
+        .model
+        .common
+        .current_factor_in_pathology = 1.0;
+    scenario
+        .config
+        .simulation
+        .model
+        .common
+        .measurement_covariance_mean = 1e-12;
+    // Adjust heart size
+    scenario
+        .config
+        .simulation
+        .model
+        .handcrafted
+        .as_mut()
+        .unwrap()
+        .heart_size_mm = [
+        voxel_size_mm * (voxels_per_axis) as f32,
+        voxel_size_mm * (voxels_per_axis) as f32,
+        voxel_size_mm,
+    ];
+    scenario.config.simulation.model.common.heart_offset_mm = [
+        25.0 - (voxel_size_mm * (voxels_per_axis) as f32) / 2.0,
+        -250.0 - (voxel_size_mm * (voxels_per_axis) as f32) / 2.0,
+        180.0,
+    ];
     scenario
         .config
         .simulation
@@ -113,8 +186,6 @@ fn build_scenario(initial_delay: f32, target_delay: f32, id: String) -> Scenario
     scenario.config.algorithm.model = scenario.config.simulation.model.clone();
     // Adjust propagation velocities
 
-    let sample_rate_hz = scenario.config.simulation.sample_rate_hz;
-    let voxel_size_mm = scenario.config.simulation.model.common.voxel_size_mm;
     let targe_delay_s = target_delay / sample_rate_hz;
     let target_velocity = voxel_size_mm / 1000.0 / targe_delay_s;
     let initial_delay_s = initial_delay / sample_rate_hz;
@@ -154,11 +225,11 @@ fn build_scenario(initial_delay: f32, target_delay: f32, id: String) -> Scenario
         .unwrap() = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 5_000;
-    scenario.config.algorithm.learning_rate = 1e3;
+    scenario.config.algorithm.learning_rate = learning_rate;
     scenario.config.algorithm.optimizer = Optimizer::Sgd;
     scenario.config.algorithm.freeze_delays = false;
     scenario.config.algorithm.freeze_gains = true;
-    let number_of_snapshots = 100;
+    let number_of_snapshots = 1000;
     scenario.config.algorithm.snapshots_interval =
         scenario.config.algorithm.epochs / number_of_snapshots;
 
@@ -174,14 +245,35 @@ fn build_scenario(initial_delay: f32, target_delay: f32, id: String) -> Scenario
     clippy::cast_precision_loss
 )]
 #[tracing::instrument(level = "trace")]
-fn plot_results(path: &Path, base_title: &str, scenario: &Scenario) {
+fn plot_results(
+    path: &Path,
+    base_title: &str,
+    scenarios: &Vec<Scenario>,
+    voxels_per_axis: Vec<i32>,
+    learning_rates: Vec<f32>,
+) {
     setup_folder(path);
-    let files = vec![path.join("loss.png")];
-    clean_files(&files);
+    for voxels_per_axis in &voxels_per_axis {
+        let files = vec![
+            path.join(format!("down_{voxels_per_axis:03}_loss.png")),
+            path.join(format!("down_{voxels_per_axis:03}_delays.png")),
+            path.join(format!("down_{voxels_per_axis:03}_delays_error.png")),
+            path.join(format!("up{voxels_per_axis:03}_loss.png")),
+            path.join(format!("up{voxels_per_axis:03}_delays.png")),
+            path.join(format!("up{voxels_per_axis:03}_delays_error.png")),
+        ];
+        clean_files(&files);
+    }
+
+    let mut first_scenario = scenarios.first().unwrap().clone();
+    println!("Loading data for first scenario");
+    first_scenario.load_data();
+    println!("Loading results for first scenario {:?}", first_scenario.id);
+    first_scenario.load_results();
 
     println!(
         "{:?}",
-        scenario
+        first_scenario
             .results
             .as_ref()
             .unwrap()
@@ -192,71 +284,289 @@ fn plot_results(path: &Path, base_title: &str, scenario: &Scenario) {
             .ap_params
             .coefs
     );
+    let x_epochs = Array1::range(0.0, first_scenario.config.algorithm.epochs as f32, 1.0);
+    let num_snapshots = first_scenario.results.as_ref().unwrap().snapshots.len() as f32;
+    let x_snapshots = Array1::range(0.0, num_snapshots, 1.0);
 
-    let x_epochs = Array1::range(0.0, scenario.config.algorithm.epochs as f32, 1.0);
-    let losses_owned: Vec<BatchWiseMetric> = vec![scenario
-        .results
-        .as_ref()
-        .unwrap()
-        .metrics
-        .loss_mse_batch
-        .clone()];
+    for voxels_per_axis in voxels_per_axis {
+        let mut min_loss_n = 0;
+        let mut min_loss = 1e9;
+        let mut losses_owned: Vec<BatchWiseMetric> = Vec::new();
+        let mut labels_owned: Vec<String> = Vec::new();
+        let mut delays_owned: Vec<Array1<f32>> = Vec::new();
+        let mut delays_error_owned: Vec<Array1<f32>> = Vec::new();
 
-    let losses = losses_owned
-        .iter()
-        .map(std::ops::Deref::deref)
-        .collect::<Vec<&Array1<f32>>>();
+        for (n, scenario) in scenarios.iter().enumerate() {
+            if !scenario.id.contains(&format!("Num: {voxels_per_axis},"))
+                || !scenario.summary.as_ref().unwrap().loss.is_finite()
+            {
+                continue;
+            }
+            let mut scenario = (*scenario).clone();
+            if scenario.summary.as_ref().unwrap().loss_mse < min_loss {
+                min_loss = scenario.summary.as_ref().unwrap().loss_mse;
+                min_loss_n = n;
+            }
+            scenario.load_results();
+            losses_owned.push(
+                scenario
+                    .results
+                    .as_ref()
+                    .unwrap()
+                    .metrics
+                    .loss_mse_batch
+                    .clone(),
+            );
+            labels_owned.push(format!(
+                "l_r {:.2e}",
+                scenario.config.algorithm.learning_rate,
+            ));
+            drop(scenario);
+        }
 
-    println!("ys length: {}", losses.len());
+        let losses = losses_owned
+            .iter()
+            .map(std::ops::Deref::deref)
+            .collect::<Vec<&Array1<f32>>>();
+        let labels: Vec<&str> = labels_owned
+            .iter()
+            .map(std::string::String::as_str)
+            .collect();
 
-    log_y_plot(
-        Some(&x_epochs),
-        losses,
-        Some(files[0].as_path()),
-        Some(format!("{base_title} - Loss").as_str()),
-        Some("Loss MSE"),
-        Some("Epoch"),
-        None,
-        None,
-    )
-    .unwrap();
+        if SAVE_NPY {
+            let path = path.join("npy");
+            fs::create_dir_all(&path).unwrap();
+            let writer = BufWriter::new(File::create(path.join("x_epochs.npy")).unwrap());
+            x_epochs.write_npy(writer).unwrap();
+            let writer = BufWriter::new(File::create(path.join("x_snapshots.npy")).unwrap());
+            x_snapshots.write_npy(writer).unwrap();
+            for (label, loss) in labels.iter().zip(losses.iter()) {
+                let writer =
+                    BufWriter::new(File::create(path.join(format!("loss_{label}.npy"))).unwrap());
+                loss.write_npy(writer).unwrap();
+            }
+        }
+
+        log_y_plot(
+            Some(&x_epochs),
+            losses,
+            Some(&path.join(format!("{voxels_per_axis:03}_loss.png"))),
+            Some(format!("{base_title}Loss").as_str()),
+            Some("Loss MSE"),
+            Some("Epoch"),
+            Some(&labels),
+            None,
+        )
+        .unwrap();
+
+        let mut scenario = scenarios[min_loss_n].clone();
+        scenario.load_data();
+        scenario.load_results();
+        let mut labels_owned: Vec<String> = Vec::new();
+
+        for index_x in 0..voxels_per_axis as usize {
+            for index_y in 0..voxels_per_axis as usize {
+                let voxel_index = scenario
+                    .data
+                    .as_ref()
+                    .unwrap()
+                    .simulation
+                    .model
+                    .spatial_description
+                    .voxels
+                    .numbers[(index_x, index_y, 0)]
+                    .unwrap()
+                    / 3;
+                // iterate over all allpasses per voxel
+                for offset_index in 0..scenario
+                    .data
+                    .as_ref()
+                    .unwrap()
+                    .simulation
+                    .model
+                    .functional_description
+                    .ap_params
+                    .coefs
+                    .shape()[1]
+                {
+                    // check if ap gain is not 0
+                    let mut non_zero_found = false;
+                    for input_dimension in 0..3 {
+                        for output_dimension in 0..3 {
+                            let gain = scenario
+                                .data
+                                .as_ref()
+                                .unwrap()
+                                .simulation
+                                .model
+                                .functional_description
+                                .ap_params
+                                .gains[(
+                                voxel_index * 3 + input_dimension,
+                                offset_index * 3 + output_dimension,
+                            )];
+                            if gain.relative_ne(&0.0, 0.001, 0.001) {
+                                non_zero_found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if !non_zero_found {
+                        continue;
+                    }
+                    // add ap to plotting data
+                    let mut delays = Array1::<f32>::zeros(num_snapshots as usize);
+                    let mut delays_error = Array1::<f32>::zeros(num_snapshots as usize);
+                    let target_delay = from_coef_to_samples(
+                        scenario
+                            .data
+                            .as_ref()
+                            .unwrap()
+                            .simulation
+                            .model
+                            .functional_description
+                            .ap_params
+                            .coefs[(voxel_index, offset_index)],
+                    ) + scenario
+                        .data
+                        .as_ref()
+                        .unwrap()
+                        .simulation
+                        .model
+                        .functional_description
+                        .ap_params
+                        .delays[(voxel_index, offset_index)]
+                        as f32;
+
+                    for (i, snapshot) in scenario
+                        .results
+                        .as_ref()
+                        .unwrap()
+                        .snapshots
+                        .iter()
+                        .enumerate()
+                    {
+                        delays[i] = from_coef_to_samples(
+                            snapshot.functional_description.ap_params.coefs
+                                [(voxel_index, offset_index)],
+                        ) + snapshot.functional_description.ap_params.delays
+                            [(voxel_index, offset_index)]
+                            as f32;
+                        delays_error[i] = target_delay - delays[i];
+                    }
+                    delays_owned.push(delays);
+                    delays_error_owned.push(delays_error);
+                }
+            }
+        }
+
+        let delays = delays_owned.iter().collect::<Vec<&Array1<f32>>>();
+        let delays_error = delays_error_owned.iter().collect::<Vec<&Array1<f32>>>();
+        let labels: Vec<&str> = labels_owned
+            .iter()
+            .map(std::string::String::as_str)
+            .collect();
+
+        if SAVE_NPY {
+            let path = path.join("npy");
+            for (i, delay) in delays.iter().enumerate() {
+                let writer = BufWriter::new(
+                    File::create(path.join(format!(
+                        "delay_{i}_d_r{:.2e}, s_d {:.2e}.npy",
+                        scenario.config.algorithm.difference_regularization_strength,
+                        scenario.config.algorithm.slow_down_stregth
+                    )))
+                    .unwrap(),
+                );
+                delay.write_npy(writer).unwrap();
+            }
+        }
+
+        line_plot(
+            Some(&x_snapshots),
+            delays,
+            Some(&path.join(format!("{voxels_per_axis:03}_delays.png"))),
+            Some(format!("{base_title}AP Delay").as_str()),
+            Some("AP Delay (Estimated)"),
+            Some("Snapshot"),
+            None,
+            None,
+        )
+        .unwrap();
+
+        line_plot(
+            Some(&x_snapshots),
+            delays_error,
+            Some(&path.join(format!("{voxels_per_axis:03}_delays_error.png"))),
+            Some(format!("{base_title}AP Delay Error").as_str()),
+            Some("AP Delay (Target - Estimated)"),
+            Some("Snapshot"),
+            None,
+            None,
+        )
+        .unwrap();
+    }
 }
 
 #[tracing::instrument(level = "trace")]
-fn create_and_run(initial_delay: f32, target_delay: f32, base_id: &str, img_path: &Path) {
+fn create_and_run(
+    initial_delay: f32,
+    target_delay: f32,
+    voxels_per_axis: Vec<i32>,
+    learning_rates: Vec<f32>,
+    base_id: &str,
+    img_path: &Path,
+) {
     let mut join_handles = Vec::new();
+    let mut scenarios = Vec::new();
 
-    let id = format!("{base_id} {initial_delay:.2} [samples] to {target_delay:.2} [samples]");
-    let path = Path::new("results").join(&id);
-    let mut scenario = if path.is_dir() {
-        println!("Found scenario. Loading it!");
-        let mut scenario = Scenario::load(path.as_path());
-        scenario.load_data();
-        scenario.load_results();
-        scenario
-    } else {
-        println!("Didn't find scenario. Building it!");
-        let scenario = build_scenario(initial_delay, target_delay, id);
-        if RUN_IN_TESTS {
-            let send_scenario = scenario.clone();
-            let (epoch_tx, _) = channel();
-            let (summary_tx, _) = channel();
-            let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
-            println!("handle {handle:?}");
-            join_handles.push(handle);
+    for voxels_per_axis in &voxels_per_axis {
+        for learning_rate in &learning_rates {
+            let id = format!("{base_id} - Num: {voxels_per_axis}, l_r: {learning_rate:.2e}",);
+            let path = Path::new("results").join(&id);
+            println!("Looking for scenario {path:?}");
+            let scenario = if path.is_dir() {
+                println!("Found scenario. Loading it!");
+                let scenario = Scenario::load(path.as_path());
+                scenario
+            } else {
+                println!("Didn't find scenario. Building it!");
+                let scenario = build_scenario(
+                    initial_delay,
+                    target_delay,
+                    *voxels_per_axis,
+                    *learning_rate,
+                    id,
+                );
+                if RUN_IN_TESTS {
+                    let send_scenario = scenario.clone();
+                    let (epoch_tx, _) = channel();
+                    let (summary_tx, _) = channel();
+                    let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
+                    println!("handle {handle:?}");
+                    join_handles.push(handle);
+                }
+                scenario
+            };
+            scenarios.push(scenario);
         }
-        scenario
-    };
+    }
 
     if RUN_IN_TESTS {
         for handle in join_handles {
             handle.join().unwrap();
         }
-        let path = Path::new("results").join(scenario.id.clone());
-        scenario = Scenario::load(path.as_path());
-        scenario.load_data();
-        scenario.load_results();
+        for scenario in &mut scenarios {
+            let path = Path::new("results").join(scenario.id.clone());
+            *scenario = Scenario::load(path.as_path());
+        }
     }
 
-    plot_results(img_path, base_id, &scenario);
+    plot_results(
+        img_path,
+        base_id,
+        &scenarios,
+        voxels_per_axis,
+        learning_rates,
+    );
 }
