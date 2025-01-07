@@ -662,6 +662,11 @@ fn run_model_based(
     let original_learning_rate = scenario.config.algorithm.learning_rate;
     let mut batch_index = 0;
     for epoch_index in 1..=scenario.config.algorithm.epochs {
+        if epoch_index == 0 {
+            scenario.config.algorithm.learning_rate = 0.0;
+        } else if epoch_index == 1 {
+            scenario.config.algorithm.learning_rate = original_learning_rate;
+        }
         if scenario.config.algorithm.learning_rate_reduction_interval != 0
             && (epoch_index % scenario.config.algorithm.learning_rate_reduction_interval == 0)
         {
