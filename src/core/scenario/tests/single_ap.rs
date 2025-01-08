@@ -140,8 +140,6 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
     // configure control function
     scenario.config.simulation.model.common.control_function = ControlFunction::Ohara;
     // configure sensors
-    scenario.config.simulation.model.common.sensors_per_axis = [1, 1, 1];
-    scenario.config.simulation.model.common.three_d_sensors = false;
     scenario
         .config
         .simulation
