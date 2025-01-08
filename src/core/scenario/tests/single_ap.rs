@@ -267,7 +267,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
         .unwrap() = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 10_000;
-    scenario.config.algorithm.learning_rate = 1e4;
+    scenario.config.algorithm.learning_rate = 1e5;
     scenario.config.algorithm.optimizer = Optimizer::Sgd;
     scenario.config.algorithm.freeze_delays = false;
     scenario.config.algorithm.freeze_gains = true;
