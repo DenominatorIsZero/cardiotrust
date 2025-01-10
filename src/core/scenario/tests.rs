@@ -6,4 +6,4 @@ mod single_ap;
 mod smoothness_regularization;
 
 const RUN_IN_TESTS: bool = false;
-const SAVE_NPY: bool = false;
+const SAVE_NPY: bool = true;
