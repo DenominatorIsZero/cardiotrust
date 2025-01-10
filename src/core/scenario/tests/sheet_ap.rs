@@ -509,7 +509,7 @@ fn create_and_run(
 
     for voxels_per_axis in &voxels_per_axis {
         for learning_rate in &learning_rates {
-            let id = format!("{base_id} - Num: {voxels_per_axis}, l_r: {learning_rate:.2e}",);
+            let id = format!("{base_id}Num {voxels_per_axis}, l_r {learning_rate:.2e}",);
             let path = Path::new("results").join(&id);
             println!("Looking for scenario {path:?}");
             let scenario = if path.is_dir() {
