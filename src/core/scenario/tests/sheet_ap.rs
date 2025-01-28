@@ -18,7 +18,10 @@ use crate::{
         scenario::{run, tests::SAVE_NPY, Scenario},
     },
     tests::{clean_files, setup_folder},
-    vis::plotting::png::line::{line_plot, log_y_plot},
+    vis::plotting::png::{
+        delay,
+        line::{line_plot, log_y_plot},
+    },
 };
 
 const COMMON_PATH: &str = "tests/core/scenario/sheet_ap/";
@@ -34,8 +37,8 @@ fn heavy_homogeneous_down() {
     let base_id = "Sheet AP - Homogenous - Down - ";
     let path = Path::new(COMMON_PATH).join("homogeneous_down");
 
-    let voxels_per_axis = vec![5];
-    let learning_rates = Array1::<f32>::logspace(10.0, 5.0, 6.0, 5).to_vec();
+    let voxels_per_axis = vec![3];
+    let learning_rates = Array1::<f32>::logspace(10.0, 3.0, 6.0, 4).to_vec();
 
     let initial_delay = 5.2;
     let target_delay = 4.1;
@@ -306,12 +309,17 @@ fn plot_results(
             let writer = BufWriter::new(File::create(path.join("x_snapshots.npy")).unwrap());
             x_snapshots.write_npy(writer).unwrap();
             for (label, loss) in labels.iter().zip(losses.iter()) {
-                let writer =
-                    BufWriter::new(File::create(path.join(format!("loss_{label}.npy"))).unwrap());
+                let writer = BufWriter::new(
+                    File::create(
+                        path.join(format!("loss - v_per_a {voxels_per_axis} {label}.npy")),
+                    )
+                    .unwrap(),
+                );
                 loss.write_npy(writer).unwrap();
             }
         }
-
+        println!("len of x_epochs: {}", x_epochs.len());
+        println!("len of losses: {}", losses[0].len());
         log_y_plot(
             Some(&x_epochs),
             losses,
@@ -431,15 +439,57 @@ fn plot_results(
             let path = path.join("npy");
             for (i, delay) in delays.iter().enumerate() {
                 let writer = BufWriter::new(
-                    File::create(path.join(format!(
-                        "delay_{i}_d_r{:.2e}, s_d {:.2e}.npy",
-                        scenario.config.algorithm.difference_regularization_strength,
-                        scenario.config.algorithm.slow_down_stregth
-                    )))
-                    .unwrap(),
+                    File::create(path.join(format!("v_per_a {voxels_per_axis}, delay {i}.npy",)))
+                        .unwrap(),
                 );
                 delay.write_npy(writer).unwrap();
             }
+        }
+
+        if SAVE_NPY {
+            let mut delay_error_mean = Array1::<f32>::zeros(delays[0].dim());
+            for (i, delay_error_mean) in delay_error_mean.iter_mut().enumerate() {
+                for error in &delays_error {
+                    *delay_error_mean += error[i];
+                }
+                *delay_error_mean /= delays_error.len() as f32;
+            }
+            let path = path.join("npy");
+            let writer = BufWriter::new(
+                File::create(
+                    path.join(format!("v_per_a {voxels_per_axis}, delay_error_mean.npy",)),
+                )
+                .unwrap(),
+            );
+            delay_error_mean.write_npy(writer).unwrap();
+
+            let mut delay_error_mae = Array1::<f32>::zeros(delays[0].dim());
+            for (i, delay_error_mae) in delay_error_mae.iter_mut().enumerate() {
+                for error in &delays_error {
+                    *delay_error_mae += error[i].abs();
+                }
+                *delay_error_mae /= delays_error.len() as f32;
+            }
+
+            let writer = BufWriter::new(
+                File::create(path.join(format!("v_per_a {voxels_per_axis}, delay_error_mae.npy",)))
+                    .unwrap(),
+            );
+            delay_error_mae.write_npy(writer).unwrap();
+
+            let mut delay_error_std = Array1::<f32>::zeros(delays[0].dim());
+            for (i, delay_error_std) in delay_error_std.iter_mut().enumerate() {
+                for error in &delays_error {
+                    *delay_error_std += (error[i] - delay_error_mean[i]).powi(2);
+                }
+                *delay_error_std = (*delay_error_std / delays_error.len() as f32).sqrt();
+            }
+
+            let writer = BufWriter::new(
+                File::create(path.join(format!("v_per_a {voxels_per_axis}, delay_error_std.npy",)))
+                    .unwrap(),
+            );
+            delay_error_std.write_npy(writer).unwrap();
         }
 
         line_plot(
