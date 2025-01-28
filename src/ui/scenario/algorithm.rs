@@ -291,7 +291,7 @@ fn draw_algorithm_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                             ui.label("Epochs");
                         });
                         row.col(|ui| {
-                            ui.add(egui::Slider::new(&mut algorithm.epochs, 1..=50000));
+                            ui.add(egui::Slider::new(&mut algorithm.epochs, 1..=1_000_000));
                         });
                         row.col(|ui| {
                             ui.add(
