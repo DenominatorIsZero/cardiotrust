@@ -12,6 +12,13 @@ pub enum AlgorithmType {
     PseudoInverse,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Default)]
+pub enum APDerivative {
+    Simple,
+    #[default]
+    Textbook,
+}
+
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Algorithm {
@@ -46,6 +53,8 @@ pub struct Algorithm {
     pub freeze_gains: bool,
     pub freeze_delays: bool,
     pub update_kalman_gain: bool,
+    #[serde(default)]
+    pub ap_derivative: APDerivative,
 }
 impl Default for Algorithm {
     /// Returns a default `Algorithm` configuration with reasonable defaults for most use cases.
@@ -54,8 +63,8 @@ impl Default for Algorithm {
     fn default() -> Self {
         debug!("Creating default algorithm");
         Self {
-            algorithm_type: AlgorithmType::ModelBased,
-            optimizer: Optimizer::Sgd,
+            algorithm_type: AlgorithmType::default(),
+            optimizer: Optimizer::default(),
             epochs: 1,
             batch_size: 0,
             snapshots_interval: 0,
@@ -72,6 +81,7 @@ impl Default for Algorithm {
             freeze_gains: false,
             freeze_delays: true,
             update_kalman_gain: false,
+            ap_derivative: APDerivative::default(),
         }
     }
 }

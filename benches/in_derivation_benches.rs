@@ -4,9 +4,9 @@ use cardiotrust::core::{
     algorithm::{
         estimation::{calculate_residuals, prediction::calculate_system_prediction},
         refinement::derivation::{
-            calculate_average_delays, calculate_derivatives_coefs, calculate_derivatives_gains,
-            calculate_mapped_residuals, calculate_maximum_regularization,
-            calculate_smoothness_derivatives,
+            calculate_average_delays, calculate_derivatives_coefs_simple,
+            calculate_derivatives_gains, calculate_mapped_residuals,
+            calculate_maximum_regularization, calculate_smoothness_derivatives,
         },
     },
     config::Config,
@@ -213,7 +213,7 @@ fn bench_coefs(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("coefs", voxel_size), |b| {
             b.iter(|| {
-                calculate_derivatives_coefs(
+                calculate_derivatives_coefs_simple(
                     &mut results.derivatives,
                     &results.estimations,
                     &model.functional_description,

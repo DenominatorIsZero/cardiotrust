@@ -8,7 +8,7 @@ use tracing::{debug, trace};
 use super::Optimizer;
 use crate::core::{
     algorithm::estimation::Estimations,
-    config::algorithm::Algorithm,
+    config::algorithm::{APDerivative, Algorithm},
     data::shapes::{Residuals, SystemStatesAtStep},
     model::functional::{
         allpass::{
@@ -154,7 +154,26 @@ pub fn calculate_step_derivatives(
         );
     }
     if !config.freeze_delays {
-        calculate_derivatives_coefs(derivates, estimations, functional_description, step, config);
+        match config.ap_derivative {
+            APDerivative::Simple => {
+                calculate_derivatives_coefs_simple(
+                    derivates,
+                    estimations,
+                    functional_description,
+                    step,
+                    config,
+                );
+            }
+            APDerivative::Textbook => {
+                calculate_derivatives_coefs_textbook(
+                    derivates,
+                    estimations,
+                    functional_description,
+                    step,
+                    config,
+                );
+            }
+        }
     }
 }
 
@@ -256,16 +275,11 @@ pub fn calculate_derivatives_gains(
         }
     }
 }
-/// Calculates the derivatives for the allpass filter coefficients.
-///
-/// This mutates the `self.coefs` values based on the provided `ap_outputs`,
-/// `estimated_system_states`, `ap_params`, `time_index`, and `number_of_sensors`.
-/// It calculates the FIR and IIR coefficient derivatives separately,
-/// then combines them to update `self.coefs`.
+/// Calculates the derivatives for the allpass filter coefficients using a simplified form for the AP derivative.
 #[inline]
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace")]
-pub fn calculate_derivatives_coefs(
+pub fn calculate_derivatives_coefs_simple(
     derivatives: &mut Derivatives,
     estimations: &Estimations,
     functional_description: &FunctionalDescription,
@@ -273,88 +287,8 @@ pub fn calculate_derivatives_coefs(
     config: &Algorithm,
 ) {
     let mse_scaling = 1.0 / estimations.measurements.num_sensors() as f32 * config.mse_strength;
-
-    // // FIR derivatives calculation
-    // for state_index in 0..derivatives.coefs_fir.shape()[0] {
-    //     for offset_index in 0..derivatives.coefs_fir.shape()[1] {
-    //         let output_state = unsafe {
-    //             functional_description
-    //                 .ap_params
-    //                 .output_state_indices
-    //                 .uget((state_index, offset_index))
-    //         };
-    //         if output_state.is_none() {
-    //             continue;
-    //         }
-
-    //         let coef_index = (state_index / 3, offset_index / 3);
-    //         let delay = unsafe { functional_description.ap_params.delays.uget(coef_index) };
-    //         let coef = unsafe { functional_description.ap_params.coefs.uget(coef_index) };
-
-    //         if step >= *delay {
-    //             let state_val = unsafe {
-    //                 estimations
-    //                     .system_states
-    //                     .uget((step - delay, output_state.unwrap()))
-    //             };
-    //             let derivative_fir =
-    //                 unsafe { derivatives.coefs_fir.uget_mut((state_index, offset_index)) };
-    //             *derivative_fir = (*coef).mul_add(*derivative_fir, *state_val);
-    //         }
-    //     }
-    // }
-
-    // // IIR derivatives calculation
-    // for state_index in 0..derivatives.coefs_iir.shape()[0] {
-    //     for offset_index in 0..derivatives.coefs_iir.shape()[1] {
-    //         let coef_index = (state_index / 3, offset_index / 3);
-    //         let delay = unsafe { functional_description.ap_params.delays.uget(coef_index) };
-    //         let coef = unsafe { functional_description.ap_params.coefs.uget(coef_index) };
-
-    //         if step >= *delay {
-    //             let ap_output_last = unsafe {
-    //                 estimations
-    //                     .ap_outputs_last
-    //                     .uget((state_index, offset_index))
-    //             };
-    //             let derivative_iir =
-    //                 unsafe { derivatives.coefs_iir.uget_mut((state_index, offset_index)) };
-    //             *derivative_iir = (*coef).mul_add(*derivative_iir, *ap_output_last);
-    //         }
-    //     }
-    // }
-
-    // Combine results
     for state_index in 0..derivatives.coefs_iir.shape()[0] {
         for offset_index in 0..derivatives.coefs_iir.shape()[1] {
-            // let coef_index = (state_index / 3, offset_index / 3);
-            // let delay = unsafe { *functional_description.ap_params.delays.uget(coef_index) } as f32
-            //     + from_coef_to_samples(unsafe {
-            //         *functional_description.ap_params.coefs.uget(coef_index)
-            //     });
-            // let delay_delta = (unsafe {
-            //     *functional_description
-            //         .ap_params
-            //         .initial_delays
-            //         .uget(coef_index)
-            // } - delay)
-            //     .powi(5);
-
-            // let iir = unsafe { derivatives.coefs_iir.uget((state_index, offset_index)) };
-            // let fir = unsafe { derivatives.coefs_fir.uget((state_index, offset_index)) };
-            // let ap_gain = unsafe {
-            //     functional_description
-            //         .ap_params
-            //         .gains
-            //         .uget((state_index, offset_index))
-            // };
-            // let mapped_residual = unsafe { derivatives.mapped_residuals.uget(state_index) };
-
-            // let coef_derivative = unsafe { derivatives.coefs.uget_mut(coef_index) };
-            // *coef_derivative += ((fir + iir) * ap_gain * mapped_residual).mul_add(
-            //     mse_scaling,
-            //     config.difference_regularization_strength * delay_delta,
-            // );
             let coef_index = (state_index / 3, offset_index / 3);
             let delay = unsafe { *functional_description.ap_params.delays.uget(coef_index) } as f32
                 + from_coef_to_samples(unsafe {
@@ -402,6 +336,104 @@ pub fn calculate_derivatives_coefs(
                         config.difference_regularization_strength * delay_delta,
                     );
             }
+        }
+    }
+}
+
+/// Calculates the derivatives for the allpass filter coefficients using the textbook form for the AP derivative.
+#[inline]
+#[allow(clippy::cast_precision_loss)]
+#[tracing::instrument(level = "trace")]
+pub fn calculate_derivatives_coefs_textbook(
+    derivatives: &mut Derivatives,
+    estimations: &Estimations,
+    functional_description: &FunctionalDescription,
+    step: usize,
+    config: &Algorithm,
+) {
+    let mse_scaling = 1.0 / estimations.measurements.num_sensors() as f32 * config.mse_strength;
+
+    // FIR derivatives calculation
+    for state_index in 0..derivatives.coefs_fir.shape()[0] {
+        for offset_index in 0..derivatives.coefs_fir.shape()[1] {
+            let output_state = unsafe {
+                functional_description
+                    .ap_params
+                    .output_state_indices
+                    .uget((state_index, offset_index))
+            };
+            if output_state.is_none() {
+                continue;
+            }
+
+            let coef_index = (state_index / 3, offset_index / 3);
+            let delay = unsafe { functional_description.ap_params.delays.uget(coef_index) };
+            let coef = unsafe { functional_description.ap_params.coefs.uget(coef_index) };
+
+            if step >= *delay {
+                let state_val = unsafe {
+                    estimations
+                        .system_states
+                        .uget((step - delay, output_state.unwrap()))
+                };
+                let derivative_fir =
+                    unsafe { derivatives.coefs_fir.uget_mut((state_index, offset_index)) };
+                *derivative_fir = (-*coef).mul_add(*derivative_fir, *state_val);
+            }
+        }
+    }
+
+    // IIR derivatives calculation
+    for state_index in 0..derivatives.coefs_iir.shape()[0] {
+        for offset_index in 0..derivatives.coefs_iir.shape()[1] {
+            let coef_index = (state_index / 3, offset_index / 3);
+            let delay = unsafe { functional_description.ap_params.delays.uget(coef_index) };
+            let coef = unsafe { functional_description.ap_params.coefs.uget(coef_index) };
+
+            if step >= *delay {
+                let ap_output_last = unsafe {
+                    estimations
+                        .ap_outputs_last
+                        .uget((state_index, offset_index))
+                };
+                let derivative_iir =
+                    unsafe { derivatives.coefs_iir.uget_mut((state_index, offset_index)) };
+                *derivative_iir = (-*coef).mul_add(*derivative_iir, *ap_output_last);
+            }
+        }
+    }
+
+    // Combine results
+    for state_index in 0..derivatives.coefs_iir.shape()[0] {
+        for offset_index in 0..derivatives.coefs_iir.shape()[1] {
+            let coef_index = (state_index / 3, offset_index / 3);
+            let delay = unsafe { *functional_description.ap_params.delays.uget(coef_index) } as f32
+                + from_coef_to_samples(unsafe {
+                    *functional_description.ap_params.coefs.uget(coef_index)
+                });
+            let delay_delta = (unsafe {
+                *functional_description
+                    .ap_params
+                    .initial_delays
+                    .uget(coef_index)
+            } - delay)
+                .powi(5);
+
+            let iir = unsafe { derivatives.coefs_iir.uget((state_index, offset_index)) };
+            let fir = unsafe { derivatives.coefs_fir.uget((state_index, offset_index)) };
+            let ap_gain = unsafe {
+                functional_description
+                    .ap_params
+                    .gains
+                    .uget((state_index, offset_index))
+            };
+            let mapped_residual = unsafe { derivatives.mapped_residuals.uget(state_index) };
+
+            let coef_derivative = unsafe { derivatives.coefs.uget_mut(coef_index) };
+            *coef_derivative += ((fir - iir) * ap_gain * mapped_residual).mul_add(
+                mse_scaling,
+                config.difference_regularization_strength * delay_delta,
+            );
         }
     }
 }
@@ -663,7 +695,7 @@ mod tests {
             ..Default::default()
         };
 
-        calculate_derivatives_coefs(
+        calculate_derivatives_coefs_simple(
             &mut derivatives,
             &estimations,
             &functional_description,

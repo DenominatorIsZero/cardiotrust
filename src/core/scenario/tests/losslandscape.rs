@@ -1,17 +1,19 @@
 use std::{
-    fs::{self},
+    fs::{self, File},
+    io::BufWriter,
     path::Path,
     sync::mpsc::channel,
     thread,
 };
 
 use ndarray::Array1;
+use ndarray_npy::WriteNpyExt;
 
 use super::{RUN_IN_TESTS, SAVE_NPY};
 use crate::{
     core::{
         algorithm::refinement::Optimizer,
-        config::model::ControlFunction,
+        config::{algorithm::APDerivative, model::ControlFunction},
         model::spatial::voxels::VoxelType,
         scenario::{run, Scenario},
     },
@@ -374,6 +376,7 @@ fn build_scenario(
     scenario.config.algorithm.epochs = 1;
     scenario.config.algorithm.learning_rate = 0.0;
     scenario.config.algorithm.optimizer = Optimizer::Sgd;
+    scenario.config.algorithm.ap_derivative = APDerivative::Textbook;
     scenario.config.algorithm.freeze_delays = false;
     scenario.config.algorithm.freeze_gains = true;
     let number_of_snapshots = 1000;
@@ -419,6 +422,12 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     if SAVE_NPY {
         let path = path.join("npy");
         fs::create_dir_all(&path).unwrap();
+        let writer = BufWriter::new(File::create(path.join("delays.npy")).unwrap());
+        delays.write_npy(writer).unwrap();
+        let writer = BufWriter::new(File::create(path.join("losses.npy")).unwrap());
+        losses.write_npy(writer).unwrap();
+        let writer = BufWriter::new(File::create(path.join("gradients.npy")).unwrap());
+        gradients.write_npy(writer).unwrap();
     }
 
     println!("ys length: {}", losses.len());
