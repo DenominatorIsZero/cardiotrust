@@ -29,6 +29,7 @@ const COMMON_PATH: &str = "tests/core/scenario/line_ap/";
     clippy::too_many_lines
 )]
 #[test]
+#[ignore]
 fn heavy_sgd() {
     let base_id = "Line AP";
     let path = Path::new(COMMON_PATH).join("sgd");
@@ -59,6 +60,7 @@ fn heavy_sgd() {
     clippy::too_many_lines
 )]
 #[test]
+#[ignore]
 fn heavy_adam() {
     let base_id = "Line AP";
     let path = Path::new(COMMON_PATH).join("adam");

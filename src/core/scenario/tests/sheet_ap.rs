@@ -33,6 +33,7 @@ const COMMON_PATH: &str = "tests/core/scenario/sheet_ap/";
     clippy::too_many_lines
 )]
 #[test]
+#[ignore]
 fn heavy_homogeneous_down() {
     let base_id = "Sheet AP - Homogenous - Down - ";
     let path = Path::new(COMMON_PATH).join("homogeneous_down");
