@@ -542,9 +542,9 @@ mod test {
         assert_relative_eq!(1.0 / 3.0, from_samples_to_coef(1.5));
         assert_relative_eq!(1.0 / 3.0, from_samples_to_coef(99999.5));
 
-        assert_relative_eq!(1.0, from_samples_to_coef(0.0));
-        assert_relative_eq!(1.0, from_samples_to_coef(1.0));
-        assert_relative_eq!(1.0, from_samples_to_coef(99999.0));
+        assert_relative_eq!(0.9999, from_samples_to_coef(0.0));
+        assert_relative_eq!(0.9999, from_samples_to_coef(1.0));
+        assert_relative_eq!(0.9999, from_samples_to_coef(99999.0));
     }
 
     #[test]

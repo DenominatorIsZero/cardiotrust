@@ -3,8 +3,9 @@ use std::{
     io::BufWriter,
 };
 
-use ndarray::{arr1, s, Array1, Array2};
+use ndarray::{arr1, s, Array1, Array2, Array3};
 use ndarray_npy::WriteNpyExt;
+use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
@@ -90,6 +91,61 @@ impl Sensors {
                                 i += 1;
                             }
                         }
+                    }
+                }
+                sensors
+            }
+            SensorArrayGeometry::SparseCube => {
+                #[allow(clippy::cast_precision_loss)]
+                let distance = [
+                    config.sensor_array_size_mm[0] / config.sensors_per_axis[0] as f32,
+                    config.sensor_array_size_mm[1] / config.sensors_per_axis[1] as f32,
+                    config.sensor_array_size_mm[2] / config.sensors_per_axis[2] as f32,
+                ];
+                let dim = if config.three_d_sensors { 3 } else { 1 };
+                let num_sensors = config.number_of_sensors * dim;
+                let num_occupied = config.number_of_sensors;
+                let num_places = config.sensors_per_axis.iter().product::<usize>();
+                assert!(num_occupied <= num_places);
+                let mut sensors = Self::empty(num_sensors, number_of_motion_steps);
+
+                // Generate all possible positions
+                let mut positions = Vec::with_capacity(num_places);
+                for x in 0..config.sensors_per_axis[0] {
+                    for y in 0..config.sensors_per_axis[1] {
+                        for z in 0..config.sensors_per_axis[2] {
+                            positions.push([x, y, z]);
+                        }
+                    }
+                }
+
+                // Randomly select positions
+                let mut rng = rand::thread_rng();
+                positions.shuffle(&mut rng);
+                let selected_positions = &positions[0..num_occupied];
+
+                // Assign positions and orientations to sensors
+                let mut i = 0;
+                for selected_position in selected_positions {
+                    let [x, y, z] = selected_position;
+                    for _ in 0..dim {
+                        #[allow(clippy::cast_precision_loss)]
+                        sensors.positions_mm.slice_mut(s![i, ..]).assign(&arr1(&[
+                            (*x as f32).mul_add(distance[0], config.sensor_array_origin_mm[0]),
+                            (*y as f32).mul_add(distance[1], config.sensor_array_origin_mm[1]),
+                            (*z as f32).mul_add(distance[2], config.sensor_array_origin_mm[2]),
+                        ]));
+                        let orientation = match i % 3 {
+                            0 => arr1(&[1.0, 0.0, 0.0]),
+                            1 => arr1(&[0.0, 1.0, 0.0]),
+                            2 => arr1(&[0.0, 0.0, 1.0]),
+                            _ => arr1(&[0.0, 0.0, 0.0]),
+                        };
+                        sensors
+                            .orientations_xyz
+                            .slice_mut(s![i, ..])
+                            .assign(&orientation);
+                        i += 1;
                     }
                 }
                 sensors

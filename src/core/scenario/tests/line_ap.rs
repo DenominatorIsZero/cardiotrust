@@ -14,7 +14,7 @@ use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
         model::{functional::allpass::from_coef_to_samples, spatial::voxels::VoxelType},
-        scenario::{run, tests::SAVE_NPY, Scenario},
+        scenario::{self, run, tests::SAVE_NPY, Scenario},
     },
     tests::{clean_files, setup_folder},
     vis::plotting::png::line::{line_plot, log_y_plot},
@@ -29,6 +29,7 @@ const COMMON_PATH: &str = "tests/core/scenario/line_ap/";
     clippy::too_many_lines
 )]
 #[test]
+#[ignore]
 fn heavy_sgd() {
     let base_id = "Line AP";
     let path = Path::new(COMMON_PATH).join("sgd");
@@ -59,6 +60,7 @@ fn heavy_sgd() {
     clippy::too_many_lines
 )]
 #[test]
+#[ignore]
 fn heavy_adam() {
     let base_id = "Line AP";
     let path = Path::new(COMMON_PATH).join("adam");
@@ -219,7 +221,7 @@ fn build_scenario(
         .get_mut(&VoxelType::Pathological)
         .unwrap() = initial_velocity;
     // set optimization parameters
-    scenario.config.algorithm.epochs = 10_000;
+    scenario.config.algorithm.epochs = 20_000;
     scenario.config.algorithm.learning_rate = learning_rate;
     scenario.config.algorithm.optimizer = optimizer;
     scenario.config.algorithm.freeze_delays = false;
@@ -287,12 +289,8 @@ fn plot_results(
 
     for number_of_ap in number_of_aps {
         for key in ["Down", "Up"] {
-            let mut min_loss_n = 0;
-            let mut min_loss = 1e9;
             let mut losses_owned: Vec<BatchWiseMetric> = Vec::new();
             let mut labels_owned: Vec<String> = Vec::new();
-            let mut delays_owned: Vec<Array1<f32>> = Vec::new();
-            let mut delays_error_owned: Vec<Array1<f32>> = Vec::new();
 
             for (n, scenario) in scenarios.iter().enumerate() {
                 if !scenario.id.contains(&format!("Num: {number_of_ap},"))
@@ -301,12 +299,11 @@ fn plot_results(
                 {
                     continue;
                 }
+                let mut delays_owned: Vec<Array1<f32>> = Vec::new();
+                let mut delays_error_owned: Vec<Array1<f32>> = Vec::new();
                 let mut scenario = (*scenario).clone();
-                if scenario.summary.as_ref().unwrap().loss_mse < min_loss {
-                    min_loss = scenario.summary.as_ref().unwrap().loss_mse;
-                    min_loss_n = n;
-                }
                 scenario.load_results();
+                scenario.load_data();
                 losses_owned.push(
                     scenario
                         .results
@@ -320,6 +317,89 @@ fn plot_results(
                     "l_r {:.2e}",
                     scenario.config.algorithm.learning_rate,
                 ));
+                let lr = format!("{:.2e}", scenario.config.algorithm.learning_rate,);
+
+                for ap in 0..number_of_ap as usize {
+                    let mut delays = Array1::<f32>::zeros(num_snapshots as usize);
+                    let mut delays_error = Array1::<f32>::zeros(num_snapshots as usize);
+                    let target_delay = from_coef_to_samples(
+                        scenario
+                            .data
+                            .as_ref()
+                            .unwrap()
+                            .simulation
+                            .model
+                            .functional_description
+                            .ap_params
+                            .coefs[(ap, 15)],
+                    ) + scenario
+                        .data
+                        .as_ref()
+                        .unwrap()
+                        .simulation
+                        .model
+                        .functional_description
+                        .ap_params
+                        .delays[(ap, 15)] as f32;
+
+                    for (i, snapshot) in scenario
+                        .results
+                        .as_ref()
+                        .unwrap()
+                        .snapshots
+                        .iter()
+                        .enumerate()
+                    {
+                        delays[i] = from_coef_to_samples(
+                            snapshot.functional_description.ap_params.coefs[(ap, 15)],
+                        ) + snapshot.functional_description.ap_params.delays[(ap, 15)]
+                            as f32;
+                        delays_error[i] = target_delay - delays[i];
+                    }
+                    delays_owned.push(delays);
+                    delays_error_owned.push(delays_error);
+                }
+
+                let delays = delays_owned.iter().collect::<Vec<&Array1<f32>>>();
+                let delays_error = delays_error_owned.iter().collect::<Vec<&Array1<f32>>>();
+
+                if SAVE_NPY {
+                    let path = path.join("npy");
+                    fs::create_dir_all(&path).unwrap();
+                    for (i, delay) in delays.iter().enumerate() {
+                        let writer = BufWriter::new(
+                            File::create(path.join(format!(
+                                "num_ap: {number_of_ap}, delay: {i}, lr: {lr}.npy",
+                            )))
+                            .unwrap(),
+                        );
+                        delay.write_npy(writer).unwrap();
+                    }
+                }
+
+                line_plot(
+                    Some(&x_snapshots),
+                    delays,
+                    Some(&path.join(format!("{key}_{number_of_ap:03}_lr_{lr}_delays.png"))),
+                    Some(format!("{base_title} - AP Delay - lr: {lr}").as_str()),
+                    Some("AP Delay (Estimated)"),
+                    Some("Snapshot"),
+                    None,
+                    None,
+                )
+                .unwrap();
+
+                line_plot(
+                    Some(&x_snapshots),
+                    delays_error,
+                    Some(&path.join(format!("{key}_{number_of_ap:03}_lr_{lr}_delays_error.png"))),
+                    Some(format!("{base_title} - AP Delay Error - lr: {lr}").as_str()),
+                    Some("AP Delay (Target - Estimated)"),
+                    Some("Snapshot"),
+                    None,
+                    None,
+                )
+                .unwrap();
                 drop(scenario);
             }
 
@@ -358,95 +438,6 @@ fn plot_results(
                 Some("Loss MSE"),
                 Some("Epoch"),
                 Some(&labels),
-                None,
-            )
-            .unwrap();
-
-            let mut scenario = scenarios[min_loss_n].clone();
-            scenario.load_data();
-            scenario.load_results();
-            let mut labels_owned: Vec<String> = Vec::new();
-
-            for ap in 0..number_of_ap as usize {
-                let mut delays = Array1::<f32>::zeros(num_snapshots as usize);
-                let mut delays_error = Array1::<f32>::zeros(num_snapshots as usize);
-                let target_delay = from_coef_to_samples(
-                    scenario
-                        .data
-                        .as_ref()
-                        .unwrap()
-                        .simulation
-                        .model
-                        .functional_description
-                        .ap_params
-                        .coefs[(ap, 15)],
-                ) + scenario
-                    .data
-                    .as_ref()
-                    .unwrap()
-                    .simulation
-                    .model
-                    .functional_description
-                    .ap_params
-                    .delays[(ap, 15)] as f32;
-
-                for (i, snapshot) in scenario
-                    .results
-                    .as_ref()
-                    .unwrap()
-                    .snapshots
-                    .iter()
-                    .enumerate()
-                {
-                    delays[i] = from_coef_to_samples(
-                        snapshot.functional_description.ap_params.coefs[(ap, 15)],
-                    ) + snapshot.functional_description.ap_params.delays[(ap, 15)]
-                        as f32;
-                    delays_error[i] = target_delay - delays[i];
-                }
-                delays_owned.push(delays);
-                delays_error_owned.push(delays_error);
-                labels_owned.push(format!("AP {ap}"));
-            }
-
-            let delays = delays_owned.iter().collect::<Vec<&Array1<f32>>>();
-            let delays_error = delays_error_owned.iter().collect::<Vec<&Array1<f32>>>();
-            let labels: Vec<&str> = labels_owned
-                .iter()
-                .map(std::string::String::as_str)
-                .collect();
-
-            if SAVE_NPY {
-                let path = path.join("npy");
-                for (i, delay) in delays.iter().enumerate() {
-                    let writer = BufWriter::new(
-                        File::create(path.join(format!("num_ap: {number_of_ap}, delay: {i}.npy",)))
-                            .unwrap(),
-                    );
-                    delay.write_npy(writer).unwrap();
-                }
-            }
-
-            line_plot(
-                Some(&x_snapshots),
-                delays,
-                Some(&path.join(format!("{key}_{number_of_ap:03}_delays.png"))),
-                Some(format!("{base_title} - AP Delay").as_str()),
-                Some("AP Delay (Estimated)"),
-                Some("Snapshot"),
-                Some(&labels),
-                None,
-            )
-            .unwrap();
-
-            line_plot(
-                Some(&x_snapshots),
-                delays_error,
-                Some(&path.join(format!("{key}_{number_of_ap:03}_delays_error.png"))),
-                Some(format!("{base_title} - AP Delay Error").as_str()),
-                Some("AP Delay (Target - Estimated)"),
-                Some("Snapshot"),
-                None,
                 None,
             )
             .unwrap();

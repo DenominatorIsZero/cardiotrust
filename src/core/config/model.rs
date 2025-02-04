@@ -119,6 +119,7 @@ pub enum ControlFunction {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum SensorArrayGeometry {
     Cube,
+    SparseCube,
     Cylinder,
 }
 
@@ -135,7 +136,7 @@ pub struct Common {
     pub sensor_array_geometry: SensorArrayGeometry,
     pub sensor_array_motion: SensorArrayMotion,
     pub three_d_sensors: bool,            // used for both kinds
-    pub number_of_sensors: usize,         // used for cylinder only
+    pub number_of_sensors: usize,         // used for cylinder and sparse cube
     pub sensor_array_radius_mm: f32,      // used for cylinder only
     pub sensors_per_axis: [usize; 3],     // used for cube only
     pub sensor_array_size_mm: [f32; 3],   // used for cube only
@@ -202,7 +203,7 @@ impl Default for Common {
             current_factor_in_pathology: 0.00,
         };
         match config.sensor_array_geometry {
-            SensorArrayGeometry::Cube => {
+            SensorArrayGeometry::Cube | SensorArrayGeometry::SparseCube => {
                 config.sensor_array_origin_mm = DEFAULT_SENSOR_ORIGIN_CUBE;
             }
             SensorArrayGeometry::Cylinder => {

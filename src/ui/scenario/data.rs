@@ -149,6 +149,11 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                                 );
                                 ui.selectable_value(
                                     sensor_geometry,
+                                    SensorArrayGeometry::SparseCube,
+                                    "Sparse Cube",
+                                );
+                                ui.selectable_value(
+                                    sensor_geometry,
                                     SensorArrayGeometry::Cylinder,
                                     "Cylinder",
                                 );
@@ -165,7 +170,7 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                 });// end row
                 if last_value != *sensor_geometry {
                     match sensor_geometry {
-                        SensorArrayGeometry::Cube => {
+                        SensorArrayGeometry::Cube | SensorArrayGeometry::SparseCube => {
                             simulation.model.common.sensor_array_origin_mm =
                                 DEFAULT_SENSOR_ORIGIN_CUBE;
                         }
@@ -257,92 +262,88 @@ fn draw_sensor_settings(ui: &mut egui::Ui, simulation: &mut Simulation) {
                         );
                     });
                 }); // end row
+                // First render the common elements based on geometry type
                 match sensor_geometry {
-                    SensorArrayGeometry::Cube => {
-                // Sensors per axis
-                let sensors_per_axis = &mut simulation.model.common.sensors_per_axis;
-                body.row(ROW_HEIGHT, |mut row| {
-                    row.col(|ui| {
-                        ui.label("Sensors per axis");
-                    });
-                    row.col(|ui| {
-                        ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
-                            ui.add(egui::DragValue::new(&mut sensors_per_axis[0]).prefix("x: "));
-                            ui.add(egui::DragValue::new(&mut sensors_per_axis[1]).prefix("y: "));
-                            ui.add(egui::DragValue::new(&mut sensors_per_axis[2]).prefix("z: "));
+                    SensorArrayGeometry::Cube | SensorArrayGeometry::SparseCube => {
+                        // Sensors per axis
+                        let sensors_per_axis = &mut simulation.model.common.sensors_per_axis;
+                        body.row(ROW_HEIGHT, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Sensors per axis");
+                            });
+                            row.col(|ui| {
+                                ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                                    ui.add(egui::DragValue::new(&mut sensors_per_axis[0]).prefix("x: "));
+                                    ui.add(egui::DragValue::new(&mut sensors_per_axis[1]).prefix("y: "));
+                                    ui.add(egui::DragValue::new(&mut sensors_per_axis[2]).prefix("z: "));
+                                });
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Label::new("The number of sensors used per axis.").truncate());
+                            });
                         });
-                    });
-                    row.col(|ui| {
-                        ui.add(
-                            egui::Label::new("The number of sensors used per axis.").truncate(),
-                        );
-                    });
-                }); // end row
-                    // Sensor array size
-                let sensor_array_size_mm = &mut simulation.model.common.sensor_array_size_mm;
-                body.row(ROW_HEIGHT, |mut row| {
-                    row.col(|ui| {
-                        ui.label("Sensors array size");
-                    });
-                    row.col(|ui| {
-                        ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
-                            ui.add(
-                                egui::DragValue::new(&mut sensor_array_size_mm[0])
-                                    .prefix("x: ")
-                                    .suffix(" mm"),
-                            );
-                            ui.add(
-                                egui::DragValue::new(&mut sensor_array_size_mm[1])
-                                    .prefix("y: ")
-                                    .suffix(" mm"),
-                            );
-                            ui.add(
-                                egui::DragValue::new(&mut sensor_array_size_mm[2])
-                                    .prefix("z: ")
-                                    .suffix(" mm"),
-                            );
+
+                        // Sensor array size
+                        let sensor_array_size_mm = &mut simulation.model.common.sensor_array_size_mm;
+                        body.row(ROW_HEIGHT, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Sensors array size");
+                            });
+                            row.col(|ui| {
+                                ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
+                                    ui.add(
+                                        egui::DragValue::new(&mut sensor_array_size_mm[0])
+                                            .prefix("x: ")
+                                            .suffix(" mm"),
+                                    );
+                                    ui.add(
+                                        egui::DragValue::new(&mut sensor_array_size_mm[1])
+                                            .prefix("y: ")
+                                            .suffix(" mm"),
+                                    );
+                                    ui.add(
+                                        egui::DragValue::new(&mut sensor_array_size_mm[2])
+                                            .prefix("z: ")
+                                            .suffix(" mm"),
+                                    );
+                                });
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Label::new("The overall size of the sensor array in mm.").truncate());
+                            });
                         });
-                    });
-                    row.col(|ui| {
-                        ui.add(
-                            egui::Label::new("The overall size of the sensor array in mm.")
-                                .truncate(),
-                        );
-                    });
-                }); // end row
                     }
+
                     SensorArrayGeometry::Cylinder => {
-                        // number of sensors
-                let number_of_sensors = &mut simulation.model.common.number_of_sensors;
-                body.row(ROW_HEIGHT, |mut row| {
-                    row.col(|ui| {
-                        ui.label("Number of sensors");
-                    });
-                    row.col(|ui| {
-                            ui.add(egui::DragValue::new(number_of_sensors));
-                    });
-                    row.col(|ui| {
-                        ui.add(
-                            egui::Label::new("The number of sensors used.").truncate(),
-                        );
-                    });
-                }); // end row
-                        // array radius
-                let array_radius = &mut simulation.model.common.sensor_array_radius_mm;
-                body.row(ROW_HEIGHT, |mut row| {
-                    row.col(|ui| {
-                        ui.label("Sensor array radius");
-                    });
-                    row.col(|ui| {
-                            ui.add(egui::DragValue::new(array_radius).suffix(" mm"));
-                    });
-                    row.col(|ui| {
-                        ui.add(
-                            egui::Label::new("The radius of the sensor array.").truncate(),
-                        );
-                    });
-                }); // end row
+                        // Array radius
+                        let array_radius = &mut simulation.model.common.sensor_array_radius_mm;
+                        body.row(ROW_HEIGHT, |mut row| {
+                            row.col(|ui| {
+                                ui.label("Sensor array radius");
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::DragValue::new(array_radius).suffix(" mm"));
+                            });
+                            row.col(|ui| {
+                                ui.add(egui::Label::new("The radius of the sensor array.").truncate());
+                            });
+                        });
                     }
+                }
+                // Then render the number of sensors if needed for either SparseCube or Cylinder
+                if matches!(sensor_geometry, SensorArrayGeometry::SparseCube | SensorArrayGeometry::Cylinder) {
+                    let number_of_sensors = &mut simulation.model.common.number_of_sensors;
+                    body.row(ROW_HEIGHT, |mut row| {
+                        row.col(|ui| {
+                            ui.label("Number of sensors");
+                        });
+                        row.col(|ui| {
+                            ui.add(egui::DragValue::new(number_of_sensors));
+                        });
+                        row.col(|ui| {
+                            ui.add(egui::Label::new("The number of sensors used.").truncate());
+                        });
+                    });
                 }
                 if sensor_motion == &SensorArrayMotion::Grid {
                 let motion_range = &mut simulation.model.common.sensor_array_motion_range_mm;
