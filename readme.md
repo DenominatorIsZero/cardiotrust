@@ -16,11 +16,25 @@ CardioTrust provides a state-space-based framework for:
 
 ### Prerequisites
 
-- Rust (latest stable version)
+- Rust (latest stable version) (https://www.rust-lang.org/tools/install)
 - Cargo (comes with Rust)
 - Just (command runner)
+
+```bash
+cargo install just
+```
+
 - wasm-bindgen-cli (for WASM builds)
+
+```bash
+cargo install -f wasm-bindgen-cli
+```
+
 - Nightly Rust toolchain (for formatting)
+
+```bash
+rustup toolchain install nightly
+```
 
 ### Build from Source
 
