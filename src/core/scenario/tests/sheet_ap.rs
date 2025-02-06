@@ -151,6 +151,22 @@ fn build_scenario(
         .as_mut()
         .unwrap()
         .pathology_y_stop_percentage = 1.0;
+    scenario
+        .config
+        .simulation
+        .model
+        .handcrafted
+        .as_mut()
+        .unwrap()
+        .sa_x_center_percentage = 0.5;
+    scenario
+        .config
+        .simulation
+        .model
+        .handcrafted
+        .as_mut()
+        .unwrap()
+        .sa_y_center_percentage = 1.0;
     // Copy settings to algorithm model
     scenario.config.algorithm.model = scenario.config.simulation.model.clone();
     // Adjust propagation velocities
