@@ -24,6 +24,12 @@ CardioTrust provides a state-space-based framework for:
 cargo install just
 ```
 
+- nextest (test runner)
+
+```bash
+cargo install cargo-nextest
+```
+
 - wasm-bindgen-cli (for WASM builds)
 
 ```bash
@@ -40,7 +46,7 @@ rustup toolchain install nightly
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/cardiotrust.git
+git clone https://github.com/DenominatorIsZero/cardiotrust.git
 cd cardiotrust
 
 # Build in release mode
