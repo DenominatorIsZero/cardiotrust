@@ -225,7 +225,10 @@ mod tests {
     use std::path::Path;
 
     use super::*;
-    use crate::{core::config::model::Common, vis::plotting::png::matrix::matrix_plot};
+    use crate::{
+        core::config::model::{Common, SensorArrayGeometry},
+        vis::plotting::png::matrix::matrix_plot,
+    };
 
     const COMMON_PATH: &str = "tests/core/model/functional/measurement/";
 
@@ -292,5 +295,75 @@ mod tests {
             None,
         )
         .unwrap();
+    }
+
+    #[test]
+    fn from_model_config_no_crash_and_plot_spase() {
+        setup(None);
+        let config = Model {
+            common: Common {
+                sensors_per_axis: [3, 3, 3],
+                number_of_sensors: 10,
+                sensor_array_geometry: SensorArrayGeometry::SparseCube,
+                voxel_size_mm: 20.0,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let spatial_description = SpatialDescription::from_model_config(&config);
+
+        let measurement_matrix =
+            MeasurementMatrix::from_model_spatial_description(&spatial_description);
+
+        assert!(!measurement_matrix.is_empty());
+
+        let path = Path::new(COMMON_PATH).join("measurement_matrix_default_sparse.png");
+        matrix_plot(
+            &measurement_matrix.slice(s![0, .., ..]),
+            None,
+            None,
+            None,
+            Some(path.as_path()),
+            Some("Default Measurement Matrix"),
+            Some("State Index"),
+            Some("Sensor Index"),
+            Some("[pT / A / m^2]"),
+            None,
+            None,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn equality_sparse_full() {
+        let config_full = Model {
+            common: Common {
+                sensors_per_axis: [10, 10, 10],
+                sensor_array_geometry: SensorArrayGeometry::Cube,
+                three_d_sensors: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let config_sparse = Model {
+            common: Common {
+                sensors_per_axis: [10, 10, 10],
+                sensor_array_geometry: SensorArrayGeometry::SparseCube,
+                three_d_sensors: true,
+                number_of_sensors: 1000,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let spatial_description_full = SpatialDescription::from_model_config(&config_full);
+        let measurement_matrix_full =
+            MeasurementMatrix::from_model_spatial_description(&spatial_description_full);
+
+        let spatial_description_sparse = SpatialDescription::from_model_config(&config_sparse);
+        let measurement_matrix_sparse =
+            MeasurementMatrix::from_model_spatial_description(&spatial_description_sparse);
+
+        assert_eq!(measurement_matrix_full, measurement_matrix_sparse);
     }
 }
