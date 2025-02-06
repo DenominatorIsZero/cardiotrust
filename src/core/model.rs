@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use self::{functional::FunctionalDescription, spatial::SpatialDescription};
-use super::config::model::Model as ModelConfig;
+use super::{config::model::Model as ModelConfig, data::Data};
 
 /// Struct representing a heart model with functional and spatial descriptions.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -75,6 +75,39 @@ impl Model {
             functional_description,
             spatial_description,
         })
+    }
+
+    pub fn synchronize_parameters(&mut self, data: &Data) {
+        self.functional_description.measurement_matrix.assign(
+            &*data
+                .simulation
+                .model
+                .functional_description
+                .measurement_matrix,
+        );
+        self.functional_description.measurement_covariance.assign(
+            &*data
+                .simulation
+                .model
+                .functional_description
+                .measurement_covariance,
+        );
+        self.spatial_description.sensors.orientations_xyz.assign(
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .sensors
+                .orientations_xyz,
+        );
+        self.spatial_description.sensors.positions_mm.assign(
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .sensors
+                .positions_mm,
+        );
     }
 
     /// Saves the functional and spatial descriptions of the model

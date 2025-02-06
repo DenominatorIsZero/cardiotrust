@@ -491,6 +491,9 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
     )
     .unwrap();
 
+    // synchronice model and simulation sensor parameters
+    model.synchronize_parameters(&data);
+
     let _ = epoch_tx.send(0);
 
     let mut results = Results::new(
