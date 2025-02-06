@@ -122,11 +122,15 @@ impl Sensors {
                 // Randomly select positions
                 let mut rng = rand::thread_rng();
                 positions.shuffle(&mut rng);
-                let selected_positions = &positions[0..num_occupied];
+                let mut selected_positions = positions[0..num_occupied].to_vec();
+
+                // Sort positions based on x, then y, then z
+                selected_positions
+                    .sort_by(|a, b| a[0].cmp(&b[0]).then(a[1].cmp(&b[1])).then(a[2].cmp(&b[2])));
 
                 // Assign positions and orientations to sensors
                 let mut i = 0;
-                for selected_position in selected_positions {
+                for selected_position in &selected_positions {
                     let [x, y, z] = selected_position;
                     for _ in 0..dim {
                         #[allow(clippy::cast_precision_loss)]
@@ -255,6 +259,8 @@ impl Sensors {
 
 #[cfg(test)]
 mod tests {
+    use bincode::config;
+
     use super::*;
 
     #[test]
@@ -277,5 +283,26 @@ mod tests {
         let sensors = Sensors::from_model_config(&config);
 
         assert_eq!(6000, sensors.count());
+    }
+
+    #[test]
+    fn equality_sparse_full() {
+        let config_full = Common {
+            sensors_per_axis: [10, 10, 10],
+            sensor_array_geometry: SensorArrayGeometry::Cube,
+            three_d_sensors: true,
+            ..Default::default()
+        };
+        let config_sparse = Common {
+            sensors_per_axis: [10, 10, 10],
+            sensor_array_geometry: SensorArrayGeometry::SparseCube,
+            three_d_sensors: true,
+            number_of_sensors: 1000,
+            ..Default::default()
+        };
+        let sensors = Sensors::from_model_config(&config_full);
+        let sensors_2 = Sensors::from_model_config(&config_sparse);
+
+        assert_eq!(sensors, sensors_2);
     }
 }
