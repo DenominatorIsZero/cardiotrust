@@ -48,10 +48,8 @@ fn heavy_sensor_number_line() {
     let path = Path::new(COMMON_PATH);
 
     let number_of_sensors = vec![1, 4, 8, 16, 32, 48, 64];
-    let number_of_sensors = vec![64];
     let measurement_varinaces = Array1::<f32>::logspace(10.0, -12.0, 0.0, 10);
     let trials = 10;
-    let trials = 1;
     let scenario_type = ScenarioType::Line;
 
     create_and_run(

@@ -1,4 +1,5 @@
 pub mod estimation;
+pub mod gpu;
 pub mod metrics;
 pub mod refinement;
 #[cfg(test)]
