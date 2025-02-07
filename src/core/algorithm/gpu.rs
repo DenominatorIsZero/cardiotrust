@@ -1,3 +1,5 @@
+pub mod prediction;
+
 #[cfg(test)]
 mod tests {
     use ocl::{Buffer, Context, Device, Kernel, Platform, Program, Queue};

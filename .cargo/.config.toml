@@ -1,0 +1,4 @@
+[build]
+target-dir = {value = "~/cargo-target", relative = false}
+[env]
+CARGO_MANIFEST_DIR = "/Volumes/Engelhardt/cardiotrust"
