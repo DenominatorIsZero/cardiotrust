@@ -161,7 +161,7 @@ impl Simulation {
             )
             .unwrap();
             for beat_index in 0..self.measurements.num_beats() {
-                for time_index in 0..self.measurements.num_sensors() {
+                for time_index in 0..self.measurements.num_steps() {
                     self.measurements[[beat_index, time_index, sensor_index]] +=
                         dist.sample(&mut rng);
                 }
