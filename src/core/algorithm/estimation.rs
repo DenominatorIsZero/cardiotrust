@@ -59,6 +59,8 @@ pub struct EstimationsGPU {
     pub system_states: Buffer<f32>,
     pub measurements: Buffer<f32>,
     pub residuals: Buffer<f32>,
+    pub step: Buffer<i32>,
+    pub beat: Buffer<i32>,
 }
 
 impl Estimations {
@@ -123,6 +125,18 @@ impl Estimations {
             system_states: self.system_states.to_gpu(queue),
             measurements: self.measurements.to_gpu(queue),
             residuals: self.residuals.to_gpu(queue),
+            step: ocl::Buffer::builder()
+                .queue(queue.clone())
+                .len(1)
+                .copy_host_slice(&[0])
+                .build()
+                .unwrap(),
+            beat: ocl::Buffer::builder()
+                .queue(queue.clone())
+                .len(1)
+                .copy_host_slice(&[0])
+                .build()
+                .unwrap(),
         }
     }
 

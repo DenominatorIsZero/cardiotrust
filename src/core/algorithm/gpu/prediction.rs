@@ -1,3 +1,129 @@
+use ocl::{Context, Kernel, Program, Queue};
+
+use crate::core::{algorithm::estimation::EstimationsGPU, model::ModelGPU};
+
+use super::GPU;
+
+pub struct PredictionKernel {
+    innovate_kernel: Kernel,
+    add_control_kernel: Kernel,
+    predict_measurements_kernel: Kernel,
+}
+
+impl PredictionKernel {
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn new(
+        gpu: &GPU,
+        estimations: &EstimationsGPU,
+        model: &ModelGPU,
+        number_of_states: i32,
+        number_of_sensors: i32,
+        number_of_steps: i32,
+    ) -> Self {
+        let context = &gpu.context;
+        let queue = &gpu.queue;
+        let device = &gpu.device;
+
+        let atomic_src =
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl").unwrap();
+        let innovate_src =
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/innovate.cl").unwrap();
+        let innovate_program = Program::builder()
+            .src(format!("{atomic_src}\n{innovate_src}"))
+            .build(context)
+            .unwrap();
+
+        let innovate_kernel = Kernel::builder()
+            .program(&innovate_program)
+            .name("innovate")
+            .queue(queue.clone())
+            .global_work_size([number_of_states, 78])
+            .arg_named("ap_outputs_now", &estimations.ap_outputs_now)
+            .arg_named("ap_outputs_last", &estimations.ap_outputs_last)
+            .arg_named("system_states", &estimations.system_states)
+            .arg_named("ap_coefs", &model.functional_description.ap_params.coefs)
+            .arg_named("ap_delays", &model.functional_description.ap_params.delays)
+            .arg_named("ap_gains", &model.functional_description.ap_params.gains)
+            .arg_named(
+                "output_state_indices",
+                &model.functional_description.ap_params.output_state_indices,
+            )
+            .arg_named("step", &estimations.step)
+            .arg_named("num_states", number_of_states)
+            .build()
+            .unwrap();
+
+        let add_control_src =
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/add_control.cl").unwrap();
+        let add_control_program = Program::builder()
+            .src(add_control_src)
+            .build(context)
+            .unwrap();
+        let add_control_kernel = Kernel::builder()
+            .program(&add_control_program)
+            .name("add_control")
+            .queue(queue.clone())
+            .global_work_size([number_of_states])
+            .arg_named("stystem_states", &estimations.system_states)
+            .arg_named(
+                "control_matrix",
+                &model.functional_description.control_matrix,
+            )
+            .arg_named("step", &estimations.step)
+            .arg_named(
+                "control_values",
+                &model.functional_description.control_function_values,
+            )
+            .arg_named("num_states", number_of_states)
+            .build()
+            .unwrap();
+
+        let predict_measurements_src =
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/predict_measurements.cl")
+                .unwrap();
+        let predict_measurements_program = Program::builder()
+            .src(predict_measurements_src)
+            .build(context)
+            .unwrap();
+        let max_work_group_size = device.max_wg_size().unwrap();
+        let work_group_size = max_work_group_size.min(256);
+        let predict_measurements_kernel = Kernel::builder()
+            .program(&predict_measurements_program)
+            .queue(queue.clone())
+            .global_work_size(number_of_sensors)
+            .local_work_size(work_group_size)
+            .arg(&estimations.measurements)
+            .arg(&model.functional_description.measurement_matrix)
+            .arg(&estimations.system_states)
+            .arg(&estimations.beat)
+            .arg_local::<f32>(work_group_size)
+            .arg_named("num_sensors", number_of_sensors)
+            .arg_named("num_states", number_of_states)
+            .arg_named("num_steps", number_of_steps)
+            .build()
+            .unwrap();
+
+        Self {
+            innovate_kernel,
+            add_control_kernel,
+            predict_measurements_kernel,
+        }
+    }
+
+    #[allow(clippy::missing_panics_doc)]
+    pub fn enq(&self) {
+        // TODO: Optimize prediction by running multiple beats in parallel using async kernel execution.
+        // This would allow better GPU utilization by processing independent beats simultaneously.
+        // See prediction.rs for implementation details.
+        unsafe {
+            self.innovate_kernel.enq().unwrap();
+            self.add_control_kernel.enq().unwrap();
+            self.predict_measurements_kernel.enq().unwrap();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
