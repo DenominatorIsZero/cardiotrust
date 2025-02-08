@@ -158,12 +158,10 @@ impl Snapshot {
 #[cfg(test)]
 mod tests {
     use approx::assert_relative_eq;
-    
     use ocl::{Kernel, Program};
 
-    use crate::core::algorithm::gpu::GPU;
-
     use super::*;
+    use crate::core::algorithm::gpu::GPU;
     #[test]
     fn test_results_gpu_transfer() {
         let mut results_from_cpu = Results::get_default();

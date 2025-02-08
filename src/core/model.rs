@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use self::{
-    functional::FunctionalDescription, functional::FunctionalDescriptionGPU,
+    functional::{FunctionalDescription, FunctionalDescriptionGPU},
     spatial::SpatialDescription,
 };
 use super::{

@@ -1,22 +1,21 @@
 #[cfg(test)]
 mod tests {
-    
-    use crate::core::{
-        algorithm::estimation::prediction::innovate_system_states_v1,
-        config::algorithm::Algorithm,
-        data::Data,
-        scenario::results::Results,
-    };
-    use crate::core::{
-            config::{
-                model::{SensorArrayGeometry, SensorArrayMotion},
-                simulation::Simulation as SimulationConfig,
-            },
-            model::Model,
-        };
+
     use approx::assert_relative_eq;
     use ndarray::Array2;
     use ocl::{Buffer, Context, Device, Kernel, Platform, Program, Queue};
+
+    use crate::core::{
+        algorithm::estimation::prediction::innovate_system_states_v1,
+        config::{
+            algorithm::Algorithm,
+            model::{SensorArrayGeometry, SensorArrayMotion},
+            simulation::Simulation as SimulationConfig,
+        },
+        data::Data,
+        model::Model,
+        scenario::results::Results,
+    };
     #[test]
     #[allow(clippy::too_many_lines)]
     fn test_innovate_system_states() {
