@@ -1,13 +1,19 @@
+use ocl::Queue;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use super::algorithm::metrics::Metrics;
 use crate::core::{
     algorithm::{
-        estimation::Estimations,
-        refinement::{derivation::Derivatives, Optimizer},
+        estimation::{Estimations, EstimationsGPU},
+        metrics::MetricsGPU,
+        refinement::{
+            derivation::{Derivatives, DerivativesGPU},
+            Optimizer,
+        },
     },
-    model::{functional::FunctionalDescription, Model},
+    config::algorithm::Algorithm,
+    model::{functional::FunctionalDescription, Model, ModelGPU},
 };
 
 /// Results contains the outputs from running a scenario.
@@ -21,6 +27,13 @@ pub struct Results {
     pub derivatives: Derivatives,
     pub snapshots: Vec<Snapshot>,
     pub model: Option<Model>,
+}
+
+pub struct ResultsGPU {
+    pub metrics: MetricsGPU,
+    pub estimations: EstimationsGPU,
+    pub derivatives: DerivativesGPU,
+    pub model: ModelGPU,
 }
 
 #[allow(
@@ -78,6 +91,46 @@ impl Results {
         self.estimations.save_npy(&path.join("estimations"));
         self.model.as_ref().unwrap().save_npy(&path.join("model"));
     }
+
+    pub(crate) fn to_gpu(&self, queue: &Queue) -> ResultsGPU {
+        ResultsGPU {
+            metrics: self.metrics.to_gpu(queue),
+            estimations: self.estimations.to_gpu(queue),
+            derivatives: self.derivatives.to_gpu(queue),
+            model: self.model.as_ref().unwrap().to_gpu(queue),
+        }
+    }
+
+    pub(crate) fn from_gpu(&mut self, results: &ResultsGPU) {
+        self.metrics.from_gpu(&results.metrics);
+        self.estimations.from_gpu(&results.estimations);
+        self.derivatives.from_gpu(&results.derivatives);
+        self.model.as_mut().unwrap().from_gpu(&results.model);
+    }
+
+    pub(crate) fn get_default() -> Self {
+        let model = Model::get_default();
+        let algorithm_config = Algorithm::default();
+        Self {
+            metrics: Metrics::new(
+                algorithm_config.epochs,
+                model.functional_description.control_function_values.len(),
+                algorithm_config.epochs,
+            ),
+            estimations: Estimations::empty(
+                model.spatial_description.voxels.count_states(),
+                model.spatial_description.sensors.count(),
+                model.functional_description.control_function_values.len(),
+                model.functional_description.measurement_matrix.shape()[0],
+            ),
+            derivatives: Derivatives::new(
+                model.spatial_description.voxels.count_states(),
+                Optimizer::default(),
+            ),
+            model: Some(model),
+            snapshots: Vec::new(),
+        }
+    }
 }
 
 /// Snapshot contains estimations and functional description at a point in time.
@@ -99,5 +152,84 @@ impl Snapshot {
             estimations: estimations.clone(),
             functional_description,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use approx::assert_relative_eq;
+    use ndarray::Dim;
+    use ocl::{Kernel, Program};
+
+    use crate::core::algorithm::gpu::GPU;
+
+    use super::*;
+    #[test]
+    fn test_results_gpu_transfer() {
+        let mut results_from_cpu = Results::get_default();
+        let gpu = GPU::new();
+        let results_gpu = results_from_cpu.to_gpu(&gpu.queue);
+
+        // Create and build the modification kernel
+        let kernel_src = r"
+    __kernel void modify_results(__global float* ap_outputs_now) {
+    int index_state = get_global_id(0);
+    int index_offset = get_global_id(1);
+        ap_outputs_now[index_state*78+index_offset] = index_state*78+index_offset;  
+    }
+";
+
+        let program = Program::builder()
+            .src(kernel_src)
+            .build(&gpu.context)
+            .unwrap();
+
+        let kernel = Kernel::builder()
+            .program(&program)
+            .name("modify_results")
+            .queue(gpu.queue.clone())
+            .global_work_size([
+                results_from_cpu.estimations.ap_outputs_now.shape()[0],
+                results_from_cpu.estimations.ap_outputs_now.shape()[1],
+            ])
+            .arg_named("ap_outputs_now", &results_gpu.estimations.ap_outputs_now)
+            .build()
+            .unwrap();
+
+        unsafe {
+            kernel.enq().unwrap();
+        }
+
+        for index_state in 0..results_from_cpu
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .count_states()
+        {
+            for index_offset in 0..78 {
+                results_from_cpu.estimations.ap_outputs_now[[index_state, index_offset]] =
+                    index_state as f32 * 78.0 + index_offset as f32;
+            }
+        }
+
+        let mut results_from_gpu = results_from_cpu.clone();
+        results_from_gpu.from_gpu(&results_gpu);
+
+        assert_relative_eq!(
+            results_from_gpu
+                .estimations
+                .ap_outputs_now
+                .as_slice()
+                .unwrap(),
+            results_from_cpu
+                .estimations
+                .ap_outputs_now
+                .as_slice()
+                .unwrap(),
+            epsilon = 1e-6
+        );
+        assert_eq!(results_from_cpu, results_from_gpu);
     }
 }

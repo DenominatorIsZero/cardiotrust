@@ -9,14 +9,24 @@ use ndarray::Dim;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
-use self::{functional::FunctionalDescription, spatial::SpatialDescription};
-use super::{config::model::Model as ModelConfig, data::Data};
+use self::{
+    functional::FunctionalDescription, functional::FunctionalDescriptionGPU,
+    spatial::SpatialDescription,
+};
+use super::{
+    config::{model::Model as ModelConfig, simulation::Simulation},
+    data::Data,
+};
 
 /// Struct representing a heart model with functional and spatial descriptions.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Model {
     pub functional_description: FunctionalDescription,
     pub spatial_description: SpatialDescription,
+}
+
+pub struct ModelGPU {
+    pub functional_description: FunctionalDescriptionGPU,
 }
 
 impl Model {
@@ -135,5 +145,23 @@ impl Model {
                 }
             }
         }
+    }
+
+    #[must_use]
+    pub fn to_gpu(&self, queue: &ocl::Queue) -> ModelGPU {
+        ModelGPU {
+            functional_description: self.functional_description.to_gpu(queue),
+        }
+    }
+
+    pub fn from_gpu(&mut self, model_gpu: &ModelGPU) {
+        self.functional_description
+            .from_gpu(&model_gpu.functional_description);
+    }
+
+    pub(crate) fn get_default() -> Self {
+        let config = ModelConfig::default();
+        let sim_config = Simulation::default();
+        Self::from_model_config(&config, sim_config.sample_rate_hz, sim_config.duration_s).unwrap()
     }
 }

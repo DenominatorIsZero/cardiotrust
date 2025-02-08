@@ -68,6 +68,22 @@ impl SystemStates {
     pub fn at_step_mut(&mut self, step: usize) -> SystemStatesAtStepMut {
         SystemStatesAtStepMut(self.slice_mut(s![step, ..]))
     }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
+        ocl::Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    pub(crate) fn from_gpu(&mut self, system_states: &ocl::Buffer<f32>) {
+        system_states
+            .read(self.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
+    }
 }
 
 impl Deref for SystemStates {
@@ -360,6 +376,22 @@ impl Measurements {
     pub fn at_beat_mut(&mut self, beat: usize) -> MeasurementsAtBeatMut {
         MeasurementsAtBeatMut(self.slice_mut(s![beat, .., ..]))
     }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
+        ocl::Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    pub(crate) fn from_gpu(&mut self, measurements: &ocl::Buffer<f32>) {
+        measurements
+            .read(self.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
+    }
 }
 
 impl Deref for Measurements {
@@ -477,6 +509,19 @@ impl Residuals {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("measurements.npy")).unwrap());
         self.write_npy(writer).unwrap();
+    }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
+        ocl::Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    pub(crate) fn from_gpu(&mut self, residuals: &ocl::Buffer<f32>) {
+        residuals.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }
 }
 

@@ -1,4 +1,46 @@
+use ocl::{Context, Device, Platform, Queue};
+
 pub mod prediction;
+
+pub struct GPU {
+    pub queue: Queue,
+    pub context: Context,
+    pub device: Device,
+}
+
+impl GPU {
+    #[must_use]
+    /// Creates a new `GPU` instance.
+    ///
+    /// This function initializes the OpenCL platform, device, context, and queue
+    /// required for GPU-accelerated computations. The resulting `GPU` struct
+    /// contains references to these OpenCL objects, which can be used to execute
+    /// GPU kernels.
+    ///
+    /// # Panics
+    /// If there is an error during the initialization process, this function will panic.
+    pub fn new() -> Self {
+        let platform = Platform::default();
+        let device = Device::first(platform).unwrap();
+        let context = Context::builder()
+            .platform(platform)
+            .devices(device)
+            .build()
+            .unwrap();
+        let queue = Queue::new(&context, device, None).unwrap();
+        Self {
+            queue,
+            context,
+            device,
+        }
+    }
+}
+
+impl Default for GPU {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(test)]
 mod tests {

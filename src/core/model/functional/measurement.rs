@@ -8,6 +8,7 @@ use std::{
 use approx::relative_eq;
 use ndarray::{s, Array2, Array3, ArrayView2};
 use ndarray_npy::WriteNpyExt;
+use ocl::{Buffer, Queue};
 use physical_constants::VACUUM_MAG_PERMEABILITY;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
@@ -35,6 +36,15 @@ impl MeasurementMatrix {
             number_of_sensors,
             number_of_states,
         )))
+    }
+
+    pub fn to_gpu(&self, queue: &Queue) -> Buffer<f32> {
+        Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
     }
 
     /// Creates a new `MeasurementMatrix` from the given `Model` config and
@@ -117,6 +127,13 @@ impl MeasurementMatrix {
     #[tracing::instrument(level = "trace")]
     pub fn at_beat(&self, beat: usize) -> MeasurementMatrixAtBeat {
         MeasurementMatrixAtBeat(self.slice(s![beat, .., ..]))
+    }
+
+    pub(crate) fn from_gpu(&mut self, measurement_matrix: &Buffer<f32>) {
+        measurement_matrix
+            .read(self.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
     }
 }
 
@@ -201,6 +218,22 @@ impl MeasurementCovariance {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("process_covariance.npy")).unwrap());
         self.write_npy(writer).unwrap();
+    }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
+        Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    pub(crate) fn from_gpu(&mut self, measurement_covariance: &Buffer<f32>) {
+        measurement_covariance
+            .read(self.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
     }
 }
 

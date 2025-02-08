@@ -2,6 +2,7 @@ use std::ops::{Deref, DerefMut, Sub};
 
 use approx::AbsDiffEq;
 use ndarray::Array1;
+use ocl::Buffer;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
@@ -52,6 +53,16 @@ pub struct Derivatives {
     pub mapped_residuals: MappedResiduals,
     /// Stored internally to avoid redundant computation
     pub maximum_regularization: MaximumRegularization,
+    pub maximum_regularization_sum: f32,
+}
+
+pub struct DerivativesGPU {
+    pub gains: Buffer<f32>,
+    pub coefs: Buffer<f32>,
+    pub coefs_iir: Buffer<f32>,
+    pub coefs_fir: Buffer<f32>,
+    pub mapped_residuals: Buffer<f32>,
+    pub maximum_regularization: Buffer<f32>,
     pub maximum_regularization_sum: f32,
 }
 
@@ -107,6 +118,29 @@ impl Derivatives {
         self.coefs_fir.fill(0.0);
         self.maximum_regularization.fill(0.0);
         self.maximum_regularization_sum = 0.0;
+    }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> DerivativesGPU {
+        DerivativesGPU {
+            gains: self.gains.to_gpu(queue),
+            coefs: self.coefs.to_gpu(queue),
+            coefs_iir: self.coefs_iir.to_gpu(queue),
+            coefs_fir: self.coefs_fir.to_gpu(queue),
+            mapped_residuals: self.mapped_residuals.to_gpu(queue),
+            maximum_regularization: self.maximum_regularization.to_gpu(queue),
+            maximum_regularization_sum: self.maximum_regularization_sum,
+        }
+    }
+
+    pub(crate) fn from_gpu(&mut self, derivatives: &DerivativesGPU) {
+        self.gains.from_gpu(&derivatives.gains);
+        self.coefs.from_gpu(&derivatives.coefs);
+        self.coefs_iir.from_gpu(&derivatives.coefs_iir);
+        self.coefs_fir.from_gpu(&derivatives.coefs_fir);
+        self.mapped_residuals
+            .from_gpu(&derivatives.mapped_residuals);
+        self.maximum_regularization
+            .from_gpu(&derivatives.maximum_regularization);
     }
 }
 
@@ -546,6 +580,22 @@ impl MappedResiduals {
         trace!("Creating ArrayMappedResiduals");
         Self(Array1::zeros(number_of_states))
     }
+
+    fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
+        Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    fn from_gpu(&mut self, mapped_residuals: &Buffer<f32>) {
+        mapped_residuals
+            .read(self.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
+    }
 }
 
 impl Deref for MappedResiduals {
@@ -639,6 +689,22 @@ impl MaximumRegularization {
     pub fn new(number_of_states: usize) -> Self {
         trace!("Creating ArrayMaximumRegularization");
         Self(Array1::zeros(number_of_states))
+    }
+
+    fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
+        Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    fn from_gpu(&mut self, maximum_regularization: &Buffer<f32>) {
+        maximum_regularization
+            .read(self.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
     }
 }
 

@@ -8,6 +8,7 @@ use approx::relative_eq;
 use nalgebra::DMatrix;
 use ndarray::{s, Array2, ArrayBase, Dim, ViewRepr};
 use ndarray_npy::WriteNpyExt;
+use ocl::Buffer;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -103,6 +104,22 @@ impl KalmanGain {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("kalman_gain.npy")).unwrap());
         self.write_npy(writer).unwrap();
+    }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
+        Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    pub(crate) fn from_gpu(&mut self, kalman_gain: &Buffer<f32>) {
+        kalman_gain
+            .read(self.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
     }
 }
 

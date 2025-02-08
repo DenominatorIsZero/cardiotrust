@@ -135,7 +135,7 @@ mod tests {
             .queue(queue.clone())
             .len(functional_description.ap_params.output_state_indices.len())
             .copy_host_slice(
-                &functional_description
+                functional_description
                     .ap_params
                     .output_state_indices
                     .mapv(|opt| opt.map_or(-1i32, |val| val as i32))

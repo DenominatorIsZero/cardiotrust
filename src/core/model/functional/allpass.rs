@@ -9,6 +9,7 @@ use approx::relative_eq;
 use itertools::Itertools;
 use ndarray::{arr1, s, Array1, Array3, Array4, Dim};
 use ndarray_stats::QuantileExt;
+use ocl::{Buffer, Queue};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
@@ -33,6 +34,13 @@ pub struct APParameters {
     pub delays: UnitDelays,
     pub initial_delays: Coefs,
     pub activation_time_ms: ActivationTimeMs,
+}
+
+pub struct APParametersGPU {
+    pub gains: Buffer<f32>,
+    pub output_state_indices: Buffer<i32>,
+    pub coefs: Buffer<f32>,
+    pub delays: Buffer<usize>,
 }
 
 impl APParameters {
@@ -109,6 +117,58 @@ impl APParameters {
         self.coefs.save_npy(path);
         self.delays.save_npy(path);
         self.activation_time_ms.save_npy(path);
+    }
+
+    pub fn to_gpu(&self, queue: &Queue) -> APParametersGPU {
+        APParametersGPU {
+            gains: Buffer::builder()
+                .queue(queue.clone())
+                .len(self.gains.len())
+                .copy_host_slice(self.gains.as_slice().unwrap())
+                .build()
+                .unwrap(),
+            output_state_indices: Buffer::builder()
+                .queue(queue.clone())
+                .len(self.output_state_indices.len())
+                .copy_host_slice(
+                    self.output_state_indices
+                        .mapv(|opt| opt.map_or(-1i32, |val| val as i32))
+                        .as_slice()
+                        .unwrap(),
+                )
+                .build()
+                .unwrap(),
+            coefs: Buffer::builder()
+                .queue(queue.clone())
+                .len(self.coefs.len())
+                .copy_host_slice(self.coefs.as_slice().unwrap())
+                .build()
+                .unwrap(),
+            delays: Buffer::builder()
+                .queue(queue.clone())
+                .len(self.delays.len())
+                .copy_host_slice(self.delays.as_slice().unwrap())
+                .build()
+                .unwrap(),
+        }
+    }
+
+    pub(crate) fn from_gpu(&mut self, ap_params: &APParametersGPU) {
+        ap_params
+            .gains
+            .read(self.gains.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
+        ap_params
+            .coefs
+            .read(self.coefs.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
+        ap_params
+            .delays
+            .read(self.delays.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
     }
 }
 

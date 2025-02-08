@@ -7,6 +7,7 @@ use std::{
 use approx::RelativeEq;
 use ndarray::Array1;
 use ndarray_npy::{read_npy, WriteNpyExt};
+use ocl::Buffer;
 use rubato::{Resampler, SincFixedIn, SincInterpolationParameters};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -63,6 +64,22 @@ impl ControlMatrix {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("control_matrix.npy")).unwrap());
         self.write_npy(writer).unwrap();
+    }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
+        Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    pub(crate) fn from_gpu(&mut self, control_matrix: &Buffer<f32>) {
+        control_matrix
+            .read(self.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
     }
 }
 
@@ -208,6 +225,22 @@ impl ControlFunction {
         let writer =
             BufWriter::new(File::create(path.join("control_function_values.npy")).unwrap());
         self.write_npy(writer).unwrap();
+    }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
+        ocl::Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    pub(crate) fn from_gpu(&mut self, control_function_values: &Buffer<f32>) {
+        control_function_values
+            .read(self.as_slice_mut().unwrap())
+            .enq()
+            .unwrap();
     }
 }
 

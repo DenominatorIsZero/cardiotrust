@@ -7,6 +7,7 @@ use std::{
 use ndarray::Array1;
 use ndarray_npy::WriteNpyExt;
 use ndarray_stats::QuantileExt;
+use ocl::Buffer;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
@@ -19,6 +20,7 @@ pub struct Metrics {
     pub loss: SampleWiseMetric,
     pub loss_batch: BatchWiseMetric,
 
+    // TODO: Remove unnecessary fields
     pub loss_mse: SampleWiseMetric,
     pub loss_mse_batch: BatchWiseMetric,
     pub loss_maximum_regularization: SampleWiseMetric,
@@ -52,6 +54,11 @@ pub struct Metrics {
     pub precision_over_threshold: Array1<f32>,
     #[serde(default)]
     pub recall_over_threshold: Array1<f32>,
+}
+
+pub struct MetricsGPU {
+    pub loss: Buffer<f32>,
+    pub loss_batch: Buffer<f32>,
 }
 
 impl Metrics {
@@ -166,6 +173,18 @@ impl Metrics {
 
         let writer = BufWriter::new(File::create(path.join("recall.npy")).unwrap());
         self.recall_over_threshold.write_npy(writer).unwrap();
+    }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> MetricsGPU {
+        MetricsGPU {
+            loss: self.loss.to_gpu(queue),
+            loss_batch: self.loss_batch.to_gpu(queue),
+        }
+    }
+
+    pub(crate) fn from_gpu(&mut self, metrics: &MetricsGPU) {
+        self.loss.from_gpu(&metrics.loss);
+        self.loss_batch.from_gpu(&metrics.loss_batch);
     }
 }
 
@@ -498,6 +517,19 @@ impl SampleWiseMetric {
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
         self.write_npy(writer).unwrap();
     }
+
+    fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
+        Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    fn from_gpu(&mut self, loss: &Buffer<f32>) {
+        loss.read(self.as_slice_mut().unwrap()).enq().unwrap();
+    }
 }
 
 impl Deref for SampleWiseMetric {
@@ -537,6 +569,19 @@ impl BatchWiseMetric {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
         self.write_npy(writer).unwrap();
+    }
+
+    fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
+        Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    fn from_gpu(&mut self, loss_batch: &Buffer<f32>) {
+        loss_batch.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }
 }
 

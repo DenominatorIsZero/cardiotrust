@@ -3,6 +3,7 @@ pub mod prediction;
 use itertools::Itertools;
 use nalgebra::DMatrix;
 use ndarray::s;
+use ocl::Buffer;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
@@ -50,6 +51,14 @@ pub struct Estimations {
     pub delays_delta: Coefs,
     pub innovation_covariance: DMatrix<f32>,
     pub kalman_gain_converged: bool,
+}
+
+pub struct EstimationsGPU {
+    pub ap_outputs_now: Buffer<f32>,
+    pub ap_outputs_last: Buffer<f32>,
+    pub system_states: Buffer<f32>,
+    pub measurements: Buffer<f32>,
+    pub residuals: Buffer<f32>,
 }
 
 impl Estimations {
@@ -105,6 +114,24 @@ impl Estimations {
         trace!("Saving estimations to npy files");
         self.system_states.save_npy(path);
         self.measurements.save_npy(path);
+    }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> EstimationsGPU {
+        EstimationsGPU {
+            ap_outputs_now: self.ap_outputs_now.to_gpu(queue),
+            ap_outputs_last: self.ap_outputs_last.to_gpu(queue),
+            system_states: self.system_states.to_gpu(queue),
+            measurements: self.measurements.to_gpu(queue),
+            residuals: self.residuals.to_gpu(queue),
+        }
+    }
+
+    pub(crate) fn from_gpu(&mut self, estimations: &EstimationsGPU) {
+        self.ap_outputs_now.from_gpu(&estimations.ap_outputs_now);
+        self.ap_outputs_last.from_gpu(&estimations.ap_outputs_last);
+        self.system_states.from_gpu(&estimations.system_states);
+        self.measurements.from_gpu(&estimations.measurements);
+        self.residuals.from_gpu(&estimations.residuals);
     }
 }
 

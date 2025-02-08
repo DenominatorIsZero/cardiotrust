@@ -7,6 +7,7 @@ use std::{
 use approx::assert_relative_eq;
 use ndarray::{Array2, Array3, Dim};
 use ndarray_npy::WriteNpyExt;
+use ocl::Buffer;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
@@ -88,6 +89,19 @@ impl Gains {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join(name)).unwrap());
         self.write_npy(writer).unwrap();
+    }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
+        Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    pub(crate) fn from_gpu(&mut self, buffer: &Buffer<f32>) {
+        buffer.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }
 }
 
@@ -191,6 +205,19 @@ impl Coefs {
         fs::create_dir_all(path).unwrap();
         let writer = BufWriter::new(File::create(path.join("coefs.npy")).unwrap());
         self.write_npy(writer).unwrap();
+    }
+
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
+        Buffer::builder()
+            .queue(queue.clone())
+            .len(self.len())
+            .copy_host_slice(self.as_slice().unwrap())
+            .build()
+            .unwrap()
+    }
+
+    pub(crate) fn from_gpu(&mut self, coefs: &Buffer<f32>) {
+        coefs.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }
 }
 

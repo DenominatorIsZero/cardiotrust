@@ -7,12 +7,13 @@ use std::error::Error;
 
 use approx::relative_eq;
 use ndarray::Dim;
+use ocl::{Buffer, Queue};
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use self::{
-    allpass::{shapes::Gains, APParameters},
+    allpass::{shapes::Gains, APParameters, APParametersGPU},
     control::{ControlFunction, ControlMatrix},
     kalman::KalmanGain,
     measurement::{MeasurementCovariance, MeasurementMatrix},
@@ -30,6 +31,16 @@ pub struct FunctionalDescription {
     pub measurement_covariance: MeasurementCovariance,
     pub kalman_gain: KalmanGain,
     pub control_function_values: ControlFunction,
+}
+
+pub struct FunctionalDescriptionGPU {
+    pub ap_params: APParametersGPU,
+    pub measurement_matrix: Buffer<f32>,
+    pub control_matrix: Buffer<f32>,
+    pub process_covariance: Buffer<f32>,
+    pub measurement_covariance: Buffer<f32>,
+    pub kalman_gain: Buffer<f32>,
+    pub control_function_values: Buffer<f32>,
 }
 
 impl FunctionalDescription {
@@ -126,6 +137,34 @@ impl FunctionalDescription {
         self.measurement_covariance.save_npy(path);
         self.kalman_gain.save_npy(path);
         self.control_function_values.save_npy(path);
+    }
+
+    pub fn to_gpu(&self, queue: &Queue) -> FunctionalDescriptionGPU {
+        FunctionalDescriptionGPU {
+            ap_params: self.ap_params.to_gpu(queue),
+            measurement_matrix: self.measurement_matrix.to_gpu(queue),
+            control_matrix: self.control_matrix.to_gpu(queue),
+            process_covariance: self.process_covariance.to_gpu(queue),
+            measurement_covariance: self.measurement_covariance.to_gpu(queue),
+            kalman_gain: self.kalman_gain.to_gpu(queue),
+            control_function_values: self.control_function_values.to_gpu(queue),
+        }
+    }
+
+    pub(crate) fn from_gpu(&mut self, functional_description: &FunctionalDescriptionGPU) {
+        self.ap_params.from_gpu(&functional_description.ap_params);
+        self.measurement_matrix
+            .from_gpu(&functional_description.measurement_matrix);
+        self.control_matrix
+            .from_gpu(&functional_description.control_matrix);
+        self.process_covariance
+            .from_gpu(&functional_description.process_covariance);
+        self.measurement_covariance
+            .from_gpu(&functional_description.measurement_covariance);
+        self.kalman_gain
+            .from_gpu(&functional_description.kalman_gain);
+        self.control_function_values
+            .from_gpu(&functional_description.control_function_values);
     }
 }
 
