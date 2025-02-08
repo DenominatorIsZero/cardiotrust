@@ -101,13 +101,14 @@ impl Results {
         }
     }
 
-    pub(crate) fn from_gpu(&mut self, results: &ResultsGPU) {
-        self.metrics.from_gpu(&results.metrics);
-        self.estimations.from_gpu(&results.estimations);
-        self.derivatives.from_gpu(&results.derivatives);
+    pub(crate) fn update_from_gpu(&mut self, results: &ResultsGPU) {
+        self.metrics.update_from_gpu(&results.metrics);
+        self.estimations.update_from_gpu(&results.estimations);
+        self.derivatives.update_from_gpu(&results.derivatives);
         self.model.as_mut().unwrap().from_gpu(&results.model);
     }
 
+    #[allow(dead_code)]
     pub(crate) fn get_default() -> Self {
         let model = Model::get_default();
         let algorithm_config = Algorithm::default();
@@ -163,6 +164,7 @@ mod tests {
     use super::*;
     use crate::core::algorithm::gpu::GPU;
     #[test]
+    #[allow(clippy::cast_precision_loss, clippy::similar_names)]
     fn test_results_gpu_transfer() {
         let mut results_from_cpu = Results::get_default();
         let gpu = GPU::new();
@@ -185,7 +187,7 @@ mod tests {
         let kernel = Kernel::builder()
             .program(&program)
             .name("modify_results")
-            .queue(gpu.queue.clone())
+            .queue(gpu.queue)
             .global_work_size([
                 results_from_cpu.estimations.ap_outputs_now.shape()[0],
                 results_from_cpu.estimations.ap_outputs_now.shape()[1],
@@ -208,12 +210,12 @@ mod tests {
         {
             for index_offset in 0..78 {
                 results_from_cpu.estimations.ap_outputs_now[[index_state, index_offset]] =
-                    index_state as f32 * 78.0 + index_offset as f32;
+                    (index_state as f32).mul_add(78.0, index_offset as f32);
             }
         }
 
         let mut results_from_gpu = results_from_cpu.clone();
-        results_from_gpu.from_gpu(&results_gpu);
+        results_from_gpu.update_from_gpu(&results_gpu);
 
         assert_relative_eq!(
             results_from_gpu

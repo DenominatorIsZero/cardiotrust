@@ -182,9 +182,9 @@ impl Metrics {
         }
     }
 
-    pub(crate) fn from_gpu(&mut self, metrics: &MetricsGPU) {
-        self.loss.from_gpu(&metrics.loss);
-        self.loss_batch.from_gpu(&metrics.loss_batch);
+    pub(crate) fn update_from_gpu(&mut self, metrics: &MetricsGPU) {
+        self.loss.update_from_gpu(&metrics.loss);
+        self.loss_batch.update_from_gpu(&metrics.loss_batch);
     }
 }
 
@@ -527,7 +527,7 @@ impl SampleWiseMetric {
             .unwrap()
     }
 
-    fn from_gpu(&mut self, loss: &Buffer<f32>) {
+    fn update_from_gpu(&mut self, loss: &Buffer<f32>) {
         loss.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }
 }
@@ -580,7 +580,7 @@ impl BatchWiseMetric {
             .unwrap()
     }
 
-    fn from_gpu(&mut self, loss_batch: &Buffer<f32>) {
+    fn update_from_gpu(&mut self, loss_batch: &Buffer<f32>) {
         loss_batch.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }
 }

@@ -100,7 +100,7 @@ impl Gains {
             .unwrap()
     }
 
-    pub(crate) fn from_gpu(&mut self, buffer: &Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, buffer: &Buffer<f32>) {
         buffer.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }
 }
@@ -216,7 +216,7 @@ impl Coefs {
             .unwrap()
     }
 
-    pub(crate) fn from_gpu(&mut self, coefs: &Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, coefs: &Buffer<f32>) {
         coefs.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }
 }

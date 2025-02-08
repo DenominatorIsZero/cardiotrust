@@ -12,9 +12,9 @@ impl GPU {
     #[must_use]
     /// Creates a new `GPU` instance.
     ///
-    /// This function initializes the OpenCL platform, device, context, and queue
+    /// This function initializes the `OpenCL` platform, device, context, and queue
     /// required for GPU-accelerated computations. The resulting `GPU` struct
-    /// contains references to these OpenCL objects, which can be used to execute
+    /// contains references to these `OpenCL` objects, which can be used to execute
     /// GPU kernels.
     ///
     /// # Panics
@@ -44,6 +44,7 @@ impl Default for GPU {
 
 #[cfg(test)]
 mod tests {
+    use approx::assert_relative_eq;
     use ocl::{Buffer, Context, Device, Kernel, Platform, Program, Queue};
 
     #[test]
@@ -78,14 +79,14 @@ mod tests {
         ";
 
         let program = Program::builder()
-            .src(format!("{}\n{}", kernel_src, test_src))
+            .src(format!("{kernel_src}\n{test_src}"))
             .build(&context)
             .unwrap();
 
         let kernel = Kernel::builder()
             .program(&program)
             .name("test_atomic_add")
-            .queue(queue.clone())
+            .queue(queue)
             .global_work_size(100) // Run 100 parallel additions
             .arg(&buffer)
             .build()
@@ -99,6 +100,6 @@ mod tests {
         let mut result = vec![0.0f32];
         buffer.read(&mut result).enq().unwrap();
 
-        assert_eq!(result[0], 101.0); // Initial 1.0 + 100 additions of 1.0
+        assert_relative_eq!(result[0], 101.0, epsilon = 1e-6); // Initial 1.0 + 100 additions of 1.0
     }
 }

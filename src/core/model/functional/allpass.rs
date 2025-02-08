@@ -119,6 +119,12 @@ impl APParameters {
         self.activation_time_ms.save_npy(path);
     }
 
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::missing_panics_doc
+    )]
+    #[must_use]
     pub fn to_gpu(&self, queue: &Queue) -> APParametersGPU {
         APParametersGPU {
             gains: Buffer::builder()
@@ -153,7 +159,7 @@ impl APParameters {
         }
     }
 
-    pub(crate) fn from_gpu(&mut self, ap_params: &APParametersGPU) {
+    pub(crate) fn update_from_gpu(&mut self, ap_params: &APParametersGPU) {
         ap_params
             .gains
             .read(self.gains.as_slice_mut().unwrap())

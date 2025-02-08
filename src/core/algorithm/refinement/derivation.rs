@@ -132,15 +132,15 @@ impl Derivatives {
         }
     }
 
-    pub(crate) fn from_gpu(&mut self, derivatives: &DerivativesGPU) {
-        self.gains.from_gpu(&derivatives.gains);
-        self.coefs.from_gpu(&derivatives.coefs);
-        self.coefs_iir.from_gpu(&derivatives.coefs_iir);
-        self.coefs_fir.from_gpu(&derivatives.coefs_fir);
+    pub(crate) fn update_from_gpu(&mut self, derivatives: &DerivativesGPU) {
+        self.gains.update_from_gpu(&derivatives.gains);
+        self.coefs.update_from_gpu(&derivatives.coefs);
+        self.coefs_iir.update_from_gpu(&derivatives.coefs_iir);
+        self.coefs_fir.update_from_gpu(&derivatives.coefs_fir);
         self.mapped_residuals
-            .from_gpu(&derivatives.mapped_residuals);
+            .update_from_gpu(&derivatives.mapped_residuals);
         self.maximum_regularization
-            .from_gpu(&derivatives.maximum_regularization);
+            .update_from_gpu(&derivatives.maximum_regularization);
     }
 }
 
@@ -590,7 +590,7 @@ impl MappedResiduals {
             .unwrap()
     }
 
-    fn from_gpu(&mut self, mapped_residuals: &Buffer<f32>) {
+    fn update_from_gpu(&mut self, mapped_residuals: &Buffer<f32>) {
         mapped_residuals
             .read(self.as_slice_mut().unwrap())
             .enq()
@@ -700,7 +700,7 @@ impl MaximumRegularization {
             .unwrap()
     }
 
-    fn from_gpu(&mut self, maximum_regularization: &Buffer<f32>) {
+    fn update_from_gpu(&mut self, maximum_regularization: &Buffer<f32>) {
         maximum_regularization
             .read(self.as_slice_mut().unwrap())
             .enq()

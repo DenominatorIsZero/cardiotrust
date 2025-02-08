@@ -17,13 +17,17 @@ mod tests {
         scenario::results::Results,
     };
     #[test]
-    #[allow(clippy::too_many_lines)]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::too_many_lines
+    )]
     fn test_innovate_system_states() {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
         simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
-        let data = Data::from_simulation_config(&simulation_config)
+        let _data = Data::from_simulation_config(&simulation_config)
             .expect("Model parameters to be valid.");
 
         let mut algorithm_config = Algorithm {
@@ -75,7 +79,7 @@ mod tests {
         let prediction_src =
             std::fs::read_to_string("src/core/algorithm/gpu/kernels/innovate.cl").unwrap();
         let program = Program::builder()
-            .src(format!("{}\n{}", atomic_src, prediction_src))
+            .src(format!("{atomic_src}\n{prediction_src}"))
             .build(&context)
             .unwrap();
 
@@ -141,7 +145,7 @@ mod tests {
         let kernel = Kernel::builder()
             .program(&program)
             .name("innovate_system_states")
-            .queue(queue.clone())
+            .queue(queue)
             .global_work_size([number_of_states, number_of_offsets])
             .arg_named("ap_outputs_now", &ap_outputs_now_buf)
             .arg_named("ap_outputs_last", &ap_outputs_last_buf)
@@ -150,7 +154,7 @@ mod tests {
             .arg_named("ap_delays", &ap_delays_buf)
             .arg_named("ap_gains", &ap_gains_buf)
             .arg_named("output_state_indices", &output_state_indices_buf)
-            .arg_named("step", 0 as i32)
+            .arg_named("step", 0)
             .arg_named("num_states", number_of_states as i32)
             .arg_named("num_offsets", number_of_offsets as i32)
             .build()
@@ -158,8 +162,8 @@ mod tests {
 
         // comparison loop
         for step in 0..results.estimations.system_states.num_steps() {
-            innovate_system_states_v1(&mut results.estimations, &functional_description, step);
-            kernel.set_arg("step", step as i32);
+            innovate_system_states_v1(&mut results.estimations, functional_description, step);
+            kernel.set_arg("step", step as i32).unwrap();
             unsafe {
                 kernel.enq().unwrap();
             }

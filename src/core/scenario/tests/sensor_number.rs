@@ -30,6 +30,7 @@ const LEARNING_RATE_LINE: f32 = 1e5;
 const LEARNING_RATE_GRID: f32 = 1e3;
 
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 enum ScenarioType {
     Line,
     Grid,

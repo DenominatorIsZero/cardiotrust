@@ -81,21 +81,19 @@ pub fn start_scenarios(
         >= number_of_jobs.value
     {
         commands.insert_resource(NextState::Pending(SchedulerState::Unavailale));
-    } else {
-        if let Some(entry) = scenario_list
-            .entries
-            .iter_mut()
-            .find(|entry| *entry.scenario.get_status() == Status::Scheduled)
-        {
-            let send_scenario = entry.scenario.clone();
-            let (epoch_tx, epoch_rx) = channel();
-            let (summary_tx, summary_rx) = channel();
-            let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
-            entry.scenario.set_simulating();
-            entry.join_handle = Some(handle);
-            entry.epoch_rx = Some(Mutex::new(epoch_rx));
-            entry.summary_rx = Some(Mutex::new(summary_rx));
-        }
+    } else if let Some(entry) = scenario_list
+        .entries
+        .iter_mut()
+        .find(|entry| *entry.scenario.get_status() == Status::Scheduled)
+    {
+        let send_scenario = entry.scenario.clone();
+        let (epoch_tx, epoch_rx) = channel();
+        let (summary_tx, summary_rx) = channel();
+        let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
+        entry.scenario.set_simulating();
+        entry.join_handle = Some(handle);
+        entry.epoch_rx = Some(Mutex::new(epoch_rx));
+        entry.summary_rx = Some(Mutex::new(summary_rx));
     }
 }
 

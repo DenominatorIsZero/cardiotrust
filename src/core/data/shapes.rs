@@ -78,7 +78,7 @@ impl SystemStates {
             .unwrap()
     }
 
-    pub(crate) fn from_gpu(&mut self, system_states: &ocl::Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, system_states: &ocl::Buffer<f32>) {
         system_states
             .read(self.as_slice_mut().unwrap())
             .enq()
@@ -386,7 +386,7 @@ impl Measurements {
             .unwrap()
     }
 
-    pub(crate) fn from_gpu(&mut self, measurements: &ocl::Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, measurements: &ocl::Buffer<f32>) {
         measurements
             .read(self.as_slice_mut().unwrap())
             .enq()
@@ -520,7 +520,7 @@ impl Residuals {
             .unwrap()
     }
 
-    pub(crate) fn from_gpu(&mut self, residuals: &ocl::Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, residuals: &ocl::Buffer<f32>) {
         residuals.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }
 }

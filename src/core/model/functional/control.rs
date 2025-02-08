@@ -75,7 +75,7 @@ impl ControlMatrix {
             .unwrap()
     }
 
-    pub(crate) fn from_gpu(&mut self, control_matrix: &Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, control_matrix: &Buffer<f32>) {
         control_matrix
             .read(self.as_slice_mut().unwrap())
             .enq()
@@ -236,7 +236,7 @@ impl ControlFunction {
             .unwrap()
     }
 
-    pub(crate) fn from_gpu(&mut self, control_function_values: &Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, control_function_values: &Buffer<f32>) {
         control_function_values
             .read(self.as_slice_mut().unwrap())
             .enq()

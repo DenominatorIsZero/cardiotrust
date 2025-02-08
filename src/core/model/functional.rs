@@ -151,20 +151,21 @@ impl FunctionalDescription {
         }
     }
 
-    pub(crate) fn from_gpu(&mut self, functional_description: &FunctionalDescriptionGPU) {
-        self.ap_params.from_gpu(&functional_description.ap_params);
+    pub(crate) fn update_from_gpu(&mut self, functional_description: &FunctionalDescriptionGPU) {
+        self.ap_params
+            .update_from_gpu(&functional_description.ap_params);
         self.measurement_matrix
-            .from_gpu(&functional_description.measurement_matrix);
+            .update_from_gpu(&functional_description.measurement_matrix);
         self.control_matrix
-            .from_gpu(&functional_description.control_matrix);
+            .update_from_gpu(&functional_description.control_matrix);
         self.process_covariance
-            .from_gpu(&functional_description.process_covariance);
+            .update_from_gpu(&functional_description.process_covariance);
         self.measurement_covariance
-            .from_gpu(&functional_description.measurement_covariance);
+            .update_from_gpu(&functional_description.measurement_covariance);
         self.kalman_gain
-            .from_gpu(&functional_description.kalman_gain);
+            .update_from_gpu(&functional_description.kalman_gain);
         self.control_function_values
-            .from_gpu(&functional_description.control_function_values);
+            .update_from_gpu(&functional_description.control_function_values);
     }
 }
 

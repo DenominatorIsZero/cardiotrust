@@ -156,7 +156,7 @@ impl Model {
 
     pub fn from_gpu(&mut self, model_gpu: &ModelGPU) {
         self.functional_description
-            .from_gpu(&model_gpu.functional_description);
+            .update_from_gpu(&model_gpu.functional_description);
     }
 
     pub(crate) fn get_default() -> Self {

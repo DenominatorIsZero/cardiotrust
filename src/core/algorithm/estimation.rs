@@ -126,12 +126,15 @@ impl Estimations {
         }
     }
 
-    pub(crate) fn from_gpu(&mut self, estimations: &EstimationsGPU) {
-        self.ap_outputs_now.from_gpu(&estimations.ap_outputs_now);
-        self.ap_outputs_last.from_gpu(&estimations.ap_outputs_last);
-        self.system_states.from_gpu(&estimations.system_states);
-        self.measurements.from_gpu(&estimations.measurements);
-        self.residuals.from_gpu(&estimations.residuals);
+    pub(crate) fn update_from_gpu(&mut self, estimations: &EstimationsGPU) {
+        self.ap_outputs_now
+            .update_from_gpu(&estimations.ap_outputs_now);
+        self.ap_outputs_last
+            .update_from_gpu(&estimations.ap_outputs_last);
+        self.system_states
+            .update_from_gpu(&estimations.system_states);
+        self.measurements.update_from_gpu(&estimations.measurements);
+        self.residuals.update_from_gpu(&estimations.residuals);
     }
 }
 

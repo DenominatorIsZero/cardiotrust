@@ -129,7 +129,7 @@ impl MeasurementMatrix {
         MeasurementMatrixAtBeat(self.slice(s![beat, .., ..]))
     }
 
-    pub(crate) fn from_gpu(&mut self, measurement_matrix: &Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, measurement_matrix: &Buffer<f32>) {
         measurement_matrix
             .read(self.as_slice_mut().unwrap())
             .enq()
@@ -229,7 +229,7 @@ impl MeasurementCovariance {
             .unwrap()
     }
 
-    pub(crate) fn from_gpu(&mut self, measurement_covariance: &Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, measurement_covariance: &Buffer<f32>) {
         measurement_covariance
             .read(self.as_slice_mut().unwrap())
             .enq()

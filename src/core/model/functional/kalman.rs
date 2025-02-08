@@ -115,7 +115,7 @@ impl KalmanGain {
             .unwrap()
     }
 
-    pub(crate) fn from_gpu(&mut self, kalman_gain: &Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, kalman_gain: &Buffer<f32>) {
         kalman_gain
             .read(self.as_slice_mut().unwrap())
             .enq()

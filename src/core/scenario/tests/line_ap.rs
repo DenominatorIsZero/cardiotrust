@@ -292,7 +292,7 @@ fn plot_results(
             let mut losses_owned: Vec<BatchWiseMetric> = Vec::new();
             let mut labels_owned: Vec<String> = Vec::new();
 
-            for (n, scenario) in scenarios.iter().enumerate() {
+            for scenario in scenarios {
                 if !scenario.id.contains(&format!("Num: {number_of_ap},"))
                     || !scenario.id.contains(key)
                     || !scenario.summary.as_ref().unwrap().loss.is_finite()
