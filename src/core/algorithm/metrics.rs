@@ -20,31 +20,10 @@ pub struct Metrics {
     pub loss: SampleWiseMetric,
     pub loss_batch: BatchWiseMetric,
 
-    // TODO: Remove unnecessary fields
     pub loss_mse: SampleWiseMetric,
     pub loss_mse_batch: BatchWiseMetric,
     pub loss_maximum_regularization: SampleWiseMetric,
     pub loss_maximum_regularization_batch: BatchWiseMetric,
-
-    pub delta_states_mean: SampleWiseMetric,
-    pub delta_states_mean_batch: BatchWiseMetric,
-    pub delta_states_max: SampleWiseMetric,
-    pub delta_states_max_batch: BatchWiseMetric,
-
-    pub delta_measurements_mean: SampleWiseMetric,
-    pub delta_measurements_mean_batch: BatchWiseMetric,
-    pub delta_measurements_max: SampleWiseMetric,
-    pub delta_measurements_max_batch: BatchWiseMetric,
-
-    pub delta_gains_mean: SampleWiseMetric,
-    pub delta_gains_mean_batch: BatchWiseMetric,
-    pub delta_gains_max: SampleWiseMetric,
-    pub delta_gains_max_batch: BatchWiseMetric,
-
-    pub delta_delays_mean: SampleWiseMetric,
-    pub delta_delays_mean_batch: BatchWiseMetric,
-    pub delta_delays_max: SampleWiseMetric,
-    pub delta_delays_max_batch: BatchWiseMetric,
 
     #[serde(default)]
     pub dice_score_over_threshold: Array1<f32>,
@@ -59,6 +38,10 @@ pub struct Metrics {
 pub struct MetricsGPU {
     pub loss: Buffer<f32>,
     pub loss_batch: Buffer<f32>,
+    pub loss_mse: Buffer<f32>,
+    pub loss_mse_batch: Buffer<f32>,
+    pub loss_maximum_regularization: Buffer<f32>,
+    pub loss_maximum_regularization_batch: Buffer<f32>,
 }
 
 impl Metrics {
@@ -82,29 +65,6 @@ impl Metrics {
                 number_of_epochs,
                 number_of_batches,
             ),
-
-            delta_states_mean: SampleWiseMetric::new(number_of_steps),
-            delta_states_mean_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
-            delta_states_max: SampleWiseMetric::new(number_of_steps),
-            delta_states_max_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
-
-            delta_measurements_mean: SampleWiseMetric::new(number_of_steps),
-            delta_measurements_mean_batch: BatchWiseMetric::new(
-                number_of_epochs,
-                number_of_batches,
-            ),
-            delta_measurements_max: SampleWiseMetric::new(number_of_steps),
-            delta_measurements_max_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
-
-            delta_gains_mean: SampleWiseMetric::new(number_of_steps),
-            delta_gains_mean_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
-            delta_gains_max: SampleWiseMetric::new(number_of_steps),
-            delta_gains_max_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
-
-            delta_delays_mean: SampleWiseMetric::new(number_of_steps),
-            delta_delays_mean_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
-            delta_delays_max: SampleWiseMetric::new(number_of_steps),
-            delta_delays_max_batch: BatchWiseMetric::new(number_of_epochs, number_of_batches),
 
             dice_score_over_threshold: Array1::zeros(101),
             iou_over_threshold: Array1::zeros(101),
@@ -130,38 +90,6 @@ impl Metrics {
         self.loss_maximum_regularization_batch
             .save_npy(path, "loss_maximum_regularization_epoch.npy");
 
-        self.delta_delays_mean
-            .save_npy(path, "delta_states_mean.npy");
-        self.delta_delays_mean_batch
-            .save_npy(path, "delta_states_mean_epoch.npy");
-        self.delta_delays_max.save_npy(path, "delta_states_max.npy");
-        self.delta_delays_max_batch
-            .save_npy(path, "delta_states_max_epoch.npy");
-
-        self.delta_measurements_mean
-            .save_npy(path, "delta_measurements_mean.npy");
-        self.delta_measurements_mean_batch
-            .save_npy(path, "delta_measurements_mean_epoch.npy");
-        self.delta_measurements_max
-            .save_npy(path, "delta_measurements_max.npy");
-        self.delta_measurements_max_batch
-            .save_npy(path, "delta_measurements_max_epoch.npy");
-
-        self.delta_gains_mean.save_npy(path, "delta_gains_mean.npy");
-        self.delta_gains_mean_batch
-            .save_npy(path, "delta_gains_mean_epoch.npy");
-        self.delta_gains_max.save_npy(path, "delta_gains_max.npy");
-        self.delta_gains_max_batch
-            .save_npy(path, "delta_gains_max_epoch.npy");
-
-        self.delta_delays_mean
-            .save_npy(path, "delta_delays_mean.npy");
-        self.delta_delays_mean_batch
-            .save_npy(path, "delta_delays_mean_epoch.npy");
-        self.delta_delays_max.save_npy(path, "delta_delays_max.npy");
-        self.delta_delays_max_batch
-            .save_npy(path, "delta_delays_max_epoch.npy");
-
         let writer = BufWriter::new(File::create(path.join("dice.npy")).unwrap());
         self.dice_score_over_threshold.write_npy(writer).unwrap();
 
@@ -179,12 +107,22 @@ impl Metrics {
         MetricsGPU {
             loss: self.loss.to_gpu(queue),
             loss_batch: self.loss_batch.to_gpu(queue),
+            loss_mse: self.loss_mse.to_gpu(queue),
+            loss_mse_batch: self.loss_mse_batch.to_gpu(queue),
+            loss_maximum_regularization: self.loss_maximum_regularization.to_gpu(queue),
+            loss_maximum_regularization_batch: self.loss_maximum_regularization_batch.to_gpu(queue),
         }
     }
 
     pub(crate) fn update_from_gpu(&mut self, metrics: &MetricsGPU) {
         self.loss.update_from_gpu(&metrics.loss);
         self.loss_batch.update_from_gpu(&metrics.loss_batch);
+        self.loss_mse.update_from_gpu(&metrics.loss_mse);
+        self.loss_mse_batch.update_from_gpu(&metrics.loss_mse_batch);
+        self.loss_maximum_regularization
+            .update_from_gpu(&metrics.loss_maximum_regularization);
+        self.loss_maximum_regularization_batch
+            .update_from_gpu(&metrics.loss_maximum_regularization_batch);
     }
 }
 
@@ -221,22 +159,6 @@ pub fn calculate_step(
         metrics.loss_maximum_regularization[step],
         metrics.loss_mse[step],
     );
-
-    let states_delta_abs = estimations.system_states_delta.at_step(step).mapv(f32::abs);
-    metrics.delta_states_mean[step] = states_delta_abs.mean().unwrap();
-    metrics.delta_states_max[step] = *states_delta_abs.max_skipnan();
-
-    let measurements_delta_abs = estimations.post_update_residuals.mapv(f32::abs);
-    metrics.delta_measurements_mean[step] = measurements_delta_abs.mean().unwrap();
-    metrics.delta_measurements_max[step] = *measurements_delta_abs.max_skipnan();
-
-    let gains_delta_abs = estimations.gains_delta.mapv(f32::abs);
-    metrics.delta_gains_mean[step] = gains_delta_abs.mean().unwrap();
-    metrics.delta_gains_max[step] = *gains_delta_abs.max_skipnan();
-
-    let delays_delta_abs = estimations.delays_delta.mapv(f32::abs);
-    metrics.delta_delays_mean[step] = delays_delta_abs.mean().unwrap();
-    metrics.delta_delays_max[step] = *delays_delta_abs.max_skipnan();
 }
 
 /// Calculates epoch metrics by taking the mean of step metrics.
@@ -251,20 +173,6 @@ pub fn calculate_batch(metrics: &mut Metrics, epoch_index: usize) {
     metrics.loss_maximum_regularization_batch[epoch_index] =
         metrics.loss_maximum_regularization.mean().unwrap();
     metrics.loss_batch[epoch_index] = metrics.loss.mean().unwrap();
-
-    metrics.delta_states_mean_batch[epoch_index] = metrics.delta_states_mean.mean().unwrap();
-    metrics.delta_states_max_batch[epoch_index] = *metrics.delta_states_max.max_skipnan();
-
-    metrics.delta_measurements_mean_batch[epoch_index] =
-        metrics.delta_measurements_mean.mean().unwrap();
-    metrics.delta_measurements_max_batch[epoch_index] =
-        *metrics.delta_measurements_max.max_skipnan();
-
-    metrics.delta_gains_mean_batch[epoch_index] = *metrics.delta_gains_mean.last().unwrap();
-    metrics.delta_gains_max_batch[epoch_index] = *metrics.delta_gains_max.last().unwrap();
-
-    metrics.delta_delays_mean_batch[epoch_index] = *metrics.delta_delays_mean.last().unwrap();
-    metrics.delta_delays_max_batch[epoch_index] = *metrics.delta_delays_max.last().unwrap();
 }
 
 /// Calculates metrics over the full range of thresholds from 0 to 1 by incrementing

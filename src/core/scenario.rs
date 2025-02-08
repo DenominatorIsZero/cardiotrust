@@ -640,10 +640,6 @@ fn run_pseudo_inverse(
     summary.loss = results.metrics.loss_batch[0];
     summary.loss_mse = results.metrics.loss_mse_batch[0];
     summary.loss_maximum_regularization = results.metrics.loss_maximum_regularization_batch[0];
-    summary.delta_states_mean = results.metrics.delta_states_mean_batch[0];
-    summary.delta_states_max = results.metrics.delta_states_max_batch[0];
-    summary.delta_measurements_mean = results.metrics.delta_measurements_mean_batch[0];
-    summary.delta_measurements_max = results.metrics.delta_measurements_max_batch[0];
 }
 
 /// Runs the model-based algorithm on the given scenario, model, and data.
@@ -696,16 +692,6 @@ fn run_model_based(
         summary.loss_mse = results.metrics.loss_mse_batch[batch_index - 1];
         summary.loss_maximum_regularization =
             results.metrics.loss_maximum_regularization_batch[batch_index - 1];
-        summary.delta_states_mean = results.metrics.delta_states_mean_batch[batch_index - 1];
-        summary.delta_states_max = results.metrics.delta_states_max_batch[batch_index - 1];
-        summary.delta_measurements_mean =
-            results.metrics.delta_measurements_mean_batch[batch_index - 1];
-        summary.delta_measurements_max =
-            results.metrics.delta_measurements_max_batch[batch_index - 1];
-        summary.delta_gains_mean = results.metrics.delta_gains_mean_batch[batch_index - 1];
-        summary.delta_gains_max = results.metrics.delta_gains_max_batch[batch_index - 1];
-        summary.delta_delays_mean = results.metrics.delta_delays_mean_batch[batch_index - 1];
-        summary.delta_delays_max = results.metrics.delta_delays_max_batch[batch_index - 1];
 
         if scenario.config.algorithm.snapshots_interval != 0
             && epoch_index % scenario.config.algorithm.snapshots_interval == 0

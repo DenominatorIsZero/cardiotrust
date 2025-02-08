@@ -51,20 +51,8 @@ pub fn draw_ui_explorer(
             .column(Column::initial(75.0).resizable(true))
             .column(Column::initial(75.0).resizable(true))
             .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
             .column(Column::remainder())
             .header(20.0, |mut header| {
-                header.col(|ui| {
-                    ui.heading("");
-                });
                 header.col(|ui| {
                     ui.heading("\nID\n");
                 });
@@ -79,30 +67,6 @@ pub fn draw_ui_explorer(
                 });
                 header.col(|ui| {
                     ui.heading("\nM. R. Loss\n");
-                });
-                header.col(|ui| {
-                    ui.heading("\nDelta\nStates\nMean");
-                });
-                header.col(|ui| {
-                    ui.heading("\nDelta\nStates\nMax");
-                });
-                header.col(|ui| {
-                    ui.heading("\nDelta\nMeas.\nMean");
-                });
-                header.col(|ui| {
-                    ui.heading("\nDelta\nMeas.\nMax");
-                });
-                header.col(|ui| {
-                    ui.heading("\nDelta\nGains\nMean");
-                });
-                header.col(|ui| {
-                    ui.heading("\nDelta\nGains\nMax");
-                });
-                header.col(|ui| {
-                    ui.heading("\nDelta\nDelays\nMean");
-                });
-                header.col(|ui| {
-                    ui.heading("\nDelta\nDelays\nMax");
                 });
                 header.col(|ui| {
                     ui.heading("\nThreshold");
@@ -134,7 +98,6 @@ pub fn draw_ui_explorer(
                     );
                 }
                 body.row(30.0, |mut row| {
-                    row.col(|_ui| {});
                     row.col(|ui| {
                         if ui.button("New").clicked() {
                             scenario_list.entries.push(ScenarioBundle {
@@ -147,8 +110,6 @@ pub fn draw_ui_explorer(
                             commands.insert_resource(NextState::Pending(UiState::Scenario));
                         };
                     });
-                    row.col(|_ui| {});
-                    row.col(|_ui| {});
                     row.col(|_ui| {});
                     row.col(|_ui| {});
                     row.col(|_ui| {});
@@ -179,9 +140,6 @@ fn draw_row(
 ) {
     trace!("Drawing row in scenario list table");
     body.row(30.0, |mut row| {
-        row.col(|_ui| {
-            // Checkbox goes here later
-        });
         row.col(|ui| {
             if ui
                 .button(scenario_list.entries[index].scenario.get_id())
@@ -219,54 +177,6 @@ fn draw_row(
         row.col(|ui| {
             match &scenario_list.entries[index].scenario.summary {
                 Some(summary) => ui.label(format!("{:.3e}", summary.loss_maximum_regularization)),
-                None => ui.label("-"),
-            };
-        });
-        row.col(|ui| {
-            match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(format!("{:.3e}", summary.delta_states_mean)),
-                None => ui.label("-"),
-            };
-        });
-        row.col(|ui| {
-            match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(format!("{:.3e}", summary.delta_states_max)),
-                None => ui.label("-"),
-            };
-        });
-        row.col(|ui| {
-            match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(format!("{:.3e}", summary.delta_measurements_mean)),
-                None => ui.label("-"),
-            };
-        });
-        row.col(|ui| {
-            match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(format!("{:.3e}", summary.delta_measurements_max)),
-                None => ui.label("-"),
-            };
-        });
-        row.col(|ui| {
-            match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(format!("{:.3e}", summary.delta_gains_mean)),
-                None => ui.label("-"),
-            };
-        });
-        row.col(|ui| {
-            match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(format!("{:.3e}", summary.delta_gains_max)),
-                None => ui.label("-"),
-            };
-        });
-        row.col(|ui| {
-            match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(format!("{:.3e}", summary.delta_delays_mean)),
-                None => ui.label("-"),
-            };
-        });
-        row.col(|ui| {
-            match &scenario_list.entries[index].scenario.summary {
-                Some(summary) => ui.label(format!("{:.3e}", summary.delta_delays_max)),
                 None => ui.label("-"),
             };
         });
