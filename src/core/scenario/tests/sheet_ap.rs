@@ -18,10 +18,7 @@ use crate::{
         scenario::{run, tests::SAVE_NPY, Scenario},
     },
     tests::{clean_files, setup_folder},
-    vis::plotting::png::{
-        delay,
-        line::{line_plot, log_y_plot},
-    },
+    vis::plotting::png::line::{line_plot, log_y_plot},
 };
 
 const COMMON_PATH: &str = "tests/core/scenario/sheet_ap/";

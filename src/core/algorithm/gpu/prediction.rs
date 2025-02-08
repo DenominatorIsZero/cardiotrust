@@ -1,29 +1,21 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use crate::core::{
-        algorithm::estimation::{prediction::innovate_system_states_v1, Estimations},
+        algorithm::estimation::prediction::innovate_system_states_v1,
         config::algorithm::Algorithm,
         data::Data,
-        model::functional::FunctionalDescription,
         scenario::results::Results,
     };
-    use crate::{
-        core::{
+    use crate::core::{
             config::{
                 model::{SensorArrayGeometry, SensorArrayMotion},
                 simulation::Simulation as SimulationConfig,
             },
             model::Model,
-        },
-        vis::plotting::{
-            gif::states::states_spherical_plot_over_time,
-            png::{line::standard_y_plot, states::states_spherical_plot},
-            PlotSlice, StateSphericalPlotMode,
-        },
-    };
+        };
     use approx::assert_relative_eq;
-    use ndarray::{Array2, Array3, Dim};
+    use ndarray::Array2;
     use ocl::{Buffer, Context, Device, Kernel, Platform, Program, Queue};
     #[test]
     #[allow(clippy::too_many_lines)]
@@ -44,7 +36,7 @@ mod tests {
         algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
         algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
-        let mut model = Model::from_model_config(
+        let model = Model::from_model_config(
             &algorithm_config.model,
             simulation_config.sample_rate_hz,
             simulation_config.duration_s,

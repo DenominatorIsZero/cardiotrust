@@ -14,7 +14,7 @@ use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
         model::{functional::allpass::from_coef_to_samples, spatial::voxels::VoxelType},
-        scenario::{self, run, tests::SAVE_NPY, Scenario},
+        scenario::{run, tests::SAVE_NPY, Scenario},
     },
     tests::{clean_files, setup_folder},
     vis::plotting::png::line::{line_plot, log_y_plot},

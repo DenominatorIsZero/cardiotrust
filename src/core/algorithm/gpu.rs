@@ -59,7 +59,7 @@ mod tests {
         let queue = Queue::new(&context, device, None).unwrap();
 
         // Create test buffer
-        let mut initial_value = vec![1.0f32];
+        let initial_value = vec![1.0f32];
         let buffer = Buffer::builder()
             .queue(queue.clone())
             .flags(ocl::MemFlags::new().read_write())

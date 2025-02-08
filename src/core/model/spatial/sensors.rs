@@ -3,7 +3,7 @@ use std::{
     io::BufWriter,
 };
 
-use ndarray::{arr1, s, Array1, Array2, Array3};
+use ndarray::{arr1, s, Array1, Array2};
 use ndarray_npy::WriteNpyExt;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
@@ -259,7 +259,7 @@ impl Sensors {
 
 #[cfg(test)]
 mod tests {
-    use bincode::config;
+    
 
     use super::*;
 

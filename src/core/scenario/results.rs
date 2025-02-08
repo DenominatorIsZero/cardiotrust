@@ -158,7 +158,7 @@ impl Snapshot {
 #[cfg(test)]
 mod tests {
     use approx::assert_relative_eq;
-    use ndarray::Dim;
+    
     use ocl::{Kernel, Program};
 
     use crate::core::algorithm::gpu::GPU;
