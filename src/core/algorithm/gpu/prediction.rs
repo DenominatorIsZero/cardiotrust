@@ -79,8 +79,13 @@ impl PredictionKernel {
             .build()
             .unwrap();
 
+        let max_size = device.max_wg_size().unwrap();
+        let work_group_size = max_size.min(number_of_states as usize);
+        let states_work_group_size =
+            (work_group_size * (number_of_states as f32 / max_size as f32).ceil() as usize) as i32;
+
         let predict_measurements_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/predict_measurements.cl")
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/predict_measurements_local.cl")
                 .unwrap();
         let predict_measurements_program = Program::builder()
             .src(format!("{atomic_src}\n{predict_measurements_src}"))
@@ -90,12 +95,14 @@ impl PredictionKernel {
             .program(&predict_measurements_program)
             .name("predict_measurements")
             .queue(queue.clone())
-            .global_work_size([number_of_sensors, number_of_states])
+            .global_work_size([number_of_sensors, states_work_group_size])
+            .local_work_size([1, work_group_size])
             .arg(&estimations.measurements)
             .arg(&model.functional_description.measurement_matrix)
             .arg(&estimations.system_states)
             .arg(&estimations.beat)
             .arg(&estimations.step)
+            .arg_local::<f32>(work_group_size)
             .arg_named("num_sensors", number_of_sensors)
             .arg_named("num_states", number_of_states)
             .arg_named("num_steps", number_of_steps)
