@@ -8,12 +8,13 @@ __kernel void innovate_system_states(
     __global const int* ap_delays,
     __global const float* ap_gains,
     __global const int* output_state_indices,
-    __global const int* step,
+    __global int* step,
     const int num_states
 ) {
     int index_state = get_global_id(0);
     int index_offset = get_global_id(1);
     int num_offsets = 78;
+
     
     // Boundary checks
     if (index_state >= num_states || index_offset >= num_offsets)
@@ -22,11 +23,11 @@ __kernel void innovate_system_states(
     int step_idx = step[0];
 
     // Copy last outputs for derivative calculation
-    int output_idx = index_state * num_offsets + index_offset;
-    ap_outputs_last[output_idx] = ap_outputs_now[output_idx];
+    int ap_idx = index_state * num_offsets + index_offset;
+    ap_outputs_last[ap_idx] = ap_outputs_now[ap_idx];
     
     // Get output state index
-    int output_state_idx = output_state_indices[output_idx];
+    int output_state_idx = output_state_indices[ap_idx];
     if (output_state_idx == -1) // Handle None case
         return;
         
@@ -44,10 +45,11 @@ __kernel void innovate_system_states(
         system_states[(step_idx - delay - 1) * num_states + output_state_idx] : 0.0f;
     
     // Update ap output
-    float ap_output = coef * (input - ap_outputs_now[output_idx]) + input_delayed;
-    ap_outputs_now[output_idx] = ap_output;
+    float ap_output = coef * (input - ap_outputs_last[ap_idx]) + input_delayed;
+    ap_outputs_now[ap_idx] = ap_output;
     
     // Update system state with gain
-    float gain = ap_gains[output_idx];
+    float gain = ap_gains[ap_idx];
+
     atomic_add_float(&system_states[step_idx * num_states + index_state], gain * ap_output);
 }

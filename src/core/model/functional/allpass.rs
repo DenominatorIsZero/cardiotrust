@@ -40,7 +40,7 @@ pub struct APParametersGPU {
     pub gains: Buffer<f32>,
     pub output_state_indices: Buffer<i32>,
     pub coefs: Buffer<f32>,
-    pub delays: Buffer<usize>,
+    pub delays: Buffer<i32>,
 }
 
 impl APParameters {
@@ -126,6 +126,7 @@ impl APParameters {
     )]
     #[must_use]
     pub fn to_gpu(&self, queue: &Queue) -> APParametersGPU {
+        let delays_i32: Vec<i32> = self.delays.iter().map(|&x| x as i32).collect();
         APParametersGPU {
             gains: Buffer::builder()
                 .queue(queue.clone())
@@ -152,8 +153,8 @@ impl APParameters {
                 .unwrap(),
             delays: Buffer::builder()
                 .queue(queue.clone())
-                .len(self.delays.len())
-                .copy_host_slice(self.delays.as_slice().unwrap())
+                .len(delays_i32.len())
+                .copy_host_slice(delays_i32.as_slice())
                 .build()
                 .unwrap(),
         }
@@ -170,11 +171,12 @@ impl APParameters {
             .read(self.coefs.as_slice_mut().unwrap())
             .enq()
             .unwrap();
-        ap_params
-            .delays
-            .read(self.delays.as_slice_mut().unwrap())
-            .enq()
-            .unwrap();
+        let mut temp_i32 = vec![0i32; self.delays.len()];
+        ap_params.delays.read(&mut temp_i32).enq().unwrap();
+        self.delays
+            .iter_mut()
+            .zip(temp_i32.iter())
+            .for_each(|(dest, &src)| *dest = src as usize);
     }
 }
 
