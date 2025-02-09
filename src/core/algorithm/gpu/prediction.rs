@@ -39,17 +39,16 @@ impl PredictionKernel {
             .name("innovate_system_states")
             .queue(queue.clone())
             .global_work_size([number_of_states, 78])
-            .arg_named("ap_outputs_now", &estimations.ap_outputs_now)
-            .arg_named("ap_outputs_last", &estimations.ap_outputs_last)
-            .arg_named("system_states", &estimations.system_states)
-            .arg_named("ap_coefs", &model.functional_description.ap_params.coefs)
-            .arg_named("ap_delays", &model.functional_description.ap_params.delays)
-            .arg_named("ap_gains", &model.functional_description.ap_params.gains)
-            .arg_named(
-                "output_state_indices",
-                &model.functional_description.ap_params.output_state_indices,
-            )
-            .arg_named("step", &estimations.step)
+            .local_work_size([1, 78])
+            .arg(&estimations.ap_outputs_now)
+            .arg(&estimations.ap_outputs_last)
+            .arg(&estimations.system_states)
+            .arg(&model.functional_description.ap_params.coefs)
+            .arg(&model.functional_description.ap_params.delays)
+            .arg(&model.functional_description.ap_params.gains)
+            .arg(&model.functional_description.ap_params.output_state_indices)
+            .arg(&estimations.step)
+            .arg_local::<f32>(78)
             .arg_named("num_states", number_of_states)
             .build()
             .unwrap();
