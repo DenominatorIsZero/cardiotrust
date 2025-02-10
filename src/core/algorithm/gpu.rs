@@ -2,6 +2,7 @@ use ocl::{Context, Device, Platform, Queue};
 
 pub mod prediction;
 
+#[derive(Debug, Clone)]
 pub struct GPU {
     pub queue: Queue,
     pub context: Context,
@@ -22,6 +23,13 @@ impl GPU {
     pub fn new() -> Self {
         let platform = Platform::default();
         let device = Device::first(platform).unwrap();
+        assert_eq!(
+            device
+                .info(ocl::core::DeviceInfo::Type)
+                .unwrap()
+                .to_string(),
+            ocl::core::DeviceInfoResult::Type(ocl::core::DeviceType::GPU).to_string()
+        );
         let context = Context::builder()
             .platform(platform)
             .devices(device)
@@ -46,6 +54,8 @@ impl Default for GPU {
 mod tests {
     use approx::assert_relative_eq;
     use ocl::{Buffer, Context, Device, Kernel, Platform, Program, Queue};
+
+    use crate::core::algorithm::gpu::GPU;
 
     #[test]
     fn test_atomic_add_float() {
@@ -101,5 +111,11 @@ mod tests {
         buffer.read(&mut result).enq().unwrap();
 
         assert_relative_eq!(result[0], 101.0, epsilon = 1e-6); // Initial 1.0 + 100 additions of 1.0
+    }
+
+    #[test]
+    fn test_new_gpu() {
+        let gpu = GPU::new();
+        println!("GPU: {gpu:?}");
     }
 }

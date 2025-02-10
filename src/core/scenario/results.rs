@@ -92,7 +92,7 @@ impl Results {
         self.model.as_ref().unwrap().save_npy(&path.join("model"));
     }
 
-    pub(crate) fn to_gpu(&self, queue: &Queue) -> ResultsGPU {
+    pub fn to_gpu(&self, queue: &Queue) -> ResultsGPU {
         ResultsGPU {
             metrics: self.metrics.to_gpu(queue),
             estimations: self.estimations.to_gpu(queue),
@@ -101,7 +101,7 @@ impl Results {
         }
     }
 
-    pub(crate) fn update_from_gpu(&mut self, results: &ResultsGPU) {
+    pub fn update_from_gpu(&mut self, results: &ResultsGPU) {
         self.metrics.update_from_gpu(&results.metrics);
         self.estimations.update_from_gpu(&results.estimations);
         self.derivatives.update_from_gpu(&results.derivatives);
@@ -109,7 +109,7 @@ impl Results {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn get_default() -> Self {
+    pub fn get_default() -> Self {
         let model = Model::get_default();
         let algorithm_config = Algorithm::default();
         Self {

@@ -93,6 +93,10 @@ harness = false
 name = "in_metrics_benches"
 harness = false
 
+[[bench]]
+name = "gpu_benches"
+harness = false
+
 [profile.test]
 opt-level = 3
 
