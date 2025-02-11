@@ -90,7 +90,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                         .write([step as i32].as_slice())
                         .enq()
                         .unwrap();
-                    prediction_kernel.execute();
+                    derivation_kernel.execute();
                 }
                 results_from_gpu.update_from_gpu(&results_gpu);
             })
