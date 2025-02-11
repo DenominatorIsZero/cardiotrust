@@ -13,7 +13,10 @@ pub struct DerivationKernel {
     residual_kernel: Kernel,
     mapped_residual_kernel: Kernel,
     maximum_regularization_kernel: Kernel,
-    derivatives_gains_kernel: Kernel,
+    gains_kernel: Kernel,
+    fir_kernel: Kernel,
+    iir_kernel: Kernel,
+    coefs_kernel: Kernel,
 }
 
 impl DerivationKernel {
@@ -127,7 +130,7 @@ impl DerivationKernel {
             .build(context)
             .unwrap();
 
-        let derivatives_gains_kernel = Kernel::builder()
+        let gains_kernel = Kernel::builder()
             .program(&derivatives_gains_program)
             .name("calculate_derivatives_gains")
             .queue(queue.clone())
@@ -142,11 +145,71 @@ impl DerivationKernel {
             .build()
             .unwrap();
 
+        let derivatives_coefs_src = std::fs::read_to_string(
+            "src/core/algorithm/gpu/kernels/calculate_derivatives_coefs.cl",
+        )
+        .unwrap();
+        let derivatives_coefs_program = Program::builder()
+            .src(derivatives_coefs_src)
+            .build(context)
+            .unwrap();
+
+        let fir_kernel = Kernel::builder()
+            .program(&derivatives_coefs_program)
+            .name("calculate_derivatives_coefs_fir")
+            .queue(queue.clone())
+            .global_work_size([number_of_states, 78])
+            .arg(&derivatives.coefs_fir)
+            .arg(&estimations.system_states)
+            .arg(&model.functional_description.ap_params.output_state_indices)
+            .arg(&model.functional_description.ap_params.coefs)
+            .arg(&model.functional_description.ap_params.delays)
+            .arg(&estimations.step)
+            .arg(number_of_states)
+            .build()
+            .unwrap();
+
+        let iir_kernel = Kernel::builder()
+            .program(&derivatives_coefs_program)
+            .name("calculate_derivatives_coefs_iir")
+            .queue(queue.clone())
+            .global_work_size([number_of_states, 78])
+            .arg(&derivatives.coefs_iir)
+            .arg(&estimations.ap_outputs_last)
+            .arg(&model.functional_description.ap_params.coefs)
+            .arg(&model.functional_description.ap_params.delays)
+            .arg(&estimations.step)
+            .arg(number_of_states)
+            .build()
+            .unwrap();
+
+        let coefs_kernel = Kernel::builder()
+            .program(&derivatives_coefs_program)
+            .name("calculate_derivatives_coefs_combine")
+            .queue(queue.clone())
+            .global_work_size([number_of_states, 78])
+            .local_work_size([3, 3])
+            .arg(&derivatives.coefs)
+            .arg(&derivatives.coefs_iir)
+            .arg(&derivatives.coefs_fir)
+            .arg(&model.functional_description.ap_params.gains)
+            .arg(&derivatives.mapped_residuals)
+            .arg(&model.functional_description.ap_params.coefs)
+            .arg(&model.functional_description.ap_params.delays)
+            .arg_local::<f32>(9) // 4x4 local memory
+            .arg(config.mse_strength / number_of_sensors as f32)
+            .arg(number_of_states)
+            .build()
+            .unwrap();
+
         Self {
             residual_kernel,
             mapped_residual_kernel,
             maximum_regularization_kernel,
-            derivatives_gains_kernel,
+            gains_kernel,
+            fir_kernel,
+            iir_kernel,
+            coefs_kernel,
         }
     }
 
@@ -170,7 +233,10 @@ impl DerivationKernel {
                 .unwrap();
             self.mapped_residual_kernel.enq().unwrap();
             self.maximum_regularization_kernel.enq().unwrap();
-            self.derivatives_gains_kernel.enq().unwrap();
+            self.gains_kernel.enq().unwrap();
+            self.fir_kernel.enq().unwrap();
+            self.iir_kernel.enq().unwrap();
+            self.coefs_kernel.enq().unwrap();
         }
     }
 }
@@ -191,8 +257,8 @@ mod tests {
             },
             gpu::{derivation::DerivationKernel, prediction::PredictionKernel, GPU},
             refinement::derivation::{
-                calculate_derivatives_gains, calculate_mapped_residuals,
-                calculate_maximum_regularization,
+                calculate_derivatives_coefs_textbook, calculate_derivatives_gains,
+                calculate_mapped_residuals, calculate_maximum_regularization,
             },
         },
         config::{
@@ -301,6 +367,13 @@ mod tests {
                 &config.algorithm,
                 number_of_sensors,
             );
+            calculate_derivatives_coefs_textbook(
+                &mut results_cpu.derivatives,
+                &results_cpu.estimations,
+                &results_cpu.model.as_ref().unwrap().functional_description,
+                step,
+                &config.algorithm,
+            );
             results_gpu
                 .estimations
                 .step
@@ -351,6 +424,21 @@ mod tests {
                 results_cpu.derivatives.gains.as_slice().unwrap(),
                 results_from_gpu.derivatives.gains.as_slice().unwrap(),
                 epsilon = 1e-5
+            );
+            assert_relative_eq!(
+                results_cpu.derivatives.coefs_iir.as_slice().unwrap(),
+                results_from_gpu.derivatives.coefs_iir.as_slice().unwrap(),
+                epsilon = 1e-6
+            );
+            assert_relative_eq!(
+                results_cpu.derivatives.coefs_fir.as_slice().unwrap(),
+                results_from_gpu.derivatives.coefs_fir.as_slice().unwrap(),
+                epsilon = 1e-6
+            );
+            assert_relative_eq!(
+                results_cpu.derivatives.coefs.as_slice().unwrap(),
+                results_from_gpu.derivatives.coefs.as_slice().unwrap(),
+                epsilon = 1e-6
             );
         }
     }
