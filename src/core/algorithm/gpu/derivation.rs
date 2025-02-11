@@ -2,6 +2,7 @@ use ocl::{Buffer, Context, Kernel, Program, Queue};
 
 use crate::core::{
     algorithm::{estimation::EstimationsGPU, refinement::derivation::DerivativesGPU},
+    config::algorithm::Algorithm,
     data::shapes::Measurements,
     model::ModelGPU,
 };
@@ -11,6 +12,7 @@ use super::GPU;
 pub struct DerivationKernel {
     residual_kernel: Kernel,
     mapped_residual_kernel: Kernel,
+    maximum_regularization_kernel: Kernel,
 }
 
 impl DerivationKernel {
@@ -31,10 +33,12 @@ impl DerivationKernel {
         number_of_states: i32,
         number_of_sensors: i32,
         number_of_steps: i32,
+        config: &Algorithm,
     ) -> Self {
         let context = &gpu.context;
         let queue = &gpu.queue;
         let device = &gpu.device;
+        let number_of_voxels = number_of_states / 3;
 
         let residual_src =
             std::fs::read_to_string("src/core/algorithm/gpu/kernels/calculate_residuals.cl")
@@ -84,9 +88,38 @@ impl DerivationKernel {
             .build()
             .unwrap();
 
+        let maximum_regularization_src =
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/maximum_regularization.cl")
+                .unwrap();
+        let maximum_regularization_program = Program::builder()
+            .src(format!("{atomic_src}\n{maximum_regularization_src}"))
+            .build(context)
+            .unwrap();
+
+        let max_size = device.max_wg_size().unwrap();
+        let work_group_size = max_size.min(number_of_voxels as usize).next_power_of_two();
+        let voxel_work_group_size =
+            (number_of_voxels as usize).next_multiple_of(work_group_size) as i32;
+
+        let maximum_regularization_kernel = Kernel::builder()
+            .program(&maximum_regularization_program)
+            .name("calculate_maximum_regularization")
+            .queue(queue.clone())
+            .global_work_size(voxel_work_group_size)
+            .local_work_size(work_group_size)
+            .arg(&derivatives.maximum_regularization)
+            .arg(&derivatives.maximum_regularization_sum)
+            .arg(&estimations.system_states)
+            .arg_local::<f32>(work_group_size)
+            .arg(config.maximum_regularization_threshold)
+            .arg(number_of_voxels)
+            .build()
+            .unwrap();
+
         Self {
             residual_kernel,
             mapped_residual_kernel,
+            maximum_regularization_kernel,
         }
     }
 
@@ -109,6 +142,7 @@ impl DerivationKernel {
                 .enq()
                 .unwrap();
             self.mapped_residual_kernel.enq().unwrap();
+            self.maximum_regularization_kernel.enq().unwrap();
         }
     }
 }
@@ -128,12 +162,15 @@ mod tests {
                 prediction::{calculate_system_prediction, innovate_system_states_v1},
             },
             gpu::{derivation::DerivationKernel, prediction::PredictionKernel, GPU},
-            refinement::derivation::calculate_mapped_residuals,
+            refinement::derivation::{
+                calculate_mapped_residuals, calculate_maximum_regularization,
+            },
         },
         config::{
             algorithm::Algorithm,
             model::{SensorArrayGeometry, SensorArrayMotion},
             simulation::Simulation as SimulationConfig,
+            Config,
         },
         data::Data,
         model::Model,
@@ -146,6 +183,7 @@ mod tests {
         clippy::too_many_lines
     )]
     fn test_derivation() {
+        let config = Config::default();
         let mut results_cpu = Results::get_default();
         let gpu = GPU::new();
         let results_gpu = results_cpu.to_gpu(&gpu.queue);
@@ -196,6 +234,7 @@ mod tests {
                 .sensors
                 .count() as i32,
             results_cpu.estimations.measurements.num_steps() as i32,
+            &config.algorithm,
         );
 
         let mut results_from_gpu = results_cpu.clone();
@@ -218,6 +257,12 @@ mod tests {
                     .functional_description
                     .measurement_matrix
                     .at_beat(0),
+            );
+            calculate_maximum_regularization(
+                &mut results_cpu.derivatives.maximum_regularization,
+                &mut results_cpu.derivatives.maximum_regularization_sum,
+                &results_cpu.estimations.system_states.at_step(step),
+                config.algorithm.maximum_regularization_threshold,
             );
             results_gpu
                 .estimations
@@ -246,6 +291,24 @@ mod tests {
                     .as_slice()
                     .unwrap(),
                 epsilon = 1e-5
+            );
+            assert_relative_eq!(
+                results_cpu
+                    .derivatives
+                    .maximum_regularization
+                    .as_slice()
+                    .unwrap(),
+                results_from_gpu
+                    .derivatives
+                    .maximum_regularization
+                    .as_slice()
+                    .unwrap(),
+                epsilon = 1e-5
+            );
+            assert_relative_eq!(
+                results_cpu.derivatives.maximum_regularization_sum,
+                results_from_gpu.derivatives.maximum_regularization_sum,
+                max_relative = 0.01
             );
         }
     }

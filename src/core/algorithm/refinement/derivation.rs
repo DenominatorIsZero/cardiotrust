@@ -63,7 +63,7 @@ pub struct DerivativesGPU {
     pub coefs_fir: Buffer<f32>,
     pub mapped_residuals: Buffer<f32>,
     pub maximum_regularization: Buffer<f32>,
-    pub maximum_regularization_sum: f32,
+    pub maximum_regularization_sum: Buffer<f32>,
 }
 
 impl Derivatives {
@@ -128,7 +128,12 @@ impl Derivatives {
             coefs_fir: self.coefs_fir.to_gpu(queue),
             mapped_residuals: self.mapped_residuals.to_gpu(queue),
             maximum_regularization: self.maximum_regularization.to_gpu(queue),
-            maximum_regularization_sum: self.maximum_regularization_sum,
+            maximum_regularization_sum: ocl::Buffer::builder()
+                .queue(queue.clone())
+                .len(1)
+                .copy_host_slice(&[self.maximum_regularization_sum])
+                .build()
+                .unwrap(),
         }
     }
 
@@ -141,6 +146,13 @@ impl Derivatives {
             .update_from_gpu(&derivatives.mapped_residuals);
         self.maximum_regularization
             .update_from_gpu(&derivatives.maximum_regularization);
+        let mut maximum_regularization_sum = vec![0.0f32];
+        derivatives
+            .maximum_regularization_sum
+            .read(&mut maximum_regularization_sum)
+            .enq()
+            .unwrap();
+        self.maximum_regularization_sum = maximum_regularization_sum[0];
     }
 }
 
