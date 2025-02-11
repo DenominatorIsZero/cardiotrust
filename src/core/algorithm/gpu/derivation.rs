@@ -13,6 +13,7 @@ pub struct DerivationKernel {
     residual_kernel: Kernel,
     mapped_residual_kernel: Kernel,
     maximum_regularization_kernel: Kernel,
+    derivatives_gains_kernel: Kernel,
 }
 
 impl DerivationKernel {
@@ -21,7 +22,8 @@ impl DerivationKernel {
         clippy::cast_sign_loss,
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
-        clippy::cast_precision_loss
+        clippy::cast_precision_loss,
+        clippy::too_many_lines
     )]
     #[must_use]
     pub fn new(
@@ -116,10 +118,35 @@ impl DerivationKernel {
             .build()
             .unwrap();
 
+        let derivatives_gains_src = std::fs::read_to_string(
+            "src/core/algorithm/gpu/kernels/calculate_derivatives_gains.cl",
+        )
+        .unwrap();
+        let derivatives_gains_program = Program::builder()
+            .src(derivatives_gains_src)
+            .build(context)
+            .unwrap();
+
+        let derivatives_gains_kernel = Kernel::builder()
+            .program(&derivatives_gains_program)
+            .name("calculate_derivatives_gains")
+            .queue(queue.clone())
+            .global_work_size([number_of_states, 78])
+            .arg(&derivatives.gains)
+            .arg(&estimations.ap_outputs_now)
+            .arg(&derivatives.maximum_regularization)
+            .arg(&derivatives.mapped_residuals)
+            .arg(config.mse_strength / number_of_sensors as f32)
+            .arg(config.maximum_regularization_strength)
+            .arg(number_of_states)
+            .build()
+            .unwrap();
+
         Self {
             residual_kernel,
             mapped_residual_kernel,
             maximum_regularization_kernel,
+            derivatives_gains_kernel,
         }
     }
 
@@ -143,6 +170,7 @@ impl DerivationKernel {
                 .unwrap();
             self.mapped_residual_kernel.enq().unwrap();
             self.maximum_regularization_kernel.enq().unwrap();
+            self.derivatives_gains_kernel.enq().unwrap();
         }
     }
 }
@@ -163,7 +191,8 @@ mod tests {
             },
             gpu::{derivation::DerivationKernel, prediction::PredictionKernel, GPU},
             refinement::derivation::{
-                calculate_mapped_residuals, calculate_maximum_regularization,
+                calculate_derivatives_gains, calculate_mapped_residuals,
+                calculate_maximum_regularization,
             },
         },
         config::{
@@ -264,6 +293,14 @@ mod tests {
                 &results_cpu.estimations.system_states.at_step(step),
                 config.algorithm.maximum_regularization_threshold,
             );
+            calculate_derivatives_gains(
+                &mut results_cpu.derivatives.gains,
+                &results_cpu.estimations.ap_outputs_now,
+                &results_cpu.derivatives.maximum_regularization,
+                &results_cpu.derivatives.mapped_residuals,
+                &config.algorithm,
+                number_of_sensors,
+            );
             results_gpu
                 .estimations
                 .step
@@ -309,6 +346,11 @@ mod tests {
                 results_cpu.derivatives.maximum_regularization_sum,
                 results_from_gpu.derivatives.maximum_regularization_sum,
                 max_relative = 0.01
+            );
+            assert_relative_eq!(
+                results_cpu.derivatives.gains.as_slice().unwrap(),
+                results_from_gpu.derivatives.gains.as_slice().unwrap(),
+                epsilon = 1e-5
             );
         }
     }
