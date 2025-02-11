@@ -20,7 +20,7 @@ __kernel void calculate_derivatives_coefs_fir(
     int coef_index = (state_index / 3) * (num_offsets / 3) + (offset_index / 3);
     int delay = ap_delays[coef_index];
     float coef = ap_coefs[coef_index];
-    if (step >= delay) {
+    if (step_idx >= delay) {
         float state_val = system_states[(step_idx - delay) * num_states + output_state];
         float derivative_old = derivatives_fir[state_index * num_offsets + offset_index];
         float derivative_new = (-coef) * derivative_old + state_val;
