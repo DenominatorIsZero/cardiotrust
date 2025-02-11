@@ -28,7 +28,7 @@ __kernel void innovate_system_states(
     
     // Get output state index
     int output_state_idx = output_state_indices[ap_idx];
-    if (output_state_idx != -1){ 
+    if (output_state_idx != -1 && index_offset < 78){ 
         // Calculate indices
         int coef_index = (index_state / 3) * (num_offsets / 3) + (index_offset / 3);
         ap_outputs_last[ap_idx] = ap_outputs_now[ap_idx];

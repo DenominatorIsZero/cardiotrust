@@ -38,8 +38,8 @@ impl PredictionKernel {
             .program(&innovate_program)
             .name("innovate_system_states")
             .queue(queue.clone())
-            .global_work_size([number_of_states, 78])
-            .local_work_size([1, 78])
+            .global_work_size([number_of_states, 128])
+            .local_work_size([1, 128])
             .arg(&estimations.ap_outputs_now)
             .arg(&estimations.ap_outputs_last)
             .arg(&estimations.system_states)
@@ -48,7 +48,7 @@ impl PredictionKernel {
             .arg(&model.functional_description.ap_params.gains)
             .arg(&model.functional_description.ap_params.output_state_indices)
             .arg(&estimations.step)
-            .arg_local::<f32>(78)
+            .arg_local::<f32>(128)
             .arg_named("num_states", number_of_states)
             .build()
             .unwrap();
@@ -79,9 +79,9 @@ impl PredictionKernel {
             .unwrap();
 
         let max_size = device.max_wg_size().unwrap();
-        let work_group_size = max_size.min(number_of_states as usize);
+        let work_group_size = max_size.min(number_of_states as usize).next_power_of_two();
         let states_work_group_size =
-            (work_group_size * (number_of_states as f32 / max_size as f32).ceil() as usize) as i32;
+            (number_of_states as usize).next_multiple_of(work_group_size) as i32;
 
         let predict_measurements_src =
             std::fs::read_to_string("src/core/algorithm/gpu/kernels/predict_measurements_local.cl")
@@ -158,13 +158,6 @@ mod tests {
     )]
     fn test_innovate_system_states() {
         let mut results_cpu = Results::get_default();
-        results_cpu
-            .model
-            .as_mut()
-            .unwrap()
-            .functional_description
-            .control_function_values
-            .fill(1.0);
         let gpu = GPU::new();
         let results_gpu = results_cpu.to_gpu(&gpu.queue);
         let prediction_kernel = PredictionKernel::new(

@@ -8,7 +8,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use self::simulation::Simulation;
-use crate::core::{config::simulation::Simulation as SimulationConfig, data::shapes::Measurements};
+use crate::core::{
+    config::{simulation::Simulation as SimulationConfig, Config},
+    data::shapes::Measurements,
+};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Data {
@@ -61,5 +64,12 @@ impl Data {
     pub fn save_npy(&self, path: &std::path::Path) {
         trace!("Saving data to npy");
         self.simulation.save_npy(&path.join("simulation"));
+    }
+
+    pub(crate) fn get_default() -> Self {
+        let mut sim_config = SimulationConfig::default();
+        sim_config.model.common.pathological = true;
+
+        Self::from_simulation_config(&sim_config).unwrap()
     }
 }

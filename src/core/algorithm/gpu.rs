@@ -1,5 +1,6 @@
 use ocl::{Context, Device, Platform, Queue};
 
+pub mod derivation;
 pub mod prediction;
 
 #[derive(Debug, Clone)]
