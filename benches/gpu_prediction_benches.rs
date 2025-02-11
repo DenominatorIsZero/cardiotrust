@@ -15,7 +15,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 const VOXEL_SIZES: [f32; 4] = [1.0, 2.0, 2.5, 5.0];
 
 fn run_benches(c: &mut Criterion) {
-    let mut group = c.benchmark_group("GPU");
+    let mut group = c.benchmark_group("GPU Prediction");
     prectiction_benches(&mut group);
     group.finish();
 }

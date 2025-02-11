@@ -94,7 +94,7 @@ name = "in_metrics_benches"
 harness = false
 
 [[bench]]
-name = "gpu_benches"
+name = "gpu_prediction_benches"
 harness = false
 
 [profile.test]

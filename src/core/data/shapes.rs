@@ -377,7 +377,7 @@ impl Measurements {
         MeasurementsAtBeatMut(self.slice_mut(s![beat, .., ..]))
     }
 
-    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
+    pub fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
         ocl::Buffer::builder()
             .queue(queue.clone())
             .len(self.len())

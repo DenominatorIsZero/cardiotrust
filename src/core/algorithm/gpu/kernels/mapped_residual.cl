@@ -40,3 +40,11 @@ __kernel void calculate_mapped_residuals(
         atomic_add_float(&mapped_residuals[state_idx], partial_sums[0]);
     }
 }
+__kernel void reset_mapped_residuals(
+    __global float* mapped_residuals,
+    int num_states
+) {
+    int state_idx = get_global_id(0);
+    if (state_idx >= num_states) return;
+    mapped_residuals[state_idx] = 0.0f;
+}
