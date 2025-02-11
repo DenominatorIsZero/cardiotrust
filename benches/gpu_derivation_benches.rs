@@ -199,6 +199,6 @@ fn setup_inputs(
 }
 
 criterion_group! {name = epoch_benches;
-config = Criterion::default().measurement_time(Duration::from_secs(10)).sample_size(20);
+config = Criterion::default().measurement_time(Duration::from_secs(10)).sample_size(10);
 targets=run_benches}
 criterion_main!(epoch_benches);
