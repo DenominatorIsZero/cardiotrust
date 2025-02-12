@@ -108,12 +108,6 @@ pub fn calculate_pseudo_inverse(
         );
 
         let estimated_system_states = estimations.system_states.at_step_mut(step);
-        calculate_post_update_residuals(
-            &mut estimations.post_update_residuals,
-            &functional_description.measurement_matrix.at_beat(0),
-            &estimated_system_states,
-            &actual_measurements,
-        );
 
         let mut system_states_delta = estimations.system_states_delta.at_step_mut(step);
 
@@ -220,12 +214,9 @@ pub fn run_epoch(
             let estimated_system_states = estimations.system_states.at_step_mut(step);
             let mut system_states_delta = estimations.system_states_delta.at_step_mut(step);
             calculate_deltas(
-                &mut estimations.post_update_residuals,
                 &mut system_states_delta,
                 &mut estimations.gains_delta,
                 &mut estimations.delays_delta,
-                &functional_description.measurement_matrix.at_beat(beat),
-                &actual_measurements,
                 &estimated_system_states,
                 &actual_system_states,
                 &functional_description.ap_params.gains,
@@ -300,12 +291,9 @@ pub fn run_epoch(
 
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_deltas(
-    post_update_residuals: &mut Residuals,
     system_states_delta: &mut SystemStatesAtStepMut,
     gains_delta: &mut Gains,
     delays_delta: &mut Coefs,
-    measurement_matrix: &MeasurementMatrixAtBeat,
-    actual_measurements: &MeasurementsAtStep,
     estimated_system_states: &SystemStatesAtStepMut,
     actual_system_states: &SystemStatesAtStep,
     estimated_gains: &Gains,
@@ -316,12 +304,6 @@ pub fn calculate_deltas(
     actual_coefs: &Coefs,
 ) {
     trace!("Calculating deltas");
-    calculate_post_update_residuals(
-        post_update_residuals,
-        measurement_matrix,
-        estimated_system_states,
-        actual_measurements,
-    );
     calculate_system_states_delta(
         system_states_delta,
         estimated_system_states,

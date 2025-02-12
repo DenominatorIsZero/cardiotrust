@@ -191,15 +191,9 @@ fn bench_deltas(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
         group.bench_function(BenchmarkId::new("deltas", voxel_size), |b| {
             b.iter(|| {
                 calculate_deltas(
-                    &mut results.estimations.post_update_residuals,
                     &mut results.estimations.system_states_delta.at_step_mut(STEP),
                     &mut results.estimations.gains_delta,
                     &mut results.estimations.delays_delta,
-                    &model
-                        .functional_description
-                        .measurement_matrix
-                        .at_beat(BEAT),
-                    &results.estimations.measurements.at_beat(BEAT).at_step(STEP),
                     &results.estimations.system_states.at_step_mut(STEP),
                     &data.simulation.system_states.at_step(STEP),
                     &model.functional_description.ap_params.gains,
