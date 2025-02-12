@@ -2,6 +2,7 @@ use ocl::{Context, Device, Platform, Queue};
 
 pub mod derivation;
 pub mod prediction;
+pub mod update;
 
 #[derive(Debug, Clone)]
 pub struct GPU {
