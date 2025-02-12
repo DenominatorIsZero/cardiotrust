@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use cardiotrust::core::{
     algorithm::{
-        calculate_deltas,
         estimation::{
             calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
             update_kalman_gain_and_check_convergence,
@@ -30,7 +29,6 @@ fn run_benches(c: &mut Criterion) {
     //bench_kalman(&mut group);
     bench_system_update(&mut group);
     bench_derivation(&mut group);
-    bench_deltas(&mut group);
     bench_metrics(&mut group);
     bench_update_parameters(&mut group);
     group.finish();
@@ -172,40 +170,6 @@ fn bench_system_update(group: &mut criterion::BenchmarkGroup<criterion::measurem
                     &results.estimations.residuals,
                     STEP,
                     &config.algorithm,
-                );
-            })
-        });
-    }
-}
-
-fn bench_deltas(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
-    for voxel_size in VOXEL_SIZES.iter() {
-        let config = setup_config(voxel_size);
-
-        // setup inputs
-        let (data, model, mut results) = setup_inputs(&config);
-
-        // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
-        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        group.bench_function(BenchmarkId::new("deltas", voxel_size), |b| {
-            b.iter(|| {
-                calculate_deltas(
-                    &mut results.estimations.gains_delta,
-                    &mut results.estimations.delays_delta,
-                    &results.estimations.system_states.at_step_mut(STEP),
-                    &data.simulation.system_states.at_step(STEP),
-                    &model.functional_description.ap_params.gains,
-                    &data.simulation.model.functional_description.ap_params.gains,
-                    &model.functional_description.ap_params.delays,
-                    &data
-                        .simulation
-                        .model
-                        .functional_description
-                        .ap_params
-                        .delays,
-                    &model.functional_description.ap_params.coefs,
-                    &data.simulation.model.functional_description.ap_params.coefs,
                 );
             })
         });

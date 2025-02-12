@@ -45,8 +45,6 @@ pub struct Estimations {
     pub system_states_spherical_max_delta: SystemStatesSphericalMax,
     pub activation_times_delta: ActivationTimePerStateMs,
     pub average_delays: AverageDelays,
-    pub gains_delta: Gains,
-    pub delays_delta: Coefs,
     pub innovation_covariance: DMatrix<f32>,
     pub kalman_gain_converged: bool,
 }
@@ -90,8 +88,6 @@ impl Estimations {
             system_states_spherical_max_delta: SystemStatesSphericalMax::empty(number_of_states),
             activation_times_delta: ActivationTimePerStateMs::empty(number_of_states),
             average_delays: AverageDelays::empty(number_of_states),
-            gains_delta: Gains::empty(number_of_states),
-            delays_delta: Coefs::empty(number_of_states),
             innovation_covariance: DMatrix::zeros(number_of_sensors, number_of_sensors),
             kalman_gain_converged: false,
         }

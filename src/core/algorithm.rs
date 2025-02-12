@@ -203,18 +203,6 @@ pub fn run_epoch(
             }
 
             let estimated_system_states = estimations.system_states.at_step_mut(step);
-            calculate_deltas(
-                &mut estimations.gains_delta,
-                &mut estimations.delays_delta,
-                &estimated_system_states,
-                &actual_system_states,
-                &functional_description.ap_params.gains,
-                actual_gains,
-                &functional_description.ap_params.delays,
-                actual_delays,
-                &functional_description.ap_params.coefs,
-                actual_coefs,
-            );
 
             metrics::calculate_step(
                 &mut results.metrics,
@@ -276,30 +264,6 @@ pub fn run_epoch(
         metrics::calculate_batch(&mut results.metrics, *batch_index);
         *batch_index += 1;
     }
-}
-
-#[tracing::instrument(level = "trace", skip_all)]
-pub fn calculate_deltas(
-    gains_delta: &mut Gains,
-    delays_delta: &mut Coefs,
-    estimated_system_states: &SystemStatesAtStepMut,
-    actual_system_states: &SystemStatesAtStep,
-    estimated_gains: &Gains,
-    actual_gains: &Gains,
-    estimated_delays: &UnitDelays,
-    actual_delays: &UnitDelays,
-    estimated_coefs: &Coefs,
-    actual_coefs: &Coefs,
-) {
-    trace!("Calculating deltas");
-    calculate_gains_delta(gains_delta, estimated_gains, actual_gains);
-    calculate_delays_delta(
-        delays_delta,
-        estimated_delays,
-        actual_delays,
-        estimated_coefs,
-        actual_coefs,
-    );
 }
 
 #[tracing::instrument(level = "trace")]

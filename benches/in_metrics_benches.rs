@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use cardiotrust::core::{
-    algorithm::{calculate_deltas, metrics, run_epoch},
+    algorithm::{metrics, run_epoch},
     config::Config,
     data::Data,
     model::Model,
@@ -16,44 +16,9 @@ const BEAT: usize = 0;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Metrics");
-    bench_deltas(&mut group);
     bench_step(&mut group);
     bench_epoch(&mut group);
     group.finish();
-}
-
-fn bench_deltas(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
-    for voxel_size in VOXEL_SIZES.iter() {
-        let config = setup_config(voxel_size);
-
-        // setup inputs
-        let (data, model, mut results) = setup_inputs(&config);
-
-        // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
-        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        group.bench_function(BenchmarkId::new("gains", voxel_size), |b| {
-            b.iter(|| {
-                calculate_deltas(
-                    &mut results.estimations.gains_delta,
-                    &mut results.estimations.delays_delta,
-                    &results.estimations.system_states.at_step_mut(STEP),
-                    &data.simulation.system_states.at_step(STEP),
-                    &model.functional_description.ap_params.gains,
-                    &data.simulation.model.functional_description.ap_params.gains,
-                    &model.functional_description.ap_params.delays,
-                    &data
-                        .simulation
-                        .model
-                        .functional_description
-                        .ap_params
-                        .delays,
-                    &model.functional_description.ap_params.coefs,
-                    &data.simulation.model.functional_description.ap_params.coefs,
-                );
-            })
-        });
-    }
 }
 
 fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
@@ -62,25 +27,6 @@ fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wall
 
         // setup inputs
         let (data, model, mut results) = setup_inputs(&config);
-
-        // perpare inputs
-        calculate_deltas(
-            &mut results.estimations.gains_delta,
-            &mut results.estimations.delays_delta,
-            &results.estimations.system_states.at_step_mut(STEP),
-            &data.simulation.system_states.at_step(STEP),
-            &model.functional_description.ap_params.gains,
-            &data.simulation.model.functional_description.ap_params.gains,
-            &model.functional_description.ap_params.delays,
-            &data
-                .simulation
-                .model
-                .functional_description
-                .ap_params
-                .delays,
-            &model.functional_description.ap_params.coefs,
-            &data.simulation.model.functional_description.ap_params.coefs,
-        );
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
