@@ -377,6 +377,8 @@ impl Measurements {
         MeasurementsAtBeatMut(self.slice_mut(s![beat, .., ..]))
     }
 
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
         ocl::Buffer::builder()
             .queue(queue.clone())

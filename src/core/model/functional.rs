@@ -139,6 +139,8 @@ impl FunctionalDescription {
         self.control_function_values.save_npy(path);
     }
 
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn to_gpu(&self, queue: &Queue) -> FunctionalDescriptionGPU {
         FunctionalDescriptionGPU {
             ap_params: self.ap_params.to_gpu(queue),

@@ -10,7 +10,12 @@ pub struct PredictionKernel {
 }
 
 impl PredictionKernel {
-    #[allow(clippy::missing_panics_doc)]
+    #[allow(
+        clippy::missing_panics_doc,
+        clippy::cast_sign_loss,
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap
+    )]
     #[must_use]
     pub fn new(
         gpu: &GPU,
@@ -143,7 +148,8 @@ mod tests {
     #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
-        clippy::too_many_lines
+        clippy::too_many_lines,
+        clippy::similar_names
     )]
     fn test_innovate_system_states() {
         let mut results_cpu = Results::get_default();

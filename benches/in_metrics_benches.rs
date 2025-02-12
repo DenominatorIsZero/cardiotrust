@@ -12,7 +12,6 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
 const LEARNING_RATE: f32 = 1e-3;
 const STEP: usize = 42;
-const BEAT: usize = 0;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Metrics");
@@ -26,7 +25,7 @@ fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wall
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (data, model, mut results) = setup_inputs(&config);
+        let (model, mut results) = setup_inputs(&config);
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -50,7 +49,7 @@ fn bench_epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, model, mut results) = setup_inputs(&config);
+        let (model, mut results) = setup_inputs(&config);
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -78,7 +77,7 @@ fn setup_config(voxel_size: &f32) -> Config {
     config
 }
 
-fn setup_inputs(config: &Config) -> (Data, Model, Results) {
+fn setup_inputs(config: &Config) -> (Model, Results) {
     let simulation_config = &config.simulation;
     let data =
         Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
@@ -107,7 +106,7 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         &config.algorithm,
     );
 
-    (data, model, results)
+    (model, results)
 }
 
 criterion_group! {name = benches;

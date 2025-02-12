@@ -1,11 +1,7 @@
-use ocl::{Buffer, Kernel, Program};
+use ocl::{Kernel, Program};
 
 use super::GPU;
-use crate::core::{
-    algorithm::{estimation::EstimationsGPU, refinement::derivation::DerivativesGPU},
-    config::algorithm::Algorithm,
-    model::ModelGPU,
-};
+use crate::core::algorithm::{estimation::EstimationsGPU, refinement::derivation::DerivativesGPU};
 
 pub struct ResetKernel {
     system_states_kernel: Kernel,
@@ -32,16 +28,11 @@ impl ResetKernel {
         gpu: &GPU,
         estimations: &EstimationsGPU,
         derivatives: &DerivativesGPU,
-        actual_measurements: &Buffer<f32>,
-        model: &ModelGPU,
         number_of_states: i32,
-        number_of_sensors: i32,
         number_of_steps: i32,
-        config: &Algorithm,
     ) -> Self {
         let context = &gpu.context;
         let queue = &gpu.queue;
-        let device = &gpu.device;
         let number_of_voxels = number_of_states / 3;
 
         let reset_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/reset.cl").unwrap();

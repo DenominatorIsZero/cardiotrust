@@ -26,13 +26,11 @@ impl UpdateKernel {
         derivatives: &DerivativesGPU,
         model: &ModelGPU,
         number_of_states: i32,
-        number_of_sensors: i32,
         number_of_steps: i32,
         config: &Algorithm,
     ) -> Self {
         let context = &gpu.context;
         let queue = &gpu.queue;
-        let device = &gpu.device;
         let number_of_voxels = number_of_states / 3;
 
         let gains_src =
@@ -111,7 +109,8 @@ mod tests {
     #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
-        clippy::too_many_lines
+        clippy::too_many_lines,
+        clippy::similar_names
     )]
     fn test_update() {
         let config = Config::default();
@@ -173,7 +172,6 @@ mod tests {
             &results_gpu.derivatives,
             &results_gpu.model,
             number_of_states as i32,
-            number_of_sensors as i32,
             results_cpu.estimations.measurements.num_steps() as i32,
             &config.algorithm,
         );

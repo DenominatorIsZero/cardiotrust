@@ -1,4 +1,4 @@
-use ocl::{Buffer, Kernel, Program};
+use ocl::{Kernel, Program};
 
 use super::GPU;
 use crate::core::{
@@ -6,7 +6,6 @@ use crate::core::{
         estimation::EstimationsGPU, metrics::MetricsGPU, refinement::derivation::DerivativesGPU,
     },
     config::algorithm::Algorithm,
-    model::ModelGPU,
 };
 
 pub struct MetricsKernel {
@@ -31,9 +30,6 @@ impl MetricsKernel {
         estimations: &EstimationsGPU,
         derivatives: &DerivativesGPU,
         metrics: &MetricsGPU,
-        actual_measurements: &Buffer<f32>,
-        model: &ModelGPU,
-        number_of_states: i32,
         number_of_sensors: i32,
         number_of_steps: i32,
         config: &Algorithm,
@@ -41,7 +37,6 @@ impl MetricsKernel {
         let context = &gpu.context;
         let queue = &gpu.queue;
         let device = &gpu.device;
-        let number_of_voxels = number_of_states / 3;
 
         let metrics_src =
             std::fs::read_to_string("src/core/algorithm/gpu/kernels/metrics.cl").unwrap();

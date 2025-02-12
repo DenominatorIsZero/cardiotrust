@@ -64,7 +64,6 @@ pub fn calculate_pseudo_inverse(
         let mut estimated_measurements = estimations.measurements.at_beat_mut(0);
         let actual_measurements = data.simulation.measurements.at_beat(0);
         let mut estimated_system_states = estimations.system_states.at_step_mut(step);
-        let actual_system_states = data.simulation.system_states.at_step(step);
         let mut estimated_measurements = estimated_measurements.at_step_mut(step);
         let actual_measurements = actual_measurements.at_step(step);
 
@@ -95,8 +94,6 @@ pub fn calculate_pseudo_inverse(
             0,
             num_sensors,
         );
-
-        let estimated_system_states = estimations.system_states.at_step_mut(step);
 
         metrics::calculate_step(
             &mut results.metrics,
@@ -138,29 +135,13 @@ pub fn run_epoch(
     let estimations = &mut results.estimations;
     let derivatives = &mut results.derivatives;
 
-    let actual_gains = &data.simulation.model.functional_description.ap_params.gains;
-
-    let actual_coefs = &data.simulation.model.functional_description.ap_params.coefs;
-
-    let actual_delays = &data
-        .simulation
-        .model
-        .functional_description
-        .ap_params
-        .delays;
-
     let num_sensors = data.simulation.measurements.num_sensors();
 
     for beat in beat_indices {
         estimations.reset();
         estimations.kalman_gain_converged = false;
-        let actual_measurements = data.simulation.measurements.at_beat(beat);
 
         for step in 0..num_steps {
-            let actual_system_states = data.simulation.system_states.at_step(step);
-
-            let actual_measurements = actual_measurements.at_step(step);
-
             calculate_system_prediction(estimations, functional_description, beat, step);
 
             calculate_residuals(estimations, data, beat, step);
@@ -191,8 +172,6 @@ pub fn run_epoch(
                     config,
                 );
             }
-
-            let estimated_system_states = estimations.system_states.at_step_mut(step);
 
             metrics::calculate_step(
                 &mut results.metrics,

@@ -92,6 +92,8 @@ impl Results {
         self.model.as_ref().unwrap().save_npy(&path.join("model"));
     }
 
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn to_gpu(&self, queue: &Queue) -> ResultsGPU {
         ResultsGPU {
             metrics: self.metrics.to_gpu(queue),
@@ -101,6 +103,7 @@ impl Results {
         }
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn update_from_gpu(&mut self, results: &ResultsGPU) {
         self.metrics.update_from_gpu(&results.metrics);
         self.estimations.update_from_gpu(&results.estimations);
@@ -109,6 +112,7 @@ impl Results {
     }
 
     #[allow(dead_code)]
+    #[must_use]
     pub fn get_default() -> Self {
         let model = Model::get_default();
         let algorithm_config = Algorithm::default();

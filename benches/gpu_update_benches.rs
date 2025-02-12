@@ -38,7 +38,6 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
             derivation_kernel,
             update_kernel,
         ) = setup_inputs(&config);
-        let results_from_gpu = results.clone();
 
         let number_of_voxels = results
             .model
@@ -220,13 +219,6 @@ fn setup_inputs(
             .spatial_description
             .voxels
             .count_states() as i32,
-        results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .sensors
-            .count() as i32,
         results.estimations.measurements.num_steps() as i32,
         &config.algorithm,
     );

@@ -63,6 +63,7 @@ impl Data {
         self.simulation.save_npy(&path.join("simulation"));
     }
 
+    #[allow(dead_code)]
     pub(crate) fn get_default() -> Self {
         let mut sim_config = SimulationConfig::default();
         sim_config.model.common.pathological = true;

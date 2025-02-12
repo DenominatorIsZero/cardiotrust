@@ -245,7 +245,6 @@ impl DerivationKernel {
 mod tests {
 
     use approx::assert_relative_eq;
-    use ndarray_stats::QuantileExt;
     use ocl::{Buffer, Kernel, MemFlags, Program};
 
     use crate::core::{
@@ -265,7 +264,8 @@ mod tests {
     #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
-        clippy::too_many_lines
+        clippy::too_many_lines,
+        clippy::similar_names
     )]
     fn test_derivation() {
         let config = Config::default();
@@ -428,6 +428,15 @@ mod tests {
         }
     }
     #[test]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::too_many_lines,
+        clippy::similar_names,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss,
+        clippy::suboptimal_flops
+    )]
     fn test_mapped_residuals_kernel() {
         let gpu = GPU::new();
 
@@ -495,7 +504,7 @@ mod tests {
         let kernel = Kernel::builder()
             .program(&program)
             .name("calculate_mapped_residuals")
-            .queue(gpu.queue.clone())
+            .queue(gpu.queue)
             .global_work_size([num_states, sensors_work_group_size])
             .local_work_size([1, work_group_size])
             .arg(&mapped_residuals_buffer)
@@ -520,7 +529,7 @@ mod tests {
         mapped_residuals_buffer.read(&mut result).enq().unwrap();
 
         // Calculate expected result
-        let expected = vec![
+        let expected = [
             1.0 * 0.5 + 0.0 * -0.3 + 1.0 * 0.8 + 2.0 * 0.2,
             0.0 * 0.5 + 1.0 * -0.3 + 1.0 * 0.8 + -1.0 * 0.2,
         ];

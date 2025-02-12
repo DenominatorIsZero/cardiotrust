@@ -160,6 +160,7 @@ impl APParameters {
         }
     }
 
+    #[allow(clippy::cast_sign_loss)]
     pub(crate) fn update_from_gpu(&mut self, ap_params: &APParametersGPU) {
         ap_params
             .gains

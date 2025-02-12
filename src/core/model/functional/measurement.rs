@@ -38,6 +38,8 @@ impl MeasurementMatrix {
         )))
     }
 
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn to_gpu(&self, queue: &Queue) -> Buffer<f32> {
         Buffer::builder()
             .queue(queue.clone())
