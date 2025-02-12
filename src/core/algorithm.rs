@@ -13,8 +13,7 @@ use tracing::{debug, trace};
 
 use self::estimation::{
     calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
-    calculate_residuals, calculate_system_states_delta, calculate_system_update,
-    prediction::calculate_system_prediction,
+    calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
 };
 use super::{
     config::algorithm::Algorithm,
@@ -108,14 +107,6 @@ pub fn calculate_pseudo_inverse(
         );
 
         let estimated_system_states = estimations.system_states.at_step_mut(step);
-
-        let mut system_states_delta = estimations.system_states_delta.at_step_mut(step);
-
-        calculate_system_states_delta(
-            &mut system_states_delta,
-            &estimated_system_states,
-            &actual_system_states,
-        );
 
         metrics::calculate_step(
             &mut results.metrics,
@@ -212,9 +203,7 @@ pub fn run_epoch(
             }
 
             let estimated_system_states = estimations.system_states.at_step_mut(step);
-            let mut system_states_delta = estimations.system_states_delta.at_step_mut(step);
             calculate_deltas(
-                &mut system_states_delta,
                 &mut estimations.gains_delta,
                 &mut estimations.delays_delta,
                 &estimated_system_states,
@@ -291,7 +280,6 @@ pub fn run_epoch(
 
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_deltas(
-    system_states_delta: &mut SystemStatesAtStepMut,
     gains_delta: &mut Gains,
     delays_delta: &mut Coefs,
     estimated_system_states: &SystemStatesAtStepMut,
@@ -304,11 +292,6 @@ pub fn calculate_deltas(
     actual_coefs: &Coefs,
 ) {
     trace!("Calculating deltas");
-    calculate_system_states_delta(
-        system_states_delta,
-        estimated_system_states,
-        actual_system_states,
-    );
     calculate_gains_delta(gains_delta, estimated_gains, actual_gains);
     calculate_delays_delta(
         delays_delta,

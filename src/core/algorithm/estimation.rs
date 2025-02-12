@@ -42,7 +42,6 @@ pub struct Estimations {
     pub state_covariance_est: Gains,
     pub measurements: Measurements,
     pub residuals: Residuals,
-    pub system_states_delta: SystemStates,
     pub system_states_spherical_max_delta: SystemStatesSphericalMax,
     pub activation_times_delta: ActivationTimePerStateMs,
     pub average_delays: AverageDelays,
@@ -88,7 +87,6 @@ impl Estimations {
             state_covariance_est: Gains::empty(number_of_states),
             measurements: Measurements::empty(number_of_beats, number_of_steps, number_of_sensors),
             residuals: Residuals::empty(number_of_sensors),
-            system_states_delta: SystemStates::empty(number_of_steps, number_of_states),
             system_states_spherical_max_delta: SystemStatesSphericalMax::empty(number_of_states),
             activation_times_delta: ActivationTimePerStateMs::empty(number_of_states),
             average_delays: AverageDelays::empty(number_of_states),
@@ -184,19 +182,6 @@ pub fn calculate_post_update_residuals(
     trace!("Calculating post update residuals");
     post_update_residuals
         .assign(&(measurement_matrix.dot(&**estimated_system_states) - **actual_measurements));
-}
-
-/// Calculates the delta between the estimated system states and the actual system states for the given time index.
-/// The delta is stored in the provided `system_states_delta` array.
-#[inline]
-#[tracing::instrument(level = "trace", skip_all)]
-pub fn calculate_system_states_delta(
-    system_states_delta: &mut SystemStatesAtStepMut,
-    estimated_system_states: &SystemStatesAtStepMut,
-    actual_system_states: &SystemStatesAtStep,
-) {
-    trace!("Calculating system states delta");
-    system_states_delta.assign(&(&**estimated_system_states - &**actual_system_states));
 }
 
 /// Calculates the delta between the estimated gains and the actual gains.  
