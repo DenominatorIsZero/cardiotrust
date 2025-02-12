@@ -61,6 +61,7 @@ pub struct EstimationsGPU {
     pub residuals: Buffer<f32>,
     pub step: Buffer<i32>,
     pub beat: Buffer<i32>,
+    pub epoch: Buffer<i32>,
 }
 
 impl Estimations {
@@ -107,6 +108,7 @@ impl Estimations {
     pub fn reset(&mut self) {
         debug!("Resetting estimations");
         self.system_states.fill(0.0);
+        self.ap_outputs_now.fill(0.0);
     }
 
     /// Saves the system states and measurements to .npy files at the given path.
@@ -132,6 +134,12 @@ impl Estimations {
                 .build()
                 .unwrap(),
             beat: ocl::Buffer::builder()
+                .queue(queue.clone())
+                .len(1)
+                .copy_host_slice(&[0])
+                .build()
+                .unwrap(),
+            epoch: ocl::Buffer::builder()
                 .queue(queue.clone())
                 .len(1)
                 .copy_host_slice(&[0])

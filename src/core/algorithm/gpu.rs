@@ -1,7 +1,10 @@
 use ocl::{Context, Device, Platform, Queue};
 
 pub mod derivation;
+pub mod epoch;
+pub mod metrics;
 pub mod prediction;
+pub mod reset;
 pub mod update;
 
 #[derive(Debug, Clone)]

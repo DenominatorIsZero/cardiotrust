@@ -101,6 +101,10 @@ harness = false
 name = "gpu_derivation_benches"
 harness = false
 
+[[bench]]
+name = "gpu_update_benches"
+harness = false
+
 [profile.test]
 opt-level = 3
 
