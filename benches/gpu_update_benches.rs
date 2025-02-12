@@ -38,7 +38,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
             derivation_kernel,
             update_kernel,
         ) = setup_inputs(&config);
-        let mut results_from_gpu = results.clone();
+        let results_from_gpu = results.clone();
 
         let number_of_voxels = results
             .model

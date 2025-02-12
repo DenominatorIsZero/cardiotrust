@@ -1,9 +1,8 @@
-use ocl::{Buffer, Context, Kernel, Program, Queue};
+use ocl::{Buffer, Kernel, Program};
 
 use crate::core::{
     algorithm::{estimation::EstimationsGPU, refinement::derivation::DerivativesGPU},
     config::algorithm::Algorithm,
-    data::shapes::Measurements,
     model::ModelGPU,
 };
 

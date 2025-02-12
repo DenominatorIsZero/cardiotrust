@@ -12,8 +12,7 @@ use crate::core::{
     config::algorithm::Algorithm,
     data::{
         shapes::{
-            ActivationTimePerStateMs, Measurements, MeasurementsAtStep, Residuals, SystemStates,
-            SystemStatesAtStep, SystemStatesAtStepMut, SystemStatesSpherical,
+            ActivationTimePerStateMs, Measurements, MeasurementsAtStep, Residuals, SystemStates, SystemStatesAtStepMut, SystemStatesSpherical,
             SystemStatesSphericalMax,
         },
         Data,

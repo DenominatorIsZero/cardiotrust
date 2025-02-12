@@ -9,7 +9,7 @@ use tracing::{debug, trace};
 
 use self::simulation::Simulation;
 use crate::core::{
-    config::{simulation::Simulation as SimulationConfig, Config},
+    config::simulation::Simulation as SimulationConfig,
     data::shapes::Measurements,
 };
 

@@ -1,4 +1,4 @@
-use ocl::{Context, Kernel, Program, Queue};
+use ocl::{Kernel, Program};
 
 use crate::core::{algorithm::estimation::EstimationsGPU, model::ModelGPU};
 
@@ -132,22 +132,15 @@ impl PredictionKernel {
 mod tests {
 
     use approx::assert_relative_eq;
-    use ndarray::Array2;
-    use ndarray_stats::QuantileExt;
-    use ocl::{Buffer, Context, Device, Kernel, Platform, Program, Queue};
+    
+    
+    
 
     use crate::core::{
         algorithm::{
-            estimation::prediction::{calculate_system_prediction, innovate_system_states_v1},
+            estimation::prediction::calculate_system_prediction,
             gpu::{prediction::PredictionKernel, GPU},
         },
-        config::{
-            algorithm::Algorithm,
-            model::{SensorArrayGeometry, SensorArrayMotion},
-            simulation::Simulation as SimulationConfig,
-        },
-        data::Data,
-        model::Model,
         scenario::results::Results,
     };
     #[test]

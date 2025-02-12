@@ -1,9 +1,8 @@
-use ocl::{Buffer, Context, Kernel, Program, Queue};
+use ocl::{Buffer, Kernel, Program};
 
 use crate::core::{
     algorithm::{estimation::EstimationsGPU, refinement::derivation::DerivativesGPU},
     config::algorithm::Algorithm,
-    data::shapes::Measurements,
     model::ModelGPU,
 };
 
@@ -247,15 +246,15 @@ impl DerivationKernel {
 mod tests {
 
     use approx::assert_relative_eq;
-    use ndarray::Array2;
+    
     use ndarray_stats::QuantileExt;
-    use ocl::{Buffer, Context, Device, Kernel, MemFlags, Platform, Program, Queue};
+    use ocl::{Buffer, Kernel, MemFlags, Program};
 
     use crate::core::{
         algorithm::{
             estimation::{
                 calculate_residuals,
-                prediction::{calculate_system_prediction, innovate_system_states_v1},
+                prediction::calculate_system_prediction,
             },
             gpu::{derivation::DerivationKernel, prediction::PredictionKernel, GPU},
             refinement::derivation::{
@@ -263,14 +262,8 @@ mod tests {
                 calculate_mapped_residuals, calculate_maximum_regularization,
             },
         },
-        config::{
-            algorithm::Algorithm,
-            model::{SensorArrayGeometry, SensorArrayMotion},
-            simulation::Simulation as SimulationConfig,
-            Config,
-        },
+        config::Config,
         data::Data,
-        model::Model,
         scenario::results::Results,
     };
     #[test]

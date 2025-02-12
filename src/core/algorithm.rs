@@ -12,22 +12,15 @@ use refinement::derivation::{calculate_average_delays, calculate_batch_derivativ
 use tracing::{debug, trace};
 
 use self::estimation::{
-    calculate_delays_delta, calculate_gains_delta, calculate_post_update_residuals,
     calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
 };
 use super::{
     config::algorithm::Algorithm,
     data::{
-        shapes::{
-            MeasurementsAtStep, Residuals, SystemStates, SystemStatesAtStep, SystemStatesAtStepMut,
-        },
+        shapes::SystemStates,
         Data,
     },
-    model::functional::{
-        allpass::shapes::{Coefs, Gains, UnitDelays},
-        measurement::MeasurementMatrixAtBeat,
-        FunctionalDescription,
-    },
+    model::functional::FunctionalDescription,
     scenario::results::Results,
 };
 use crate::core::algorithm::{
