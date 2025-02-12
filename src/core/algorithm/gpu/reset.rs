@@ -1,12 +1,11 @@
 use ocl::{Buffer, Kernel, Program};
 
+use super::GPU;
 use crate::core::{
     algorithm::{estimation::EstimationsGPU, refinement::derivation::DerivativesGPU},
     config::algorithm::Algorithm,
     model::ModelGPU,
 };
-
-use super::GPU;
 
 pub struct ResetKernel {
     system_states_kernel: Kernel,

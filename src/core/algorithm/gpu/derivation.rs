@@ -1,12 +1,11 @@
 use ocl::{Buffer, Kernel, Program};
 
+use super::GPU;
 use crate::core::{
     algorithm::{estimation::EstimationsGPU, refinement::derivation::DerivativesGPU},
     config::algorithm::Algorithm,
     model::ModelGPU,
 };
-
-use super::GPU;
 
 pub struct DerivationKernel {
     residual_kernel: Kernel,
@@ -246,16 +245,12 @@ impl DerivationKernel {
 mod tests {
 
     use approx::assert_relative_eq;
-    
     use ndarray_stats::QuantileExt;
     use ocl::{Buffer, Kernel, MemFlags, Program};
 
     use crate::core::{
         algorithm::{
-            estimation::{
-                calculate_residuals,
-                prediction::calculate_system_prediction,
-            },
+            estimation::{calculate_residuals, prediction::calculate_system_prediction},
             gpu::{derivation::DerivationKernel, prediction::PredictionKernel, GPU},
             refinement::derivation::{
                 calculate_derivatives_coefs_textbook, calculate_derivatives_gains,

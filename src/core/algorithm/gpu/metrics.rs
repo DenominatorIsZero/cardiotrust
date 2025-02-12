@@ -1,5 +1,6 @@
 use ocl::{Buffer, Kernel, Program};
 
+use super::GPU;
 use crate::core::{
     algorithm::{
         estimation::EstimationsGPU, metrics::MetricsGPU, refinement::derivation::DerivativesGPU,
@@ -7,8 +8,6 @@ use crate::core::{
     config::algorithm::Algorithm,
     model::ModelGPU,
 };
-
-use super::GPU;
 
 pub struct MetricsKernel {
     mse_step_kernel: Kernel,

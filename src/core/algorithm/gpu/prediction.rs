@@ -1,8 +1,7 @@
 use ocl::{Kernel, Program};
 
-use crate::core::{algorithm::estimation::EstimationsGPU, model::ModelGPU};
-
 use super::GPU;
+use crate::core::{algorithm::estimation::EstimationsGPU, model::ModelGPU};
 
 pub struct PredictionKernel {
     innovate_kernel: Kernel,
@@ -132,9 +131,6 @@ impl PredictionKernel {
 mod tests {
 
     use approx::assert_relative_eq;
-    
-    
-    
 
     use crate::core::{
         algorithm::{

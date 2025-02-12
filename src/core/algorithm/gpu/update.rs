@@ -1,12 +1,10 @@
 use ocl::{Kernel, Program};
 
+use super::GPU;
 use crate::core::{
-    algorithm::refinement::derivation::DerivativesGPU,
-    config::algorithm::Algorithm,
+    algorithm::refinement::derivation::DerivativesGPU, config::algorithm::Algorithm,
     model::ModelGPU,
 };
-
-use super::GPU;
 
 pub struct UpdateKernel {
     gains_kernel: Kernel,
@@ -91,16 +89,11 @@ impl UpdateKernel {
 mod tests {
 
     use approx::assert_relative_eq;
-    
-    
-    
 
+    use super::UpdateKernel;
     use crate::core::{
         algorithm::{
-            estimation::{
-                calculate_residuals,
-                prediction::calculate_system_prediction,
-            },
+            estimation::{calculate_residuals, prediction::calculate_system_prediction},
             gpu::{derivation::DerivationKernel, prediction::PredictionKernel, GPU},
             refinement::{
                 derivation::{
@@ -114,8 +107,6 @@ mod tests {
         data::Data,
         scenario::results::Results,
     };
-
-    use super::UpdateKernel;
     #[test]
     #[allow(
         clippy::cast_possible_truncation,

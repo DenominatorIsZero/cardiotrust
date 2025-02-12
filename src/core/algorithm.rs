@@ -16,10 +16,7 @@ use self::estimation::{
 };
 use super::{
     config::algorithm::Algorithm,
-    data::{
-        shapes::SystemStates,
-        Data,
-    },
+    data::{shapes::SystemStates, Data},
     model::functional::FunctionalDescription,
     scenario::results::Results,
 };
