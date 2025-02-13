@@ -27,15 +27,27 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, mut model, results) = setup_inputs(&config);
+        let (_, mut results) = setup_inputs(&config);
 
         // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
+        let number_of_voxels = results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("gains", voxel_size), |b| {
             b.iter(|| {
                 update_gains_sgd(
-                    &mut model.functional_description.ap_params.gains,
+                    &mut results
+                        .model
+                        .as_mut()
+                        .unwrap()
+                        .functional_description
+                        .ap_params
+                        .gains,
                     &results.derivatives.gains,
                     config.algorithm.learning_rate,
                     2000,
@@ -50,23 +62,30 @@ fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, mut model, results) = setup_inputs(&config);
+        let (_, mut results) = setup_inputs(&config);
 
         // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
+        let number_of_voxels = results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
+        let functional_description = &mut results.model.as_mut().unwrap().functional_description;
         group.bench_function(BenchmarkId::new("delays", voxel_size), |b| {
             b.iter(|| {
                 update_delays_sgd(
-                    &mut model.functional_description.ap_params.coefs,
+                    &mut functional_description.ap_params.coefs,
                     &results.derivatives.coefs,
                     config.algorithm.learning_rate,
                     2000,
                     1e-3,
                 );
                 roll_delays(
-                    &mut model.functional_description.ap_params.coefs,
-                    &mut model.functional_description.ap_params.delays,
+                    &mut functional_description.ap_params.coefs,
+                    &mut functional_description.ap_params.delays,
                 );
             })
         });
@@ -88,7 +107,7 @@ fn setup_config(voxel_size: &f32) -> Config {
     config
 }
 
-fn setup_inputs(config: &Config) -> (Data, Model, Results) {
+fn setup_inputs(config: &Config) -> (Data, Results) {
     let simulation_config = &config.simulation;
     let data =
         Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
@@ -107,17 +126,12 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         config.algorithm.batch_size,
         config.algorithm.optimizer,
     );
+    results.model = Some(model);
 
     let mut batch_index = 0;
-    run_epoch(
-        &mut model.functional_description,
-        &mut results,
-        &mut batch_index,
-        &data,
-        &config.algorithm,
-    );
+    run_epoch(&mut results, &mut batch_index, &data, &config.algorithm);
 
-    (data, model, results)
+    (data, results)
 }
 
 criterion_group! {name = benches;

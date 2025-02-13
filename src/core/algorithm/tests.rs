@@ -10,22 +10,11 @@ mod loss_decreases;
 mod no_crash;
 
 #[tracing::instrument(level = "info", skip_all)]
-fn run(
-    functional_description: &mut FunctionalDescription,
-    results: &mut Results,
-    data: &Data,
-    algorithm_config: &Algorithm,
-) {
+fn run(results: &mut Results, data: &Data, algorithm_config: &Algorithm) {
     info!("Running optimization.");
     let mut batch_index = 0;
     for _ in 0..algorithm_config.epochs {
-        run_epoch(
-            functional_description,
-            results,
-            &mut batch_index,
-            data,
-            algorithm_config,
-        );
+        run_epoch(results, &mut batch_index, data, algorithm_config);
     }
     results
         .estimations

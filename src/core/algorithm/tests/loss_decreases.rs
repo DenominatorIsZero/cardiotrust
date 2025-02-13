@@ -68,13 +68,9 @@ fn loss_decreases() {
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
+    results.model = Some(model);
 
-    run(
-        &mut model.functional_description,
-        &mut results,
-        &data,
-        &algorithm_config,
-    );
+    run(&mut results, &data, &algorithm_config);
 
     (0..algorithm_config.epochs - 1).for_each(|i| {
         println!(
@@ -124,13 +120,9 @@ fn loss_decreases_and_plot() {
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
+    results.model = Some(model);
 
-    run(
-        &mut model.functional_description,
-        &mut results,
-        &data,
-        &algorithm_config,
-    );
+    run(&mut results, &data, &algorithm_config);
 
     let path = Path::new(COMMON_PATH).join("default").join("loss.png");
     standard_y_plot(
@@ -160,9 +152,27 @@ fn loss_decreases_and_plot() {
     states_spherical_plot(
         &results.estimations.system_states_spherical,
         &results.estimations.system_states_spherical_max,
-        &model.spatial_description.voxels.positions_mm,
-        model.spatial_description.voxels.size_mm,
-        &model.spatial_description.voxels.numbers,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .positions_mm,
+        results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .size_mm,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .numbers,
         Some(path.as_path()),
         None,
         Some(StateSphericalPlotMode::ABS),
@@ -178,10 +188,28 @@ fn loss_decreases_and_plot() {
     states_spherical_plot_over_time(
         &results.estimations.system_states_spherical,
         &results.estimations.system_states_spherical_max,
-        &model.spatial_description.voxels.positions_mm,
-        model.spatial_description.voxels.size_mm,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .positions_mm,
+        results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .size_mm,
         simulation_config.sample_rate_hz,
-        &model.spatial_description.voxels.numbers,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .numbers,
         Some(path.as_path()),
         Some(PlotSlice::Z(0)),
         Some(StateSphericalPlotMode::ABS),
@@ -231,13 +259,9 @@ fn loss_decreases_kalman() {
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
+    results.model = Some(model);
 
-    run(
-        &mut model.functional_description,
-        &mut results,
-        &data,
-        &algorithm_config,
-    );
+    run(&mut results, &data, &algorithm_config);
 
     println!("{:?}", results.metrics.loss_mse_batch);
 
@@ -283,13 +307,9 @@ fn loss_decreases_no_kalman() {
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
+    results.model = Some(model);
 
-    run(
-        &mut model.functional_description,
-        &mut results,
-        &data,
-        &algorithm_config,
-    );
+    run(&mut results, &data, &algorithm_config);
 
     println!("{:?}", results.metrics.loss_batch);
     (0..algorithm_config.epochs - 1).for_each(|i| {
@@ -335,13 +355,9 @@ fn loss_decreases_no_kalman_and_plot() {
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
+    results.model = Some(model);
 
-    run(
-        &mut model.functional_description,
-        &mut results,
-        &data,
-        &algorithm_config,
-    );
+    run(&mut results, &data, &algorithm_config);
 
     let path = Path::new(COMMON_PATH).join("no_kalman").join("loss.png");
     standard_y_plot(
@@ -370,9 +386,27 @@ fn loss_decreases_no_kalman_and_plot() {
     states_spherical_plot(
         &results.estimations.system_states_spherical,
         &results.estimations.system_states_spherical_max,
-        &model.spatial_description.voxels.positions_mm,
-        model.spatial_description.voxels.size_mm,
-        &model.spatial_description.voxels.numbers,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .positions_mm,
+        results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .size_mm,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .numbers,
         Some(path.as_path()),
         None,
         Some(StateSphericalPlotMode::ABS),
@@ -388,10 +422,28 @@ fn loss_decreases_no_kalman_and_plot() {
     states_spherical_plot_over_time(
         &results.estimations.system_states_spherical,
         &results.estimations.system_states_spherical_max,
-        &model.spatial_description.voxels.positions_mm,
-        model.spatial_description.voxels.size_mm,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .positions_mm,
+        results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .size_mm,
         simulation_config.sample_rate_hz,
-        &model.spatial_description.voxels.numbers,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .numbers,
         Some(path.as_path()),
         Some(PlotSlice::Z(0)),
         Some(StateSphericalPlotMode::ABS),
@@ -442,13 +494,9 @@ fn loss_decreases_kalman_and_plot() {
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
+    results.model = Some(model);
 
-    run(
-        &mut model.functional_description,
-        &mut results,
-        &data,
-        &algorithm_config,
-    );
+    run(&mut results, &data, &algorithm_config);
 
     let path = Path::new(COMMON_PATH).join("full_kalman").join("loss.png");
     standard_y_plot(
@@ -477,9 +525,27 @@ fn loss_decreases_kalman_and_plot() {
     states_spherical_plot(
         &results.estimations.system_states_spherical,
         &results.estimations.system_states_spherical_max,
-        &model.spatial_description.voxels.positions_mm,
-        model.spatial_description.voxels.size_mm,
-        &model.spatial_description.voxels.numbers,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .positions_mm,
+        results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .size_mm,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .numbers,
         Some(path.as_path()),
         None,
         Some(StateSphericalPlotMode::ABS),
@@ -497,10 +563,28 @@ fn loss_decreases_kalman_and_plot() {
     states_spherical_plot_over_time(
         &results.estimations.system_states_spherical,
         &results.estimations.system_states_spherical_max,
-        &model.spatial_description.voxels.positions_mm,
-        model.spatial_description.voxels.size_mm,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .positions_mm,
+        results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .size_mm,
         simulation_config.sample_rate_hz,
-        &model.spatial_description.voxels.numbers,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .numbers,
         Some(path.as_path()),
         Some(PlotSlice::Z(0)),
         Some(StateSphericalPlotMode::ABS),

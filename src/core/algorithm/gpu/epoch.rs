@@ -120,3 +120,129 @@ impl EpochKernel {
         self.helper_kernel.increase_epoch();
     }
 }
+
+mod tests {
+
+    use approx::assert_relative_eq;
+    use ocl::{Buffer, Kernel, MemFlags, Program};
+
+    use crate::core::{
+        algorithm::{
+            estimation::{calculate_residuals, prediction::calculate_system_prediction},
+            gpu::{derivation::DerivationKernel, prediction::PredictionKernel, GPU},
+            refinement::derivation::{
+                calculate_derivatives_coefs_textbook, calculate_derivatives_gains,
+                calculate_mapped_residuals, calculate_maximum_regularization,
+            },
+            run_epoch,
+        },
+        config::Config,
+        data::Data,
+        scenario::results::Results,
+    };
+
+    use super::EpochKernel;
+    #[test]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_possible_wrap,
+        clippy::too_many_lines,
+        clippy::similar_names
+    )]
+    fn test_epoch() {
+        let config = Config::default();
+        let mut results_cpu = Results::get_default();
+        let gpu = GPU::new();
+        let results_gpu = results_cpu.to_gpu(&gpu.queue);
+        let data = Data::get_default();
+        let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue);
+        let number_of_states = data.simulation.system_states.num_states();
+        let number_of_sensors = results_cpu
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .sensors
+            .count();
+        let epoch_kernel = EpochKernel::new(
+            &gpu,
+            &results_gpu,
+            &actual_measurements,
+            &config.algorithm,
+            number_of_states as i32,
+            number_of_sensors as i32,
+            results_cpu.estimations.measurements.num_steps() as i32,
+        );
+        let mut results_from_gpu = results_cpu.clone();
+
+        let mut batch_index = 0;
+        for _ in 0..config.algorithm.epochs {
+            run_epoch(&mut results_cpu, &mut batch_index, &data, &config.algorithm);
+            epoch_kernel.execute();
+            results_from_gpu.update_from_gpu(&results_gpu);
+            // Model Parameters
+            assert_relative_eq!(
+                results_cpu
+                    .model
+                    .as_ref()
+                    .unwrap()
+                    .functional_description
+                    .ap_params
+                    .gains
+                    .as_slice()
+                    .unwrap(),
+                results_from_gpu
+                    .model
+                    .as_ref()
+                    .unwrap()
+                    .functional_description
+                    .ap_params
+                    .gains
+                    .as_slice()
+                    .unwrap(),
+                epsilon = 1e-5
+            );
+            assert_relative_eq!(
+                results_cpu
+                    .model
+                    .as_ref()
+                    .unwrap()
+                    .functional_description
+                    .ap_params
+                    .coefs
+                    .as_slice()
+                    .unwrap(),
+                results_from_gpu
+                    .model
+                    .as_ref()
+                    .unwrap()
+                    .functional_description
+                    .ap_params
+                    .coefs
+                    .as_slice()
+                    .unwrap(),
+                epsilon = 1e-3
+            );
+            assert_eq!(
+                results_cpu
+                    .model
+                    .as_ref()
+                    .unwrap()
+                    .functional_description
+                    .ap_params
+                    .delays
+                    .as_slice()
+                    .unwrap(),
+                results_from_gpu
+                    .model
+                    .as_ref()
+                    .unwrap()
+                    .functional_description
+                    .ap_params
+                    .delays
+                    .as_slice()
+                    .unwrap(),
+            );
+        }
+    }
+}

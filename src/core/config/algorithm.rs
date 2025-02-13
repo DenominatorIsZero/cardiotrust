@@ -65,7 +65,7 @@ impl Default for Algorithm {
         Self {
             algorithm_type: AlgorithmType::default(),
             optimizer: Optimizer::default(),
-            epochs: 1,
+            epochs: 10,
             batch_size: 0,
             snapshots_interval: 0,
             learning_rate: 200.0,

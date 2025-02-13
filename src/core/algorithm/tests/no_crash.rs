@@ -20,13 +20,14 @@ fn run_epoch_no_crash() {
     let voxels_in_dims = Dim([1000, 1, 1]);
     let number_of_beats = 10;
 
-    let mut functional_description = FunctionalDescription::empty(
+    let model = Model::empty(
         number_of_states,
         number_of_sensors,
         number_of_steps,
-        number_of_beats,
         voxels_in_dims,
+        number_of_beats,
     );
+
     let mut results = Results::new(
         number_of_epochs,
         number_of_steps,
@@ -36,6 +37,7 @@ fn run_epoch_no_crash() {
         config.batch_size,
         config.optimizer,
     );
+    results.model = Some(model);
     let data = Data::empty(
         number_of_sensors,
         number_of_states,
@@ -45,13 +47,7 @@ fn run_epoch_no_crash() {
     );
 
     let mut batch_index = 0;
-    run_epoch(
-        &mut functional_description,
-        &mut results,
-        &mut batch_index,
-        &data,
-        &config,
-    );
+    run_epoch(&mut results, &mut batch_index, &data, &config);
 }
 
 #[test]
@@ -66,12 +62,12 @@ fn run_no_crash() {
         epochs: 3,
         ..Default::default()
     };
-    let mut functional_description = FunctionalDescription::empty(
+    let model = Model::empty(
         number_of_states,
         number_of_sensors,
         number_of_steps,
-        number_of_beats,
         voxels_in_dims,
+        number_of_beats,
     );
     let mut results = Results::new(
         algorithm_config.epochs,
@@ -82,6 +78,7 @@ fn run_no_crash() {
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
+    results.model = Some(model);
     let data = Data::empty(
         number_of_sensors,
         number_of_states,
@@ -90,12 +87,7 @@ fn run_no_crash() {
         number_of_beats,
     );
 
-    run(
-        &mut functional_description,
-        &mut results,
-        &data,
-        &algorithm_config,
-    );
+    run(&mut results, &data, &algorithm_config);
 }
 
 #[test]

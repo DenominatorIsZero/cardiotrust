@@ -25,22 +25,20 @@ fn without_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::
         config.algorithm.update_kalman_gain = false;
 
         // setup inputs
-        let (data, mut model, mut results) = setup_inputs(&config);
+        let (data, mut results) = setup_inputs(&config);
 
         // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
+        let number_of_voxels = results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .count();
         let mut batch_index = 0;
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("without_update", voxel_size), |b| {
-            b.iter(|| {
-                run_epoch(
-                    &mut model.functional_description,
-                    &mut results,
-                    &mut batch_index,
-                    &data,
-                    &config.algorithm,
-                )
-            })
+            b.iter(|| run_epoch(&mut results, &mut batch_index, &data, &config.algorithm))
         });
     }
 }
@@ -53,22 +51,20 @@ fn with_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         config.algorithm.update_kalman_gain = false;
 
         // setup inputs
-        let (data, mut model, mut results) = setup_inputs(&config);
+        let (data, mut results) = setup_inputs(&config);
 
         // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
+        let number_of_voxels = results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .count();
         let mut batch_index = 0;
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("with_update", voxel_size), |b| {
-            b.iter(|| {
-                run_epoch(
-                    &mut model.functional_description,
-                    &mut results,
-                    &mut batch_index,
-                    &data,
-                    &config.algorithm,
-                )
-            })
+            b.iter(|| run_epoch(&mut results, &mut batch_index, &data, &config.algorithm))
         });
     }
 }
@@ -78,22 +74,20 @@ fn with_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (data, mut model, mut results) = setup_inputs(&config);
+        let (data, mut results) = setup_inputs(&config);
 
         // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
+        let number_of_voxels = results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .count();
         let mut batch_index = 0;
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("with_kalman", voxel_size), |b| {
-            b.iter(|| {
-                run_epoch(
-                    &mut model.functional_description,
-                    &mut results,
-                    &mut batch_index,
-                    &data,
-                    &config.algorithm,
-                )
-            })
+            b.iter(|| run_epoch(&mut results, &mut batch_index, &data, &config.algorithm))
         });
     }
 }
@@ -112,7 +106,7 @@ fn setup_config(voxel_size: &f32) -> Config {
     config
 }
 
-fn setup_inputs(config: &Config) -> (Data, Model, Results) {
+fn setup_inputs(config: &Config) -> (Data, Results) {
     let simulation_config = &config.simulation;
     let data =
         Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
@@ -122,7 +116,7 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         simulation_config.duration_s,
     )
     .unwrap();
-    let results = Results::new(
+    let mut results = Results::new(
         config.algorithm.epochs,
         data.simulation.measurements.num_steps(),
         model.spatial_description.sensors.count(),
@@ -131,7 +125,8 @@ fn setup_inputs(config: &Config) -> (Data, Model, Results) {
         config.algorithm.batch_size,
         config.algorithm.optimizer,
     );
-    (data, model, results)
+    results.model = Some(model);
+    (data, results)
 }
 
 criterion_group! {name = epoch_benches;

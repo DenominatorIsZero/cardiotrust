@@ -25,10 +25,16 @@ fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wall
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (model, mut results) = setup_inputs(&config);
+        let (mut results) = setup_inputs(&config);
 
         // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
+        let number_of_voxels = results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("step", voxel_size), |b| {
             b.iter(|| {
@@ -49,10 +55,16 @@ fn bench_epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (model, mut results) = setup_inputs(&config);
+        let (mut results) = setup_inputs(&config);
 
         // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
+        let number_of_voxels = results
+            .model
+            .as_ref()
+            .unwrap()
+            .spatial_description
+            .voxels
+            .count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("epoch", voxel_size), |b| {
             b.iter(|| {
@@ -77,7 +89,7 @@ fn setup_config(voxel_size: &f32) -> Config {
     config
 }
 
-fn setup_inputs(config: &Config) -> (Model, Results) {
+fn setup_inputs(config: &Config) -> (Results) {
     let simulation_config = &config.simulation;
     let data =
         Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
@@ -96,17 +108,12 @@ fn setup_inputs(config: &Config) -> (Model, Results) {
         config.algorithm.batch_size,
         config.algorithm.optimizer,
     );
+    results.model = Some(model);
 
     let mut batch_index = 0;
-    run_epoch(
-        &mut model.functional_description,
-        &mut results,
-        &mut batch_index,
-        &data,
-        &config.algorithm,
-    );
+    run_epoch(&mut results, &mut batch_index, &data, &config.algorithm);
 
-    (model, results)
+    (results)
 }
 
 criterion_group! {name = benches;

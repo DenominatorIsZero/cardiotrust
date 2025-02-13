@@ -111,13 +111,7 @@ pub fn calculate_pseudo_inverse(
 /// This includes calculating the system estimates
 /// and performing one gradient descent step.
 #[tracing::instrument(skip_all, level = "debug")]
-pub fn run_epoch(
-    functional_description: &mut FunctionalDescription,
-    results: &mut Results,
-    batch_index: &mut usize,
-    data: &Data,
-    config: &Algorithm,
-) {
+pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, config: &Algorithm) {
     results.derivatives.reset();
     results.estimations.kalman_gain_converged = false;
     let num_steps = results.estimations.system_states.num_steps();
@@ -142,14 +136,19 @@ pub fn run_epoch(
         estimations.kalman_gain_converged = false;
 
         for step in 0..num_steps {
-            calculate_system_prediction(estimations, functional_description, beat, step);
+            calculate_system_prediction(
+                estimations,
+                &results.model.as_mut().unwrap().functional_description,
+                beat,
+                step,
+            );
 
             calculate_residuals(estimations, data, beat, step);
 
             calculate_step_derivatives(
                 derivatives,
                 estimations,
-                functional_description,
+                &results.model.as_mut().unwrap().functional_description,
                 config,
                 step,
                 beat,
@@ -159,14 +158,19 @@ pub fn run_epoch(
             if config.model.common.apply_system_update {
                 if config.update_kalman_gain {
                     update_kalman_gain_and_check_convergence(
-                        functional_description,
+                        &mut results.model.as_mut().unwrap().functional_description,
                         estimations,
                         beat,
                     );
                 }
                 calculate_system_update(
                     &mut estimations.system_states,
-                    &functional_description.kalman_gain,
+                    &results
+                        .model
+                        .as_ref()
+                        .unwrap()
+                        .functional_description
+                        .kalman_gain,
                     &estimations.residuals,
                     step,
                     config,
@@ -186,15 +190,24 @@ pub fn run_epoch(
             if *n == config.batch_size {
                 calculate_average_delays(
                     &mut estimations.average_delays,
-                    &functional_description.ap_params,
+                    &results
+                        .model
+                        .as_ref()
+                        .unwrap()
+                        .functional_description
+                        .ap_params,
                 );
                 calculate_batch_derivatives(
                     derivatives,
                     estimations,
-                    functional_description,
+                    &results.model.as_ref().unwrap().functional_description,
                     config,
                 );
-                functional_description
+                results
+                    .model
+                    .as_mut()
+                    .unwrap()
+                    .functional_description
                     .ap_params
                     .update(derivatives, config, num_steps, *n);
                 derivatives.reset();
@@ -209,10 +222,24 @@ pub fn run_epoch(
         if n > 0 {
             calculate_average_delays(
                 &mut estimations.average_delays,
-                &functional_description.ap_params,
+                &results
+                    .model
+                    .as_ref()
+                    .unwrap()
+                    .functional_description
+                    .ap_params,
             );
-            calculate_batch_derivatives(derivatives, estimations, functional_description, config);
-            functional_description
+            calculate_batch_derivatives(
+                derivatives,
+                estimations,
+                &results.model.as_ref().unwrap().functional_description,
+                config,
+            );
+            results
+                .model
+                .as_mut()
+                .unwrap()
+                .functional_description
                 .ap_params
                 .update(&mut results.derivatives, config, num_steps, n);
             metrics::calculate_batch(&mut results.metrics, *batch_index);
@@ -221,15 +248,26 @@ pub fn run_epoch(
     } else {
         calculate_average_delays(
             &mut estimations.average_delays,
-            &functional_description.ap_params,
+            &results
+                .model
+                .as_ref()
+                .unwrap()
+                .functional_description
+                .ap_params,
         );
-        calculate_batch_derivatives(derivatives, estimations, functional_description, config);
-        functional_description.ap_params.update(
-            &mut results.derivatives,
+        calculate_batch_derivatives(
+            derivatives,
+            estimations,
+            &results.model.as_ref().unwrap().functional_description,
             config,
-            num_steps,
-            num_beats,
         );
+        results
+            .model
+            .as_mut()
+            .unwrap()
+            .functional_description
+            .ap_params
+            .update(&mut results.derivatives, config, num_steps, num_beats);
         metrics::calculate_batch(&mut results.metrics, *batch_index);
         *batch_index += 1;
     }

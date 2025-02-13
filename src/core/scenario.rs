@@ -510,9 +510,9 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
 
     match scenario.config.algorithm.algorithm_type {
         AlgorithmType::ModelBased => {
+            results.model = Some(model);
             run_model_based(
                 &mut scenario,
-                &mut model,
                 &mut results,
                 &data,
                 &mut summary,
@@ -522,10 +522,10 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         }
         AlgorithmType::PseudoInverse => {
             run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary);
+            results.model = Some(model);
         }
     }
 
-    results.model = Some(model);
     calculate_plotting_arrays(&mut results, &data);
 
     metrics::calculate_final(
@@ -650,7 +650,6 @@ fn run_pseudo_inverse(
 #[tracing::instrument(level = "info", skip_all)]
 fn run_model_based(
     scenario: &mut Scenario,
-    model: &mut Model,
     results: &mut Results,
     data: &Data,
     summary: &mut Summary,
@@ -675,17 +674,18 @@ fn run_model_based(
         let functional_description = if scenario.config.algorithm.snapshots_interval != 0
             && epoch_index % scenario.config.algorithm.snapshots_interval == 0
         {
-            Some(model.functional_description.clone())
+            Some(
+                results
+                    .model
+                    .as_ref()
+                    .unwrap()
+                    .functional_description
+                    .clone(),
+            )
         } else {
             None
         };
-        algorithm::run_epoch(
-            &mut model.functional_description,
-            results,
-            &mut batch_index,
-            data,
-            &scenario.config.algorithm,
-        );
+        algorithm::run_epoch(results, &mut batch_index, data, &scenario.config.algorithm);
         scenario.status = Status::Running(epoch_index);
 
         summary.loss = results.metrics.loss_batch[batch_index - 1];
@@ -711,7 +711,12 @@ fn run_model_based(
     }
     calculate_average_delays(
         &mut results.estimations.average_delays,
-        &model.functional_description.ap_params,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .functional_description
+            .ap_params,
     );
     scenario.config.algorithm.learning_rate = original_learning_rate;
 }
