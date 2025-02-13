@@ -2,6 +2,7 @@ use ocl::{Context, Device, Platform, Queue};
 
 pub mod derivation;
 pub mod epoch;
+pub mod helper;
 pub mod metrics;
 pub mod prediction;
 pub mod reset;

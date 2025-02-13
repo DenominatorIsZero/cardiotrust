@@ -12,6 +12,7 @@ pub struct ResetKernel {
     fir_kernel: Kernel,
     maximum_regularization_kernel: Kernel,
     maximum_regularization_sum_kernel: Kernel,
+    step_kernel: Kernel,
 }
 
 impl ResetKernel {
@@ -39,7 +40,7 @@ impl ResetKernel {
         let reset_program = Program::builder().src(reset_src).build(context).unwrap();
         let system_states_kernel = Kernel::builder()
             .program(&reset_program)
-            .name("reset")
+            .name("reset_float")
             .queue(queue.clone())
             .global_work_size(number_of_steps * number_of_states)
             .arg(&estimations.system_states)
@@ -47,7 +48,7 @@ impl ResetKernel {
             .unwrap();
         let ap_outputs_kernel = Kernel::builder()
             .program(&reset_program)
-            .name("reset")
+            .name("reset_float")
             .queue(queue.clone())
             .global_work_size(number_of_states * 78)
             .arg(&estimations.ap_outputs_now)
@@ -55,7 +56,7 @@ impl ResetKernel {
             .unwrap();
         let gains_kernel = Kernel::builder()
             .program(&reset_program)
-            .name("reset")
+            .name("reset_float")
             .queue(queue.clone())
             .global_work_size(number_of_states * 78)
             .arg(&derivatives.gains)
@@ -63,7 +64,7 @@ impl ResetKernel {
             .unwrap();
         let coefs_kernel = Kernel::builder()
             .program(&reset_program)
-            .name("reset")
+            .name("reset_float")
             .queue(queue.clone())
             .global_work_size(number_of_voxels * 26)
             .arg(&derivatives.coefs)
@@ -71,7 +72,7 @@ impl ResetKernel {
             .unwrap();
         let iir_kernel = Kernel::builder()
             .program(&reset_program)
-            .name("reset")
+            .name("reset_float")
             .queue(queue.clone())
             .global_work_size(number_of_states * 78)
             .arg(&derivatives.coefs_iir)
@@ -79,7 +80,7 @@ impl ResetKernel {
             .unwrap();
         let fir_kernel = Kernel::builder()
             .program(&reset_program)
-            .name("reset")
+            .name("reset_float")
             .queue(queue.clone())
             .global_work_size(number_of_states * 78)
             .arg(&derivatives.coefs_fir)
@@ -87,7 +88,7 @@ impl ResetKernel {
             .unwrap();
         let maximum_regularization_kernel = Kernel::builder()
             .program(&reset_program)
-            .name("reset")
+            .name("reset_float")
             .queue(queue.clone())
             .global_work_size(number_of_states)
             .arg(&derivatives.maximum_regularization)
@@ -95,10 +96,18 @@ impl ResetKernel {
             .unwrap();
         let maximum_regularization_sum_kernel = Kernel::builder()
             .program(&reset_program)
-            .name("reset")
+            .name("reset_float")
             .queue(queue.clone())
             .global_work_size(1)
             .arg(&derivatives.maximum_regularization_sum)
+            .build()
+            .unwrap();
+        let step_kernel = Kernel::builder()
+            .program(&reset_program)
+            .name("reset_int")
+            .queue(queue.clone())
+            .global_work_size(1)
+            .arg(&estimations.step)
             .build()
             .unwrap();
 
@@ -111,6 +120,7 @@ impl ResetKernel {
             fir_kernel,
             maximum_regularization_kernel,
             maximum_regularization_sum_kernel,
+            step_kernel,
         }
     }
 
@@ -128,6 +138,7 @@ impl ResetKernel {
             self.fir_kernel.enq().unwrap();
             self.maximum_regularization_kernel.enq().unwrap();
             self.maximum_regularization_sum_kernel.enq().unwrap();
+            self.step_kernel.enq().unwrap();
         }
     }
 }
