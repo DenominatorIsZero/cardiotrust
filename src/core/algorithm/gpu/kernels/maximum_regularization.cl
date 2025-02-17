@@ -5,28 +5,31 @@ __kernel void calculate_maximum_regularization(
     __global float* maximum_regularization_sum,
     __global const float* system_states,
     __local float* partial_sums,
+    __global const int* step,
     float regularization_threshold,
     int num_voxels
 ) {
     int voxel_idx = get_global_id(0);
     int lid = get_local_id(0);
     int local_size = get_local_size(0);
+    int step_idx = step[0];
+    int num_states = 3 * num_voxels;
 
     float factor_squared = 0.0f;
     
     if (voxel_idx < num_voxels) {
         int state_idx = voxel_idx * 3;
-        float sum = fabs(system_states[state_idx]) + 
-                    fabs(system_states[state_idx + 1]) + 
-                    fabs(system_states[state_idx + 2]);
+        float sum = fabs(system_states[step_idx * num_states + state_idx]) + 
+                    fabs(system_states[step_idx * num_states + state_idx + 1]) + 
+                    fabs(system_states[step_idx * num_states + state_idx + 2]);
                     
         if (sum > regularization_threshold) {
             float factor = sum - regularization_threshold;
             factor_squared = factor * factor;
 
-            maximum_regularization[state_idx] = factor * sign(system_states[state_idx]);
-            maximum_regularization[state_idx + 1] = factor * sign(system_states[state_idx + 1]);
-            maximum_regularization[state_idx + 2] = factor * sign(system_states[state_idx + 2]);
+            maximum_regularization[state_idx] = factor * sign(system_states[step_idx * num_states + state_idx]);
+            maximum_regularization[state_idx + 1] = factor * sign(system_states[step_idx * num_states + state_idx + 1]);
+            maximum_regularization[state_idx + 2] = factor * sign(system_states[step_idx * num_states + state_idx + 2]);
         } else {
             maximum_regularization[state_idx] = 0.0f;
             maximum_regularization[state_idx + 1] = 0.0f;

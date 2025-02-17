@@ -300,7 +300,7 @@ mod tests {
                 .coefs
                 .as_slice()
                 .unwrap(),
-            epsilon = 1e-3
+            epsilon = 1e-5
         );
         assert_eq!(
             results_cpu

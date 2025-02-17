@@ -125,6 +125,7 @@ impl DerivationKernel {
             .arg(&derivatives.maximum_regularization_sum)
             .arg(&estimations.system_states)
             .arg_local::<f32>(work_group_size)
+            .arg(&estimations.step)
             .arg(config.maximum_regularization_threshold)
             .arg(number_of_voxels)
             .build()

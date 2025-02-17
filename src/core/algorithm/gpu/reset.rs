@@ -1,16 +1,19 @@
 use ocl::{Kernel, Program};
 
-use super::GPU;
-use crate::core::algorithm::{estimation::EstimationsGPU, refinement::derivation::DerivativesGPU};
+use super::{metrics, GPU};
+use crate::core::algorithm::{
+    estimation::EstimationsGPU, metrics::MetricsGPU, refinement::derivation::DerivativesGPU,
+};
 
 pub struct ResetKernel {
     system_states_kernel: Kernel,
+    measurements_kernel: Kernel,
+    mse_kernel: Kernel,
     ap_outputs_kernel: Kernel,
     gains_kernel: Kernel,
     coefs_kernel: Kernel,
     iir_kernel: Kernel,
     fir_kernel: Kernel,
-    maximum_regularization_kernel: Kernel,
     maximum_regularization_sum_kernel: Kernel,
     step_kernel: Kernel,
 }
@@ -29,7 +32,9 @@ impl ResetKernel {
         gpu: &GPU,
         estimations: &EstimationsGPU,
         derivatives: &DerivativesGPU,
+        metrics: &MetricsGPU,
         number_of_states: i32,
+        number_of_sensors: i32,
         number_of_steps: i32,
     ) -> Self {
         let context = &gpu.context;
@@ -44,6 +49,22 @@ impl ResetKernel {
             .queue(queue.clone())
             .global_work_size(number_of_steps * number_of_states)
             .arg(&estimations.system_states)
+            .build()
+            .unwrap();
+        let measurements_kernel = Kernel::builder()
+            .program(&reset_program)
+            .name("reset_float")
+            .queue(queue.clone())
+            .global_work_size(number_of_steps * number_of_sensors)
+            .arg(&estimations.measurements)
+            .build()
+            .unwrap();
+        let mse_kernel = Kernel::builder()
+            .program(&reset_program)
+            .name("reset_float")
+            .queue(queue.clone())
+            .global_work_size(number_of_steps)
+            .arg(&metrics.loss_mse)
             .build()
             .unwrap();
         let ap_outputs_kernel = Kernel::builder()
@@ -86,14 +107,6 @@ impl ResetKernel {
             .arg(&derivatives.coefs_fir)
             .build()
             .unwrap();
-        let maximum_regularization_kernel = Kernel::builder()
-            .program(&reset_program)
-            .name("reset_float")
-            .queue(queue.clone())
-            .global_work_size(number_of_states)
-            .arg(&derivatives.maximum_regularization)
-            .build()
-            .unwrap();
         let maximum_regularization_sum_kernel = Kernel::builder()
             .program(&reset_program)
             .name("reset_float")
@@ -113,12 +126,13 @@ impl ResetKernel {
 
         Self {
             system_states_kernel,
+            measurements_kernel,
+            mse_kernel,
             ap_outputs_kernel,
             gains_kernel,
             coefs_kernel,
             iir_kernel,
             fir_kernel,
-            maximum_regularization_kernel,
             maximum_regularization_sum_kernel,
             step_kernel,
         }
@@ -131,12 +145,13 @@ impl ResetKernel {
         // See prediction.rs for implementation details.
         unsafe {
             self.system_states_kernel.enq().unwrap();
+            self.measurements_kernel.enq().unwrap();
+            self.mse_kernel.enq().unwrap();
             self.ap_outputs_kernel.enq().unwrap();
             self.gains_kernel.enq().unwrap();
             self.coefs_kernel.enq().unwrap();
             self.iir_kernel.enq().unwrap();
             self.fir_kernel.enq().unwrap();
-            self.maximum_regularization_kernel.enq().unwrap();
             self.maximum_regularization_sum_kernel.enq().unwrap();
             self.step_kernel.enq().unwrap();
         }

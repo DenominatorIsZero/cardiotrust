@@ -31,7 +31,7 @@ __kernel void calculate_mse_step(
     
     // Write result to global memory
     if (lid == 0) {
-        atomic_add_float(&loss_mse[step_idx], partial_sums[0]);
+        atomic_add_float(&loss_mse[step_idx], partial_sums[0] / num_sensors);
     }
 }
 

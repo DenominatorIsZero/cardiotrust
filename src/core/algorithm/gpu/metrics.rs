@@ -40,7 +40,12 @@ impl MetricsKernel {
 
         let metrics_src =
             std::fs::read_to_string("src/core/algorithm/gpu/kernels/metrics.cl").unwrap();
-        let metrics_program = Program::builder().src(metrics_src).build(context).unwrap();
+        let atomic_src =
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl").unwrap();
+        let metrics_program = Program::builder()
+            .src(format!("{atomic_src}\n{metrics_src}"))
+            .build(context)
+            .unwrap();
 
         let max_size = device.max_wg_size().unwrap();
         let work_group_size = max_size.min(number_of_sensors as usize).next_power_of_two();

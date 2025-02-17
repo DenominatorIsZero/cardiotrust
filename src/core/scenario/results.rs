@@ -120,7 +120,7 @@ impl Results {
             metrics: Metrics::new(
                 algorithm_config.epochs,
                 model.functional_description.control_function_values.len(),
-                algorithm_config.epochs,
+                1,
             ),
             estimations: Estimations::empty(
                 model.spatial_description.voxels.count_states(),
