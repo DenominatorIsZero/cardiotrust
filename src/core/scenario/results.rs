@@ -193,9 +193,9 @@ impl Snapshots {
             ),
             measurements: MeasurementsSnapshots::new(
                 number_of_snapshots,
+                number_of_beats,
                 number_of_steps,
                 number_of_sensors,
-                number_of_beats,
             ),
             current_index: 0,
             number_of_snapshots,
