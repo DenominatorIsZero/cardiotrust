@@ -67,6 +67,7 @@ fn setup_config(voxel_size: &f32) -> Config {
     config.algorithm.freeze_gains = false;
     config.algorithm.batch_size = 0;
     config.algorithm.update_kalman_gain = true;
+    config.algorithm.epochs = 100;
     config
 }
 
@@ -86,6 +87,7 @@ fn setup_inputs(config: &Config) -> (Data, Results, GPU, ResultsGPU, EpochKernel
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),
+        0,
         config.algorithm.batch_size,
         config.algorithm.optimizer,
     );

@@ -107,6 +107,7 @@ fn setup_inputs(config: &Config) -> (Data, Results, GPU, ResultsGPU, PredictionK
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),
+        0,
         config.algorithm.batch_size,
         config.algorithm.optimizer,
     );

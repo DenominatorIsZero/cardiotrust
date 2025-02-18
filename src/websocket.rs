@@ -575,6 +575,7 @@ fn init_scenario(
         number_of_states,
         1,
         1,
+        0,
         Optimizer::Sgd,
     );
     let est_model = Model::empty(

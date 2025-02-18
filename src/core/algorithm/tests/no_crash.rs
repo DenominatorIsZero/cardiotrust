@@ -16,6 +16,7 @@ fn run_epoch_no_crash() {
     let number_of_sensors = 300;
     let number_of_steps = 3;
     let number_of_epochs = 10;
+    let number_of_snapshots = 0;
     let config = AlgorithmConfig::default();
     let voxels_in_dims = Dim([1000, 1, 1]);
     let number_of_beats = 10;
@@ -34,6 +35,7 @@ fn run_epoch_no_crash() {
         number_of_sensors,
         number_of_states,
         number_of_beats,
+        number_of_snapshots,
         config.batch_size,
         config.optimizer,
     );
@@ -56,6 +58,7 @@ fn run_no_crash() {
     let number_of_sensors = 300;
     let number_of_steps = 3;
     let number_of_beats = 7;
+    let number_of_snapshots = 0;
     let voxels_in_dims = Dim([1000, 1, 1]);
 
     let algorithm_config = AlgorithmConfig {
@@ -75,6 +78,7 @@ fn run_no_crash() {
         number_of_sensors,
         number_of_states,
         number_of_beats,
+        number_of_snapshots,
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
@@ -120,6 +124,7 @@ fn pseudo_inverse_success() {
             .sensor_array_motion_steps
             .iter()
             .product(),
+        0,
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );

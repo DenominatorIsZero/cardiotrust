@@ -65,6 +65,7 @@ fn loss_decreases() {
             .sensor_array_motion_steps
             .iter()
             .product(),
+        0,
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
@@ -117,6 +118,7 @@ fn loss_decreases_and_plot() {
             .sensor_array_motion_steps
             .iter()
             .product(),
+        0,
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
@@ -256,6 +258,7 @@ fn loss_decreases_kalman() {
             .sensor_array_motion_steps
             .iter()
             .product(),
+        0,
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
@@ -304,6 +307,7 @@ fn loss_decreases_no_kalman() {
             .sensor_array_motion_steps
             .iter()
             .product(),
+        0,
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
@@ -352,6 +356,7 @@ fn loss_decreases_no_kalman_and_plot() {
             .sensor_array_motion_steps
             .iter()
             .product(),
+        0,
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );
@@ -491,6 +496,7 @@ fn loss_decreases_kalman_and_plot() {
             .sensor_array_motion_steps
             .iter()
             .product(),
+        0,
         algorithm_config.batch_size,
         algorithm_config.optimizer,
     );

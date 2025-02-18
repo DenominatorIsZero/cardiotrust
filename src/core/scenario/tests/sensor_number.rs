@@ -320,8 +320,15 @@ fn plot_results(
             .coefs
     );
     let x_epochs = Array1::range(0.0, first_scenario.config.algorithm.epochs as f32, 1.0);
-    let num_snapshots = first_scenario.results.as_ref().unwrap().snapshots.len() as f32;
-    let x_snapshots = Array1::range(0.0, num_snapshots, 1.0);
+    let num_snapshots = first_scenario
+        .results
+        .as_ref()
+        .unwrap()
+        .snapshots
+        .as_ref()
+        .unwrap()
+        .number_of_snapshots;
+    let x_snapshots = Array1::range(0.0, num_snapshots as f32, 1.0);
 
     for number_of_sensors in number_of_sensors {
         for measurement_covariance in &measurement_covariances {
@@ -402,20 +409,17 @@ fn plot_results(
                                     .ap_params
                                     .delays[(ap, 15)]
                                     as f32;
-
-                                for (i, snapshot) in scenario
+                                let snapshots = scenario
                                     .results
                                     .as_ref()
                                     .unwrap()
                                     .snapshots
-                                    .iter()
-                                    .enumerate()
-                                {
-                                    delays[i] = from_coef_to_samples(
-                                        snapshot.functional_description.ap_params.coefs[(ap, 15)],
-                                    ) + snapshot.functional_description.ap_params.delays
-                                        [(ap, 15)]
-                                        as f32;
+                                    .as_ref()
+                                    .unwrap();
+                                for i in 0..num_snapshots {
+                                    delays[i] =
+                                        from_coef_to_samples(snapshots.ap_coefs[(i, ap, 15)])
+                                            + snapshots.ap_delays[(i, ap, 15)] as f32;
                                     delays_error[i] = target_delay - delays[i];
                                 }
                                 delays_owned.push(delays);

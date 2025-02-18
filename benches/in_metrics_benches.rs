@@ -106,6 +106,7 @@ fn setup_inputs(config: &Config) -> (Results) {
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),
         config.algorithm.batch_size,
+        0,
         config.algorithm.optimizer,
     );
     results.model = Some(model);

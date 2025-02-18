@@ -18,7 +18,7 @@ use toml;
 use tracing::{debug, info, trace};
 
 use self::{
-    results::{Results, Snapshot},
+    results::{Results, Snapshots},
     summary::Summary,
 };
 use super::{
@@ -496,12 +496,19 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
 
     let _ = epoch_tx.send(0);
 
+    let number_of_snapshots = if scenario.config.algorithm.snapshots_interval == 0 {
+        0
+    } else {
+        scenario.config.algorithm.epochs / scenario.config.algorithm.snapshots_interval + 1
+    };
+
     let mut results = Results::new(
         scenario.config.algorithm.epochs,
         model.functional_description.control_function_values.shape()[0],
         model.spatial_description.sensors.count(),
         model.spatial_description.voxels.count_states(),
         model.spatial_description.sensors.count_beats(),
+        number_of_snapshots,
         scenario.config.algorithm.batch_size,
         scenario.config.algorithm.optimizer,
     );
@@ -671,20 +678,6 @@ fn run_model_based(
             scenario.config.algorithm.learning_rate *=
                 scenario.config.algorithm.learning_rate_reduction_factor;
         }
-        let functional_description = if scenario.config.algorithm.snapshots_interval != 0
-            && epoch_index % scenario.config.algorithm.snapshots_interval == 0
-        {
-            Some(
-                results
-                    .model
-                    .as_ref()
-                    .unwrap()
-                    .functional_description
-                    .clone(),
-            )
-        } else {
-            None
-        };
         algorithm::run_epoch(results, &mut batch_index, data, &scenario.config.algorithm);
         scenario.status = Status::Running(epoch_index);
 
@@ -696,10 +689,15 @@ fn run_model_based(
         if scenario.config.algorithm.snapshots_interval != 0
             && epoch_index % scenario.config.algorithm.snapshots_interval == 0
         {
-            results.snapshots.push(Snapshot::new(
+            results.snapshots.as_mut().unwrap().push(
                 &results.estimations,
-                functional_description.unwrap(),
-            ));
+                &results
+                    .model
+                    .as_ref()
+                    .unwrap()
+                    .functional_description
+                    .ap_params,
+            );
         }
 
         let _ = epoch_tx.send(epoch_index);
@@ -720,7 +718,6 @@ fn run_model_based(
     );
     scenario.config.algorithm.learning_rate = original_learning_rate;
 }
-
 /// Enumeration of possible scenario execution statuses.
 ///
 /// * `Planning`: Scenario is being planned.

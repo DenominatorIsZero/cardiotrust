@@ -1,3 +1,6 @@
+use std::ops::Deref;
+
+use ndarray::{s, Array3, Array4};
 use ocl::Queue;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -13,7 +16,10 @@ use crate::core::{
         },
     },
     config::algorithm::Algorithm,
-    model::{functional::FunctionalDescription, Model, ModelGPU},
+    model::{
+        functional::{allpass::APParameters, FunctionalDescription},
+        Model, ModelGPU,
+    },
 };
 
 /// Results contains the outputs from running a scenario.
@@ -25,7 +31,7 @@ pub struct Results {
     pub metrics: Metrics,
     pub estimations: Estimations,
     pub derivatives: Derivatives,
-    pub snapshots: Vec<Snapshot>,
+    pub snapshots: Option<Snapshots>,
     pub model: Option<Model>,
 }
 
@@ -54,6 +60,7 @@ impl Results {
         number_of_sensors: usize,
         number_of_states: usize,
         number_of_beats: usize,
+        number_of_snapshots: usize,
         batch_size: usize,
         optimizer: Optimizer,
     ) -> Self {
@@ -65,7 +72,6 @@ impl Results {
             number_of_beats,
         );
         let derivatives = Derivatives::new(number_of_states, optimizer);
-        let snapshots = Vec::new();
         let batch_size = if batch_size > 0 {
             batch_size
         } else {
@@ -73,6 +79,18 @@ impl Results {
         };
 
         let number_of_batches = (number_of_beats as f32 / batch_size as f32).ceil() as usize;
+
+        let snapshots = if number_of_snapshots > 0 {
+            Some(Snapshots::new(
+                number_of_snapshots,
+                number_of_beats,
+                number_of_steps,
+                number_of_states,
+                number_of_sensors,
+            ))
+        } else {
+            None
+        };
 
         Self {
             metrics: Metrics::new(number_of_epochs, number_of_steps, number_of_batches),
@@ -133,7 +151,7 @@ impl Results {
                 Optimizer::default(),
             ),
             model: Some(model),
-            snapshots: Vec::new(),
+            snapshots: None,
         }
     }
 }
@@ -141,22 +159,192 @@ impl Results {
 /// Snapshot contains estimations and functional description at a point in time.
 /// Used to capture model state during scenario execution.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct Snapshot {
-    pub estimations: Estimations,
-    pub functional_description: FunctionalDescription,
+pub struct Snapshots {
+    pub ap_gains: GainsSnapshots,
+    pub ap_coefs: CoefsSnapshots,
+    pub ap_delays: DelaysSnapshots,
+    pub system_states: SystemStatesSnapshots,
+    pub measurements: MeasurementsSnapshots,
+    current_index: usize,
+    pub number_of_snapshots: usize,
 }
 
-impl Snapshot {
+impl Snapshots {
     #[must_use]
     /// Creates a new Snapshot instance with the provided estimations and
     /// functional description.
     #[tracing::instrument(level = "trace")]
-    pub fn new(estimations: &Estimations, functional_description: FunctionalDescription) -> Self {
+    pub fn new(
+        number_of_snapshots: usize,
+        number_of_beats: usize,
+        number_of_steps: usize,
+        number_of_states: usize,
+        number_of_sensors: usize,
+    ) -> Self {
         trace!("Creating snapshot with estimations and functional description");
         Self {
-            estimations: estimations.clone(),
-            functional_description,
+            ap_gains: GainsSnapshots::new(number_of_snapshots, number_of_states),
+            ap_coefs: CoefsSnapshots::new(number_of_snapshots, number_of_states),
+            ap_delays: DelaysSnapshots::new(number_of_snapshots, number_of_states),
+            system_states: SystemStatesSnapshots::new(
+                number_of_snapshots,
+                number_of_steps,
+                number_of_states,
+            ),
+            measurements: MeasurementsSnapshots::new(
+                number_of_snapshots,
+                number_of_steps,
+                number_of_sensors,
+                number_of_beats,
+            ),
+            current_index: 0,
+            number_of_snapshots,
         }
+    }
+
+    pub fn push(&mut self, estimations: &Estimations, ap_params: &APParameters) {
+        assert!(self.current_index < self.number_of_snapshots);
+        self.ap_gains
+            .0
+            .slice_mut(s![self.current_index, .., ..])
+            .assign(&*ap_params.gains);
+        self.ap_coefs
+            .0
+            .slice_mut(s![self.current_index, .., ..])
+            .assign(&*ap_params.coefs);
+        self.ap_delays
+            .0
+            .slice_mut(s![self.current_index, .., ..])
+            .assign(&*ap_params.delays);
+        self.system_states
+            .0
+            .slice_mut(s![self.current_index, .., ..])
+            .assign(&*estimations.system_states);
+        self.measurements
+            .0
+            .slice_mut(s![self.current_index, .., .., ..])
+            .assign(&*estimations.measurements);
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct GainsSnapshots(Array3<f32>);
+
+impl GainsSnapshots {
+    #[must_use]
+    pub fn new(number_of_snapshots: usize, number_of_states: usize) -> Self {
+        Self(Array3::zeros((number_of_snapshots, number_of_states, 78)))
+    }
+}
+
+impl Deref for GainsSnapshots {
+    type Target = Array3<f32>;
+
+    #[tracing::instrument(level = "trace")]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct CoefsSnapshots(Array3<f32>);
+
+impl CoefsSnapshots {
+    #[must_use]
+    pub fn new(number_of_snapshots: usize, number_of_states: usize) -> Self {
+        Self(Array3::zeros((
+            number_of_snapshots,
+            number_of_states / 3,
+            26,
+        )))
+    }
+}
+
+impl Deref for CoefsSnapshots {
+    type Target = Array3<f32>;
+
+    #[tracing::instrument(level = "trace")]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct DelaysSnapshots(Array3<usize>);
+
+impl DelaysSnapshots {
+    #[must_use]
+    pub fn new(number_of_snapshots: usize, number_of_states: usize) -> Self {
+        Self(Array3::zeros((
+            number_of_snapshots,
+            number_of_states / 3,
+            26,
+        )))
+    }
+}
+
+impl Deref for DelaysSnapshots {
+    type Target = Array3<usize>;
+
+    #[tracing::instrument(level = "trace")]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct SystemStatesSnapshots(Array3<f32>);
+
+impl SystemStatesSnapshots {
+    #[must_use]
+    pub fn new(
+        number_of_snapshots: usize,
+        number_of_steps: usize,
+        number_of_states: usize,
+    ) -> Self {
+        Self(Array3::zeros((
+            number_of_snapshots,
+            number_of_steps,
+            number_of_states,
+        )))
+    }
+}
+
+impl Deref for SystemStatesSnapshots {
+    type Target = Array3<f32>;
+
+    #[tracing::instrument(level = "trace")]
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct MeasurementsSnapshots(Array4<f32>);
+
+impl MeasurementsSnapshots {
+    #[must_use]
+    pub fn new(
+        number_of_snapshots: usize,
+        number_of_beats: usize,
+        number_of_steps: usize,
+        number_of_sensors: usize,
+    ) -> Self {
+        Self(Array4::zeros((
+            number_of_snapshots,
+            number_of_beats,
+            number_of_steps,
+            number_of_sensors,
+        )))
+    }
+}
+
+impl Deref for MeasurementsSnapshots {
+    type Target = Array4<f32>;
+
+    #[tracing::instrument(level = "trace")]
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
