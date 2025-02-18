@@ -27,7 +27,11 @@ use super::{
     data::Data,
     model::Model,
 };
-use crate::core::algorithm::{metrics, refinement::derivation::calculate_average_delays};
+use crate::core::algorithm::{
+    gpu::{epoch::EpochKernel, GPU},
+    metrics,
+    refinement::derivation::calculate_average_delays,
+};
 
 /// Struct representing a scenario configuration and results.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
@@ -527,6 +531,17 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
                 summary_tx,
             );
         }
+        AlgorithmType::ModelBasedGPU => {
+            results.model = Some(model);
+            run_model_based_gpu(
+                &mut scenario,
+                &mut results,
+                &data,
+                &mut summary,
+                epoch_tx,
+                summary_tx,
+            );
+        }
         AlgorithmType::PseudoInverse => {
             run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary);
             results.model = Some(model);
@@ -718,6 +733,109 @@ fn run_model_based(
     );
     scenario.config.algorithm.learning_rate = original_learning_rate;
 }
+
+#[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+#[tracing::instrument(level = "info", skip_all)]
+fn run_model_based_gpu(
+    scenario: &mut Scenario,
+    results: &mut Results,
+    data: &Data,
+    summary: &mut Summary,
+    epoch_tx: &Sender<usize>,
+    summary_tx: &Sender<Summary>,
+) {
+    info!("Running model-based algorithm on gpu");
+    // move data to gpu
+    let gpu = GPU::new();
+    let results_gpu = results.to_gpu(&gpu.queue);
+    let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue);
+    let number_of_states = results
+        .model
+        .as_ref()
+        .unwrap()
+        .spatial_description
+        .voxels
+        .count_states();
+    let number_of_sensors = results
+        .model
+        .as_ref()
+        .unwrap()
+        .spatial_description
+        .sensors
+        .count();
+    let number_of_steps = results.estimations.measurements.num_steps();
+    let mut epoch_kernel = EpochKernel::new(
+        &gpu,
+        &results_gpu,
+        &actual_measurements,
+        &scenario.config.algorithm,
+        number_of_states as i32,
+        number_of_sensors as i32,
+        number_of_steps as i32,
+    );
+
+    let original_learning_rate = scenario.config.algorithm.learning_rate;
+    for epoch_index in 0..scenario.config.algorithm.epochs {
+        if epoch_index == 0 {
+            epoch_kernel.set_freeze_delays(true);
+            epoch_kernel.set_freeze_gains(true);
+        } else if epoch_index == 1 {
+            epoch_kernel.set_freeze_delays(scenario.config.algorithm.freeze_delays);
+            epoch_kernel.set_freeze_gains(scenario.config.algorithm.freeze_gains);
+        }
+        epoch_kernel.execute();
+        scenario.status = Status::Running(epoch_index);
+
+        results.metrics.update_from_gpu(&results_gpu.metrics);
+
+        summary.loss = results.metrics.loss_batch[epoch_index];
+        summary.loss_mse = results.metrics.loss_mse_batch[epoch_index];
+        summary.loss_maximum_regularization =
+            results.metrics.loss_maximum_regularization_batch[epoch_index];
+
+        if scenario.config.algorithm.snapshots_interval != 0
+            && epoch_index % scenario.config.algorithm.snapshots_interval == 0
+        {
+            results
+                .estimations
+                .update_from_gpu(&results_gpu.estimations);
+            results
+                .model
+                .as_mut()
+                .unwrap()
+                .functional_description
+                .ap_params
+                .update_from_gpu(&results_gpu.model.functional_description.ap_params);
+            results.snapshots.as_mut().unwrap().push(
+                &results.estimations,
+                &results
+                    .model
+                    .as_ref()
+                    .unwrap()
+                    .functional_description
+                    .ap_params,
+            );
+        }
+
+        let _ = epoch_tx.send(epoch_index);
+        let _ = summary_tx.send(summary.clone());
+        // Check if algorithm diverged. If so return early
+        if !summary.loss.is_normal() {
+            break;
+        }
+    }
+    results.update_from_gpu(&results_gpu);
+    calculate_average_delays(
+        &mut results.estimations.average_delays,
+        &results
+            .model
+            .as_ref()
+            .unwrap()
+            .functional_description
+            .ap_params,
+    );
+}
+
 /// Enumeration of possible scenario execution statuses.
 ///
 /// * `Planning`: Scenario is being planned.

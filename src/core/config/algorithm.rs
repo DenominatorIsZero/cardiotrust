@@ -9,6 +9,7 @@ use crate::core::algorithm::refinement::Optimizer;
 pub enum AlgorithmType {
     #[default]
     ModelBased,
+    ModelBasedGPU,
     PseudoInverse,
 }
 

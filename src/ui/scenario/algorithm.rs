@@ -269,6 +269,11 @@ fn draw_algorithm_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                 );
                                 ui.selectable_value(
                                     algorithm_type,
+                                    AlgorithmType::ModelBasedGPU,
+                                    "Model Based on GPU",
+                                );
+                                ui.selectable_value(
+                                    algorithm_type,
                                     AlgorithmType::PseudoInverse,
                                     "Pseudo Inverse",
                                 );
@@ -316,6 +321,59 @@ fn draw_algorithm_settings(ui: &mut egui::Ui, algorithm: &mut Algorithm) {
                                 Default: 0 - one update per Epoch.",
                                 )
                                 .truncate(),
+                            );
+                        });
+                    });
+                    // Freeze gains
+                    body.row(ROW_HEIGHT, |mut row| {
+                        row.col(|ui| {
+                            ui.label("Freeze gains");
+                        });
+                        row.col(|ui| {
+                            ui.checkbox(&mut algorithm.freeze_gains, "");
+                        });
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new(
+                                    "Wether or not to freeze the gains\
+                                    preventing them from being changed.",
+                                )
+                                .truncate(),
+                            );
+                        });
+                    });
+                    // Freeze delays
+                    body.row(ROW_HEIGHT, |mut row| {
+                        row.col(|ui| {
+                            ui.label("Freeze delays");
+                        });
+                        row.col(|ui| {
+                            ui.checkbox(&mut algorithm.freeze_delays, "");
+                        });
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new(
+                                    "Wether or not to freeze the delays\
+                                    preventing them from being changed.",
+                                )
+                                .truncate(),
+                            );
+                        });
+                    });
+                }
+                if algorithm_type == &AlgorithmType::ModelBasedGPU {
+                    // Epochs
+                    body.row(ROW_HEIGHT, |mut row| {
+                        row.col(|ui| {
+                            ui.label("Epochs");
+                        });
+                        row.col(|ui| {
+                            ui.add(egui::Slider::new(&mut algorithm.epochs, 1..=1_000_000));
+                        });
+                        row.col(|ui| {
+                            ui.add(
+                                egui::Label::new("The number of epochs to run the algorithm for.")
+                                    .truncate(),
                             );
                         });
                     });
