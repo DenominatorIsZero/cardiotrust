@@ -121,6 +121,14 @@ impl EpochKernel {
         self.metrics_kernel.execute_batch();
         self.helper_kernel.increase_epoch();
     }
+    pub fn set_freeze_delays(&mut self, value: bool) {
+        self.derivation_kernel.set_freeze_delays(value);
+        self.update_kernel.set_freeze_delays(value);
+    }
+    pub fn set_freeze_gains(&mut self, value: bool) {
+        self.derivation_kernel.set_freeze_gains(value);
+        self.update_kernel.set_freeze_gains(value);
+    }
 }
 
 mod tests {

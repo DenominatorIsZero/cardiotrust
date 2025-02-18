@@ -9,6 +9,8 @@ use crate::core::{
 pub struct UpdateKernel {
     gains_kernel: Kernel,
     coefs_kernel: Kernel,
+    freeze_gains: bool,
+    freeze_delays: bool,
 }
 
 impl UpdateKernel {
@@ -68,6 +70,8 @@ impl UpdateKernel {
         Self {
             gains_kernel,
             coefs_kernel,
+            freeze_gains: config.freeze_gains,
+            freeze_delays: config.freeze_delays,
         }
     }
 
@@ -77,9 +81,19 @@ impl UpdateKernel {
         // This would allow better GPU utilization by processing independent beats simultaneously.
         // See prediction.rs for implementation details.
         unsafe {
-            self.gains_kernel.enq().unwrap();
-            self.coefs_kernel.enq().unwrap();
+            if !self.freeze_gains {
+                self.gains_kernel.enq().unwrap();
+            }
+            if !self.freeze_delays {
+                self.coefs_kernel.enq().unwrap();
+            }
         }
+    }
+    pub fn set_freeze_delays(&mut self, value: bool) {
+        self.freeze_delays = value;
+    }
+    pub fn set_freeze_gains(&mut self, value: bool) {
+        self.freeze_gains = value;
     }
 }
 
@@ -113,7 +127,8 @@ mod tests {
         clippy::similar_names
     )]
     fn test_update() {
-        let config = Config::default();
+        let mut config = Config::default();
+        config.algorithm.freeze_delays = false;
         let mut results_cpu = Results::get_default();
         let gpu = GPU::new();
         let results_gpu = results_cpu.to_gpu(&gpu.queue);

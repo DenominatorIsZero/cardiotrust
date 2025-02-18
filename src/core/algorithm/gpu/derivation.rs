@@ -16,6 +16,8 @@ pub struct DerivationKernel {
     fir_kernel: Kernel,
     iir_kernel: Kernel,
     coefs_kernel: Kernel,
+    freeze_gains: bool,
+    freeze_delays: bool,
 }
 
 impl DerivationKernel {
@@ -221,6 +223,8 @@ impl DerivationKernel {
             fir_kernel,
             iir_kernel,
             coefs_kernel,
+            freeze_gains: config.freeze_gains,
+            freeze_delays: config.freeze_delays,
         }
     }
 
@@ -231,14 +235,27 @@ impl DerivationKernel {
         // See prediction.rs for implementation details.
         unsafe {
             self.residual_kernel.enq().unwrap();
-            self.reset_mapped_residual_kernel.enq().unwrap();
-            self.mapped_residual_kernel.enq().unwrap();
+            if !(self.freeze_gains && self.freeze_delays) {
+                self.reset_mapped_residual_kernel.enq().unwrap();
+                self.mapped_residual_kernel.enq().unwrap();
+            }
             self.maximum_regularization_kernel.enq().unwrap();
-            self.gains_kernel.enq().unwrap();
-            self.fir_kernel.enq().unwrap();
-            self.iir_kernel.enq().unwrap();
-            self.coefs_kernel.enq().unwrap();
+            if !self.freeze_gains {
+                self.gains_kernel.enq().unwrap();
+            }
+            if !self.freeze_delays {
+                self.fir_kernel.enq().unwrap();
+                self.iir_kernel.enq().unwrap();
+                self.coefs_kernel.enq().unwrap();
+            }
         }
+    }
+
+    pub fn set_freeze_delays(&mut self, value: bool) {
+        self.freeze_delays = value;
+    }
+    pub fn set_freeze_gains(&mut self, value: bool) {
+        self.freeze_gains = value;
     }
 }
 
@@ -269,7 +286,8 @@ mod tests {
         clippy::similar_names
     )]
     fn test_derivation() {
-        let config = Config::default();
+        let mut config = Config::default();
+        config.algorithm.freeze_delays = false;
         let mut results_cpu = Results::get_default();
         let gpu = GPU::new();
         let results_gpu = results_cpu.to_gpu(&gpu.queue);
