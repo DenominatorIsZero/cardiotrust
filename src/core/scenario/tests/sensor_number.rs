@@ -25,15 +25,42 @@ const COMMON_PATH: &str = "tests/core/scenario/sensor_number/";
 const NUMBER_OF_AP: i32 = 50;
 const VOXELS_PER_AXIS: i32 = 7;
 const NUMBER_OF_EPOCHS_LINE: usize = 20_000;
-const NUMBER_OF_EPOCHS_GRID: usize = 500_000;
+const NUMBER_OF_EPOCHS_GRID: usize = 20_000;
 const LEARNING_RATE_LINE: f32 = 1e5;
-const LEARNING_RATE_GRID: f32 = 1e3;
+const LEARNING_RATE_GRID: f32 = 1e4;
 
 #[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
 enum ScenarioType {
     Line,
-    Grid,
+    Sheet,
+}
+
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines
+)]
+#[test]
+#[ignore]
+fn heavy_sensor_number_sheet() {
+    let base_id = "Sensor Number Sheet";
+    let path = Path::new(COMMON_PATH);
+
+    let number_of_sensors = vec![1, 64];
+    let measurement_varinaces = Array1::<f32>::logspace(10.0, -12.0, 0.0, 4);
+    let trials = 1;
+    let scenario_type = ScenarioType::Sheet;
+
+    create_and_run(
+        scenario_type,
+        number_of_sensors,
+        measurement_varinaces,
+        trials,
+        base_id,
+        path,
+    );
 }
 
 #[allow(
@@ -125,7 +152,7 @@ fn build_scenario(
                 180.0,
             ];
         }
-        ScenarioType::Grid => {
+        ScenarioType::Sheet => {
             scenario
                 .config
                 .simulation
@@ -248,11 +275,11 @@ fn build_scenario(
     // set optimization parameters
     scenario.config.algorithm.epochs = match scenario_type {
         ScenarioType::Line => NUMBER_OF_EPOCHS_LINE,
-        ScenarioType::Grid => NUMBER_OF_EPOCHS_GRID,
+        ScenarioType::Sheet => NUMBER_OF_EPOCHS_GRID,
     };
     scenario.config.algorithm.learning_rate = match scenario_type {
         ScenarioType::Line => LEARNING_RATE_LINE,
-        ScenarioType::Grid => LEARNING_RATE_GRID,
+        ScenarioType::Sheet => LEARNING_RATE_GRID,
     };
     scenario.config.algorithm.optimizer = Optimizer::Sgd;
     scenario.config.algorithm.freeze_delays = false;
@@ -426,7 +453,7 @@ fn plot_results(
                                 delays_error_owned.push(delays_error);
                             }
                         }
-                        ScenarioType::Grid => {
+                        ScenarioType::Sheet => {
                             panic!("Not implemented yet");
                         }
                     }
