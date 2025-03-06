@@ -224,6 +224,7 @@ impl Snapshots {
             .0
             .slice_mut(s![self.current_index, .., .., ..])
             .assign(&*estimations.measurements);
+        self.current_index += 1;
     }
 }
 
