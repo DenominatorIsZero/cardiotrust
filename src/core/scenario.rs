@@ -774,7 +774,6 @@ fn run_model_based_gpu(
         number_of_steps as i32,
     );
 
-    let original_learning_rate = scenario.config.algorithm.learning_rate;
     for epoch_index in 0..scenario.config.algorithm.epochs {
         if epoch_index == 0 {
             epoch_kernel.set_freeze_delays(true);
@@ -784,8 +783,6 @@ fn run_model_based_gpu(
             epoch_kernel.set_freeze_gains(scenario.config.algorithm.freeze_gains);
         }
         epoch_kernel.execute();
-        scenario.status = Status::Running(epoch_index);
-
         results.metrics.update_from_gpu(&results_gpu.metrics);
 
         summary.loss = results.metrics.loss_batch[epoch_index];
