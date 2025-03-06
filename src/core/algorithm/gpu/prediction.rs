@@ -192,6 +192,19 @@ mod tests {
                 .enq()
                 .unwrap();
             prediction_kernel.execute();
+            results_from_gpu.update_from_gpu(&results_gpu);
+            let dif = &*results_cpu.estimations.ap_outputs_now
+                - &*results_from_gpu.estimations.ap_outputs_now;
+            println!("Diference {:?}", dif.as_slice().unwrap());
+            assert_relative_eq!(
+                results_cpu.estimations.ap_outputs_now.as_slice().unwrap(),
+                results_from_gpu
+                    .estimations
+                    .ap_outputs_now
+                    .as_slice()
+                    .unwrap(),
+                epsilon = 1e-6
+            );
         }
         results_from_gpu.update_from_gpu(&results_gpu);
 
