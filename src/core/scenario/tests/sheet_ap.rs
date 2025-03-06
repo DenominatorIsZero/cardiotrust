@@ -35,8 +35,8 @@ fn heavy_homogeneous_down() {
     let base_id = "Sheet AP - Homogenous - Down - ";
     let path = Path::new(COMMON_PATH).join("homogeneous_down");
 
-    let voxels_per_axis = vec![3];
-    let learning_rates = Array1::<f32>::logspace(10.0, 3.0, 6.0, 4).to_vec();
+    let voxels_per_axis = vec![7];
+    let learning_rates = Array1::<f32>::logspace(10.0, 4.0, 5.0, 5).to_vec();
 
     let initial_delay = 5.2;
     let target_delay = 4.1;
@@ -274,7 +274,8 @@ fn plot_results(
         .snapshots
         .as_ref()
         .unwrap()
-        .number_of_snapshots;
+        .number_of_snapshots
+        - 1;
     let x_snapshots = Array1::range(0.0, num_snapshots as f32, 1.0);
 
     for voxels_per_axis in voxels_per_axis {
