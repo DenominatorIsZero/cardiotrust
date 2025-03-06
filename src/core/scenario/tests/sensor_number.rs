@@ -414,8 +414,8 @@ fn plot_results(
                     match scenario_type {
                         ScenarioType::Line => {
                             for ap in 0..NUMBER_OF_AP as usize {
-                                let mut delays = Array1::<f32>::zeros(num_snapshots as usize);
-                                let mut delays_error = Array1::<f32>::zeros(num_snapshots as usize);
+                                let mut delays = Array1::<f32>::zeros(num_snapshots);
+                                let mut delays_error = Array1::<f32>::zeros(num_snapshots);
                                 let target_delay = from_coef_to_samples(
                                     scenario
                                         .data

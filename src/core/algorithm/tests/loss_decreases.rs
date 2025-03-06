@@ -85,6 +85,7 @@ fn loss_decreases() {
 
 #[test]
 #[ignore]
+#[allow(clippy::too_many_lines)]
 fn loss_decreases_and_plot() {
     setup(Some("default"));
     let mut simulation_config = SimulationConfig::default();
@@ -323,6 +324,7 @@ fn loss_decreases_no_kalman() {
 
 #[test]
 #[ignore]
+#[allow(clippy::too_many_lines)]
 fn loss_decreases_no_kalman_and_plot() {
     setup(Some("no_kalman"));
     let mut simulation_config = SimulationConfig::default();
@@ -460,6 +462,7 @@ fn loss_decreases_no_kalman_and_plot() {
 
 #[test]
 #[ignore]
+#[allow(clippy::too_many_lines)]
 fn loss_decreases_kalman_and_plot() {
     setup(Some("full_kalman"));
     let mut simulation_config = SimulationConfig::default();

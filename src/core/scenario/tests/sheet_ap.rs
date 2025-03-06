@@ -409,8 +409,8 @@ fn plot_results(
                         continue;
                     }
                     // add ap to plotting data
-                    let mut delays = Array1::<f32>::zeros(num_snapshots as usize);
-                    let mut delays_error = Array1::<f32>::zeros(num_snapshots as usize);
+                    let mut delays = Array1::<f32>::zeros(num_snapshots);
+                    let mut delays_error = Array1::<f32>::zeros(num_snapshots);
                     let target_delay = from_coef_to_samples(
                         scenario
                             .data

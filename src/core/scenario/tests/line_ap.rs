@@ -327,8 +327,8 @@ fn plot_results(
                 let lr = format!("{:.2e}", scenario.config.algorithm.learning_rate,);
 
                 for ap in 0..number_of_ap as usize {
-                    let mut delays = Array1::<f32>::zeros(num_snapshots as usize);
-                    let mut delays_error = Array1::<f32>::zeros(num_snapshots as usize);
+                    let mut delays = Array1::<f32>::zeros(num_snapshots);
+                    let mut delays_error = Array1::<f32>::zeros(num_snapshots);
                     let target_delay = from_coef_to_samples(
                         scenario
                             .data

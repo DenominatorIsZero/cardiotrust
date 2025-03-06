@@ -17,10 +17,7 @@ use serde::{Deserialize, Serialize};
 use toml;
 use tracing::{debug, info, trace};
 
-use self::{
-    results::Results,
-    summary::Summary,
-};
+use self::{results::Results, summary::Summary};
 use super::{
     algorithm::{self, calculate_pseudo_inverse},
     config::{algorithm::AlgorithmType, Config},

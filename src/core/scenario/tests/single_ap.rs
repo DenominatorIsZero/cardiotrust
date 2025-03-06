@@ -370,10 +370,10 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
                 .loss_mse_batch
                 .clone(),
         );
-        let mut ap_param = Array1::<f32>::zeros(num_snapshots as usize);
-        let mut delays = Array1::<f32>::zeros(num_snapshots as usize);
-        let mut delays_error = Array1::<f32>::zeros(num_snapshots as usize);
-        let mut ap_param_error = Array1::<f32>::zeros(num_snapshots as usize);
+        let mut ap_param = Array1::<f32>::zeros(num_snapshots);
+        let mut delays = Array1::<f32>::zeros(num_snapshots);
+        let mut delays_error = Array1::<f32>::zeros(num_snapshots);
+        let mut ap_param_error = Array1::<f32>::zeros(num_snapshots);
 
         gt_states.push(
             scenario

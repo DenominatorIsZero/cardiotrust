@@ -4,10 +4,7 @@ use super::{
     derivation::DerivationKernel, helper::HelperKernel, metrics::MetricsKernel,
     prediction::PredictionKernel, reset::ResetKernel, update::UpdateKernel, GPU,
 };
-use crate::core::{
-    config::algorithm::Algorithm,
-    scenario::results::ResultsGPU,
-};
+use crate::core::{config::algorithm::Algorithm, scenario::results::ResultsGPU};
 
 pub struct EpochKernel {
     reset_kernel: ResetKernel,
@@ -128,14 +125,19 @@ impl EpochKernel {
 }
 
 mod tests {
+    use approx::assert_relative_eq;
+    use ndarray_stats::QuantileExt;
 
-    
-    
-    
+    use crate::core::{
+        algorithm::{
+            gpu::{epoch::EpochKernel, GPU},
+            run_epoch,
+        },
+        config::Config,
+        data::Data,
+        scenario::results::Results,
+    };
 
-    
-
-    
     #[test]
     #[allow(
         clippy::cast_possible_truncation,
@@ -174,7 +176,7 @@ mod tests {
 
         let mut batch_index = 0;
         for epoch in 0..config.algorithm.epochs {
-            println!("Epoch: {}", epoch);
+            println!("Epoch: {epoch}");
             run_epoch(&mut results_cpu, &mut batch_index, &data, &config.algorithm);
             epoch_kernel.execute();
             results_from_gpu.update_from_gpu(&results_gpu);

@@ -16,10 +16,7 @@ use crate::core::{
         },
     },
     config::algorithm::Algorithm,
-    model::{
-        functional::allpass::APParameters,
-        Model, ModelGPU,
-    },
+    model::{functional::allpass::APParameters, Model, ModelGPU},
 };
 
 /// Results contains the outputs from running a scenario.
@@ -159,6 +156,7 @@ impl Results {
 /// Snapshot contains estimations and functional description at a point in time.
 /// Used to capture model state during scenario execution.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[allow(clippy::unsafe_derive_deserialize)]
 pub struct Snapshots {
     pub ap_gains: GainsSnapshots,
     pub ap_coefs: CoefsSnapshots,
@@ -202,6 +200,7 @@ impl Snapshots {
         }
     }
 
+    #[allow(clippy::missing_panics_doc)]
     pub fn push(&mut self, estimations: &Estimations, ap_params: &APParameters) {
         assert!(self.current_index < self.number_of_snapshots);
         self.ap_gains
@@ -270,7 +269,7 @@ impl Deref for CoefsSnapshots {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct DelaysSnapshots(Array3<usize>);
 
 impl DelaysSnapshots {

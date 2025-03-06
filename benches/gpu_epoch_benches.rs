@@ -2,10 +2,7 @@ use std::time::Duration;
 
 use cardiotrust::core::{
     algorithm::{
-        gpu::{
-            derivation::DerivationKernel, epoch::EpochKernel,
-            update::UpdateKernel, GPU,
-        },
+        gpu::{epoch::EpochKernel, GPU},
         run_epoch,
     },
     config::Config,
@@ -91,43 +88,6 @@ fn setup_inputs(config: &Config) -> (Data, Results, GPU, ResultsGPU, EpochKernel
     let gpu = GPU::new();
     let results_gpu = results.to_gpu(&gpu.queue);
     let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue);
-    let derivation_kernel = DerivationKernel::new(
-        &gpu,
-        &results_gpu.estimations,
-        &results_gpu.derivatives,
-        &actual_measurements,
-        &results_gpu.model,
-        results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .voxels
-            .count_states() as i32,
-        results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .sensors
-            .count() as i32,
-        results.estimations.measurements.num_steps() as i32,
-        &config.algorithm,
-    );
-    let update_kernel = UpdateKernel::new(
-        &gpu,
-        &results_gpu.derivatives,
-        &results_gpu.model,
-        results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .voxels
-            .count_states() as i32,
-        results.estimations.measurements.num_steps() as i32,
-        &config.algorithm,
-    );
     let epoch_kernel = EpochKernel::new(
         &gpu,
         &results_gpu,
