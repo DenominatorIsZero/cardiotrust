@@ -20,7 +20,7 @@ use cardiotrust::core::{
 };
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-const VOXEL_SIZES: [f32; 4] = [1.0, 2.0, 2.5, 5.0];
+const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("GPU Epoch");
@@ -31,7 +31,7 @@ fn run_benches(c: &mut Criterion) {
 fn epoch_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
-        let (data, mut results, _gpu, _results_gpu, epoch_kernel) = setup_inputs(&config);
+        let (data, mut results, gpu, _results_gpu, epoch_kernel) = setup_inputs(&config);
 
         let number_of_voxels = results
             .model
@@ -50,6 +50,7 @@ fn epoch_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::W
         group.bench_function(BenchmarkId::new("gpu", voxel_size), |b| {
             b.iter(|| {
                 epoch_kernel.execute();
+                gpu.queue.finish().unwrap();
             })
         });
     }
