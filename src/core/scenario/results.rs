@@ -17,7 +17,7 @@ use crate::core::{
     },
     config::algorithm::Algorithm,
     model::{
-        functional::{allpass::APParameters, FunctionalDescription},
+        functional::allpass::APParameters,
         Model, ModelGPU,
     },
 };

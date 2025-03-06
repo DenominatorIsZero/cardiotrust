@@ -1,7 +1,7 @@
 use ocl::{Kernel, Program};
 
 use super::GPU;
-use crate::core::algorithm::{estimation::EstimationsGPU, refinement::derivation::DerivativesGPU};
+use crate::core::algorithm::estimation::EstimationsGPU;
 
 pub struct HelperKernel {
     step_kernel: Kernel,

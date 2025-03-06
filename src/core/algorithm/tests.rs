@@ -1,8 +1,7 @@
 use tracing::info;
 
 use crate::core::{
-    algorithm::run_epoch, config::algorithm::Algorithm, data::Data,
-    model::functional::FunctionalDescription, scenario::results::Results,
+    algorithm::run_epoch, config::algorithm::Algorithm, data::Data, scenario::results::Results,
 };
 
 mod all_pass_optimization;

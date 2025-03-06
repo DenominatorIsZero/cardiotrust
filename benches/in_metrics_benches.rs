@@ -25,7 +25,7 @@ fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wall
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (mut results) = setup_inputs(&config);
+        let mut results = setup_inputs(&config);
 
         // run bench
         let number_of_voxels = results
@@ -55,7 +55,7 @@ fn bench_epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (mut results) = setup_inputs(&config);
+        let mut results = setup_inputs(&config);
 
         // run bench
         let number_of_voxels = results
@@ -89,11 +89,11 @@ fn setup_config(voxel_size: &f32) -> Config {
     config
 }
 
-fn setup_inputs(config: &Config) -> (Results) {
+fn setup_inputs(config: &Config) -> Results {
     let simulation_config = &config.simulation;
     let data =
         Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
-    let mut model = Model::from_model_config(
+    let model = Model::from_model_config(
         &config.algorithm.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
@@ -114,7 +114,7 @@ fn setup_inputs(config: &Config) -> (Results) {
     let mut batch_index = 0;
     run_epoch(&mut results, &mut batch_index, &data, &config.algorithm);
 
-    (results)
+    results
 }
 
 criterion_group! {name = benches;

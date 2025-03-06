@@ -47,7 +47,7 @@ fn loss_decreases() {
     algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
     algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
-    let mut model = Model::from_model_config(
+    let model = Model::from_model_config(
         &algorithm_config.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
@@ -98,7 +98,7 @@ fn loss_decreases_and_plot() {
     algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
     algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
-    let mut model = Model::from_model_config(
+    let model = Model::from_model_config(
         &algorithm_config.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
@@ -240,7 +240,7 @@ fn loss_decreases_kalman() {
     algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
     algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
-    let mut model = Model::from_model_config(
+    let model = Model::from_model_config(
         &algorithm_config.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
@@ -286,7 +286,7 @@ fn loss_decreases_no_kalman() {
     algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
     algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
-    let mut model = Model::from_model_config(
+    let model = Model::from_model_config(
         &algorithm_config.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
@@ -336,7 +336,7 @@ fn loss_decreases_no_kalman_and_plot() {
     algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
     algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
-    let mut model = Model::from_model_config(
+    let model = Model::from_model_config(
         &algorithm_config.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
@@ -478,7 +478,7 @@ fn loss_decreases_kalman_and_plot() {
     algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
     algorithm_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
 
-    let mut model = Model::from_model_config(
+    let model = Model::from_model_config(
         &algorithm_config.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,

@@ -111,7 +111,7 @@ fn setup_inputs(config: &Config) -> (Data, Results) {
     let simulation_config = &config.simulation;
     let data =
         Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
-    let mut model = Model::from_model_config(
+    let model = Model::from_model_config(
         &config.algorithm.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,

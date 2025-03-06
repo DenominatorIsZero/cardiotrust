@@ -18,7 +18,7 @@ use toml;
 use tracing::{debug, info, trace};
 
 use self::{
-    results::{Results, Snapshots},
+    results::Results,
     summary::Summary,
 };
 use super::{

@@ -2,14 +2,9 @@ use std::time::Duration;
 
 use cardiotrust::core::{
     algorithm::{
-        estimation::prediction::calculate_system_prediction,
         gpu::{
-            derivation::DerivationKernel, epoch::EpochKernel, prediction::PredictionKernel,
+            derivation::DerivationKernel, epoch::EpochKernel,
             update::UpdateKernel, GPU,
-        },
-        refinement::{
-            derivation::calculate_step_derivatives,
-            update::{roll_delays, update_delays_sgd, update_gains_sgd},
         },
         run_epoch,
     },

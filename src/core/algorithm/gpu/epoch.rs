@@ -1,15 +1,11 @@
-use ocl::{Buffer, Kernel, Program};
+use ocl::Buffer;
 
 use super::{
     derivation::DerivationKernel, helper::HelperKernel, metrics::MetricsKernel,
     prediction::PredictionKernel, reset::ResetKernel, update::UpdateKernel, GPU,
 };
 use crate::core::{
-    algorithm::{
-        estimation::EstimationsGPU, metrics::MetricsGPU, refinement::derivation::DerivativesGPU,
-    },
     config::algorithm::Algorithm,
-    model::ModelGPU,
     scenario::results::ResultsGPU,
 };
 
@@ -133,26 +129,13 @@ impl EpochKernel {
 
 mod tests {
 
-    use approx::assert_relative_eq;
-    use ndarray_stats::QuantileExt;
-    use ocl::{Buffer, Kernel, MemFlags, Program};
+    
+    
+    
 
-    use crate::core::{
-        algorithm::{
-            estimation::{calculate_residuals, prediction::calculate_system_prediction},
-            gpu::{derivation::DerivationKernel, prediction::PredictionKernel, GPU},
-            refinement::derivation::{
-                calculate_derivatives_coefs_textbook, calculate_derivatives_gains,
-                calculate_mapped_residuals, calculate_maximum_regularization,
-            },
-            run_epoch,
-        },
-        config::Config,
-        data::Data,
-        scenario::results::Results,
-    };
+    
 
-    use super::EpochKernel;
+    
     #[test]
     #[allow(
         clippy::cast_possible_truncation,

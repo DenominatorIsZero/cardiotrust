@@ -1,6 +1,6 @@
 use ocl::{Kernel, Program};
 
-use super::{metrics, GPU};
+use super::GPU;
 use crate::core::algorithm::{
     estimation::EstimationsGPU, metrics::MetricsGPU, refinement::derivation::DerivativesGPU,
 };
