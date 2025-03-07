@@ -54,6 +54,42 @@ fn heavy_runtime_line() {
     create_and_run(scenario_type, &voxel_counts, base_id, path);
 }
 
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines
+)]
+#[test]
+#[ignore]
+fn heavy_runtime_sheet() {
+    let base_id = "Runtime Sheet";
+    let path = Path::new(COMMON_PATH);
+
+    let scenario_type = ScenarioType::Sheet;
+    let voxel_counts = VOXELS_IN_SHEET.to_vec();
+
+    create_and_run(scenario_type, &voxel_counts, base_id, path);
+}
+
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss,
+    clippy::too_many_lines
+)]
+#[test]
+#[ignore]
+fn heavy_runtime_cube() {
+    let base_id = "Runtime Cube";
+    let path = Path::new(COMMON_PATH);
+
+    let scenario_type = ScenarioType::Cube;
+    let voxel_counts = VOXELS_IN_CUBE.to_vec();
+
+    create_and_run(scenario_type, &voxel_counts, base_id, path);
+}
+
 #[tracing::instrument(level = "trace")]
 fn create_and_run(
     scenario_type: ScenarioType,
@@ -319,6 +355,7 @@ fn build_scenario(
     scenario.config.algorithm.epochs = NUMBER_OF_EPOCHS;
     scenario.config.algorithm.learning_rate = LEARNING_RATE;
     scenario.config.algorithm.optimizer = Optimizer::Sgd;
+    scenario.config.algorithm.algorithm_type = algorithm_type;
     scenario.config.algorithm.freeze_delays = false;
     scenario.config.algorithm.freeze_gains = true;
     scenario.config.algorithm.difference_regularization_strength = 0.0;
