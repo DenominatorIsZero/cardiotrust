@@ -293,7 +293,7 @@ fn create_and_run(
                 join_handles.push(handle);
             }
             scenarios.push(scenario);
-        };
+        }
     }
 
     if RUN_IN_TESTS {
