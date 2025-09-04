@@ -120,7 +120,7 @@ impl Sensors {
                 }
 
                 // Randomly select positions
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
                 positions.shuffle(&mut rng);
                 let mut selected_positions = positions[0..num_occupied].to_vec();
 

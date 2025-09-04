@@ -205,7 +205,7 @@ fn process_covariance_from_model_config(
         })
         .for_each(|((_, variance), _)| {
             *variance = normal.map_or(config.common.process_covariance_mean, |dist| {
-                dist.sample(&mut rand::thread_rng())
+                dist.sample(&mut rand::rng())
             });
         });
     process_covariance

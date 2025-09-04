@@ -205,7 +205,7 @@ impl MeasurementCovariance {
             )
             .unwrap();
             measurement_covariance.diag_mut().iter_mut().for_each(|v| {
-                *v = normal.sample(&mut rand::thread_rng());
+                *v = normal.sample(&mut rand::rng());
             });
         }
 

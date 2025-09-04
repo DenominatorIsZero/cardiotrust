@@ -7,7 +7,7 @@ mod tests;
 
 use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
-use rand::{seq::SliceRandom, thread_rng};
+use rand::{seq::SliceRandom, rng};
 use refinement::derivation::{calculate_average_delays, calculate_batch_derivatives};
 use tracing::{debug, trace};
 
@@ -123,7 +123,7 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
     };
 
     let mut beat_indices: Vec<usize> = (0..num_beats).collect();
-    let mut rng = thread_rng();
+    let mut rng = rng();
     beat_indices.shuffle(&mut rng);
 
     let estimations = &mut results.estimations;

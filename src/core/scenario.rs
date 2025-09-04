@@ -5,7 +5,7 @@ mod tests;
 
 use std::{
     fs::{self, File},
-    io::{BufReader, BufWriter, Write},
+    io::{BufReader, Write},
     path::Path,
     sync::mpsc::Sender,
 };
@@ -394,8 +394,13 @@ impl Scenario {
         debug!("Saving scenario data for scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
-        let f = BufWriter::new(File::create(path.join("data.bin"))?);
-        bincode::serialize_into(f, self.data.as_ref().unwrap()).unwrap();
+        let mut f = File::create(path.join("data.bin"))?;
+        bincode::serde::encode_into_std_write(
+            self.data.as_ref().unwrap(),
+            &mut f,
+            bincode::config::standard(),
+        )
+        .unwrap();
         Ok(())
     }
 
@@ -409,8 +414,13 @@ impl Scenario {
         debug!("Saving scenario results for scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
-        let f = BufWriter::new(File::create(path.join("results.bin"))?);
-        bincode::serialize_into(f, self.results.as_ref().unwrap()).unwrap();
+        let mut f = File::create(path.join("results.bin"))?;
+        bincode::serde::encode_into_std_write(
+            self.results.as_ref().unwrap(),
+            &mut f,
+            bincode::config::standard(),
+        )
+        .unwrap();
         Ok(())
     }
 
@@ -428,7 +438,11 @@ impl Scenario {
         let file_path = Path::new("./results").join(&self.id).join("data.bin");
         if file_path.is_file() {
             self.data = Some(
-                bincode::deserialize_from(BufReader::new(File::open(file_path).unwrap())).unwrap(),
+                bincode::serde::decode_from_std_read(
+                    &mut BufReader::new(File::open(file_path).unwrap()),
+                    bincode::config::standard(),
+                )
+                .unwrap(),
             );
         }
     }
@@ -447,7 +461,11 @@ impl Scenario {
         let file_path = Path::new("./results").join(&self.id).join("results.bin");
         if file_path.is_file() {
             self.results = Some(
-                bincode::deserialize_from(BufReader::new(File::open(file_path).unwrap())).unwrap(),
+                bincode::serde::decode_from_std_read(
+                    &mut BufReader::new(File::open(file_path).unwrap()),
+                    bincode::config::standard(),
+                )
+                .unwrap(),
             );
         }
     }
