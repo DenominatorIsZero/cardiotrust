@@ -620,8 +620,8 @@ fn create_and_run(target_delays: Vec<f32>, initial_delay: f32, base_id: &str, pa
     let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
 
     for target_delay in target_delays {
-        let target_delay_s = target_delay / sample_rate_hz;
-        let target_velocity = voxel_size_mm / 1000.0 / target_delay_s;
+        let target_delay_seconds = target_delay / sample_rate_hz;
+        let target_velocity = voxel_size_mm / 1000.0 / target_delay_seconds;
         let id = format!("{base_id} {initial_delay:.2} [samples] to {target_delay:.2} [samples]");
         let path = Path::new("results").join(&id);
         if path.is_dir() {
