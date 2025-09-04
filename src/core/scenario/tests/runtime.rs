@@ -1,24 +1,14 @@
-use std::{
-    fs::{self, File},
-    io::BufWriter,
-    path::Path,
-    sync::mpsc::channel,
-    thread,
-};
-
-use ndarray::Array1;
-use ndarray_npy::WriteNpyExt;
+use std::{path::Path, sync::mpsc::channel, thread};
 
 use super::RUN_IN_TESTS;
 use crate::{
     core::{
-        algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
-        config::{algorithm::AlgorithmType, model::SensorArrayGeometry},
-        model::{functional::allpass::from_coef_to_samples, spatial::voxels::VoxelType},
-        scenario::{run, tests::SAVE_NPY, Scenario},
+        algorithm::refinement::Optimizer,
+        config::algorithm::AlgorithmType,
+        model::spatial::voxels::VoxelType,
+        scenario::{run, Scenario},
     },
-    tests::{clean_files, setup_folder},
-    vis::plotting::png::line::{line_plot, log_y_plot},
+    tests::setup_folder,
 };
 
 const COMMON_PATH: &str = "tests/core/scenario/runtime/";
@@ -43,7 +33,7 @@ enum ScenarioType {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive runtime test"]
 fn heavy_runtime_line() {
     let base_id = "Runtime Line";
     let path = Path::new(COMMON_PATH);
@@ -61,7 +51,7 @@ fn heavy_runtime_line() {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive runtime test"]
 fn heavy_runtime_sheet() {
     let base_id = "Runtime Sheet";
     let path = Path::new(COMMON_PATH);
@@ -79,7 +69,7 @@ fn heavy_runtime_sheet() {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive runtime test"]
 fn heavy_runtime_cube() {
     let base_id = "Runtime Cube";
     let path = Path::new(COMMON_PATH);

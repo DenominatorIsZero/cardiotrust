@@ -31,7 +31,7 @@ const COMMON_PATH: &str = "tests/core/scenario/single_ap/";
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 fn heavy_no_roll_up() {
     let base_id = "Single AP - No Roll - up - ".to_string();
     let path = Path::new(COMMON_PATH).join("no_roll_up");
@@ -61,7 +61,7 @@ fn heavy_no_roll_up() {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 fn heavy_no_roll_down() {
     let base_id = "Single AP - No Roll - down - ".to_string();
     let path = Path::new(COMMON_PATH).join("no_roll_down");
@@ -90,7 +90,7 @@ fn heavy_no_roll_down() {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 fn heavy_yes_roll_up() {
     let base_id = "Single AP - Yes Roll - Up - ".to_string();
     let path = Path::new(COMMON_PATH).join("yes_roll_up");
@@ -117,7 +117,7 @@ fn heavy_yes_roll_up() {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 fn heavy_yes_roll_down() {
     let base_id = "Single AP - Yes Roll - Down - ".to_string();
     let path = Path::new(COMMON_PATH).join("yes_roll_down");

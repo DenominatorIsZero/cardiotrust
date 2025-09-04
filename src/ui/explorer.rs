@@ -108,7 +108,7 @@ pub fn draw_ui_explorer(
                             });
                             selected_scenario.index = Some(scenario_list.entries.len() - 1);
                             commands.insert_resource(NextState::Pending(UiState::Scenario));
-                        };
+                        }
                     });
                     row.col(|_ui| {});
                     row.col(|_ui| {});
@@ -147,7 +147,7 @@ fn draw_row(
             {
                 selected_scenario.index = Some(index);
                 commands.insert_resource(NextState::Pending(UiState::Scenario));
-            };
+            }
         });
         row.col(|ui| {
             if discriminant(scenario_list.entries[index].scenario.get_status())
@@ -220,7 +220,7 @@ fn draw_row(
                 .lost_focus()
             {
                 scenario_list.entries[index].scenario.save().unwrap();
-            };
+            }
         });
     });
 }

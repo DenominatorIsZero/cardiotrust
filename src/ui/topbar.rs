@@ -45,7 +45,7 @@ pub fn draw_ui_topbar(
                 .clicked()
             {
                 commands.insert_resource(NextState::Pending(UiState::Explorer));
-            };
+            }
             if ui
                 .add_enabled(
                     ui_state.get() != &UiState::Scenario && selected_scenario.index.is_some(),
@@ -54,7 +54,7 @@ pub fn draw_ui_topbar(
                 .clicked()
             {
                 commands.insert_resource(NextState::Pending(UiState::Scenario));
-            };
+            }
             if ui
                 .add_enabled(
                     ui_state.get() != &UiState::Results
@@ -73,7 +73,7 @@ pub fn draw_ui_topbar(
                 scenario.load_data();
                 scenario.load_results();
                 commands.insert_resource(NextState::Pending(UiState::Results));
-            };
+            }
             if ui
                 .add_enabled(
                     ui_state.get() != &UiState::Volumetric
@@ -92,7 +92,7 @@ pub fn draw_ui_topbar(
                 scenario.load_data();
                 scenario.load_results();
                 commands.insert_resource(NextState::Pending(UiState::Volumetric));
-            };
+            }
             ui.add(Separator::default().spacing(200.0));
             if ui
                 .add_enabled(
@@ -102,7 +102,7 @@ pub fn draw_ui_topbar(
                 .clicked()
             {
                 commands.insert_resource(NextState::Pending(SchedulerState::Available));
-            };
+            }
             if ui
                 .add_enabled(
                     scheduler_state.get() != &SchedulerState::Paused,
@@ -111,7 +111,7 @@ pub fn draw_ui_topbar(
                 .clicked()
             {
                 commands.insert_resource(NextState::Pending(SchedulerState::Paused));
-            };
+            }
             ui.label("Number of jobs:");
             ui.add(egui::Slider::new(&mut number_of_jobs.value, 1..=32));
         });

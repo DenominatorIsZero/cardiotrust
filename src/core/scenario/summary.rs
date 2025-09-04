@@ -45,7 +45,6 @@ impl Default for Summary {
     /// Returns a `Summary` struct initialized with default values.
     ///
     /// Default values are 0.0 for all fields.
-    #[must_use]
     #[tracing::instrument(level = "trace")]
     fn default() -> Self {
         trace!("Creating default summary");

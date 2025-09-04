@@ -67,7 +67,7 @@ pub fn draw_ui_volumetric(
         {
             let scenario = (**scenario.as_ref().unwrap()).clone();
             ev_setup.send(SetupHeartAndSensors(scenario));
-        };
+        }
         ui.label(egui::RichText::new("Voxel coloring").underline());
         ui.group(|ui| {
             let mut vis_mode = color_options.mode.clone();

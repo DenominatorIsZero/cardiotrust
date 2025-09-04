@@ -30,7 +30,7 @@ const COMMON_PATH: &str = "tests/core/scenario/losslandscape/";
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 fn heavy_loss_landscape() {
     let base_id = "Single AP - Loss Landscape".to_string();
     let base_title = "Single AP - Loss Landscape";
@@ -64,7 +64,7 @@ fn heavy_loss_landscape() {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 fn heavy_loss_landscape_single_sensor() {
     let base_id = "Single AP - Loss Landscape - Single Sensor".to_string();
     let base_title = "Single AP - Loss Landscape - Single Sensor";
@@ -98,7 +98,7 @@ fn heavy_loss_landscape_single_sensor() {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 fn heavy_loss_landscape_triangle() {
     let base_id = "Single AP - Loss Landscape - Triangle".to_string();
     let base_title = "Single AP - Loss Landscape - Triangle";
@@ -132,7 +132,7 @@ fn heavy_loss_landscape_triangle() {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 fn heavy_loss_landscape_ramp() {
     let base_id = "Single AP - Loss Landscape - Ramp".to_string();
     let base_title = "Single AP - Loss Landscape - Ramp";

@@ -644,7 +644,7 @@ impl AverageDelays {
     }
 }
 
-impl<'a, 'b> Sub<&'b AverageDelays> for &'a AverageDelays {
+impl<'b> Sub<&'b AverageDelays> for &AverageDelays {
     type Output = AverageDelays;
 
     #[tracing::instrument(level = "trace")]

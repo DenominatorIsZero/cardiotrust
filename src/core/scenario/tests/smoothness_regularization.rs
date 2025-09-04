@@ -22,7 +22,7 @@ const COMMON_PATH: &str = "tests/core/scenario/smoothness_regularization/";
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 fn heavy_center_patch() {
     let base_id = "Smoothness Regularization".to_string();
     let base_title = "Smoothness Regularization";

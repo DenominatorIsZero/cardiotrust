@@ -5,6 +5,7 @@ use crate::core::algorithm::{
     estimation::EstimationsGPU, metrics::MetricsGPU, refinement::derivation::DerivativesGPU,
 };
 
+#[allow(clippy::struct_field_names)]
 pub struct ResetKernel {
     system_states_kernel: Kernel,
     measurements_kernel: Kernel,

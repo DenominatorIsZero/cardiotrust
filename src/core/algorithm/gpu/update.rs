@@ -89,10 +89,10 @@ impl UpdateKernel {
             }
         }
     }
-    pub fn set_freeze_delays(&mut self, value: bool) {
+    pub const fn set_freeze_delays(&mut self, value: bool) {
         self.freeze_delays = value;
     }
-    pub fn set_freeze_gains(&mut self, value: bool) {
+    pub const fn set_freeze_gains(&mut self, value: bool) {
         self.freeze_gains = value;
     }
 }

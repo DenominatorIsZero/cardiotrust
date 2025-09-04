@@ -3,6 +3,7 @@ use ocl::{Kernel, Program};
 use super::GPU;
 use crate::core::{algorithm::estimation::EstimationsGPU, model::ModelGPU};
 
+#[allow(clippy::struct_field_names)]
 pub struct PredictionKernel {
     innovate_kernel: Kernel,
     add_control_kernel: Kernel,

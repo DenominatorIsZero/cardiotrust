@@ -251,10 +251,10 @@ impl DerivationKernel {
         }
     }
 
-    pub fn set_freeze_delays(&mut self, value: bool) {
+    pub const fn set_freeze_delays(&mut self, value: bool) {
         self.freeze_delays = value;
     }
-    pub fn set_freeze_gains(&mut self, value: bool) {
+    pub const fn set_freeze_gains(&mut self, value: bool) {
         self.freeze_gains = value;
     }
 }
@@ -550,7 +550,7 @@ mod tests {
         // Calculate expected result
         let expected = [
             1.0 * 0.5 + 0.0 * -0.3 + 1.0 * 0.8 + 2.0 * 0.2,
-            0.0 * 0.5 + 1.0 * -0.3 + 1.0 * 0.8 + -1.0 * 0.2,
+            0.0 * 0.5 + 1.0 * -0.3 + 1.0 * 0.8 + -0.2,
         ];
 
         assert_relative_eq!(&result[..], &expected[..], epsilon = 1e-6);

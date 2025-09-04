@@ -132,7 +132,7 @@ mod test {
     const COMMON_PATH: &str = "tests/vis/plotting/gif/states";
 
     #[test]
-    #[ignore]
+    #[ignore = "expensive integration test"]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_abs_default() {
         let path = Path::new(COMMON_PATH);
@@ -169,7 +169,7 @@ mod test {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "expensive integration test"]
     #[allow(clippy::cast_precision_loss)]
     fn test_states_angle_default() {
         let path = Path::new(COMMON_PATH);

@@ -44,7 +44,7 @@ fn run_simulation_default() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 #[allow(clippy::too_many_lines)]
 fn run_simulation_default_and_plot() {
     let folder = Path::new(COMMON_PATH).join("healthy");
@@ -184,7 +184,7 @@ fn run_simulation_pathological() {
 }
 
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 #[allow(clippy::too_many_lines)]
 fn run_simulation_pathological_and_plot() {
     let folder = Path::new(COMMON_PATH).join("pathological");
@@ -376,7 +376,7 @@ fn crawl_through_states(simulation: &Simulation, state: usize) {
 }
 
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 #[allow(clippy::too_many_lines)]
 fn run_simulation_mri_and_plot() {
     let folder = Path::new(COMMON_PATH).join("mri");

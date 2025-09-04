@@ -123,7 +123,7 @@ impl<'a> Deref for SystemStatesAtStepMut<'a> {
     }
 }
 
-impl<'a> DerefMut for SystemStatesAtStepMut<'a> {
+impl DerefMut for SystemStatesAtStepMut<'_> {
     #[tracing::instrument(level = "trace", skip_all)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
@@ -189,7 +189,7 @@ impl SystemStatesSpherical {
     }
 }
 
-impl<'a> std::ops::Sub for &'a SystemStatesSpherical {
+impl std::ops::Sub for &SystemStatesSpherical {
     type Output = SystemStatesSpherical;
 
     #[tracing::instrument(level = "trace")]
@@ -253,7 +253,7 @@ impl SystemStatesSphericalMax {
     }
 }
 
-impl<'a> std::ops::Sub for &'a SystemStatesSphericalMax {
+impl std::ops::Sub for &SystemStatesSphericalMax {
     type Output = SystemStatesSphericalMax;
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -449,7 +449,7 @@ impl<'a> Deref for MeasurementsAtBeatMut<'a> {
     }
 }
 
-impl<'a> DerefMut for MeasurementsAtBeatMut<'a> {
+impl DerefMut for MeasurementsAtBeatMut<'_> {
     #[tracing::instrument(level = "trace", skip_all)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
@@ -477,7 +477,7 @@ impl<'a> Deref for MeasurementsAtStepMut<'a> {
     }
 }
 
-impl<'a> DerefMut for MeasurementsAtStepMut<'a> {
+impl DerefMut for MeasurementsAtStepMut<'_> {
     #[tracing::instrument(level = "trace", skip_all)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0

@@ -43,7 +43,7 @@ enum ScenarioType {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 fn heavy_sensor_number_sheet() {
     let base_id = "Sensor Number Sheet";
     let path = Path::new(COMMON_PATH);
@@ -70,7 +70,7 @@ fn heavy_sensor_number_sheet() {
     clippy::too_many_lines
 )]
 #[test]
-#[ignore]
+#[ignore = "expensive integration test"]
 fn heavy_sensor_number_line() {
     let base_id = "Sensor Number Line";
     let path = Path::new(COMMON_PATH);

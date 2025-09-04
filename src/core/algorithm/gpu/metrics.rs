@@ -8,6 +8,7 @@ use crate::core::{
     config::algorithm::Algorithm,
 };
 
+#[allow(clippy::struct_field_names)]
 pub struct MetricsKernel {
     mse_step_kernel: Kernel,
     max_reg_step_kernel: Kernel,

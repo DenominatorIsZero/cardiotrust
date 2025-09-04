@@ -557,13 +557,13 @@ fn set_heart_voxel_colors_to_activation_time(
     };
 
     let mut offset = 0.0;
-    let mut scaling = 1.0;
-
-    if relative_coloring {
+    let scaling = if relative_coloring {
         let max: f32 = *activation_time_ms.max_skipnan();
         let min: f32 = *activation_time_ms.min_skipnan();
         offset = -min;
-        scaling = 1.0 / (max - min);
+        1.0 / (max - min)
+    } else {
+        1.0
     };
 
     query.par_iter_mut().for_each(|mut data| {
