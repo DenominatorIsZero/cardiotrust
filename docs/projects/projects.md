@@ -390,7 +390,41 @@ Transform CardioTrust from research-quality code into professional software whil
 
 ## Code Quality Projects (Nice-to-have)
 
-### 15. Benchmark Suite Redesign
+### 15. Clippy Allow Decorator Review & Code Quality Polish
+
+**Work Load**: 2 points  
+**Prerequisites**: Error Handling Standardization, Repository Professionalization & Documentation  
+**Priority**: Important  
+**Expected Outcome**: Clean, well-documented codebase with targeted clippy suppressions and improved code quality
+
+**Context**: Currently clippy warnings are temporarily silenced at the crate level to maintain clean builds during development. This technical debt should be addressed systematically to improve code quality while preserving research algorithm integrity.
+
+**Technical Scope**:
+
+- **Audit global allows**: Review crate-level `#[allow(clippy::...)]` suppressions in `src/lib.rs`
+- **Localize suppressions**: Move allows from global to specific functions/modules where appropriate
+- **Add documentation**: Implement missing `# Panics` and `# Errors` documentation sections
+- **Refactor opportunities**: Extract functions to address `too_many_lines`, `cognitive_complexity` warnings
+- **Algorithm preservation**: Document and justify algorithm-specific allows that preserve research correctness
+- **Performance allows**: Document rationale for performance-related suppressions (e.g., hot paths)
+- **Best practices**: Establish patterns for future clippy management and code quality standards
+
+**Current Status**: 8 categories of warnings temporarily silenced globally:
+- `missing_panics_doc` / `missing_errors_doc` - Documentation gaps
+- `too_many_lines` / `cognitive_complexity` - Refactoring opportunities  
+- `needless_pass_by_value` / `needless_pass_by_ref_mut` - API design decisions
+- `dead_code` - Potentially useful research functions
+- `private_interfaces` - Visibility consistency issues
+
+**Potential Roadblocks**:
+
+- Complex algorithm functions may resist simple refactoring without affecting correctness
+- Some performance optimizations may conflict with clippy recommendations
+- Research code patterns may intentionally violate some clippy guidelines for scientific accuracy
+
+---
+
+### 16. Benchmark Suite Redesign
 
 **Work Load**: 3 points  
 **Prerequisites**: Error Handling Standardization  
@@ -421,7 +455,7 @@ Transform CardioTrust from research-quality code into professional software whil
 
 ---
 
-### 16. Comprehensive Test Suite Redesign
+### 17. Comprehensive Test Suite Redesign
 
 **Work Load**: 4 points  
 **Prerequisites**: Error Handling Standardization  
@@ -457,7 +491,7 @@ Transform CardioTrust from research-quality code into professional software whil
 
 ---
 
-### 17. Repository Professionalization & Documentation
+### 18. Repository Professionalization & Documentation
 
 **Work Load**: 4 points  
 **Prerequisites**: Error Handling Standardization  
@@ -484,7 +518,7 @@ Transform CardioTrust from research-quality code into professional software whil
 
 ---
 
-### 18. Security Audit & Dependency Management
+### 19. Security Audit & Dependency Management
 
 **Work Load**: 3 points  
 **Prerequisites**: Repository Professionalization & Documentation  
@@ -516,7 +550,7 @@ Transform CardioTrust from research-quality code into professional software whil
 Rather than attempting all projects simultaneously, focus on creating a complete, impressive portfolio demonstration through strategic project selection:
 
 ### **Phase 0: Professional Foundation** 
-**Target**: Project 17 (Repository Professionalization & Documentation)
+**Target**: Project 18 (Repository Professionalization & Documentation)
 - **Why First**: Establishes professional presentation from day one
 - **Living Document**: Keep README, architecture.md, justfile updated as you implement changes
 - **Professional Context**: Document the Claude Code collaboration and personal project transition
@@ -528,28 +562,36 @@ Rather than attempting all projects simultaneously, focus on creating a complete
 - **Foundation**: Essential before UI work and WASM deployment
 - **Documentation**: Update architecture docs as you implement better error handling
 
-### **Phase 2: Professional UI Transformation**  
+### **Phase 2: Code Quality Polish**
+**Target**: Project 15 (Clippy Allow Decorator Review & Code Quality Polish)
+- **Why Third**: Clean up technical debt before major UI/WASM work
+- **Professional Standards**: Demonstrate systematic approach to code quality
+- **Clean Foundation**: Proper documentation and targeted allows support all future work
+- **Documentation**: Well-documented codebase with clear rationale for design decisions
+
+### **Phase 3: Professional UI Transformation**  
 **Target**: Project 6 (Complete UI Overhaul)
 - **High Visual Impact**: Transform appearance from research software to professional application
 - **Portfolio Presentation**: Beautiful, website-matching interface creates immediate positive impression
 - **Documentation**: Update README with new UI screenshots and capabilities
 
-### **Phase 3: Web Deployment**
+### **Phase 4: Web Deployment**
 **Target**: Projects 3-5 (Unified Binary, WASM Optimization, Web Integration)
 - **Portfolio Deployment**: Get working demo on rust-website for immediate accessibility
 - **Technical Demonstration**: Show both research algorithms AND modern web deployment skills
 - **Documentation**: Update deployment instructions and demo links throughout
 
 ### **Result: Complete Portfolio Piece**
-After these 7 projects (17, 1, 3-6), you'll have:
+After these 8 projects (18, 1, 15, 3-6), you'll have:
 - **Professional repository presentation** with comprehensive documentation
 - **Stable, crash-free application** with proper error handling
+- **Clean, well-documented codebase** with systematic code quality standards
 - **Beautiful, website-integrated interface** that matches your professional brand
 - **Working web demonstration** accessible to anyone visiting your website
 - **Impressive technical showcase** combining research algorithms with modern web technologies
 - **Living documentation** that stays current as the project evolves
 
-### **Future Optimization (Projects 2, 7-16, 18)**
+### **Future Optimization (Projects 2, 7-14, 16-17, 19)**
 All remaining projects become optional enhancements:
 - **WebGPU acceleration**: Cutting-edge browser GPU computing
 - **Interactive tutorials**: Educational experience design
@@ -579,3 +621,5 @@ This focused approach ensures a complete, impressive demonstration rather than p
 After completing Projects 1, 3-6, CardioTrust will demonstrate both sophisticated research algorithms and modern software engineering practices - a compelling combination for potential employers, collaborators, and portfolio viewers.
 
 All additional projects enhance this foundation but are not required for an impressive, complete demonstration.
+
+---

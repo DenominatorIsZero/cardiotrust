@@ -44,7 +44,7 @@ pub enum ColorMode {
     DeltaActivationTime,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ColorSource {
     Estimation,
     Simulation,

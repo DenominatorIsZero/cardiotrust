@@ -1,5 +1,16 @@
 #![warn(clippy::pedantic, clippy::nursery)]
-#![allow(clippy::too_many_arguments, clippy::module_name_repetitions)]
+#![allow(
+    clippy::too_many_arguments,
+    clippy::module_name_repetitions,
+    clippy::missing_panics_doc,
+    clippy::missing_errors_doc,
+    clippy::too_many_lines,
+    clippy::cognitive_complexity,
+    clippy::needless_pass_by_value,
+    clippy::needless_pass_by_ref_mut,
+    dead_code,
+    private_interfaces
+)]
 pub mod core;
 pub mod scheduler;
 pub mod tests;

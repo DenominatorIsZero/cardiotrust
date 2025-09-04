@@ -133,7 +133,6 @@ impl ControlFunction {
         clippy::cast_precision_loss,
         clippy::cast_sign_loss
     )]
-
     pub fn from_model_config(config: &Model, sample_rate_hz: f32, duration_s: f32) -> Self {
         debug!("Creating control function from model config");
         let desired_length_samples = (duration_s * sample_rate_hz) as usize;
@@ -176,7 +175,7 @@ impl ControlFunction {
                     })
                     .collect();
 
-                return Self(Array1::from(control_function_values));
+                Self(Array1::from(control_function_values))
             }
             config::model::ControlFunction::Triangle => {
                 let mut control_function_values = Array1::<f32>::zeros(desired_length_samples);
@@ -199,7 +198,7 @@ impl ControlFunction {
                         control_function_values[i % sample_rate_hz as usize];
                 }
 
-                return Self(control_function_values);
+                Self(control_function_values)
             }
             config::model::ControlFunction::Ramp => {
                 let mut control_function_values = Array1::<f32>::zeros(desired_length_samples);
@@ -210,7 +209,7 @@ impl ControlFunction {
                     let value = i as f32 * increase_per_step;
                     control_function_values[i] = -value;
                 }
-                return Self(control_function_values);
+                Self(control_function_values)
             }
         }
     }
