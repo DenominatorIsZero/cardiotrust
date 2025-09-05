@@ -28,7 +28,7 @@ pub(crate) fn spawn_sensors(
     debug!("Running system to spawn sensors.");
     // despawn current sensors
     for (entity, _) in sensors.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
     let data = scenario.data.as_ref().expect("Data to be some");
     let model = &data.simulation.model;
@@ -82,14 +82,11 @@ pub(crate) fn spawn_sensors(
         let rot = Vec3::new(x_ori, y_ori, z_ori);
 
         commands.spawn((
-            PbrBundle {
-                mesh: mesh.clone(),
-                material,
-                transform: Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
-                    .with_scale(Vec3::ONE * 15.0) // this should be a parameter, changeable via the gui...
-                    .with_rotation(Quat::from_rotation_arc(-Vec3::Z, rot)),
-                ..default()
-            },
+            Mesh3d(mesh.clone()),
+            MeshMaterial3d(material),
+            Transform::from_xyz(x_pos_mm, y_pos_mm, z_pos_mm)
+                .with_scale(Vec3::ONE * 15.0) // this should be a parameter, changeable via the gui...
+                .with_rotation(Quat::from_rotation_arc(-Vec3::Z, rot)),
             SensorData {
                 positions_mm,
                 _orientation: rot,
@@ -152,7 +149,7 @@ pub(crate) fn spawn_sensor_bracket(
     brackets: &Query<(Entity, &SensorBracket)>,
 ) {
     for (entity, _) in brackets.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 
     let sensors = &scenario
@@ -177,19 +174,16 @@ pub(crate) fn spawn_sensor_bracket(
     let glb_handle = ass.load("sensor_array.glb#Scene0");
 
     commands.spawn((
-        SceneBundle {
-            scene: glb_handle,
-            transform: Transform::from_xyz(0.0, 0.0, 0.0)
-                .with_scale(Vec3::ONE * 1000.0)
-                .with_translation(vec3(
-                    positions[(0, 0)],
-                    positions[(0, 1)],
-                    positions[(0, 2)],
-                ))
-                .with_scale(vec3(radius * 2.5, 1000.0, radius * 2.5)),
-            visibility: Visibility::Hidden,
-            ..Default::default()
-        },
+        SceneRoot(glb_handle),
+        Transform::from_xyz(0.0, 0.0, 0.0)
+            .with_scale(Vec3::ONE * 1000.0)
+            .with_translation(vec3(
+                positions[(0, 0)],
+                positions[(0, 1)],
+                positions[(0, 2)],
+            ))
+            .with_scale(vec3(radius * 2.5, 1000.0, radius * 2.5)),
+        Visibility::Hidden,
         SensorBracket {},
     ));
 
@@ -207,9 +201,7 @@ pub(crate) fn update_sensor_bracket_position(
 ) {
     if sample_tracker.is_changed() || settings.is_changed() {
         let beat_index = sample_tracker.selected_beat;
-        let sensor_bracket = sensor_brackets.get_single_mut();
-
-        if let Ok((mut transform, _)) = sensor_bracket {
+        if let Ok((mut transform, _)) = sensor_brackets.single_mut() {
             let position = Vec3 {
                 x: settings.positions[(beat_index, 0)] + settings.offset[0],
                 y: settings.positions[(beat_index, 1)] + settings.offset[1],

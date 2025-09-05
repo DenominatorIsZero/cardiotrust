@@ -30,98 +30,99 @@ pub fn draw_ui_explorer(
     mut cameras: Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Drawing UI for explorer tab");
-    egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
-        for mut camera in &mut cameras {
-            if ui.ui_contains_pointer() {
-                camera.enabled_motion = EnabledMotion {
-                    pan: false,
-                    orbit: false,
-                    zoom: false,
-                };
-            }
-        }
-        TableBuilder::new(ui)
-            .column(Column::auto().resizable(true))
-            .column(Column::initial(150.0).resizable(true))
-            .column(Column::initial(100.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::initial(75.0).resizable(true))
-            .column(Column::remainder())
-            .header(20.0, |mut header| {
-                header.col(|ui| {
-                    ui.heading("\nID\n");
-                });
-                header.col(|ui| {
-                    ui.heading("\nStatus\n");
-                });
-                header.col(|ui| {
-                    ui.heading("\nLoss\n");
-                });
-                header.col(|ui| {
-                    ui.heading("\nMSE Loss\n");
-                });
-                header.col(|ui| {
-                    ui.heading("\nM. R. Loss\n");
-                });
-                header.col(|ui| {
-                    ui.heading("\nThreshold");
-                });
-                header.col(|ui| {
-                    ui.heading("\nDice");
-                });
-                header.col(|ui| {
-                    ui.heading("\nIoU");
-                });
-                header.col(|ui| {
-                    ui.heading("\nRecall");
-                });
-                header.col(|ui| {
-                    ui.heading("\nPrecision");
-                });
-                header.col(|ui| {
-                    ui.heading("\nComment");
-                });
-            })
-            .body(|mut body| {
-                for index in 0..scenario_list.entries.len() {
-                    draw_row(
-                        &mut commands,
-                        &mut body,
-                        index,
-                        &mut scenario_list,
-                        &mut selected_scenario,
-                    );
+    egui::CentralPanel::default().show(contexts.ctx_mut().expect("EGUI context available"), |ui| {
+            for mut camera in &mut cameras {
+                if ui.ui_contains_pointer() {
+                    camera.enabled_motion = EnabledMotion {
+                        pan: false,
+                        orbit: false,
+                        zoom: false,
+                    };
                 }
-                body.row(30.0, |mut row| {
-                    row.col(|ui| {
-                        if ui.button("New").clicked() {
-                            scenario_list.entries.push(ScenarioBundle {
-                                scenario: Scenario::build(None),
-                                join_handle: None,
-                                epoch_rx: None,
-                                summary_rx: None,
-                            });
-                            selected_scenario.index = Some(scenario_list.entries.len() - 1);
-                            commands.insert_resource(NextState::Pending(UiState::Scenario));
-                        }
+            }
+            TableBuilder::new(ui)
+                .column(Column::auto().resizable(true))
+                .column(Column::initial(150.0).resizable(true))
+                .column(Column::initial(100.0).resizable(true))
+                .column(Column::initial(75.0).resizable(true))
+                .column(Column::initial(75.0).resizable(true))
+                .column(Column::initial(75.0).resizable(true))
+                .column(Column::initial(75.0).resizable(true))
+                .column(Column::initial(75.0).resizable(true))
+                .column(Column::initial(75.0).resizable(true))
+                .column(Column::initial(75.0).resizable(true))
+                .column(Column::remainder())
+                .header(20.0, |mut header| {
+                    header.col(|ui| {
+                        ui.heading("\nID\n");
                     });
-                    row.col(|_ui| {});
-                    row.col(|_ui| {});
-                    row.col(|_ui| {});
-                    row.col(|_ui| {});
-                    row.col(|_ui| {});
-                    row.col(|_ui| {});
-                    row.col(|_ui| {});
-                    row.col(|_ui| {});
-                    row.col(|_ui| {});
+                    header.col(|ui| {
+                        ui.heading("\nStatus\n");
+                    });
+                    header.col(|ui| {
+                        ui.heading("\nLoss\n");
+                    });
+                    header.col(|ui| {
+                        ui.heading("\nMSE Loss\n");
+                    });
+                    header.col(|ui| {
+                        ui.heading("\nM. R. Loss\n");
+                    });
+                    header.col(|ui| {
+                        ui.heading("\nThreshold");
+                    });
+                    header.col(|ui| {
+                        ui.heading("\nDice");
+                    });
+                    header.col(|ui| {
+                        ui.heading("\nIoU");
+                    });
+                    header.col(|ui| {
+                        ui.heading("\nRecall");
+                    });
+                    header.col(|ui| {
+                        ui.heading("\nPrecision");
+                    });
+                    header.col(|ui| {
+                        ui.heading("\nComment");
+                    });
+                })
+                .body(|mut body| {
+                    for index in 0..scenario_list.entries.len() {
+                        draw_row(
+                            &mut commands,
+                            &mut body,
+                            index,
+                            &mut scenario_list,
+                            &mut selected_scenario,
+                        );
+                    }
+                    body.row(30.0, |mut row| {
+                        row.col(|ui| {
+                            if ui.button("New").clicked() {
+                                scenario_list.entries.push(ScenarioBundle {
+                                    scenario: Scenario::build(None),
+                                    join_handle: None,
+                                    epoch_rx: None,
+                                    summary_rx: None,
+                                });
+                                selected_scenario.index = Some(scenario_list.entries.len() - 1);
+                                commands.insert_resource(NextState::Pending(UiState::Scenario));
+                            }
+                        });
+                        row.col(|_ui| {});
+                        row.col(|_ui| {});
+                        row.col(|_ui| {});
+                        row.col(|_ui| {});
+                        row.col(|_ui| {});
+                        row.col(|_ui| {});
+                        row.col(|_ui| {});
+                        row.col(|_ui| {});
+                        row.col(|_ui| {});
+                    });
                 });
-            });
-    });
+        },
+    );
 }
 
 /// Draws a row in the scenario list table.

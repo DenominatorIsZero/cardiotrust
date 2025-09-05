@@ -110,7 +110,7 @@ pub fn init_voxels(
     debug!("Running system to initialize voxel components.");
     // Despawn current voxels
     for (entity, _) in voxels.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
     let data = scenario.data.as_ref().expect("Data to be some");
     let model = &data.simulation.model;
@@ -139,12 +139,9 @@ pub fn init_voxels(
                 }
                 let position = voxels.positions_mm.slice(s!(x, y, z, ..));
                 commands.spawn((
-                    PbrBundle {
-                        mesh: mesh.clone(),
-                        material: materials.voxel_types[voxel_type as usize].clone(),
-                        transform: Transform::from_xyz(position[0], position[1], position[2]),
-                        ..default()
-                    },
+                    Mesh3d(mesh.clone()),
+                    MeshMaterial3d(materials.voxel_types[voxel_type as usize].clone()),
+                    Transform::from_xyz(position[0], position[1], position[2]),
                     VoxelData {
                         index: voxels.numbers[(x, y, z)].expect("Voxel numbes to be some."),
                         colors: Array1::from_elem(
@@ -172,11 +169,11 @@ pub fn init_voxels(
 #[tracing::instrument(skip(query), level = "trace")]
 pub(crate) fn update_heart_voxel_colors(
     sample_tracker: Res<SampleTracker>,
-    mut query: Query<(&mut Handle<StandardMaterial>, &VoxelData)>,
+    mut query: Query<(&mut MeshMaterial3d<StandardMaterial>, &VoxelData)>,
 ) {
     trace!("Running system to update heart voxel colors.");
-    query.par_iter_mut().for_each(|(mut handle, data)| {
-        *handle = data.colors[sample_tracker.current_sample].clone();
+    query.par_iter_mut().for_each(|(mut material, data)| {
+        material.0 = data.colors[sample_tracker.current_sample].clone();
     });
 }
 

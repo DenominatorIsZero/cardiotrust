@@ -8,17 +8,16 @@ license = "Apache-2.0"
 
 [dependencies]
 approx = "0.5.1"
-bevy = {version = "0.14.2", features = ["bevy_gltf"]}
-bevy_egui = {version = "0.30.1", default-features = false, features = ["open_url", "default_fonts", "render"]}
-bevy_mod_picking = "0.20.1"
-bevy_editor_cam = "0.4.0"
-bevy_embedded_assets = "0.11.0"
-bevy_obj = "0.14.0"
+bevy = {version = "0.16.1", features = ["bevy_gltf"]}
+bevy_egui = {version = "0.36.0", default-features = false, features = ["open_url", "default_fonts", "render"]}
+bevy_editor_cam = "0.6.0"
+bevy_embedded_assets = "0.13.0"
+bevy_obj = "0.16.1"
 bincode = {version = "2.0.1", features = ["serde"]}
 chrono = {version = "0.4.41", features = ["serde"]}
-egui = "0.29.1"
-egui_extras = {version="0.29.1", features = ["all_loaders"]}
-egui_plot = "0.29.0"
+egui = "0.32.1"
+egui_extras = {version="0.32.1", features = ["all_loaders"]}
+egui_plot = "0.33.0"
 gif = "0.13.3"
 image = {version = "0.25.8", features = ["png"]}
 itertools = "0.14.0"

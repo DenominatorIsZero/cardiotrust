@@ -41,18 +41,15 @@ pub(crate) fn spawn_cutting_plane(
     material.cull_mode = None;
 
     commands.spawn((
-        PbrBundle {
-            mesh: meshes.add(Mesh::from(Plane3d {
-                normal: Dir3::Y,
-                half_size: Vec2 { x: 1.0, y: 1.0 },
-            })),
-            material: materials.add(material),
-            transform: Transform {
-                translation: position,
-                rotation,
-                scale: Vec3::new(1000.0, 1000.0, 1000.0),
-            },
-            ..default()
+        Mesh3d(meshes.add(Mesh::from(Plane3d {
+            normal: Dir3::Y,
+            half_size: Vec2 { x: 1.0, y: 1.0 },
+        }))),
+        MeshMaterial3d(materials.add(material)),
+        Transform {
+            translation: position,
+            rotation,
+            scale: Vec3::new(1000.0, 1000.0, 1000.0),
         },
         CuttingPlane,
     ));
@@ -65,11 +62,11 @@ pub(crate) fn update_cutting_plane_position(
     settings: Res<CuttingPlaneSettings>,
 ) {
     if settings.is_changed() {
-        let mut transform = cutting_planes.single_mut();
-
-        transform.translation = settings.position;
-        let rotation = Quat::from_rotation_arc(Vec3::Y, settings.normal);
-        transform.rotation = rotation;
+        if let Ok(mut transform) = cutting_planes.single_mut() {
+            transform.translation = settings.position;
+            let rotation = Quat::from_rotation_arc(Vec3::Y, settings.normal);
+            transform.rotation = rotation;
+        }
     }
 }
 

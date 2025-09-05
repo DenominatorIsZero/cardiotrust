@@ -73,7 +73,7 @@ pub fn update_sample_index(
 ) {
     trace!("Running system to update sample index.");
     if !sample_tracker.manual {
-        sample_tracker.current_sample = ((time.elapsed_seconds()
+        sample_tracker.current_sample = ((time.elapsed_secs()
             * sample_tracker.sample_rate
             * vis_options.playbackspeed) as usize)
             % sample_tracker.max_sample;

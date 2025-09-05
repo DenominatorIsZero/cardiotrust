@@ -26,7 +26,7 @@ pub fn draw_ui_topbar(
     mut cameras: Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Running system to draw topbar.");
-    egui::TopBottomPanel::top("menu_panel").show(contexts.ctx_mut(), |ui| {
+    egui::TopBottomPanel::top("menu_panel").show(contexts.ctx_mut().expect("EGUI context available"), |ui| {
         for mut camera in &mut cameras {
             if ui.ui_contains_pointer() {
                 camera.enabled_motion = EnabledMotion {

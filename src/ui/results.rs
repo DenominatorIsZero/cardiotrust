@@ -163,8 +163,8 @@ pub fn draw_ui_results(
     mut cameras: Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Runing system to draw results UI");
-    egui_extras::install_image_loaders(contexts.ctx_mut());
-    egui::CentralPanel::default().show(contexts.ctx_mut(), |ui| {
+    egui_extras::install_image_loaders(contexts.ctx_mut().expect("EGUI context available"));
+    egui::CentralPanel::default().show(contexts.ctx_mut().expect("EGUI context available"), |ui| {
         for mut camera in &mut cameras {
             if ui.ui_contains_pointer() {
                 camera.enabled_motion = EnabledMotion {

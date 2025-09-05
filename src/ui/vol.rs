@@ -51,7 +51,7 @@ pub fn draw_ui_volumetric(
     } else {
         None
     };
-    egui::SidePanel::left("volumetric_left_panel").show(contexts.ctx_mut(), |ui| {
+    egui::SidePanel::left("volumetric_left_panel").show(contexts.ctx_mut().expect("EGUI context available"), |ui| {
         for mut camera in &mut cameras {
             if ui.ui_contains_pointer() {
                 camera.enabled_motion = EnabledMotion {
@@ -66,7 +66,7 @@ pub fn draw_ui_volumetric(
             .clicked()
         {
             let scenario = (**scenario.as_ref().unwrap()).clone();
-            ev_setup.send(SetupHeartAndSensors(scenario));
+            ev_setup.write(SetupHeartAndSensors(scenario));
         }
         ui.label(egui::RichText::new("Voxel coloring").underline());
         ui.group(|ui| {
@@ -290,7 +290,7 @@ pub fn draw_ui_volumetric(
     if let Some(scenario) = scenario {
         egui::TopBottomPanel::bottom("Volumetric bottom panel")
             .exact_height(400.0)
-            .show(contexts.ctx_mut(), |ui| {
+            .show(contexts.ctx_mut().expect("EGUI context available"), |ui| {
                 for mut camera in &mut cameras {
                     if ui.ui_contains_pointer() {
                         camera.enabled_motion = EnabledMotion {
@@ -322,9 +322,9 @@ pub fn draw_ui_volumetric(
                         ]
                     })
                     .collect();
-                let sin_line = Line::new(signal);
+                let sin_line = Line::new("Signal", signal);
                 #[allow(clippy::cast_precision_loss)]
-                let v_line = VLine::new(sample_tracker.current_sample as f64 / samplerate_hz);
+                let v_line = VLine::new("Current Time", sample_tracker.current_sample as f64 / samplerate_hz);
                 Plot::new("my_plot")
                     .include_x(0)
                     .include_x(1)

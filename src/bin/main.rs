@@ -44,7 +44,6 @@ fn main() {
     App::new()
         .init_resource::<ScenarioList>()
         .init_resource::<SelectedSenario>()
-        .insert_resource(Msaa::Off)
         .add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {

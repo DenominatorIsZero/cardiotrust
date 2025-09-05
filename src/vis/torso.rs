@@ -24,22 +24,19 @@ pub(crate) fn spawn_torso(
     // to position our 3d model, simply use the Transform
     // in the SceneBundlex
     commands.spawn((
-        PbrBundle {
-            mesh: my_mesh,
-            // Notice how there is no need to set the `alpha_mode` explicitly here.
-            // When converting a color to a material using `into()`, the alpha mode is
-            // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
-            material: materials.add(StandardMaterial::from(Color::srgba(
-                85.0 / 255.0,
-                79.0 / 255.0,
-                72.0 / 255.0,
-                0.5,
-            ))),
-            transform: Transform::from_xyz(0.0, 0.0, 0.0)
-                .with_scale(Vec3::ONE * 1000.0)
-                .with_rotation(Quat::from_euler(EulerRot::XYZ, 0.0, 0.0, PI)),
-            ..default()
-        },
+        Mesh3d(my_mesh),
+        // Notice how there is no need to set the `alpha_mode` explicitly here.
+        // When converting a color to a material using `into()`, the alpha mode is
+        // automatically set to `Blend` if the alpha channel is anything lower than 1.0.
+        MeshMaterial3d(materials.add(StandardMaterial::from(Color::srgba(
+            85.0 / 255.0,
+            79.0 / 255.0,
+            72.0 / 255.0,
+            0.5,
+        )))),
+        Transform::from_xyz(0.0, 0.0, 0.0)
+            .with_scale(Vec3::ONE * 1000.0)
+            .with_rotation(Quat::from_euler(EulerRot::XYZ, 0.0, 0.0, PI)),
         Torso,
     ));
 }

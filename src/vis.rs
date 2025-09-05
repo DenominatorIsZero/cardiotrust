@@ -11,6 +11,7 @@ use bevy::{
     color::palettes::css::{BLUE, GREEN, RED},
     prelude::*,
 };
+use bevy_egui::EguiStartupSet;
 use bevy_editor_cam::controller::component::{EditorCam, OrbitConstraint};
 use bevy_obj::ObjPlugin;
 use cutting_plane::update_cutting_plane_visibility;
@@ -53,7 +54,7 @@ impl Plugin for VisPlugin {
     #[tracing::instrument(level = "info", skip(app))]
     fn build(&self, app: &mut App) {
         info!("Initializing visualization plugin.");
-        app.add_plugins(bevy_mod_picking::DefaultPickingPlugins)
+        app // DefaultPickingPlugins are already included in DefaultPlugins in Bevy 0.16
             .add_plugins(bevy_editor_cam::DefaultEditorCamPlugins)
             .add_plugins(ObjPlugin)
             .init_resource::<SampleTracker>()
@@ -62,12 +63,15 @@ impl Plugin for VisPlugin {
             .init_resource::<BacketSettings>()
             .add_event::<SetupHeartAndSensors>()
             .add_systems(
+                PreStartup,
+                setup_light_and_camera.before(EguiStartupSet::InitContexts),
+            )
+            .add_systems(
                 Startup,
                 (
                     setup_material_atlas,
                     setup_coordinate_system,
                     setup_mesh_atlas,
-                    setup_light_and_camera,
                     spawn_torso,
                     spawn_room,
                     spawn_cutting_plane,
@@ -107,13 +111,14 @@ pub fn setup_light_and_camera(mut commands: Commands) {
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
         brightness: 1000.0,
+        affects_lightmapped_meshes: false,
     });
 
     commands
-        .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(-100.0, 200.0, 50.0).looking_at(Vec3::ZERO, Vec3::Z),
-            ..default()
-        })
+        .spawn((
+            Camera3d::default(),
+            Transform::from_xyz(-100.0, 200.0, 50.0).looking_at(Vec3::ZERO, Vec3::Z),
+        ))
         .insert(EditorCam {
             orbit_constraint: OrbitConstraint::Free,
             last_anchor_depth: 2.0,
@@ -165,19 +170,18 @@ fn spawn_axis(
     let thickness = 10.0;
 
     // Shaft
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(Cylinder {
+    commands.spawn((
+        Mesh3d(meshes.add(Mesh::from(Cylinder {
             radius: thickness,
             half_height: axis_length / 2.0,
-        })),
-        material: materials.add(StandardMaterial::from(color)),
-        transform: Transform {
+        }))),
+        MeshMaterial3d(materials.add(StandardMaterial::from(color))),
+        Transform {
             translation: direction * (axis_length / 2.0),
             rotation: Quat::from_rotation_arc(Vec3::Y, direction),
             ..default()
         },
-        ..default()
-    });
+    ));
 }
 
 /// Sets up the heart mesh, voxel grid, and sensor transforms according

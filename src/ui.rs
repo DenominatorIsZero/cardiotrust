@@ -6,7 +6,7 @@ mod vol;
 
 use bevy::prelude::*;
 use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
-use bevy_egui::EguiPlugin;
+use bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
 
 use self::{
     explorer::draw_ui_explorer,
@@ -30,29 +30,29 @@ impl Plugin for UiPlugin {
             .init_resource::<ResultImages>()
             .init_resource::<SelectedResultImage>()
             .init_resource::<PlaybackSpeed>()
-            .add_plugins(EguiPlugin)
+            .add_plugins(EguiPlugin::default())
             .add_systems(Update, enable_camera_motion)
-            .add_systems(Update, draw_ui_topbar.after(enable_camera_motion))
+            .add_systems(EguiPrimaryContextPass, draw_ui_topbar)
             .add_systems(
-                Update,
+                EguiPrimaryContextPass,
                 draw_ui_explorer
                     .run_if(in_state(UiState::Explorer))
                     .after(draw_ui_topbar),
             )
             .add_systems(
-                Update,
+                EguiPrimaryContextPass,
                 draw_ui_scenario
                     .run_if(in_state(UiState::Scenario))
                     .after(draw_ui_topbar),
             )
             .add_systems(
-                Update,
+                EguiPrimaryContextPass,
                 draw_ui_results
                     .run_if(in_state(UiState::Results))
                     .after(draw_ui_topbar),
             )
             .add_systems(
-                Update,
+                EguiPrimaryContextPass,
                 draw_ui_volumetric
                     .run_if(in_state(UiState::Volumetric))
                     .after(draw_ui_topbar),
@@ -100,8 +100,8 @@ impl Plugin for ClientUiPlugin {
         info!("Initializing client UI plugin.");
         app.init_state::<UiState>()
             .init_resource::<PlaybackSpeed>()
-            .add_plugins(EguiPlugin)
-            .add_systems(Update, draw_ui_volumetric);
+            .add_plugins(EguiPlugin::default())
+            .add_systems(EguiPrimaryContextPass, draw_ui_volumetric);
     }
 }
 
