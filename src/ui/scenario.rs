@@ -40,7 +40,7 @@ pub fn draw_ui_scenario(
     let context = contexts.ctx_mut().expect("EGUI context available");
 
     draw_ui_scenario_topbar(
-        &context,
+        context,
         &mut scenarios,
         &mut selected_scenario,
         &mut cameras,
@@ -48,7 +48,7 @@ pub fn draw_ui_scenario(
 
     let index = selected_scenario.index.unwrap();
     let scenario = &mut scenarios.entries[index].scenario;
-    draw_ui_scenario_central_panel(&context, scenario, &mut cameras);
+    draw_ui_scenario_central_panel(context, scenario, &mut cameras);
 }
 
 /// Draws the top bar UI for the scenario view.
