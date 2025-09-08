@@ -63,7 +63,6 @@ impl Default for Handcrafted {
     /// - Default sensor configuration
     /// - Default voxel and heart sizes
     /// - Default covariance values
-    /// - `apply_system_update` set to false
     /// - Default propagation velocities for each voxel type
     /// - Default percentages for positioning various heart components
     ///
@@ -151,13 +150,6 @@ pub struct Common {
     // otherwise the elements along the main diagonal will be drawn from a
     // normal distribution
     pub measurement_covariance_std: f32,
-    pub process_covariance_mean: f32,
-    // the covariance noise covariance matrix will be a diagonal matrix
-    // if std is set to zero, every value will be set to mean
-    // otherwise the elements along the main diagonal will be drawn from a
-    // normal distribution
-    pub process_covariance_std: f32,
-    pub apply_system_update: bool,
     pub propagation_velocities_m_per_s: HashMap<VoxelType, f32>,
     pub current_factor_in_pathology: f32,
 }
@@ -196,9 +188,6 @@ impl Default for Common {
             heart_offset_mm: [25.0, -250.0, 150.0],
             measurement_covariance_mean: 1e-3,
             measurement_covariance_std: 0.0,
-            process_covariance_mean: 1e-5,
-            process_covariance_std: 0.0,
-            apply_system_update: false,
             propagation_velocities_m_per_s,
             current_factor_in_pathology: 0.00,
         };

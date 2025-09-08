@@ -212,13 +212,13 @@ impl MeasurementCovariance {
         measurement_covariance
     }
 
-    /// Saves the process covariance matrix to a .npy file at the given path.
+    /// Saves the measurement covariance matrix to a .npy file at the given path.
     /// Creates the directory if it does not exist.
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) {
-        trace!("Saving process covariance matrix to npy file");
+        trace!("Saving measurement covariance matrix to npy file");
         fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("process_covariance.npy")).unwrap());
+        let writer = BufWriter::new(File::create(path.join("measurement_covariance.npy")).unwrap());
         self.write_npy(writer).unwrap();
     }
 

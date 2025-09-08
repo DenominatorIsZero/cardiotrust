@@ -10,8 +10,9 @@ Transform CardioTrust into a portfolio-quality repository with professional docu
 **Dependencies**: None
 
 **Implementation Steps**:
+
 - [ ] Replace basic instructions with comprehensive project overview
-- [ ] Add professional project description (research + engineering focus)  
+- [ ] Add professional project description (research + engineering focus)
 - [ ] Document installation procedures (native, WASM, development)
 - [ ] Add feature list showcasing algorithm capabilities
 - [ ] Include technology stack overview and architecture
@@ -24,6 +25,7 @@ Transform CardioTrust into a portfolio-quality repository with professional docu
 **Dependencies**: Task 1 complete
 
 **Implementation Steps**:
+
 - [ ] Enhance `Cargo.toml` with comprehensive package metadata
 - [ ] Add keywords: cardiac-simulation, medical-research, kalman-filter, gpu-computing, wasm
 - [ ] Create comprehensive `justfile` with dev, build, test, lint, format, security commands
@@ -36,6 +38,7 @@ Transform CardioTrust into a portfolio-quality repository with professional docu
 **Dependencies**: Task 2 complete
 
 **Implementation Steps**:
+
 - [ ] Create `docs/architecture.md` with technical system overview
 - [ ] Document algorithm approach and mathematical foundations
 - [ ] Explain technology choices (Bevy, nalgebra, OpenCL, etc.)
@@ -49,6 +52,7 @@ Transform CardioTrust into a portfolio-quality repository with professional docu
 **Dependencies**: Task 3 complete
 
 **Implementation Steps**:
+
 - [ ] Cross-reference all documentation files properly
 - [ ] Add navigation aids and consistent formatting
 - [ ] Document PhD thesis → personal project transition
@@ -57,7 +61,8 @@ Transform CardioTrust into a portfolio-quality repository with professional docu
 - [ ] Review for professional presentation quality
 
 ## Final Validation
+
 - [ ] Repository creates strong professional first impression
-- [ ] Documentation demonstrates research expertise + engineering skills  
+- [ ] Documentation demonstrates research expertise + engineering skills
 - [ ] All build commands work: `just dev`, `just build`, `just test`, `just wasm-deploy`
 - [ ] Technical accuracy verified against current implementation

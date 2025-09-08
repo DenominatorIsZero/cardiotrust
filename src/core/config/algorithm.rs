@@ -53,7 +53,6 @@ pub struct Algorithm {
     #[serde(default)]
     pub freeze_gains: bool,
     pub freeze_delays: bool,
-    pub update_kalman_gain: bool,
     #[serde(default)]
     pub ap_derivative: APDerivative,
 }
@@ -80,7 +79,6 @@ impl Default for Algorithm {
             model: Model::default(),
             freeze_gains: false,
             freeze_delays: true,
-            update_kalman_gain: false,
             ap_derivative: APDerivative::default(),
         }
     }

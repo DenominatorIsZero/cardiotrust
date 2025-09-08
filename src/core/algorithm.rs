@@ -7,23 +7,18 @@ mod tests;
 
 use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
-use rand::{seq::SliceRandom, rng};
+use rand::{rng, seq::SliceRandom};
 use refinement::derivation::{calculate_average_delays, calculate_batch_derivatives};
 use tracing::{debug, trace};
 
-use self::estimation::{
-    calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
-};
+use self::estimation::{calculate_residuals, prediction::calculate_system_prediction};
 use super::{
     config::algorithm::Algorithm,
     data::{shapes::SystemStates, Data},
     model::functional::FunctionalDescription,
     scenario::results::Results,
 };
-use crate::core::algorithm::{
-    estimation::update_kalman_gain_and_check_convergence,
-    refinement::derivation::calculate_step_derivatives,
-};
+use crate::core::algorithm::refinement::derivation::calculate_step_derivatives;
 
 /// Calculates a pseudo inverse of the measurement matrix and estimates the system states, residuals, derivatives, and metrics.
 ///
@@ -113,7 +108,6 @@ pub fn calculate_pseudo_inverse(
 #[tracing::instrument(skip_all, level = "debug")]
 pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, config: &Algorithm) {
     results.derivatives.reset();
-    results.estimations.kalman_gain_converged = false;
     let num_steps = results.estimations.system_states.num_steps();
     let num_beats = data.simulation.measurements.num_beats();
 
@@ -133,7 +127,6 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
 
     for beat in beat_indices {
         estimations.reset();
-        estimations.kalman_gain_converged = false;
 
         for step in 0..num_steps {
             calculate_system_prediction(
@@ -154,28 +147,6 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
                 beat,
                 num_sensors,
             );
-
-            if config.model.common.apply_system_update {
-                if config.update_kalman_gain {
-                    update_kalman_gain_and_check_convergence(
-                        &mut results.model.as_mut().unwrap().functional_description,
-                        estimations,
-                        beat,
-                    );
-                }
-                calculate_system_update(
-                    &mut estimations.system_states,
-                    &results
-                        .model
-                        .as_ref()
-                        .unwrap()
-                        .functional_description
-                        .kalman_gain,
-                    &estimations.residuals,
-                    step,
-                    config,
-                );
-            }
 
             metrics::calculate_step(
                 &mut results.metrics,
@@ -211,7 +182,6 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
                     .ap_params
                     .update(derivatives, config, num_steps, *n);
                 derivatives.reset();
-                estimations.kalman_gain_converged = false;
                 *n = 0;
                 metrics::calculate_batch(&mut results.metrics, *batch_index);
                 *batch_index += 1;

@@ -117,7 +117,6 @@ wasm-bindgen --target web --out-dir ./wasm-client/ ./target/wasm32-unknown-unkno
 
 - Voxel-based anatomical structure modeling
 - All-pass filters for current density propagation simulation
-- Kalman filter-based state estimation
 - Nested optimization procedure for model refinement
 - Support for both healthy and pathological tissue states
 

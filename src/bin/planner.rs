@@ -56,7 +56,6 @@ fn plan_scenarios() {
     let optimizer = Optimizer::Sgd;
     let freeze_gains = false;
     let freeze_delays = true;
-    let update_kalman_gain = false;
 
     let mut algorithm_config = Algorithm {
         optimizer,
@@ -67,7 +66,6 @@ fn plan_scenarios() {
         maximum_regularization_threshold,
         freeze_gains,
         freeze_delays,
-        update_kalman_gain,
         ..Default::default()
     };
 

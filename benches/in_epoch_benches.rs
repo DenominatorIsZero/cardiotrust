@@ -2,10 +2,7 @@ use std::time::Duration;
 
 use cardiotrust::core::{
     algorithm::{
-        estimation::{
-            calculate_residuals, calculate_system_update, prediction::calculate_system_prediction,
-            update_kalman_gain_and_check_convergence,
-        },
+        estimation::{calculate_residuals, prediction::calculate_system_prediction},
         metrics,
         refinement::derivation::calculate_step_derivatives,
     },
@@ -26,8 +23,6 @@ fn run_benches(c: &mut Criterion) {
     bench_resetting(&mut group);
     bench_system_prediction(&mut group);
     bench_residuals(&mut group);
-    //bench_kalman(&mut group);
-    bench_system_update(&mut group);
     bench_derivation(&mut group);
     bench_metrics(&mut group);
     bench_update_parameters(&mut group);
@@ -126,56 +121,6 @@ fn bench_derivation(group: &mut criterion::BenchmarkGroup<criterion::measurement
     }
 }
 
-fn _bench_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
-    for voxel_size in VOXEL_SIZES.iter() {
-        let config = setup_config(voxel_size);
-
-        // setup inputs
-        let (_, mut model, mut results) = setup_inputs(&config);
-
-        // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
-        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        group.bench_function(
-            BenchmarkId::new("update_kalman_gain_and_check_congergence", voxel_size),
-            |b| {
-                b.iter(|| {
-                    update_kalman_gain_and_check_convergence(
-                        &mut model.functional_description,
-                        &mut results.estimations,
-                        BEAT,
-                    );
-                    results.estimations.kalman_gain_converged = false;
-                })
-            },
-        );
-    }
-}
-
-fn bench_system_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
-    for voxel_size in VOXEL_SIZES.iter() {
-        let config = setup_config(voxel_size);
-
-        // setup inputs
-        let (_, model, mut results) = setup_inputs(&config);
-
-        // run bench
-        let number_of_voxels = model.spatial_description.voxels.count();
-        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        group.bench_function(BenchmarkId::new("system_update", voxel_size), |b| {
-            b.iter(|| {
-                calculate_system_update(
-                    &mut results.estimations.system_states,
-                    &model.functional_description.kalman_gain,
-                    &results.estimations.residuals,
-                    STEP,
-                    &config.algorithm,
-                );
-            })
-        });
-    }
-}
-
 fn bench_metrics(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
@@ -231,8 +176,6 @@ fn setup_config(voxel_size: &f32) -> Config {
     config.simulation.model.common.voxel_size_mm = *voxel_size;
     config.simulation.sample_rate_hz = samplerate_hz;
     config.algorithm.model.common.voxel_size_mm = *voxel_size;
-    config.algorithm.model.common.apply_system_update = true;
-    config.algorithm.update_kalman_gain = false;
     config.algorithm.learning_rate = LEARNING_RATE;
     config.algorithm.freeze_delays = false;
     config.algorithm.freeze_gains = false;

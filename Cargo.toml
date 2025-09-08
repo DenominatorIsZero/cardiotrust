@@ -60,13 +60,6 @@ harness = false
 name = "in_system_prediction_benches"
 harness = false
 
-[[bench]]
-name = "in_kalman_benches"
-harness = false
-
-[[bench]]
-name = "in_update_benches"
-harness = false
 
 [[bench]]
 name = "in_derivation_benches"

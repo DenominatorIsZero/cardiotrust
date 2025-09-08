@@ -10,19 +10,13 @@ const LEARNING_RATE: f32 = 1e-3;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("Run Epoch");
-    without_update(&mut group);
-    with_update(&mut group);
-    with_kalman(&mut group);
+    epoch(&mut group);
     group.finish();
 }
 
-fn without_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
     for voxel_size in VOXEL_SIZES.iter() {
-        let mut config = setup_config(voxel_size);
-
-        // configure run
-        config.algorithm.model.common.apply_system_update = false;
-        config.algorithm.update_kalman_gain = false;
+        let config = setup_config(voxel_size);
 
         // setup inputs
         let (data, mut results) = setup_inputs(&config);
@@ -45,10 +39,7 @@ fn without_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::
 
 fn with_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
     for voxel_size in VOXEL_SIZES.iter() {
-        let mut config = setup_config(voxel_size);
-
-        // configure run
-        config.algorithm.update_kalman_gain = false;
+        let config = setup_config(voxel_size);
 
         // setup inputs
         let (data, mut results) = setup_inputs(&config);
@@ -69,29 +60,6 @@ fn with_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
     }
 }
 
-fn with_kalman(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
-    for voxel_size in VOXEL_SIZES.iter() {
-        let config = setup_config(voxel_size);
-
-        // setup inputs
-        let (data, mut results) = setup_inputs(&config);
-
-        // run bench
-        let number_of_voxels = results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .voxels
-            .count();
-        let mut batch_index = 0;
-        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        group.bench_function(BenchmarkId::new("with_kalman", voxel_size), |b| {
-            b.iter(|| run_epoch(&mut results, &mut batch_index, &data, &config.algorithm))
-        });
-    }
-}
-
 fn setup_config(voxel_size: &f32) -> Config {
     let samplerate_hz = 2000.0 * 2.5 / voxel_size;
     let mut config = Config::default();
@@ -102,7 +70,6 @@ fn setup_config(voxel_size: &f32) -> Config {
     config.algorithm.freeze_delays = false;
     config.algorithm.freeze_gains = false;
     config.algorithm.batch_size = 0;
-    config.algorithm.update_kalman_gain = true;
     config
 }
 
