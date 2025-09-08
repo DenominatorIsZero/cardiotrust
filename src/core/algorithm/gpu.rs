@@ -26,6 +26,7 @@ impl GPU {
     ///
     /// # Panics
     /// If there is an error during the initialization process, this function will panic.
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn new() -> Self {
         let platform = Platform::default();
         let device = Device::first(platform).unwrap();
@@ -51,6 +52,7 @@ impl GPU {
 }
 
 impl Default for GPU {
+    #[tracing::instrument(level = "trace", skip_all)]
     fn default() -> Self {
         Self::new()
     }

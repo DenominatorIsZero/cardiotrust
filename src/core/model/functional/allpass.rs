@@ -119,6 +119,7 @@ impl APParameters {
         self.activation_time_ms.save_npy(path);
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
@@ -161,6 +162,7 @@ impl APParameters {
     }
 
     #[allow(clippy::cast_sign_loss)]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, ap_params: &APParametersGPU) {
         ap_params
             .gains

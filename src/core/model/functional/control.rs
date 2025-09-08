@@ -66,6 +66,7 @@ impl ControlMatrix {
         self.write_npy(writer).unwrap();
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
         Buffer::builder()
             .queue(queue.clone())
@@ -75,6 +76,7 @@ impl ControlMatrix {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, control_matrix: &Buffer<f32>) {
         control_matrix
             .read(self.as_slice_mut().unwrap())
@@ -226,6 +228,7 @@ impl ControlFunction {
         self.write_npy(writer).unwrap();
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
         ocl::Buffer::builder()
             .queue(queue.clone())
@@ -235,6 +238,7 @@ impl ControlFunction {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, control_function_values: &Buffer<f32>) {
         control_function_values
             .read(self.as_slice_mut().unwrap())

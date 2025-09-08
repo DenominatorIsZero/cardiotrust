@@ -64,6 +64,7 @@ impl Data {
     }
 
     #[allow(dead_code)]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn get_default() -> Self {
         let mut sim_config = SimulationConfig::default();
         sim_config.model.common.pathological = true;

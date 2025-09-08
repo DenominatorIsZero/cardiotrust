@@ -23,6 +23,7 @@ impl UpdateKernel {
         clippy::too_many_lines
     )]
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(
         gpu: &GPU,
         derivatives: &DerivativesGPU,
@@ -76,6 +77,7 @@ impl UpdateKernel {
     }
 
     #[allow(clippy::missing_panics_doc)]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn execute(&self) {
         // TODO: Optimize prediction by running multiple beats in parallel using async kernel execution.
         // This would allow better GPU utilization by processing independent beats simultaneously.

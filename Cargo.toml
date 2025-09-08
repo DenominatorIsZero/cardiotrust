@@ -46,7 +46,6 @@ test-log = "0.2.18"
 
 [dev-dependencies]
 criterion = "0.7.0"
-ntest = "0.9.3"
 
 [[bench]]
 name = "run_epoch_benches"

@@ -87,6 +87,7 @@ impl Model {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn synchronize_parameters(&mut self, data: &Data) {
         self.functional_description.measurement_matrix.assign(
             &*data
@@ -148,17 +149,20 @@ impl Model {
     }
 
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn to_gpu(&self, queue: &ocl::Queue) -> ModelGPU {
         ModelGPU {
             functional_description: self.functional_description.to_gpu(queue),
         }
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn from_gpu(&mut self, model_gpu: &ModelGPU) {
         self.functional_description
             .update_from_gpu(&model_gpu.functional_description);
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn get_default() -> Self {
         let config = ModelConfig::default();
         let sim_config = Simulation::default();

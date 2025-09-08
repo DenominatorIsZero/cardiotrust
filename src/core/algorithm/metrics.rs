@@ -103,6 +103,7 @@ impl Metrics {
         self.recall_over_threshold.write_npy(writer).unwrap();
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> MetricsGPU {
         MetricsGPU {
             loss: self.loss.to_gpu(queue),
@@ -114,6 +115,7 @@ impl Metrics {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, metrics: &MetricsGPU) {
         self.loss.update_from_gpu(&metrics.loss);
         self.loss_batch.update_from_gpu(&metrics.loss_batch);
@@ -426,6 +428,7 @@ impl SampleWiseMetric {
         self.write_npy(writer).unwrap();
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
         Buffer::builder()
             .queue(queue.clone())
@@ -435,6 +438,7 @@ impl SampleWiseMetric {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     fn update_from_gpu(&mut self, loss: &Buffer<f32>) {
         loss.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }
@@ -479,6 +483,7 @@ impl BatchWiseMetric {
         self.write_npy(writer).unwrap();
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
         Buffer::builder()
             .queue(queue.clone())
@@ -488,6 +493,7 @@ impl BatchWiseMetric {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     fn update_from_gpu(&mut self, loss_batch: &Buffer<f32>) {
         loss_batch.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }

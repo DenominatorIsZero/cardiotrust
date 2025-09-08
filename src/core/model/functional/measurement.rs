@@ -39,6 +39,7 @@ impl MeasurementMatrix {
     }
 
     #[allow(clippy::missing_panics_doc)]
+    #[tracing::instrument(level = "trace", skip_all)]
     #[must_use]
     pub fn to_gpu(&self, queue: &Queue) -> Buffer<f32> {
         Buffer::builder()
@@ -131,6 +132,7 @@ impl MeasurementMatrix {
         MeasurementMatrixAtBeat(self.slice(s![beat, .., ..]))
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, measurement_matrix: &Buffer<f32>) {
         measurement_matrix
             .read(self.as_slice_mut().unwrap())
@@ -222,6 +224,7 @@ impl MeasurementCovariance {
         self.write_npy(writer).unwrap();
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
         Buffer::builder()
             .queue(queue.clone())
@@ -231,6 +234,7 @@ impl MeasurementCovariance {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, measurement_covariance: &Buffer<f32>) {
         measurement_covariance
             .read(self.as_slice_mut().unwrap())

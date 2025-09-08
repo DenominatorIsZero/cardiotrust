@@ -18,6 +18,7 @@ impl HelperKernel {
         clippy::too_many_lines
     )]
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(gpu: &GPU, estimations: &EstimationsGPU) -> Self {
         let context = &gpu.context;
         let queue = &gpu.queue;
@@ -49,12 +50,14 @@ impl HelperKernel {
     }
 
     #[allow(clippy::missing_panics_doc)]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn increase_step(&self) {
         unsafe {
             self.step_kernel.enq().unwrap();
         }
     }
     #[allow(clippy::missing_panics_doc)]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn increase_epoch(&self) {
         unsafe {
             self.epoch_kernel.enq().unwrap();

@@ -69,6 +69,7 @@ impl SystemStates {
         SystemStatesAtStepMut(self.slice_mut(s![step, ..]))
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
         ocl::Buffer::builder()
             .queue(queue.clone())
@@ -78,6 +79,7 @@ impl SystemStates {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, system_states: &ocl::Buffer<f32>) {
         system_states
             .read(self.as_slice_mut().unwrap())
@@ -379,6 +381,7 @@ impl Measurements {
 
     #[allow(clippy::missing_panics_doc)]
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
         ocl::Buffer::builder()
             .queue(queue.clone())
@@ -388,6 +391,7 @@ impl Measurements {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, measurements: &ocl::Buffer<f32>) {
         measurements
             .read(self.as_slice_mut().unwrap())
@@ -513,6 +517,7 @@ impl Residuals {
         self.write_npy(writer).unwrap();
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
         ocl::Buffer::builder()
             .queue(queue.clone())
@@ -522,6 +527,7 @@ impl Residuals {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, residuals: &ocl::Buffer<f32>) {
         residuals.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }

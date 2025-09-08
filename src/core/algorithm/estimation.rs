@@ -92,6 +92,7 @@ impl Estimations {
         self.measurements.save_npy(path);
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> EstimationsGPU {
         EstimationsGPU {
             ap_outputs_now: self.ap_outputs_now.to_gpu(queue),
@@ -120,6 +121,7 @@ impl Estimations {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, estimations: &EstimationsGPU) {
         self.ap_outputs_now
             .update_from_gpu(&estimations.ap_outputs_now);

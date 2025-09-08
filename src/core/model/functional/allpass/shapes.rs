@@ -91,6 +91,7 @@ impl Gains {
         self.write_npy(writer).unwrap();
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
         Buffer::builder()
             .queue(queue.clone())
@@ -100,6 +101,7 @@ impl Gains {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, buffer: &Buffer<f32>) {
         buffer.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }
@@ -207,6 +209,7 @@ impl Coefs {
         self.write_npy(writer).unwrap();
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
         Buffer::builder()
             .queue(queue.clone())
@@ -216,6 +219,7 @@ impl Coefs {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, coefs: &Buffer<f32>) {
         coefs.read(self.as_slice_mut().unwrap()).enq().unwrap();
     }

@@ -118,6 +118,7 @@ impl FunctionalDescription {
     }
 
     #[allow(clippy::missing_panics_doc)]
+    #[tracing::instrument(level = "trace", skip_all)]
     #[must_use]
     pub fn to_gpu(&self, queue: &Queue) -> FunctionalDescriptionGPU {
         FunctionalDescriptionGPU {
@@ -129,6 +130,7 @@ impl FunctionalDescription {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, functional_description: &FunctionalDescriptionGPU) {
         self.ap_params
             .update_from_gpu(&functional_description.ap_params);

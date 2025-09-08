@@ -120,6 +120,7 @@ impl Derivatives {
         self.maximum_regularization_sum = 0.0;
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> DerivativesGPU {
         DerivativesGPU {
             gains: self.gains.to_gpu(queue),
@@ -137,6 +138,7 @@ impl Derivatives {
         }
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, derivatives: &DerivativesGPU) {
         self.gains.update_from_gpu(&derivatives.gains);
         self.coefs.update_from_gpu(&derivatives.coefs);
@@ -593,6 +595,7 @@ impl MappedResiduals {
         Self(Array1::zeros(number_of_states))
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
         Buffer::builder()
             .queue(queue.clone())
@@ -602,6 +605,7 @@ impl MappedResiduals {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     fn update_from_gpu(&mut self, mapped_residuals: &Buffer<f32>) {
         mapped_residuals
             .read(self.as_slice_mut().unwrap())
@@ -703,6 +707,7 @@ impl MaximumRegularization {
         Self(Array1::zeros(number_of_states))
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
         Buffer::builder()
             .queue(queue.clone())
@@ -712,6 +717,7 @@ impl MaximumRegularization {
             .unwrap()
     }
 
+    #[tracing::instrument(level = "trace", skip_all)]
     fn update_from_gpu(&mut self, maximum_regularization: &Buffer<f32>) {
         maximum_regularization
             .read(self.as_slice_mut().unwrap())

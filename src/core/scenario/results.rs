@@ -108,6 +108,7 @@ impl Results {
     }
 
     #[allow(clippy::missing_panics_doc)]
+    #[tracing::instrument(level = "trace", skip_all)]
     #[must_use]
     pub fn to_gpu(&self, queue: &Queue) -> ResultsGPU {
         ResultsGPU {
@@ -119,6 +120,7 @@ impl Results {
     }
 
     #[allow(clippy::missing_panics_doc)]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn update_from_gpu(&mut self, results: &ResultsGPU) {
         self.metrics.update_from_gpu(&results.metrics);
         self.estimations.update_from_gpu(&results.estimations);
@@ -127,6 +129,7 @@ impl Results {
     }
 
     #[allow(dead_code)]
+    #[tracing::instrument(level = "trace", skip_all)]
     #[must_use]
     pub fn get_default() -> Self {
         let model = Model::get_default();
@@ -201,6 +204,7 @@ impl Snapshots {
     }
 
     #[allow(clippy::missing_panics_doc)]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn push(&mut self, estimations: &Estimations, ap_params: &APParameters) {
         assert!(self.current_index < self.number_of_snapshots);
         self.ap_gains
@@ -232,6 +236,7 @@ pub struct GainsSnapshots(Array3<f32>);
 
 impl GainsSnapshots {
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(number_of_snapshots: usize, number_of_states: usize) -> Self {
         Self(Array3::zeros((number_of_snapshots, number_of_states, 78)))
     }
@@ -251,6 +256,7 @@ pub struct CoefsSnapshots(Array3<f32>);
 
 impl CoefsSnapshots {
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(number_of_snapshots: usize, number_of_states: usize) -> Self {
         Self(Array3::zeros((
             number_of_snapshots,
@@ -274,6 +280,7 @@ pub struct DelaysSnapshots(Array3<usize>);
 
 impl DelaysSnapshots {
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(number_of_snapshots: usize, number_of_states: usize) -> Self {
         Self(Array3::zeros((
             number_of_snapshots,
@@ -297,6 +304,7 @@ pub struct SystemStatesSnapshots(Array3<f32>);
 
 impl SystemStatesSnapshots {
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(
         number_of_snapshots: usize,
         number_of_steps: usize,
@@ -324,6 +332,7 @@ pub struct MeasurementsSnapshots(Array4<f32>);
 
 impl MeasurementsSnapshots {
     #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(
         number_of_snapshots: usize,
         number_of_beats: usize,
