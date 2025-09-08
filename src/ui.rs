@@ -78,30 +78,9 @@ pub enum UiState {
 }
 
 impl Default for UiState {
-    #[cfg(target_arch = "wasm32")]
-    #[tracing::instrument(level = "trace")]
-    fn default() -> Self {
-        Self::Volumetric
-    }
-    #[cfg(not(target_arch = "wasm32"))]
     #[tracing::instrument(level = "trace")]
     fn default() -> Self {
         Self::Explorer
-    }
-}
-
-#[allow(clippy::module_name_repetitions)]
-#[derive(Debug)]
-pub struct ClientUiPlugin;
-
-impl Plugin for ClientUiPlugin {
-    #[tracing::instrument(level = "info", skip(app))]
-    fn build(&self, app: &mut App) {
-        info!("Initializing client UI plugin.");
-        app.init_state::<UiState>()
-            .init_resource::<PlaybackSpeed>()
-            .add_plugins(EguiPlugin::default())
-            .add_systems(EguiPrimaryContextPass, draw_ui_volumetric);
     }
 }
 

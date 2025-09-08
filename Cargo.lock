@@ -780,22 +780,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_embedded_assets"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c81ee60b1b01ca7414c43815d88043c8fe3adf11f1fdaf21eafcbcae84337292"
-dependencies = [
- "bevy_app",
- "bevy_asset",
- "bevy_ecs",
- "cargo-emit",
- "futures-io",
- "futures-lite",
- "log",
- "thiserror 2.0.16",
-]
-
-[[package]]
 name = "bevy_encase_derive"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1804,7 +1788,6 @@ dependencies = [
  "bevy",
  "bevy_editor_cam",
  "bevy_egui",
- "bevy_embedded_assets",
  "bevy_obj",
  "bincode",
  "chrono",
@@ -1815,7 +1798,6 @@ dependencies = [
  "gif 0.13.3",
  "image 0.25.8",
  "itertools 0.14.0",
- "js-sys",
  "nalgebra 0.34.0",
  "ndarray",
  "ndarray-npy",
@@ -1825,7 +1807,6 @@ dependencies = [
  "num-derive",
  "num-traits 0.2.19",
  "ocl",
- "ocl-core",
  "physical_constants",
  "plotters",
  "rand 0.9.2",
@@ -1834,7 +1815,6 @@ dependencies = [
  "rubato",
  "scarlet",
  "serde",
- "serde_json",
  "strum 0.27.2",
  "strum_macros 0.27.2",
  "test-log",
@@ -1842,15 +1822,7 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
- "wasm-bindgen",
- "web-sys",
 ]
-
-[[package]]
-name = "cargo-emit"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1582e1c9e755dd6ad6b224dcffb135d199399a4568d454bd89fe515ca8425695"
 
 [[package]]
 name = "cast"

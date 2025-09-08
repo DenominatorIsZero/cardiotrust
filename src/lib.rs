@@ -16,7 +16,6 @@ pub mod scheduler;
 pub mod tests;
 pub mod ui;
 pub mod vis;
-pub mod websocket;
 
 use std::{
     fs::{self, create_dir_all},
