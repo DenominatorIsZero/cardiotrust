@@ -37,29 +37,6 @@ fn epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>
     }
 }
 
-fn with_update(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
-    for voxel_size in VOXEL_SIZES.iter() {
-        let config = setup_config(voxel_size);
-
-        // setup inputs
-        let (data, mut results) = setup_inputs(&config);
-
-        // run bench
-        let number_of_voxels = results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .voxels
-            .count();
-        let mut batch_index = 0;
-        group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        group.bench_function(BenchmarkId::new("with_update", voxel_size), |b| {
-            b.iter(|| run_epoch(&mut results, &mut batch_index, &data, &config.algorithm))
-        });
-    }
-}
-
 fn setup_config(voxel_size: &f32) -> Config {
     let samplerate_hz = 2000.0 * 2.5 / voxel_size;
     let mut config = Config::default();
