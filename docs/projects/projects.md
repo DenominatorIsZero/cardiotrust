@@ -492,10 +492,35 @@ Transform CardioTrust from research-quality code into professional software whil
 
 ---
 
-### 18. Repository Professionalization & Documentation
+### 18. Code Cleanup & Simplification
+
+**Work Load**: 3 points  
+**Prerequisites**: None
+**Priority**: Important  
+**Expected Outcome**: Simplified codebase with unused components removed, ready for professional documentation
+
+**Context**: Remove unused and rarely-used code components (client binary, Kalman filter) to simplify the codebase before documentation. Creates cleaner foundation for professional presentation.
+
+**Technical Scope**:
+
+- **Client binary removal**: Remove `src/bin/client.rs` and WebSocket infrastructure designed for external KiRAT integration
+- **Kalman filter cleanup**: Remove unused `KalmanGain` implementation and associated GPU kernel code
+- **Dependency cleanup**: Remove dependencies only used by removed components, optimize Cargo.toml
+- **Build system updates**: Clean up justfile, configuration files, and build targets
+- **Additional opportunities**: Survey and document other cleanup targets (dynamic sensor array, dead code)
+
+**Potential Roadblocks**:
+
+- Complex dependency chains requiring careful analysis before removal
+- GPU kernel integration may need careful validation after Kalman filter removal
+- Ensuring no impact on core research algorithms during cleanup
+
+---
+
+### 19. Repository Professionalization & Documentation
 
 **Work Load**: 4 points  
-**Prerequisites**: None
+**Prerequisites**: Code Cleanup & Simplification (Project 18)
 **Priority**: Important  
 **Expected Outcome**: Professional repository presentation with comprehensive project documentation
 
@@ -519,7 +544,7 @@ Transform CardioTrust from research-quality code into professional software whil
 
 ---
 
-### 19. Security Audit & Dependency Management
+### 20. Security Audit & Dependency Management
 
 **Work Load**: 3 points  
 **Prerequisites**: Repository Professionalization & Documentation  
@@ -550,33 +575,42 @@ Transform CardioTrust from research-quality code into professional software whil
 
 Rather than attempting all projects simultaneously, focus on creating a complete, impressive portfolio demonstration through strategic project selection:
 
-### **Phase 0: Professional Foundation**
+### **Phase 0: Code Cleanup Foundation**
 
-**Target**: Project 18 (Repository Professionalization & Documentation)
+**Target**: Project 18 (Code Cleanup & Simplification)
 
-- **Why First**: Establishes professional presentation from day one
+- **Why First**: Remove unused complexity before documenting architecture
+- **Clean Slate**: Document simplified, focused codebase rather than explaining unused features
+- **Reduced Cognitive Load**: Simpler codebase easier to understand and maintain
+- **Foundation**: Clean code essential before professional documentation
+
+### **Phase 1: Professional Foundation**
+
+**Target**: Project 19 (Repository Professionalization & Documentation)
+
+- **Why Second**: Document clean, simplified architecture after cleanup
 - **Living Document**: Keep README, architecture.md, justfile updated as you implement changes
 - **Professional Context**: Document the Claude Code collaboration and personal project transition
 - **Development Infrastructure**: Professional tooling supports all subsequent work
 
-### **Phase 1: Stability Foundation**
+### **Phase 2: Stability Foundation**
 
 **Target**: Project 1 (Error Handling Standardization)
 
-- **Why Second**: Eliminates crashes, makes all subsequent development safer
+- **Why Third**: Eliminates crashes, makes all subsequent development safer
 - **Foundation**: Essential before UI work and WASM deployment
 - **Documentation**: Update architecture docs as you implement better error handling
 
-### **Phase 2: Code Quality Polish**
+### **Phase 3: Code Quality Polish**
 
 **Target**: Project 15 (Clippy Allow Decorator Review & Code Quality Polish)
 
-- **Why Third**: Clean up technical debt before major UI/WASM work
+- **Why Fourth**: Clean up technical debt before major UI/WASM work
 - **Professional Standards**: Demonstrate systematic approach to code quality
 - **Clean Foundation**: Proper documentation and targeted allows support all future work
 - **Documentation**: Well-documented codebase with clear rationale for design decisions
 
-### **Phase 3: Professional UI Transformation**
+### **Phase 4: Professional UI Transformation**
 
 **Target**: Project 6 (Complete UI Overhaul)
 
@@ -584,7 +618,7 @@ Rather than attempting all projects simultaneously, focus on creating a complete
 - **Portfolio Presentation**: Beautiful, website-matching interface creates immediate positive impression
 - **Documentation**: Update README with new UI screenshots and capabilities
 
-### **Phase 4: Web Deployment**
+### **Phase 5: Web Deployment**
 
 **Target**: Projects 3-5 (Unified Binary, WASM Optimization, Web Integration)
 
