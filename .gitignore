@@ -1,11 +1,49 @@
-/target
+# Rust
+**/target/**
+**/*.rs.bk
+*.pdb
+*.exe
+
+# Research-specific artifacts
 /results
 /results_backup
 /tests
 /tmp
 /wasm-client/client.js
 /wasm-client/client_bg.wasm
-/logs
 
-.DS_STORE
-._target
+# IDE and Editors
+.vscode/
+.idea/
+.fleet/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs and debugging
+*.log
+debug/
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Environment files (security)
+.env
+.env.local
+.env.*.local
+
+# Development artifacts
+.sass-cache/
+.parcel-cache/

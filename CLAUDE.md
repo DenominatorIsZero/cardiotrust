@@ -248,6 +248,7 @@ Implement plans step-by-step with Claude Code assistance:
 **IMPORTANT**: Keep this file current to improve future AI interactions.
 
 **When to update CLAUDE.md:**
+
 - After major architectural changes or refactoring
 - When new development patterns or workflows are established
 - After discovering common issues and their solutions
@@ -256,6 +257,7 @@ Implement plans step-by-step with Claude Code assistance:
 - After significant algorithm improvements or research software updates
 
 **Proactive Update Protocol:**
+
 - Claude Code should offer to update CLAUDE.md after significant changes
 - Focus on generic guidance that benefits future interactions
 - Document new patterns, workflows, or common corrections
@@ -263,6 +265,7 @@ Implement plans step-by-step with Claude Code assistance:
 - Add lessons learned from debugging or problem-solving sessions
 
 Example trigger situations:
+
 - "You should use X instead of Y" → Add to development guidelines
 - "The files are actually located in Z" → Update repository structure
 - "This command doesn't work, use this instead" → Update development commands
@@ -284,6 +287,14 @@ Commits should represent meaningful progress points, not arbitrary code changes:
 
 **IMPORTANT**: Always ask the user to review changes before committing. Present a summary of what will be committed and wait for approval before executing any git commit commands.
 
+#### Commit Message Requirements
+
+**CRITICAL**: Follow these requirements exactly:
+
+- **NO Claude references**: Never mention Claude, AI assistance, or AI tools in commit messages
+- **Concise and technical**: Keep messages brief and focused on technical changes
+- **No marketing language**: Avoid promotional or marketing terms
+
 #### Commit Message Conventions
 
 Follow this format for AI workflow commits:
@@ -301,6 +312,7 @@ Refs: docs/projects/improvement-name/spec.md, docs/projects/improvement-name/pla
 ```
 
 Examples:
+
 ```
 [SPEC] Define error handling standardization requirements
 
