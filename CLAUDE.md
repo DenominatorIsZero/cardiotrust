@@ -130,6 +130,36 @@ GPU kernels implemented in `src/core/algorithm/gpu/` using OpenCL:
 - Visual test outputs saved to `tests/` directory
 - Benchmarking suite covers all major algorithms
 
+### Error Handling Strategy
+
+CardioTrust uses `anyhow` for comprehensive error handling throughout the codebase. This approach provides rich error context while maintaining research algorithm integrity.
+
+**Core Principles**:
+- **Preserve Algorithm Correctness** - Error handling changes must not alter computational behavior
+- **Provide Rich Context** - Errors include actionable debugging information with scenario/algorithm context
+- **Fail Fast for Correctness** - GPU and critical operations fail loudly rather than silently degrading
+- **Research-Friendly** - Error messages help with scenario debugging and scientific analysis
+
+**Standard Patterns**:
+- File I/O operations use `.with_context()` to include file paths and operation details
+- GPU operations fail explicitly with clear diagnostic messages rather than silent fallback
+- Configuration parsing provides detailed validation error messages
+- Array/vector operations include bounds checking with dimensional context
+- Thread operations handle panics and provide worker thread context
+
+**Function Signatures**:
+- Core algorithm functions return `anyhow::Result<T>` for error propagation
+- Entry points handle errors and provide user-friendly messages
+- GPU/CPU implementations maintain consistent error types
+
+**Migration Strategy**:
+- Bottom-up conversion starting with core data structures
+- Preserve public API compatibility during conversion
+- Verify algorithm correctness through existing benchmarks and scenarios
+- Use compiler guidance for systematic error propagation
+
+See `docs/error-handling-patterns.md` for detailed implementation patterns and examples.
+
 ### Directory Structure
 
 - `assets/` - 3D models, control functions, MRI data
