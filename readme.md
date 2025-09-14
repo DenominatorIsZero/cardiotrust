@@ -141,13 +141,13 @@ cargo build
 
 ### AI-Assisted Development
 
-As I continued working on this as a personal project, I started using Claude Code for refactoring and code quality improvements. For details on this workflow, see `CLAUDE.md`.
+As I continued working on this as a personal project, I started using Claude Code for refactoring and code quality improvements. For details on this workflow, see [`CLAUDE.md`](CLAUDE.md).
 
 ## Project Structure
 
 - `src/bin/` - Entry points for main application and experiment planner.
 - `src/core/` - Core simulation and estimation algorithms
-- `src/ui/` - Graphical user interface components using EGUI
+- `src/ui/` - Graphical user interface components using egui
 - `src/vis/` - 3D visualization using Bevy and plotting with egui_plot
 - `assets/` - 3D models and assets, control function data and MRI data.
 - `benches` - Benchmarking suite
@@ -187,6 +187,14 @@ The project uses optimized build configurations:
 - Development builds use optimization level 3
 - Release builds use thin LTO
 - Test builds are optimized for performance
+
+## Documentation
+
+For detailed technical information and development guidelines:
+
+- **[Architecture Overview](docs/architecture.md)** - System design, algorithm foundations, and technology choices
+- **[Contributing Guide](CONTRIBUTING.md)** - Development guidelines, setup instructions, and contribution process
+- **[AI Development Workflow](CLAUDE.md)** - Claude Code integration and development patterns
 
 ## Publications
 

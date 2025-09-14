@@ -2,6 +2,8 @@
 
 Thank you for your interest in CardioTrust! This is primarily a personal research project where I continue to develop and refine cardiac electrophysiological simulation algorithms from my PhD work.
 
+> **See Also**: [Project Overview](README.md) | [Technical Architecture](docs/architecture.md) | [AI Development Workflow](CLAUDE.md)
+
 ## What contributions are welcome?
 
 While this is a personal project, I appreciate help with:
@@ -63,18 +65,21 @@ For all available commands, run `just` to see the help menu or check the README.
 ## Development Guidelines
 
 ### Code Quality
+
 - Run `just work` before submitting changes (lint + test + benchmarks)
 - Follow existing code style and patterns
 - Maintain performance benchmarks - use `just bench` to verify
 - Preserve algorithm correctness - test with multiple scenario types
 
 ### Testing Strategy
+
 - Note the two-run testing requirement (see README for details)
 - Visual outputs are saved to `tests/` directory for verification
 - Run benchmarks to ensure performance isn't degraded
 - Test both GPU and CPU execution paths when relevant
 
 ### Research Software Considerations
+
 - **Algorithm Preservation** - Core mathematical algorithms should not change behavior
 - **GPU/CPU Consistency** - Maintain identical results between execution modes
 - **Performance Monitoring** - Use existing benchmarks to verify optimizations
@@ -87,13 +92,15 @@ Please be respectful and constructive in all interactions. This is a research pr
 ## Architecture and Technical Details
 
 For technical background, see:
-- `docs/architecture.md` - System overview and component relationships
-- Published papers (referenced in README.md) - Mathematical foundations
-- `CLAUDE.md` - AI-assisted development workflow and guidelines
+
+- [`docs/architecture.md`](docs/architecture.md) - System overview and component relationships
+- Published papers (referenced in [README.md](README.md)) - Mathematical foundations
+- [`CLAUDE.md`](CLAUDE.md) - AI-assisted development workflow and guidelines
 
 ## Questions?
 
 Feel free to reach out on [LinkedIn](https://www.linkedin.com/in/erik-engelhardt-65b1091a7/) if you have questions about:
+
 - The research background or mathematical approach
 - Technical implementation decisions
 - How to get started with cardiac electrophysiology simulation

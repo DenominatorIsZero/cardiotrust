@@ -64,7 +64,7 @@ CardioTrust is a research tool for cardiac electrophysiological simulation and n
   - `model/` - Spatial and functional model descriptions
   - `scenario/` - Scenario execution, results management, and status tracking
 
-- **`src/ui/`** - EGUI-based user interface components
+- **`src/ui/`** - egui-based user interface components
 
   - Scenario configuration and management
   - Results visualization and exploration

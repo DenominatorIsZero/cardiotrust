@@ -2,6 +2,31 @@
 
 This document provides a high-level technical overview of the CardioTrust system architecture, application workflow, and core algorithms.
 
+> **See Also**: [Project Overview](../README.md) | [Contributing Guidelines](../CONTRIBUTING.md) | [AI Development Workflow](../CLAUDE.md)
+
+## Table of Contents
+
+- [System Overview](#system-overview)
+- [Application Usage Workflow](#application-usage-workflow)
+  - [1. Scenario Creation](#1-scenario-creation)
+  - [2. Simulation Execution](#2-simulation-execution)
+  - [3. Results Analysis](#3-results-analysis)
+- [Core Algorithm](#core-algorithm)
+  - [Mathematical Foundation](#mathematical-foundation)
+  - [Technology Choices](#technology-choices)
+  - [GPU Acceleration Strategy](#gpu-acceleration-strategy)
+- [Data Flow](#data-flow)
+- [Module Organization](#module-organization)
+  - [Core (`src/core/`)](#core-srccore)
+  - [User Interface (`src/ui/`)](#user-interface-srcui)
+  - [Visualization (`src/vis/`)](#visualization-srcvis)
+- [Execution Modes](#execution-modes)
+  - [Native Application (`src/bin/main.rs`)](#native-application-srcbinmainrs)
+  - [Experiment Planner (`src/bin/planner.rs`)](#experiment-planner-srcbinplannerrs)
+- [Performance Considerations](#performance-considerations)
+  - [Build Optimization](#build-optimization)
+  - [Testing Strategy](#testing-strategy)
+
 ## System Overview
 
 CardioTrust is a research tool for cardiac electrophysiological simulation and non-invasive localization of arrhythmogenic tissue. The system uses a state-space-based framework to estimate myocardial current density distributions from magnetic field measurements.
@@ -11,7 +36,7 @@ CardioTrust is a research tool for cardiac electrophysiological simulation and n
 The architecture is organized into three main layers:
 
 - **`src/core/`** - Core simulation and estimation algorithms
-- **`src/ui/`** - EGUI-based user interface for configuration and results
+- **`src/ui/`** - egui-based user interface for configuration and results
 - **`src/vis/`** - Bevy-powered 3D visualization and plotting
 
 ## Application Usage Workflow
@@ -24,7 +49,7 @@ Users create simulation scenarios by configuring:
 - **Initial Model** - Starting point for the estimation algorithm
 - **Algorithm Parameters** - Optimization settings and constraints
 
-_Key files: `src/core/scenario.rs`, `src/core/config/`_
+_Key files: [`src/core/scenario.rs`](../src/core/scenario.rs), [`src/core/config/`](../src/core/config/)_
 
 ### 2. Simulation Execution
 
@@ -32,7 +57,7 @@ _Key files: `src/core/scenario.rs`, `src/core/config/`_
 - Multiple scenarios can run in parallel
 - Progress tracking and status monitoring
 
-_Key files: `src/scheduler.rs`, `src/core/algorithm/`_
+_Key files: [`src/scheduler.rs`](../src/scheduler.rs), [`src/core/algorithm/`](../src/core/algorithm/)_
 
 ### 3. Results Analysis
 
@@ -40,7 +65,7 @@ _Key files: `src/scheduler.rs`, `src/core/algorithm/`_
 - **3D Visualization** - Interactive heart model with current density overlays
 - **Data Export** - Results in various formats (NPY, PNG, GIF)
 
-_Key files: `src/ui/results.rs`, `src/vis/plotting/`, `src/vis/heart.rs`_
+_Key files: [`src/ui/results.rs`](../src/ui/results.rs), [`src/vis/plotting/`](../src/vis/plotting/), [`src/vis/heart.rs`](../src/vis/heart.rs)_
 
 ## Core Algorithm
 
@@ -93,7 +118,7 @@ The system provides user-selectable execution paths:
 - OpenCL kernels for high-performance computation
 - Fewer configuration options (implementation in progress)
 
-_Key files: `src/core/algorithm/gpu/`_
+_Key files: [`src/core/algorithm/gpu/`](../src/core/algorithm/gpu/)_
 
 **CPU Implementation:**
 
@@ -102,7 +127,7 @@ _Key files: `src/core/algorithm/gpu/`_
 - Consistent results with GPU implementations
 - Used when GPU not selected or unavailable
 
-_Key files: `src/core/algorithm/refinement/`, `src/core/algorithm/estimation/`_
+_Key files: [`src/core/algorithm/refinement/`](../src/core/algorithm/refinement/), [`src/core/algorithm/estimation/`](../src/core/algorithm/estimation/)_
 
 ## Data Flow
 
@@ -181,7 +206,7 @@ Batch scenario generation for:
 - Comprehensive benchmarking suite
 - Algorithm consistency validation
 
-_Key files: `benches/`, `tests/`_
+_Key files: [`benches/`](../benches/), [`tests/`](../tests/)_
 
 ---
 
