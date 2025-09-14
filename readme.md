@@ -92,23 +92,41 @@ cargo nextest run --no-fail-fast # This should pass the second time
 ### Common Commands
 
 ```bash
-# Run the application
+# Development
 just run                 # Debug build
 just release             # Release build
+just planner             # Run experiment planner
 
 # Testing
-just test                # Run tests
+just test                # Run tests with nextest
 just test-all            # Run all tests including ignored ones
 
 # Code Quality
-just lint                # Run clippy checks
+just lint                # Run clippy checks (includes clippy-tracing)
 just fmt                 # Format code (requires nightly toolchain)
-just work                # Run lint, test and benchmarks
+just fmt-check           # Check formatting without making changes
+
+# Build
+just build               # Debug build
+just build-release       # Release build
+
+# Documentation
+just doc                 # Build and open docs (no dependencies)
+just doc-all             # Build and open docs (with dependencies)
 
 # Benchmarking
 just bench               # Run epoch benchmarks
+just bench-all           # Run all benchmarks
 just flamegraph         # Generate flamegraph (requires cargo-flamegraph)
 
+# Maintenance
+just clean               # Clean build artifacts and results
+just check               # Run cargo check on all targets
+
+# Combined Workflows
+just work                # Run lint, test and benchmarks
+just ci                  # Run fmt-check, lint, test (CI pipeline)
+just dev                 # Run build and test (development workflow)
 ```
 
 ### Build Configurations

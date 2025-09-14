@@ -3,6 +3,13 @@ name = "cardiotrust"
 version = "0.3.0"
 edition = "2021"
 license = "Apache-2.0"
+description = "A research tool for cardiac electrophysiological simulation and non-invasive localization of arrhythmogenic tissue using state-space modeling and magnetic field measurements"
+authors = ["Erik Engelhardt"]
+repository = "https://github.com/DenominatorIsZero/cardiotrust"
+homepage = "https://github.com/DenominatorIsZero/cardiotrust"
+readme = "README.md"
+keywords = ["cardiac", "electrophysiology", "simulation", "magnetic", "biomedical"]
+categories = ["science", "simulation", "visualization"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
