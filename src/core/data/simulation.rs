@@ -1,8 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::error::Error;
-
+use anyhow::Result;
 use ndarray::Dim;
 use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
@@ -82,7 +81,7 @@ impl Simulation {
     ///
     /// Returns an error if the model fails to initialize from the config.
     #[tracing::instrument(level = "debug")]
-    pub fn from_config(config: &SimulationConfig) -> Result<Self, Box<dyn Error>> {
+    pub fn from_config(config: &SimulationConfig) -> Result<Self> {
         debug!("Creating simulation from config");
         let model =
             Model::from_model_config(&config.model, config.sample_rate_hz, config.duration_s)?;

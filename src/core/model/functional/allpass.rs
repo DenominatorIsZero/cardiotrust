@@ -3,8 +3,7 @@ mod direction;
 mod gain;
 pub mod shapes;
 
-use std::error::Error;
-
+use anyhow::Result;
 use approx::relative_eq;
 use itertools::Itertools;
 use ndarray::{arr1, s, Array1, Array3, Array4, Dim};
@@ -73,7 +72,7 @@ impl APParameters {
         config: &Model,
         spatial_description: &SpatialDescription,
         sample_rate_hz: f32,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> Result<Self> {
         debug!("Creating AP parameters from model config");
         let mut ap_params = Self::empty(
             spatial_description.voxels.count_states(),

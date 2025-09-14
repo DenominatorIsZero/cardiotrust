@@ -1,5 +1,6 @@
-use std::{collections::HashMap, error::Error};
+use std::collections::HashMap;
 
+use anyhow::Result;
 use itertools::Itertools;
 use ndarray::{s, ArrayBase, Dim, ViewRepr};
 use tracing::trace;
@@ -37,7 +38,7 @@ pub fn calculate_delay_samples_array(
     spatial_description: &SpatialDescription,
     propagation_velocities_m_per_s: &HashMap<VoxelType, f32>,
     sample_rate_hz: f32,
-) -> Result<Coefs, Box<dyn Error>> {
+) -> Result<Coefs> {
     trace!("Calculating delay samples array");
     let mut delay_samples_array = Coefs::empty(spatial_description.voxels.count_states());
 
@@ -81,12 +82,11 @@ pub fn calculate_delay_samples_array(
             let delay_samples = delay_s * sample_rate_hz;
 
             if delay_samples < 1.0 {
-                return Err(format!(
+                return Err(anyhow::anyhow!(
                     "Can not configure delays below 1 sample.\
                         Calculated delay: {delay_samples}.\
                         For voxel type: {v_type:?}",
-                )
-                .into());
+                ));
             }
 
             delay_samples_array[(

@@ -1,8 +1,7 @@
 pub mod shapes;
 pub mod simulation;
 
-use std::error::Error;
-
+use anyhow::{Context, Result};
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -46,7 +45,7 @@ impl Data {
     ///
     /// Returns an error if creating the `Simulation` from the config fails.
     #[tracing::instrument(level = "debug")]
-    pub fn from_simulation_config(config: &SimulationConfig) -> Result<Self, Box<dyn Error>> {
+    pub fn from_simulation_config(config: &SimulationConfig) -> Result<Self> {
         debug!("Creating data from simulation config");
         let mut simulation = Simulation::from_config(config)?;
         simulation.run();
@@ -65,10 +64,11 @@ impl Data {
 
     #[allow(dead_code)]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn get_default() -> Self {
+    pub(crate) fn get_default() -> Result<Self> {
         let mut sim_config = SimulationConfig::default();
         sim_config.model.common.pathological = true;
 
-        Self::from_simulation_config(&sim_config).unwrap()
+        Self::from_simulation_config(&sim_config)
+            .context("Failed to create default simulation data")
     }
 }

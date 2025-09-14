@@ -156,7 +156,7 @@ mod tests {
         let mut results_cpu = Results::get_default();
         let gpu = GPU::new();
         let results_gpu = results_cpu.to_gpu(&gpu.queue);
-        let data = Data::get_default();
+        let data = Data::get_default().expect("Failed to create default data for test");
         let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue);
         let number_of_states = data.simulation.system_states.num_states();
         let number_of_sensors = results_cpu

@@ -132,7 +132,7 @@ impl Results {
     #[tracing::instrument(level = "trace", skip_all)]
     #[must_use]
     pub fn get_default() -> Self {
-        let model = Model::get_default();
+        let model = Model::get_default().expect("Failed to create default model for results");
         let algorithm_config = Algorithm::default();
         Self {
             metrics: Metrics::new(

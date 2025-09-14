@@ -3,8 +3,7 @@ pub mod spatial;
 #[cfg(test)]
 mod tests;
 
-use std::error::Error;
-
+use anyhow::Result;
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -72,7 +71,7 @@ impl Model {
         config: &ModelConfig,
         sample_rate_hz: f32,
         duration_s: f32,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> Result<Self> {
         debug!("Creating model from config");
         let spatial_description = SpatialDescription::from_model_config(config);
         let functional_description = FunctionalDescription::from_model_config(
@@ -163,9 +162,9 @@ impl Model {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn get_default() -> Self {
+    pub(crate) fn get_default() -> Result<Self> {
         let config = ModelConfig::default();
         let sim_config = Simulation::default();
-        Self::from_model_config(&config, sim_config.sample_rate_hz, sim_config.duration_s).unwrap()
+        Self::from_model_config(&config, sim_config.sample_rate_hz, sim_config.duration_s)
     }
 }

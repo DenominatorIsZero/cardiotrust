@@ -2,8 +2,7 @@ pub mod allpass;
 pub mod control;
 pub mod measurement;
 
-use std::error::Error;
-
+use anyhow::Result;
 use ndarray::Dim;
 use ocl::{Buffer, Queue};
 use serde::{Deserialize, Serialize};
@@ -80,7 +79,7 @@ impl FunctionalDescription {
         spatial_description: &SpatialDescription,
         sample_rate_hz: f32,
         duration_s: f32,
-    ) -> Result<Self, Box<dyn Error>> {
+    ) -> Result<Self> {
         debug!("Creating functional description from model config");
         let ap_params =
             APParameters::from_model_config(config, spatial_description, sample_rate_hz)?;
