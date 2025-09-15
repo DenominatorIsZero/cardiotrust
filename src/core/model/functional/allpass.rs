@@ -3,7 +3,7 @@ mod direction;
 mod gain;
 pub mod shapes;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use approx::relative_eq;
 use itertools::Itertools;
 use ndarray::{arr1, s, Array1, Array3, Array4, Dim};
@@ -125,15 +125,18 @@ impl APParameters {
         clippy::missing_panics_doc
     )]
     #[must_use]
-    pub fn to_gpu(&self, queue: &Queue) -> APParametersGPU {
+    pub fn to_gpu(&self, queue: &Queue) -> Result<APParametersGPU> {
         let delays_i32: Vec<i32> = self.delays.iter().map(|&x| x as i32).collect();
-        APParametersGPU {
+        Ok(APParametersGPU {
             gains: Buffer::builder()
                 .queue(queue.clone())
                 .len(self.gains.len())
-                .copy_host_slice(self.gains.as_slice().unwrap())
+                .copy_host_slice(
+                    self.gains.as_slice()
+                        .context("Failed to get gains slice for GPU copy")?,
+                )
                 .build()
-                .unwrap(),
+                .context("Failed to create gains GPU buffer")?,
             output_state_indices: Buffer::builder()
                 .queue(queue.clone())
                 .len(self.output_state_indices.len())
@@ -141,44 +144,55 @@ impl APParameters {
                     self.output_state_indices
                         .mapv(|opt| opt.map_or(-1i32, |val| val as i32))
                         .as_slice()
-                        .unwrap(),
+                        .context("Failed to get output state indices slice for GPU copy")?,
                 )
                 .build()
-                .unwrap(),
+                .context("Failed to create output state indices GPU buffer")?,
             coefs: Buffer::builder()
                 .queue(queue.clone())
                 .len(self.coefs.len())
-                .copy_host_slice(self.coefs.as_slice().unwrap())
+                .copy_host_slice(
+                    self.coefs.as_slice()
+                        .context("Failed to get coefs slice for GPU copy")?,
+                )
                 .build()
-                .unwrap(),
+                .context("Failed to create coefs GPU buffer")?,
             delays: Buffer::builder()
                 .queue(queue.clone())
                 .len(delays_i32.len())
                 .copy_host_slice(delays_i32.as_slice())
                 .build()
-                .unwrap(),
-        }
+                .context("Failed to create delays GPU buffer")?,
+        })
     }
 
     #[allow(clippy::cast_sign_loss)]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, ap_params: &APParametersGPU) {
+    pub(crate) fn update_from_gpu(&mut self, ap_params: &APParametersGPU) -> Result<()> {
         ap_params
             .gains
-            .read(self.gains.as_slice_mut().unwrap())
+            .read(
+                self.gains.as_slice_mut()
+                    .context("Failed to get mutable gains slice for GPU read")?,
+            )
             .enq()
-            .unwrap();
+            .context("Failed to read gains from GPU buffer")?;
         ap_params
             .coefs
-            .read(self.coefs.as_slice_mut().unwrap())
+            .read(
+                self.coefs.as_slice_mut()
+                    .context("Failed to get mutable coefs slice for GPU read")?,
+            )
             .enq()
-            .unwrap();
+            .context("Failed to read coefs from GPU buffer")?;
         let mut temp_i32 = vec![0i32; self.delays.len()];
-        ap_params.delays.read(&mut temp_i32).enq().unwrap();
+        ap_params.delays.read(&mut temp_i32).enq()
+            .context("Failed to read delays from GPU buffer")?;
         self.delays
             .iter_mut()
             .zip(temp_i32.iter())
             .for_each(|(dest, &src)| *dest = src as usize);
+        Ok(())
     }
 }
 

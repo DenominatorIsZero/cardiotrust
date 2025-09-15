@@ -5,6 +5,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use anyhow::{Context, Result};
 use approx::relative_eq;
 use ndarray::{s, Array2, Array3, ArrayView2};
 use ndarray_npy::WriteNpyExt;
@@ -41,13 +42,17 @@ impl MeasurementMatrix {
     #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
     #[must_use]
-    pub fn to_gpu(&self, queue: &Queue) -> Buffer<f32> {
-        Buffer::builder()
+    pub fn to_gpu(&self, queue: &Queue) -> Result<Buffer<f32>> {
+        let buffer = Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer for measurement matrix")?;
+        Ok(buffer)
     }
 
     /// Creates a new `MeasurementMatrix` from the given `Model` config and
@@ -133,11 +138,15 @@ impl MeasurementMatrix {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, measurement_matrix: &Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, measurement_matrix: &Buffer<f32>) -> Result<()> {
         measurement_matrix
-            .read(self.as_slice_mut().unwrap())
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
             .enq()
-            .unwrap();
+            .context("Failed to read measurement matrix from GPU buffer")?;
+        Ok(())
     }
 }
 
@@ -225,21 +234,29 @@ impl MeasurementCovariance {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
-        Buffer::builder()
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<ocl::Buffer<f32>> {
+        let buffer = Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer for measurement covariance")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, measurement_covariance: &Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, measurement_covariance: &Buffer<f32>) -> Result<()> {
         measurement_covariance
-            .read(self.as_slice_mut().unwrap())
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
             .enq()
-            .unwrap();
+            .context("Failed to read measurement covariance from GPU buffer")?;
+        Ok(())
     }
 }
 

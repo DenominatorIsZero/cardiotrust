@@ -4,6 +4,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use anyhow::{Context, Result};
 use approx::RelativeEq;
 use ndarray::Array1;
 use ndarray_npy::{read_npy, WriteNpyExt};
@@ -67,21 +68,29 @@ impl ControlMatrix {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
-        Buffer::builder()
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
+        let buffer = Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer for control matrix")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, control_matrix: &Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, control_matrix: &Buffer<f32>) -> Result<()> {
         control_matrix
-            .read(self.as_slice_mut().unwrap())
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
             .enq()
-            .unwrap();
+            .context("Failed to read control matrix from GPU buffer")?;
+        Ok(())
     }
 }
 
@@ -229,21 +238,29 @@ impl ControlFunction {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
-        ocl::Buffer::builder()
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
+        let buffer = ocl::Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer for control function values")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, control_function_values: &Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, control_function_values: &Buffer<f32>) -> Result<()> {
         control_function_values
-            .read(self.as_slice_mut().unwrap())
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
             .enq()
-            .unwrap();
+            .context("Failed to read control function values from GPU buffer")?;
+        Ok(())
     }
 }
 
