@@ -48,7 +48,7 @@ impl Data {
     pub fn from_simulation_config(config: &SimulationConfig) -> Result<Self> {
         debug!("Creating data from simulation config");
         let mut simulation = Simulation::from_config(config)?;
-        simulation.run();
+        simulation.run()?;
         simulation.update_activation_time();
         Ok(Self { simulation })
     }

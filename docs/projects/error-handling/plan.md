@@ -24,7 +24,7 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 **Implementation Steps**:
 
 - [x] `src/core/data.rs` (1 unwrap)
-- [ ] `src/core/data/simulation.rs` (1 unwrap)
+- [x] `src/core/data/simulation.rs` (1 unwrap)
 - [ ] `src/core/data/shapes.rs` (39 unwraps)
 - [ ] `src/core/model.rs` (1 unwrap)
 - [ ] `src/core/model/spatial.rs` (9 unwraps)

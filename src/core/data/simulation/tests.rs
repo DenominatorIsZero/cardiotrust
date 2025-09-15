@@ -36,7 +36,7 @@ fn create_simulation_no_crash() {
 fn run_simulation_default() {
     let config = &SimulationConfig::default();
     let mut simulation = Simulation::from_config(config).unwrap();
-    simulation.run();
+    simulation.run().expect("Failed to run simulation in test");
     let max = *simulation.system_states.max_skipnan();
     assert!(max.relative_eq(&1.0, 0.001, 0.001));
     let max = *simulation.measurements.max_skipnan();
@@ -51,7 +51,7 @@ fn run_simulation_default_and_plot() {
     setup_folder(&folder);
     let config = &SimulationConfig::default();
     let mut simulation = Simulation::from_config(config).unwrap();
-    simulation.run();
+    simulation.run().expect("Failed to run simulation in test");
     let max = *simulation.system_states.max_skipnan();
     assert!(max.relative_eq(&1.0, 0.001, 0.001));
     let max = *simulation.measurements.max_skipnan();
@@ -176,7 +176,7 @@ fn run_simulation_pathological() {
     let mut config = SimulationConfig::default();
     config.model.common.pathological = true;
     let mut simulation = Simulation::from_config(&config).unwrap();
-    simulation.run();
+    simulation.run().expect("Failed to run simulation in test");
     let max = *simulation.system_states.max_skipnan();
     assert!(max.relative_eq(&1.0, 0.001, 0.001));
     let max = *simulation.measurements.max_skipnan();
@@ -192,7 +192,7 @@ fn run_simulation_pathological_and_plot() {
     let mut config = SimulationConfig::default();
     config.model.common.pathological = true;
     let mut simulation = Simulation::from_config(&config).unwrap();
-    simulation.run();
+    simulation.run().expect("Failed to run simulation in test");
     let max = *simulation.system_states.max_skipnan();
     assert!(max.relative_eq(&1.0, 0.001, 0.001));
     let max = *simulation.measurements.max_skipnan();
@@ -317,7 +317,7 @@ fn run_simulation_mri() {
     config.model.handcrafted = None;
     config.model.mri = Some(Mri::default());
     let mut simulation = Simulation::from_config(&config).unwrap();
-    simulation.run();
+    simulation.run().expect("Failed to run simulation in test");
     let max = *simulation.measurements.max_skipnan();
     assert!(max > 0.0);
     // make sure the max in each voxel is one
@@ -385,7 +385,7 @@ fn run_simulation_mri_and_plot() {
     config.model.handcrafted = None;
     config.model.mri = Some(Mri::default());
     let mut simulation = Simulation::from_config(&config).unwrap();
-    simulation.run();
+    simulation.run().expect("Failed to run simulation in test");
     let max = *simulation.system_states.max_skipnan();
     assert!(max.relative_eq(&1.0, 0.002, 0.002));
     let max = *simulation.measurements.max_skipnan();

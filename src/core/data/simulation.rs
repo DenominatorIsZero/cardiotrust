@@ -122,11 +122,11 @@ impl Simulation {
     /// Runs a simulation by calculating system predictions, adding measurement
     /// noise, and storing results in the measurements and `system_states` fields.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// if there are negative values in the measurement covariance matrix.
+    /// Returns an error if measurement noise configuration fails (negative covariance values).
     #[tracing::instrument(level = "info", skip_all)]
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<()> {
         info!("Running simulation");
 
         let mut estimations = Estimations::empty(
@@ -158,7 +158,7 @@ impl Simulation {
                 self.model.functional_description.measurement_covariance
                     [[sensor_index, sensor_index]],
             )
-            .unwrap();
+            .map_err(|e| anyhow::anyhow!("Failed to create measurement noise distribution for sensor {}: {}", sensor_index, e))?;
             for beat_index in 0..self.measurements.num_beats() {
                 for time_index in 0..self.measurements.num_steps() {
                     self.measurements[[beat_index, time_index, sensor_index]] +=
@@ -167,6 +167,7 @@ impl Simulation {
             }
         }
         self.calculate_plotting_arrays();
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
