@@ -92,34 +92,37 @@ mod tests {
     }
 
     #[test]
-    fn from_simulation_config_no_crash() {
+    fn from_simulation_config_no_crash() -> anyhow::Result<()> {
         let config = Model::default();
-        let _spatial_description = SpatialDescription::from_model_config(&config);
+        let _spatial_description = SpatialDescription::from_model_config(&config)?;
+        Ok(())
     }
 
     #[test]
-    fn from_handcrafted_model_config_no_crash() {
+    fn from_handcrafted_model_config_no_crash() -> anyhow::Result<()> {
         let config = Model {
             common: Common::default(),
             handcrafted: Some(Handcrafted::default()),
             mri: None,
         };
-        let _spatial_description = SpatialDescription::from_model_config(&config);
+        let _spatial_description = SpatialDescription::from_model_config(&config)?;
+        Ok(())
     }
 
     #[test]
-    fn from_mri_model_config_no_crash() {
+    fn from_mri_model_config_no_crash() -> anyhow::Result<()> {
         let config = Model {
             common: Common::default(),
             handcrafted: None,
             mri: Some(Mri::default()),
         };
-        let _spatial_description = SpatialDescription::from_model_config(&config);
+        let _spatial_description = SpatialDescription::from_model_config(&config)?;
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_possible_truncation)]
-    fn from_handcrafted_model_config_and_plot() {
+    fn from_handcrafted_model_config_and_plot() -> anyhow::Result<()> {
         let directory = Path::new(COMMON_PATH).join("handcrafted");
         setup_folder(&directory);
         let config = Model {
@@ -127,7 +130,7 @@ mod tests {
             handcrafted: Some(Handcrafted::default()),
             mri: None,
         };
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = SpatialDescription::from_model_config(&config)?;
 
         let duration_ms = 5000;
         let path = directory.join("types_over_x.gif");
@@ -165,11 +168,12 @@ mod tests {
             Some(time_per_frame_ms),
         )
         .expect("Failed to create voxel types plot");
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_possible_truncation)]
-    fn from_mri_model_config_and_plot() {
+    fn from_mri_model_config_and_plot() -> anyhow::Result<()> {
         let directory = Path::new(COMMON_PATH).join("mri");
         setup_folder(&directory);
         let config = Model {
@@ -177,7 +181,7 @@ mod tests {
             handcrafted: None,
             mri: Some(Mri::default()),
         };
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = SpatialDescription::from_model_config(&config)?;
 
         let duration_ms = 5000;
         let path = directory.join("types_over_x.gif");
@@ -215,11 +219,12 @@ mod tests {
             Some(time_per_frame_ms),
         )
         .expect("Failed to create voxel types plot");
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_possible_truncation)]
-    fn from_mri_model_config_and_plot_coarse() {
+    fn from_mri_model_config_and_plot_coarse() -> anyhow::Result<()> {
         let directory = Path::new(COMMON_PATH).join("mri");
         setup_folder(&directory);
         let mut config = Model {
@@ -228,7 +233,7 @@ mod tests {
             mri: Some(Mri::default()),
         };
         config.common.voxel_size_mm = 10.0;
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = SpatialDescription::from_model_config(&config)?;
 
         let duration_ms = 5000;
         let path = directory.join("types_over_x_coarse.gif");
@@ -266,5 +271,6 @@ mod tests {
             Some(time_per_frame_ms),
         )
         .expect("Failed to create voxel types plot");
+        Ok(())
     }
 }

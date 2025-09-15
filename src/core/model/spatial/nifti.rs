@@ -123,9 +123,9 @@ mod tests {
 
     #[test]
     #[allow(clippy::cast_possible_truncation)]
-    fn test_load_file() {
-        let _result = load_from_nii("assets/Segmentation.nii")
-            .expect("Should be able to load test NIFTI file");
+    fn test_load_file() -> anyhow::Result<()> {
+        let _result = load_from_nii("assets/Segmentation.nii")?;
+        Ok(())
     }
 
     #[test]
@@ -154,7 +154,7 @@ mod tests {
             None,
             None,
             Some(time_per_frame_ms),
-        )?;
+        ).expect("Failed to create matrix plot");
         let path = Path::new(COMMON_PATH).join("slice_y.gif");
         let time_per_frame_ms = duration_ms / data.shape()[1] as u32;
         matrix_over_slices_plot(
@@ -171,7 +171,7 @@ mod tests {
             None,
             None,
             Some(time_per_frame_ms),
-        )?;
+        ).expect("Failed to create matrix plot");
         let path = Path::new(COMMON_PATH).join("slice_z.gif");
         let time_per_frame_ms = duration_ms / data.shape()[2] as u32;
         matrix_over_slices_plot(
@@ -188,7 +188,7 @@ mod tests {
             None,
             None,
             Some(time_per_frame_ms),
-        )?;
+        ).expect("Failed to create matrix plot");
         Ok(())
     }
 }

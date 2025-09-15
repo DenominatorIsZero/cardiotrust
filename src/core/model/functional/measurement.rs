@@ -301,7 +301,7 @@ mod tests {
     }
 
     #[test]
-    fn from_model_config_no_crash() {
+    fn from_model_config_no_crash() -> anyhow::Result<()> {
         let config = Model {
             common: Common {
                 sensors_per_axis: [3, 3, 3],
@@ -310,16 +310,17 @@ mod tests {
             },
             ..Default::default()
         };
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = SpatialDescription::from_model_config(&config)?;
 
         let measurement_matrix =
             MeasurementMatrix::from_model_spatial_description(&spatial_description);
 
         assert!(!measurement_matrix.is_empty());
+        Ok(())
     }
 
     #[test]
-    fn from_model_config_no_crash_and_plot() {
+    fn from_model_config_no_crash_and_plot() -> anyhow::Result<()> {
         setup(None);
         let config = Model {
             common: Common {
@@ -329,7 +330,7 @@ mod tests {
             },
             ..Default::default()
         };
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = SpatialDescription::from_model_config(&config)?;
 
         let measurement_matrix =
             MeasurementMatrix::from_model_spatial_description(&spatial_description);
@@ -351,10 +352,11 @@ mod tests {
             None,
         )
         .unwrap();
+        Ok(())
     }
 
     #[test]
-    fn from_model_config_no_crash_and_plot_spase() {
+    fn from_model_config_no_crash_and_plot_spase() -> anyhow::Result<()> {
         setup(None);
         let config = Model {
             common: Common {
@@ -366,7 +368,7 @@ mod tests {
             },
             ..Default::default()
         };
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = SpatialDescription::from_model_config(&config)?;
 
         let measurement_matrix =
             MeasurementMatrix::from_model_spatial_description(&spatial_description);
@@ -388,10 +390,11 @@ mod tests {
             None,
         )
         .unwrap();
+        Ok(())
     }
 
     #[test]
-    fn equality_sparse_full() {
+    fn equality_sparse_full() -> anyhow::Result<()> {
         let config_full = Model {
             common: Common {
                 sensors_per_axis: [10, 10, 10],
@@ -412,14 +415,15 @@ mod tests {
             ..Default::default()
         };
 
-        let spatial_description_full = SpatialDescription::from_model_config(&config_full);
+        let spatial_description_full = SpatialDescription::from_model_config(&config_full)?;
         let measurement_matrix_full =
             MeasurementMatrix::from_model_spatial_description(&spatial_description_full);
 
-        let spatial_description_sparse = SpatialDescription::from_model_config(&config_sparse);
+        let spatial_description_sparse = SpatialDescription::from_model_config(&config_sparse)?;
         let measurement_matrix_sparse =
             MeasurementMatrix::from_model_spatial_description(&spatial_description_sparse);
 
         assert_eq!(measurement_matrix_full, measurement_matrix_sparse);
+        Ok(())
     }
 }

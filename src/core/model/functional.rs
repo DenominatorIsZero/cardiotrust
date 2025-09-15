@@ -180,9 +180,9 @@ mod tests {
     }
 
     #[test]
-    fn from_handcrafted_model_config_no_crash() {
+    fn from_handcrafted_model_config_no_crash() -> anyhow::Result<()> {
         let config = Model::default();
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = SpatialDescription::from_model_config(&config)?;
         let sample_rate_hz = 2000.0;
         let duration_s = 2.0;
         let _functional_description = FunctionalDescription::from_model_config(
@@ -190,18 +190,18 @@ mod tests {
             &spatial_description,
             sample_rate_hz,
             duration_s,
-        )
-        .unwrap();
+        )?;
+        Ok(())
     }
 
     #[test_log::test]
-    fn from_mri_model_config_no_crash() {
+    fn from_mri_model_config_no_crash() -> anyhow::Result<()> {
         let config = Model {
             common: Common::default(),
             handcrafted: None,
             mri: Some(Mri::default()),
         };
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = SpatialDescription::from_model_config(&config)?;
         let sample_rate_hz = 2000.0;
         let duration_s = 2.0;
         let _functional_description = FunctionalDescription::from_model_config(
@@ -209,7 +209,7 @@ mod tests {
             &spatial_description,
             sample_rate_hz,
             duration_s,
-        )
-        .unwrap();
+        )?;
+        Ok(())
     }
 }
