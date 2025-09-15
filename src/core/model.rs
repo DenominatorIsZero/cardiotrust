@@ -73,7 +73,7 @@ impl Model {
         duration_s: f32,
     ) -> Result<Self> {
         debug!("Creating model from config");
-        let spatial_description = SpatialDescription::from_model_config(config);
+        let spatial_description = SpatialDescription::from_model_config(config)?;
         let functional_description = FunctionalDescription::from_model_config(
             config,
             &spatial_description,

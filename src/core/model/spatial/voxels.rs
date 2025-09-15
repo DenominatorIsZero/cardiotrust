@@ -4,6 +4,8 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use anyhow::Context;
+
 use ndarray::{arr1, s, Array3, Array4, Dim};
 use ndarray_npy::WriteNpyExt;
 use num_derive::FromPrimitive;
@@ -52,22 +54,21 @@ impl Voxels {
         }
     }
 
-    #[must_use]
     #[tracing::instrument(level = "debug", skip_all)]
-    pub fn from_mri_model_config(config: &Model) -> Self {
+    pub fn from_mri_model_config(config: &Model) -> anyhow::Result<Self> {
         debug!("Creating voxels from mri model config");
 
-        let mri_data = load_from_nii(&config.mri.as_ref().unwrap().path);
+        let mri_data = load_from_nii(&config.mri.as_ref().unwrap().path)?;
 
         let positions = VoxelPositions::from_mri_model_config(config, &mri_data);
-        let types = VoxelTypes::from_mri_model_config(config, &positions, &mri_data);
+        let types = VoxelTypes::from_mri_model_config(config, &positions, &mri_data)?;
         let numbers = VoxelNumbers::from_voxel_types(&types);
-        Self {
+        Ok(Self {
             size_mm: config.common.voxel_size_mm,
             types,
             numbers,
             positions_mm: positions,
-        }
+        })
     }
 
     /// Returns the total number of voxels.
@@ -271,13 +272,12 @@ impl VoxelTypes {
         self.map(|v| *v as u32).write_npy(writer).unwrap();
     }
 
-    #[must_use]
     #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_mri_model_config(
         config: &Model,
         positions: &VoxelPositions,
         mri_data: &MriData,
-    ) -> Self {
+    ) -> anyhow::Result<Self> {
         let mut voxel_types = Self::empty([
             positions.raw_dim()[0],
             positions.raw_dim()[1],
@@ -286,19 +286,18 @@ impl VoxelTypes {
 
         let mut sinoatrial_placed = false;
 
-        voxel_types
-            .indexed_iter_mut()
-            .for_each(|(index, voxel_type)| {
-                let (x, y, z) = index;
-                let position = positions.slice(s![x, y, z, ..]);
+        for (index, voxel_type) in voxel_types.indexed_iter_mut() {
+            let (x, y, z) = index;
+            let position = positions.slice(s![x, y, z, ..]);
 
-                *voxel_type = determine_voxel_type(config, position, mri_data, sinoatrial_placed);
-                if *voxel_type == VoxelType::Sinoatrial {
-                    sinoatrial_placed = true;
-                }
-            });
+            *voxel_type = determine_voxel_type(config, position, mri_data, sinoatrial_placed)
+                .with_context(|| format!("Failed to determine voxel type at position ({x}, {y}, {z})"))?;
+            if *voxel_type == VoxelType::Sinoatrial {
+                sinoatrial_placed = true;
+            }
+        }
 
-        voxel_types
+        Ok(voxel_types)
     }
 }
 

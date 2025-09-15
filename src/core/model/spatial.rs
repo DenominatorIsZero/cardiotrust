@@ -2,7 +2,7 @@ pub mod nifti;
 pub mod sensors;
 pub mod voxels;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
@@ -39,19 +39,18 @@ impl SpatialDescription {
     ///
     /// Constructs the `heart`, `voxels`, and `sensors` fields by calling their
     /// respective `from_model_config()` methods.
-    #[must_use]
     #[tracing::instrument(level = "debug", skip_all)]
-    pub fn from_model_config(config: &Model) -> Self {
+    pub fn from_model_config(config: &Model) -> Result<Self> {
         debug!("Creating spatial description from model config");
         let voxels = if config.handcrafted.is_some() {
             Voxels::from_handcrafted_model_config(config)
         } else {
-            Voxels::from_mri_model_config(config)
+            Voxels::from_mri_model_config(config)?
         };
 
         let sensors = Sensors::from_model_config(&config.common);
 
-        Self { voxels, sensors }
+        Ok(Self { voxels, sensors })
     }
 
     /// Saves the spatial description components to .npy files.
