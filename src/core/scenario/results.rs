@@ -116,7 +116,11 @@ impl Results {
             metrics: self.metrics.to_gpu(queue)?,
             estimations: self.estimations.to_gpu(queue)?,
             derivatives: self.derivatives.to_gpu(queue)?,
-            model: self.model.as_ref().context("Model not available")?.to_gpu(queue)?,
+            model: self
+                .model
+                .as_ref()
+                .context("Model not available")?
+                .to_gpu(queue)?,
         })
     }
 
@@ -126,7 +130,10 @@ impl Results {
         self.metrics.update_from_gpu(&results.metrics)?;
         self.estimations.update_from_gpu(&results.estimations)?;
         self.derivatives.update_from_gpu(&results.derivatives)?;
-        self.model.as_mut().context("Model not available")?.from_gpu(&results.model)?;
+        self.model
+            .as_mut()
+            .context("Model not available")?
+            .from_gpu(&results.model)?;
         Ok(())
     }
 

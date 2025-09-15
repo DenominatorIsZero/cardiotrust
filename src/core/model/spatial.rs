@@ -2,6 +2,7 @@ pub mod nifti;
 pub mod sensors;
 pub mod voxels;
 
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
@@ -140,7 +141,7 @@ mod tests {
             Some(&path),
             Some(time_per_frame_ms),
         )
-        .unwrap();
+        .expect("Failed to create voxel types plot");
 
         let path = directory.join("types_over_y.gif");
         let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[1] as u32;
@@ -152,7 +153,7 @@ mod tests {
             Some(&path),
             Some(time_per_frame_ms),
         )
-        .unwrap();
+        .expect("Failed to create voxel types plot");
 
         let path = directory.join("types_over_z.gif");
         let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[2] as u32;
@@ -164,7 +165,7 @@ mod tests {
             Some(&path),
             Some(time_per_frame_ms),
         )
-        .unwrap();
+        .expect("Failed to create voxel types plot");
     }
 
     #[test]
@@ -190,7 +191,7 @@ mod tests {
             Some(&path),
             Some(time_per_frame_ms),
         )
-        .unwrap();
+        .expect("Failed to create voxel types plot");
 
         let path = directory.join("types_over_y.gif");
         let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[1] as u32;
@@ -202,7 +203,7 @@ mod tests {
             Some(&path),
             Some(time_per_frame_ms),
         )
-        .unwrap();
+        .expect("Failed to create voxel types plot");
 
         let path = directory.join("types_over_z.gif");
         let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[2] as u32;
@@ -214,7 +215,7 @@ mod tests {
             Some(&path),
             Some(time_per_frame_ms),
         )
-        .unwrap();
+        .expect("Failed to create voxel types plot");
     }
 
     #[test]
@@ -241,7 +242,7 @@ mod tests {
             Some(&path),
             Some(time_per_frame_ms),
         )
-        .unwrap();
+        .expect("Failed to create voxel types plot");
 
         let path = directory.join("types_over_y_coarse.gif");
         let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[1] as u32;
@@ -253,7 +254,7 @@ mod tests {
             Some(&path),
             Some(time_per_frame_ms),
         )
-        .unwrap();
+        .expect("Failed to create voxel types plot");
 
         let path = directory.join("types_over_z_coarse.gif");
         let time_per_frame_ms = duration_ms / spatial_description.voxels.types.shape()[2] as u32;
@@ -265,6 +266,6 @@ mod tests {
             Some(&path),
             Some(time_per_frame_ms),
         )
-        .unwrap();
+        .expect("Failed to create voxel types plot");
     }
 }

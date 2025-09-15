@@ -25,9 +25,9 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 
 - [x] `src/core/data.rs` (1 unwrap)
 - [x] `src/core/data/simulation.rs` (1 unwrap)
-- [ ] `src/core/data/shapes.rs` (39 unwraps)
-- [ ] `src/core/model.rs` (1 unwrap)
-- [ ] `src/core/model/spatial.rs` (9 unwraps)
+- [x] `src/core/data/shapes.rs` (39 unwraps)
+- [x] `src/core/model.rs` (1 unwrap)
+- [x] `src/core/model/spatial.rs` (9 unwraps)
 - [ ] `src/core/model/spatial/nifti.rs` (10 unwraps)
 - [ ] `src/core/model/spatial/sensors.rs` (5 unwraps)
 - [ ] `src/core/model/spatial/voxels.rs` (19 unwraps)
