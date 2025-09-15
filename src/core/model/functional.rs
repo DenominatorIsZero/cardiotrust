@@ -2,7 +2,7 @@ pub mod allpass;
 pub mod control;
 pub mod measurement;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use ndarray::Dim;
 use ocl::{Buffer, Queue};
 use serde::{Deserialize, Serialize};
@@ -119,28 +119,32 @@ impl FunctionalDescription {
     #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
     #[must_use]
-    pub fn to_gpu(&self, queue: &Queue) -> FunctionalDescriptionGPU {
-        FunctionalDescriptionGPU {
-            ap_params: self.ap_params.to_gpu(queue),
-            measurement_matrix: self.measurement_matrix.to_gpu(queue),
-            control_matrix: self.control_matrix.to_gpu(queue),
-            measurement_covariance: self.measurement_covariance.to_gpu(queue),
-            control_function_values: self.control_function_values.to_gpu(queue),
-        }
+    pub fn to_gpu(&self, queue: &Queue) -> Result<FunctionalDescriptionGPU> {
+        Ok(FunctionalDescriptionGPU {
+            ap_params: self.ap_params.to_gpu(queue)?,
+            measurement_matrix: self.measurement_matrix.to_gpu(queue)?,
+            control_matrix: self.control_matrix.to_gpu(queue)?,
+            measurement_covariance: self.measurement_covariance.to_gpu(queue)?,
+            control_function_values: self.control_function_values.to_gpu(queue)?,
+        })
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, functional_description: &FunctionalDescriptionGPU) {
+    pub(crate) fn update_from_gpu(
+        &mut self,
+        functional_description: &FunctionalDescriptionGPU,
+    ) -> Result<()> {
         self.ap_params
-            .update_from_gpu(&functional_description.ap_params);
+            .update_from_gpu(&functional_description.ap_params)?;
         self.measurement_matrix
-            .update_from_gpu(&functional_description.measurement_matrix);
+            .update_from_gpu(&functional_description.measurement_matrix)?;
         self.control_matrix
-            .update_from_gpu(&functional_description.control_matrix);
+            .update_from_gpu(&functional_description.control_matrix)?;
         self.measurement_covariance
-            .update_from_gpu(&functional_description.measurement_covariance);
+            .update_from_gpu(&functional_description.measurement_covariance)?;
         self.control_function_values
-            .update_from_gpu(&functional_description.control_function_values);
+            .update_from_gpu(&functional_description.control_function_values)?;
+        Ok(())
     }
 }
 

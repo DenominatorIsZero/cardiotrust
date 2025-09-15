@@ -1,5 +1,6 @@
 use std::ops::{Deref, DerefMut, Sub};
 
+use anyhow::{Context, Result};
 use approx::AbsDiffEq;
 use ndarray::Array1;
 use ocl::Buffer;
@@ -121,40 +122,41 @@ impl Derivatives {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> DerivativesGPU {
-        DerivativesGPU {
-            gains: self.gains.to_gpu(queue),
-            coefs: self.coefs.to_gpu(queue),
-            coefs_iir: self.coefs_iir.to_gpu(queue),
-            coefs_fir: self.coefs_fir.to_gpu(queue),
-            mapped_residuals: self.mapped_residuals.to_gpu(queue),
-            maximum_regularization: self.maximum_regularization.to_gpu(queue),
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<DerivativesGPU> {
+        Ok(DerivativesGPU {
+            gains: self.gains.to_gpu(queue)?,
+            coefs: self.coefs.to_gpu(queue)?,
+            coefs_iir: self.coefs_iir.to_gpu(queue)?,
+            coefs_fir: self.coefs_fir.to_gpu(queue)?,
+            mapped_residuals: self.mapped_residuals.to_gpu(queue)?,
+            maximum_regularization: self.maximum_regularization.to_gpu(queue)?,
             maximum_regularization_sum: ocl::Buffer::builder()
                 .queue(queue.clone())
                 .len(1)
                 .copy_host_slice(&[self.maximum_regularization_sum])
                 .build()
-                .unwrap(),
-        }
+                .context("Failed to create maximum_regularization_sum buffer")?,
+        })
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, derivatives: &DerivativesGPU) {
-        self.gains.update_from_gpu(&derivatives.gains);
-        self.coefs.update_from_gpu(&derivatives.coefs);
-        self.coefs_iir.update_from_gpu(&derivatives.coefs_iir);
-        self.coefs_fir.update_from_gpu(&derivatives.coefs_fir);
+    pub(crate) fn update_from_gpu(&mut self, derivatives: &DerivativesGPU) -> Result<()> {
+        self.gains.update_from_gpu(&derivatives.gains)?;
+        self.coefs.update_from_gpu(&derivatives.coefs)?;
+        self.coefs_iir.update_from_gpu(&derivatives.coefs_iir)?;
+        self.coefs_fir.update_from_gpu(&derivatives.coefs_fir)?;
         self.mapped_residuals
-            .update_from_gpu(&derivatives.mapped_residuals);
+            .update_from_gpu(&derivatives.mapped_residuals)?;
         self.maximum_regularization
-            .update_from_gpu(&derivatives.maximum_regularization);
+            .update_from_gpu(&derivatives.maximum_regularization)?;
         let mut maximum_regularization_sum = vec![0.0f32];
         derivatives
             .maximum_regularization_sum
             .read(&mut maximum_regularization_sum)
             .enq()
-            .unwrap();
+            .context("Failed to read maximum_regularization_sum from GPU")?;
         self.maximum_regularization_sum = maximum_regularization_sum[0];
+        Ok(())
     }
 }
 
@@ -596,21 +598,29 @@ impl MappedResiduals {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
-        Buffer::builder()
+    fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
+        let buffer = Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer for mapped residuals")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    fn update_from_gpu(&mut self, mapped_residuals: &Buffer<f32>) {
+    fn update_from_gpu(&mut self, mapped_residuals: &Buffer<f32>) -> Result<()> {
         mapped_residuals
-            .read(self.as_slice_mut().unwrap())
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
             .enq()
-            .unwrap();
+            .context("Failed to read mapped residuals from GPU buffer")?;
+        Ok(())
     }
 }
 
@@ -708,21 +718,29 @@ impl MaximumRegularization {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
-        Buffer::builder()
+    fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
+        let buffer = Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer for maximum regularization")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    fn update_from_gpu(&mut self, maximum_regularization: &Buffer<f32>) {
+    fn update_from_gpu(&mut self, maximum_regularization: &Buffer<f32>) -> Result<()> {
         maximum_regularization
-            .read(self.as_slice_mut().unwrap())
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
             .enq()
-            .unwrap();
+            .context("Failed to read maximum regularization from GPU buffer")?;
+        Ok(())
     }
 }
 

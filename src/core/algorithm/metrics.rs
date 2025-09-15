@@ -4,6 +4,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use anyhow::{Context, Result};
 use ndarray::Array1;
 use ndarray_npy::WriteNpyExt;
 use ndarray_stats::QuantileExt;
@@ -104,27 +105,28 @@ impl Metrics {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> MetricsGPU {
-        MetricsGPU {
-            loss: self.loss.to_gpu(queue),
-            loss_batch: self.loss_batch.to_gpu(queue),
-            loss_mse: self.loss_mse.to_gpu(queue),
-            loss_mse_batch: self.loss_mse_batch.to_gpu(queue),
-            loss_maximum_regularization: self.loss_maximum_regularization.to_gpu(queue),
-            loss_maximum_regularization_batch: self.loss_maximum_regularization_batch.to_gpu(queue),
-        }
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<MetricsGPU> {
+        Ok(MetricsGPU {
+            loss: self.loss.to_gpu(queue)?,
+            loss_batch: self.loss_batch.to_gpu(queue)?,
+            loss_mse: self.loss_mse.to_gpu(queue)?,
+            loss_mse_batch: self.loss_mse_batch.to_gpu(queue)?,
+            loss_maximum_regularization: self.loss_maximum_regularization.to_gpu(queue)?,
+            loss_maximum_regularization_batch: self.loss_maximum_regularization_batch.to_gpu(queue)?,
+        })
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, metrics: &MetricsGPU) {
-        self.loss.update_from_gpu(&metrics.loss);
-        self.loss_batch.update_from_gpu(&metrics.loss_batch);
-        self.loss_mse.update_from_gpu(&metrics.loss_mse);
-        self.loss_mse_batch.update_from_gpu(&metrics.loss_mse_batch);
+    pub(crate) fn update_from_gpu(&mut self, metrics: &MetricsGPU) -> Result<()> {
+        self.loss.update_from_gpu(&metrics.loss)?;
+        self.loss_batch.update_from_gpu(&metrics.loss_batch)?;
+        self.loss_mse.update_from_gpu(&metrics.loss_mse)?;
+        self.loss_mse_batch.update_from_gpu(&metrics.loss_mse_batch)?;
         self.loss_maximum_regularization
-            .update_from_gpu(&metrics.loss_maximum_regularization);
+            .update_from_gpu(&metrics.loss_maximum_regularization)?;
         self.loss_maximum_regularization_batch
-            .update_from_gpu(&metrics.loss_maximum_regularization_batch);
+            .update_from_gpu(&metrics.loss_maximum_regularization_batch)?;
+        Ok(())
     }
 }
 
@@ -429,18 +431,28 @@ impl SampleWiseMetric {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
-        Buffer::builder()
+    fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
+        let buffer = Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer for sample-wise metric")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    fn update_from_gpu(&mut self, loss: &Buffer<f32>) {
-        loss.read(self.as_slice_mut().unwrap()).enq().unwrap();
+    fn update_from_gpu(&mut self, loss: &Buffer<f32>) -> Result<()> {
+        loss.read(
+            self.as_slice_mut()
+                .context("Failed to get mutable array slice for GPU read")?,
+        )
+        .enq()
+        .context("Failed to read sample-wise metric from GPU buffer")?;
+        Ok(())
     }
 }
 
@@ -484,18 +496,29 @@ impl BatchWiseMetric {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
-        Buffer::builder()
+    fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
+        let buffer = Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer for batch-wise metric")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    fn update_from_gpu(&mut self, loss_batch: &Buffer<f32>) {
-        loss_batch.read(self.as_slice_mut().unwrap()).enq().unwrap();
+    fn update_from_gpu(&mut self, loss_batch: &Buffer<f32>) -> Result<()> {
+        loss_batch
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
+            .enq()
+            .context("Failed to read batch-wise metric from GPU buffer")?;
+        Ok(())
     }
 }
 

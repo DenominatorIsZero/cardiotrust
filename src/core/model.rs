@@ -3,7 +3,7 @@ pub mod spatial;
 #[cfg(test)]
 mod tests;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -149,16 +149,17 @@ impl Model {
 
     #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn to_gpu(&self, queue: &ocl::Queue) -> ModelGPU {
-        ModelGPU {
-            functional_description: self.functional_description.to_gpu(queue),
-        }
+    pub fn to_gpu(&self, queue: &ocl::Queue) -> Result<ModelGPU> {
+        Ok(ModelGPU {
+            functional_description: self.functional_description.to_gpu(queue)?,
+        })
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn from_gpu(&mut self, model_gpu: &ModelGPU) {
+    pub fn from_gpu(&mut self, model_gpu: &ModelGPU) -> Result<()> {
         self.functional_description
-            .update_from_gpu(&model_gpu.functional_description);
+            .update_from_gpu(&model_gpu.functional_description)?;
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]

@@ -1,5 +1,6 @@
 use std::ops::Deref;
 
+use anyhow::{Context, Result};
 use ndarray::{s, Array3, Array4};
 use ocl::Queue;
 use serde::{Deserialize, Serialize};
@@ -110,22 +111,23 @@ impl Results {
     #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
     #[must_use]
-    pub fn to_gpu(&self, queue: &Queue) -> ResultsGPU {
-        ResultsGPU {
-            metrics: self.metrics.to_gpu(queue),
-            estimations: self.estimations.to_gpu(queue),
-            derivatives: self.derivatives.to_gpu(queue),
-            model: self.model.as_ref().unwrap().to_gpu(queue),
-        }
+    pub fn to_gpu(&self, queue: &Queue) -> Result<ResultsGPU> {
+        Ok(ResultsGPU {
+            metrics: self.metrics.to_gpu(queue)?,
+            estimations: self.estimations.to_gpu(queue)?,
+            derivatives: self.derivatives.to_gpu(queue)?,
+            model: self.model.as_ref().context("Model not available")?.to_gpu(queue)?,
+        })
     }
 
     #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn update_from_gpu(&mut self, results: &ResultsGPU) {
-        self.metrics.update_from_gpu(&results.metrics);
-        self.estimations.update_from_gpu(&results.estimations);
-        self.derivatives.update_from_gpu(&results.derivatives);
-        self.model.as_mut().unwrap().from_gpu(&results.model);
+    pub fn update_from_gpu(&mut self, results: &ResultsGPU) -> Result<()> {
+        self.metrics.update_from_gpu(&results.metrics)?;
+        self.estimations.update_from_gpu(&results.estimations)?;
+        self.derivatives.update_from_gpu(&results.derivatives)?;
+        self.model.as_mut().context("Model not available")?.from_gpu(&results.model)?;
+        Ok(())
     }
 
     #[allow(dead_code)]

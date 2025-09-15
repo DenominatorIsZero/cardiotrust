@@ -4,6 +4,8 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use anyhow::{Context, Result};
+
 use approx::assert_relative_eq;
 use ndarray::{Array2, Array3, Dim};
 use ndarray_npy::WriteNpyExt;
@@ -92,18 +94,29 @@ impl Gains {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
-        Buffer::builder()
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<ocl::Buffer<f32>> {
+        let buffer = Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer for gains")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, buffer: &Buffer<f32>) {
-        buffer.read(self.as_slice_mut().unwrap()).enq().unwrap();
+    pub(crate) fn update_from_gpu(&mut self, buffer: &Buffer<f32>) -> Result<()> {
+        buffer
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
+            .enq()
+            .context("Failed to read gains from GPU buffer")?;
+        Ok(())
     }
 }
 
@@ -210,18 +223,29 @@ impl Coefs {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Buffer<f32> {
-        Buffer::builder()
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
+        let buffer = Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer for coefs")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, coefs: &Buffer<f32>) {
-        coefs.read(self.as_slice_mut().unwrap()).enq().unwrap();
+    pub(crate) fn update_from_gpu(&mut self, coefs: &Buffer<f32>) -> Result<()> {
+        coefs
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
+            .enq()
+            .context("Failed to read coefs from GPU buffer")?;
+        Ok(())
     }
 }
 

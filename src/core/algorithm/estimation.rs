@@ -1,5 +1,6 @@
 pub mod prediction;
 
+use anyhow::{Context, Result};
 use ocl::Buffer;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -8,14 +9,15 @@ use super::refinement::derivation::AverageDelays;
 use crate::core::{
     data::{
         shapes::{
-            ActivationTimePerStateMs, Measurements, Residuals, SystemStates, SystemStatesSpherical, SystemStatesSphericalMax,
+            ActivationTimePerStateMs, Measurements, Residuals, SystemStates, SystemStatesSpherical,
+            SystemStatesSphericalMax,
         },
         Data,
     },
     model::functional::allpass::{
-            from_coef_to_samples,
-            shapes::{Coefs, Gains, UnitDelays},
-        },
+        from_coef_to_samples,
+        shapes::{Coefs, Gains, UnitDelays},
+    },
 };
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -93,44 +95,46 @@ impl Estimations {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> EstimationsGPU {
-        EstimationsGPU {
-            ap_outputs_now: self.ap_outputs_now.to_gpu(queue),
-            ap_outputs_last: self.ap_outputs_last.to_gpu(queue),
-            system_states: self.system_states.to_gpu(queue),
-            measurements: self.measurements.to_gpu(queue),
-            residuals: self.residuals.to_gpu(queue),
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<EstimationsGPU> {
+        Ok(EstimationsGPU {
+            ap_outputs_now: self.ap_outputs_now.to_gpu(queue)?,
+            ap_outputs_last: self.ap_outputs_last.to_gpu(queue)?,
+            system_states: self.system_states.to_gpu(queue)?,
+            measurements: self.measurements.to_gpu(queue)?,
+            residuals: self.residuals.to_gpu(queue)?,
             step: ocl::Buffer::builder()
                 .queue(queue.clone())
                 .len(1)
                 .copy_host_slice(&[0])
                 .build()
-                .unwrap(),
+                .context("Failed to create step buffer")?,
             beat: ocl::Buffer::builder()
                 .queue(queue.clone())
                 .len(1)
                 .copy_host_slice(&[0])
                 .build()
-                .unwrap(),
+                .context("Failed to create beat buffer")?,
             epoch: ocl::Buffer::builder()
                 .queue(queue.clone())
                 .len(1)
                 .copy_host_slice(&[0])
                 .build()
-                .unwrap(),
-        }
+                .context("Failed to create epoch buffer")?,
+        })
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, estimations: &EstimationsGPU) {
+    pub(crate) fn update_from_gpu(&mut self, estimations: &EstimationsGPU) -> Result<()> {
         self.ap_outputs_now
-            .update_from_gpu(&estimations.ap_outputs_now);
+            .update_from_gpu(&estimations.ap_outputs_now)?;
         self.ap_outputs_last
-            .update_from_gpu(&estimations.ap_outputs_last);
+            .update_from_gpu(&estimations.ap_outputs_last)?;
         self.system_states
-            .update_from_gpu(&estimations.system_states);
-        self.measurements.update_from_gpu(&estimations.measurements);
-        self.residuals.update_from_gpu(&estimations.residuals);
+            .update_from_gpu(&estimations.system_states)?;
+        self.measurements
+            .update_from_gpu(&estimations.measurements)?;
+        self.residuals.update_from_gpu(&estimations.residuals)?;
+        Ok(())
     }
 }
 
@@ -186,9 +190,7 @@ mod tests {
     use ndarray::Dim;
 
     use super::{calculate_residuals, prediction::calculate_system_prediction, Estimations};
-    use crate::core::{
-        data::Data, model::functional::FunctionalDescription,
-    };
+    use crate::core::{data::Data, model::functional::FunctionalDescription};
 
     #[test]
     fn prediction_no_crash() {

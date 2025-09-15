@@ -4,6 +4,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use anyhow::{Context, Result};
 use ndarray::{
     s, Array1, Array2, Array3, ArrayView1, ArrayView2, ArrayViewMut1, ArrayViewMut2, Axis,
 };
@@ -33,16 +34,22 @@ impl SystemStates {
     /// Creates any missing directories in the path, opens a file at that path,
     /// and writes the underlying `values` array to it in .npy format.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if directory of file cant be created.
+    /// Returns an error if directory creation, file creation, or NPY writing fails.
     #[tracing::instrument(level = "trace")]
-    pub fn save_npy(&self, path: &std::path::Path) {
+    pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving system states");
-        fs::create_dir_all(path).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory: {}", path.display()))?;
 
-        let writer = BufWriter::new(File::create(path.join("system_states.npy")).unwrap());
-        self.write_npy(writer).unwrap();
+        let writer = BufWriter::new(
+            File::create(path.join("system_states.npy"))
+                .context("Failed to create system_states.npy file")?,
+        );
+        self.write_npy(writer)
+            .context("Failed to write system states to NPY file")?;
+        Ok(())
     }
 
     #[must_use]
@@ -70,21 +77,29 @@ impl SystemStates {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
-        ocl::Buffer::builder()
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<ocl::Buffer<f32>> {
+        let buffer = ocl::Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, system_states: &ocl::Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, system_states: &ocl::Buffer<f32>) -> Result<()> {
         system_states
-            .read(self.as_slice_mut().unwrap())
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
             .enq()
-            .unwrap();
+            .context("Failed to read data from GPU buffer")?;
+        Ok(())
     }
 }
 
@@ -177,17 +192,35 @@ impl SystemStatesSpherical {
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn save_npy(&self, path: &std::path::Path) {
+    pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving system states spherical");
-        fs::create_dir_all(path).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory: {}", path.display()))?;
 
-        let writer =
-            BufWriter::new(File::create(path.join("system_states_magnitude.npy")).unwrap());
-        self.magnitude.write_npy(writer).unwrap();
-        let writer = BufWriter::new(File::create(path.join("system_states_theta.npy")).unwrap());
-        self.theta.write_npy(writer).unwrap();
-        let writer = BufWriter::new(File::create(path.join("system_states_phi.npy")).unwrap());
-        self.phi.write_npy(writer).unwrap();
+        let writer = BufWriter::new(
+            File::create(path.join("system_states_magnitude.npy"))
+                .context("Failed to create system_states_magnitude.npy file")?,
+        );
+        self.magnitude
+            .write_npy(writer)
+            .context("Failed to write magnitude data to NPY file")?;
+
+        let writer = BufWriter::new(
+            File::create(path.join("system_states_theta.npy"))
+                .context("Failed to create system_states_theta.npy file")?,
+        );
+        self.theta
+            .write_npy(writer)
+            .context("Failed to write theta data to NPY file")?;
+
+        let writer = BufWriter::new(
+            File::create(path.join("system_states_phi.npy"))
+                .context("Failed to create system_states_phi.npy file")?,
+        );
+        self.phi
+            .write_npy(writer)
+            .context("Failed to write phi data to NPY file")?;
+        Ok(())
     }
 }
 
@@ -225,33 +258,51 @@ impl SystemStatesSphericalMax {
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn calculate(&mut self, spehrical: &SystemStatesSpherical) {
+    pub fn calculate(&mut self, spehrical: &SystemStatesSpherical) -> Result<()> {
         trace!("Calculating max spherical states");
         for state in 0..self.magnitude.len() {
             let index = spehrical
                 .magnitude
                 .index_axis(Axis(1), state)
                 .argmax_skipnan()
-                .unwrap();
+                .with_context(|| format!("Failed to find maximum index for state {}", state))?;
             self.magnitude[state] = spehrical.magnitude[(index, state)];
             self.theta[state] = spehrical.theta[(index, state)];
             self.phi[state] = spehrical.phi[(index, state)];
         }
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn save_npy(&self, path: &std::path::Path) {
+    pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving system states spherical max");
-        fs::create_dir_all(path).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory: {}", path.display()))?;
 
-        let writer =
-            BufWriter::new(File::create(path.join("system_states_magnitude_max.npy")).unwrap());
-        self.magnitude.write_npy(writer).unwrap();
-        let writer =
-            BufWriter::new(File::create(path.join("system_states_theta_max.npy")).unwrap());
-        self.theta.write_npy(writer).unwrap();
-        let writer = BufWriter::new(File::create(path.join("system_states_phi_max.npy")).unwrap());
-        self.phi.write_npy(writer).unwrap();
+        let writer = BufWriter::new(
+            File::create(path.join("system_states_magnitude_max.npy"))
+                .context("Failed to create system_states_magnitude_max.npy file")?,
+        );
+        self.magnitude
+            .write_npy(writer)
+            .context("Failed to write magnitude max data to NPY file")?;
+
+        let writer = BufWriter::new(
+            File::create(path.join("system_states_theta_max.npy"))
+                .context("Failed to create system_states_theta_max.npy file")?,
+        );
+        self.theta
+            .write_npy(writer)
+            .context("Failed to write theta max data to NPY file")?;
+
+        let writer = BufWriter::new(
+            File::create(path.join("system_states_phi_max.npy"))
+                .context("Failed to create system_states_phi_max.npy file")?,
+        );
+        self.phi
+            .write_npy(writer)
+            .context("Failed to write phi max data to NPY file")?;
+        Ok(())
     }
 }
 
@@ -281,25 +332,37 @@ impl ActivationTimePerStateMs {
 
     #[tracing::instrument(level = "trace")]
     #[allow(clippy::cast_precision_loss)]
-    pub fn calculate(&mut self, spehrical: &SystemStatesSpherical, sample_rate_hz: f32) {
+    pub fn calculate(
+        &mut self,
+        spehrical: &SystemStatesSpherical,
+        sample_rate_hz: f32,
+    ) -> Result<()> {
         for state in 0..self.len() {
             let index = spehrical
                 .magnitude
                 .index_axis(Axis(1), state)
                 .argmax_skipnan()
-                .unwrap();
+                .with_context(|| {
+                    format!("Failed to find maximum activation time for state {}", state)
+                })?;
             self[state] = index as f32 / sample_rate_hz * 1000.0;
         }
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace")]
-    pub fn save_npy(&self, path: &std::path::Path) {
-        trace!("Saving system states spherical max");
-        fs::create_dir_all(path).unwrap();
+    pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
+        trace!("Saving system states activation time");
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory: {}", path.display()))?;
 
-        let writer =
-            BufWriter::new(File::create(path.join("system_states_activation_time.npy")).unwrap());
-        self.write_npy(writer).unwrap();
+        let writer = BufWriter::new(
+            File::create(path.join("system_states_activation_time.npy"))
+                .context("Failed to create system_states_activation_time.npy file")?,
+        );
+        self.write_npy(writer)
+            .context("Failed to write activation time data to NPY file")?;
+        Ok(())
     }
 }
 
@@ -338,15 +401,21 @@ impl Measurements {
     /// Creates any missing directories in the path, opens a file at that path,
     /// and writes the underlying `values` array to it in .npy format.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if directory of file cant be created.
+    /// Returns an error if directory creation, file creation, or NPY writing fails.
     #[tracing::instrument(level = "trace")]
-    pub fn save_npy(&self, path: &std::path::Path) {
+    pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving measurements");
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("measurements.npy")).unwrap());
-        self.write_npy(writer).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory: {}", path.display()))?;
+        let writer = BufWriter::new(
+            File::create(path.join("measurements.npy"))
+                .context("Failed to create measurements.npy file")?,
+        );
+        self.write_npy(writer)
+            .context("Failed to write measurements to NPY file")?;
+        Ok(())
     }
 
     #[must_use]
@@ -382,21 +451,29 @@ impl Measurements {
     #[allow(clippy::missing_panics_doc)]
     #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
-        ocl::Buffer::builder()
+    pub fn to_gpu(&self, queue: &ocl::Queue) -> Result<ocl::Buffer<f32>> {
+        let buffer = ocl::Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer for measurements")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, measurements: &ocl::Buffer<f32>) {
+    pub(crate) fn update_from_gpu(&mut self, measurements: &ocl::Buffer<f32>) -> Result<()> {
         measurements
-            .read(self.as_slice_mut().unwrap())
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
             .enq()
-            .unwrap();
+            .context("Failed to read measurements from GPU buffer")?;
+        Ok(())
     }
 }
 
@@ -506,30 +583,47 @@ impl Residuals {
     /// Creates any missing directories in the path, opens a file at that path,
     /// and writes the underlying `values` array to it in .npy format.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if directory of file cant be created.
+    /// Returns an error if directory creation, file creation, or NPY writing fails.
     #[tracing::instrument(level = "trace")]
-    pub fn save_npy(&self, path: &std::path::Path) {
+    pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving measurements");
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("measurements.npy")).unwrap());
-        self.write_npy(writer).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory: {}", path.display()))?;
+        let writer = BufWriter::new(
+            File::create(path.join("measurements.npy"))
+                .context("Failed to create measurements.npy file")?,
+        );
+        self.write_npy(writer)
+            .context("Failed to write measurements to NPY file")?;
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> ocl::Buffer<f32> {
-        ocl::Buffer::builder()
+    pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<ocl::Buffer<f32>> {
+        let buffer = ocl::Buffer::builder()
             .queue(queue.clone())
             .len(self.len())
-            .copy_host_slice(self.as_slice().unwrap())
+            .copy_host_slice(
+                self.as_slice()
+                    .context("Failed to get array slice for GPU copy")?,
+            )
             .build()
-            .unwrap()
+            .context("Failed to build GPU buffer")?;
+        Ok(buffer)
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn update_from_gpu(&mut self, residuals: &ocl::Buffer<f32>) {
-        residuals.read(self.as_slice_mut().unwrap()).enq().unwrap();
+    pub(crate) fn update_from_gpu(&mut self, residuals: &ocl::Buffer<f32>) -> Result<()> {
+        residuals
+            .read(
+                self.as_slice_mut()
+                    .context("Failed to get mutable array slice for GPU read")?,
+            )
+            .enq()
+            .context("Failed to read residuals from GPU buffer")?;
+        Ok(())
     }
 }
 

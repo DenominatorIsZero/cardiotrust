@@ -10,6 +10,7 @@ use std::{
     sync::mpsc::Sender,
 };
 
+use anyhow::{Context, Result};
 use bincode;
 use chrono::{self, DateTime, Utc};
 use ndarray_stats::QuantileExt;
@@ -555,7 +556,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
                 &mut summary,
                 epoch_tx,
                 summary_tx,
-            );
+            ).expect("Failed to run model-based GPU algorithm");
         }
         AlgorithmType::PseudoInverse => {
             run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary);
@@ -758,12 +759,12 @@ fn run_model_based_gpu(
     summary: &mut Summary,
     epoch_tx: &Sender<usize>,
     summary_tx: &Sender<Summary>,
-) {
+) -> Result<()> {
     info!("Running model-based algorithm on gpu");
     // move data to gpu
     let gpu = GPU::new();
-    let results_gpu = results.to_gpu(&gpu.queue);
-    let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue);
+    let results_gpu = results.to_gpu(&gpu.queue)?;
+    let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue)?;
     let number_of_states = results
         .model
         .as_ref()
@@ -836,7 +837,7 @@ fn run_model_based_gpu(
             break;
         }
     }
-    results.update_from_gpu(&results_gpu);
+    results.update_from_gpu(&results_gpu)?;
     calculate_average_delays(
         &mut results.estimations.average_delays,
         &results
@@ -846,6 +847,7 @@ fn run_model_based_gpu(
             .functional_description
             .ap_params,
     );
+    Ok(())
 }
 
 /// Enumeration of possible scenario execution statuses.
