@@ -142,9 +142,9 @@ mod test {
     }
 
     #[test]
-    fn calculate_delay_samples_array_1() {
+    fn calculate_delay_samples_array_1() -> anyhow::Result<()> {
         let config = &Model::default();
-        let spatial_description = &SpatialDescription::from_model_config(config);
+        let spatial_description = &SpatialDescription::from_model_config(config)?;
         let sample_rate_hz = 2000.0;
 
         let delay_samples = calculate_delay_samples_array(
@@ -165,5 +165,6 @@ mod test {
             * 2.0_f32.sqrt();
 
         assert_relative_eq!(*max, expected);
+        Ok(())
     }
 }

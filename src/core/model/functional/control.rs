@@ -305,13 +305,14 @@ mod test {
     }
 
     #[test]
-    fn matrix_from_model_config_no_crash() {
+    fn matrix_from_model_config_no_crash() -> anyhow::Result<()> {
         let config = Model::default();
-        let spatial_description = SpatialDescription::from_model_config(&config);
+        let spatial_description = SpatialDescription::from_model_config(&config)?;
 
         let control_matrix = ControlMatrix::from_model_config(&config, &spatial_description);
         let sum = control_matrix.sum();
         assert_relative_eq!(sum, 1.0);
+        Ok(())
     }
 
     #[test]

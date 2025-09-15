@@ -148,16 +148,16 @@ mod tests {
         clippy::too_many_lines,
         clippy::similar_names
     )]
-    fn test_epoch() {
+    fn test_epoch() -> anyhow::Result<()> {
         let mut config = Config::default();
         config.algorithm.epochs = 10;
         config.algorithm.freeze_delays = false;
         config.algorithm.learning_rate = 100.0;
         let mut results_cpu = Results::get_default();
         let gpu = GPU::new();
-        let results_gpu = results_cpu.to_gpu(&gpu.queue);
+        let results_gpu = results_cpu.to_gpu(&gpu.queue)?;
         let data = Data::get_default().expect("Failed to create default data for test");
-        let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue);
+        let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue)?;
         let number_of_states = data.simulation.system_states.num_states();
         let number_of_sensors = results_cpu
             .model
@@ -182,7 +182,7 @@ mod tests {
             println!("Epoch: {epoch}");
             run_epoch(&mut results_cpu, &mut batch_index, &data, &config.algorithm);
             epoch_kernel.execute();
-            results_from_gpu.update_from_gpu(&results_gpu);
+            results_from_gpu.update_from_gpu(&results_gpu)?;
             // Model Parameters
             let delta_states = &*results_cpu.estimations.system_states
                 - &*results_from_gpu.estimations.system_states;
@@ -307,5 +307,6 @@ mod tests {
             results_from_gpu.metrics.loss_batch.as_slice().unwrap(),
             epsilon = 1e-5
         );
+        Ok(())
     }
 }
