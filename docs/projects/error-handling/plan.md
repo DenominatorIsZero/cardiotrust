@@ -36,7 +36,7 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 - [x] `src/core/model/functional/allpass/delay.rs` (11 unwraps)
 - [x] `src/core/model/functional/allpass/shapes.rs` (already converted - only proper error handling patterns remain)
 - [x] `src/core/model/functional/control.rs` (8 unwraps converted to Result types with context)
-- [ ] `src/core/model/functional/measurement.rs` (19 unwraps)
+- [x] `src/core/model/functional/measurement.rs` (5 unwraps converted to Result types with physics-accurate error handling)
 - [ ] `src/core/config.rs`
 - [ ] `src/core/config/algorithm.rs`
 - [ ] `src/core/config/model.rs`

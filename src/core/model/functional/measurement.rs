@@ -61,12 +61,11 @@ impl MeasurementMatrix {
     /// voxel type, position, sensor position and orientation.
     /// Uses the Biot-Savart law to calculate the magnetic flux density.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if voxel numbers are not initialized correctly.
-    #[must_use]
+    /// Returns an error if voxel numbers are not initialized correctly.
     #[tracing::instrument(level = "debug", skip_all)]
-    pub fn from_model_spatial_description(spatial_description: &SpatialDescription) -> Self {
+    pub fn from_model_spatial_description(spatial_description: &SpatialDescription) -> Result<Self> {
         debug!("Creating measurement matrix from model config");
         let mut measurement_matrix = Self::empty(
             spatial_description.sensors.count_beats(),
@@ -94,7 +93,8 @@ impl MeasurementMatrix {
                     continue;
                 }
 
-                let v_num = voxel_numbers[index].unwrap();
+                let v_num = voxel_numbers[index]
+                    .with_context(|| format!("Voxel number not initialized for connectable voxel at index {:?}", index))?;
                 let v_pos_mm = voxel_positions_mm.slice(s![index.0, index.1, index.2, ..]);
 
                 for s_num in 0..spatial_description.sensors.count() {
@@ -118,7 +118,7 @@ impl MeasurementMatrix {
             }
         }
 
-        measurement_matrix
+        Ok(measurement_matrix)
     }
 
     /// Saves the measurement matrix to a .npy file at the given path.
@@ -207,13 +207,12 @@ impl MeasurementCovariance {
     /// configuration. The diagonal is filled with random values drawn from
     /// a normal distribution with the configured mean and standard deviation.
     /// If the standard deviation is 0, the diagonal is filled with the mean.
-    //
-    /// # Panics
     ///
-    /// Panics if voxel numbers are not initialized correctly.
-    #[must_use]
+    /// # Errors
+    ///
+    /// Returns an error if the measurement covariance parameters are invalid for creating a normal distribution.
     #[tracing::instrument(level = "debug")]
-    pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Self {
+    pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Result<Self> {
         debug!("Creating measurement covariance from model config");
         let mut measurement_covariance = Self::empty(spatial_description.sensors.count());
 
@@ -226,13 +225,16 @@ impl MeasurementCovariance {
                 config.common.measurement_covariance_mean,
                 config.common.measurement_covariance_std,
             )
-            .unwrap();
+            .with_context(|| format!(
+                "Failed to create normal distribution for measurement covariance (mean: {}, std: {})",
+                config.common.measurement_covariance_mean, config.common.measurement_covariance_std
+            ))?;
             measurement_covariance.diag_mut().iter_mut().for_each(|v| {
                 *v = normal.sample(&mut rand::rng());
             });
         }
 
-        measurement_covariance
+        Ok(measurement_covariance)
     }
 
     /// Saves the measurement covariance matrix to a .npy file at the given path.
@@ -320,12 +322,13 @@ mod tests {
         );
 
         if !path.exists() {
-            std::fs::create_dir_all(path).unwrap();
+            std::fs::create_dir_all(path)
+                .expect("Failed to create test directory - filesystem issue");
         }
     }
 
     #[test]
-    fn from_model_config_no_crash() -> anyhow::Result<()> {
+    fn from_model_config_no_crash() -> Result<()> {
         let config = Model {
             common: Common {
                 sensors_per_axis: [3, 3, 3],
@@ -337,14 +340,14 @@ mod tests {
         let spatial_description = SpatialDescription::from_model_config(&config)?;
 
         let measurement_matrix =
-            MeasurementMatrix::from_model_spatial_description(&spatial_description);
+            MeasurementMatrix::from_model_spatial_description(&spatial_description)?;
 
         assert!(!measurement_matrix.is_empty());
         Ok(())
     }
 
     #[test]
-    fn from_model_config_no_crash_and_plot() -> anyhow::Result<()> {
+    fn from_model_config_no_crash_and_plot() -> Result<()> {
         setup(None);
         let config = Model {
             common: Common {
@@ -357,7 +360,7 @@ mod tests {
         let spatial_description = SpatialDescription::from_model_config(&config)?;
 
         let measurement_matrix =
-            MeasurementMatrix::from_model_spatial_description(&spatial_description);
+            MeasurementMatrix::from_model_spatial_description(&spatial_description)?;
 
         assert!(!measurement_matrix.is_empty());
 
@@ -375,12 +378,12 @@ mod tests {
             None,
             None,
         )
-        .unwrap();
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
         Ok(())
     }
 
     #[test]
-    fn from_model_config_no_crash_and_plot_spase() -> anyhow::Result<()> {
+    fn from_model_config_no_crash_and_plot_spase() -> Result<()> {
         setup(None);
         let config = Model {
             common: Common {
@@ -395,7 +398,7 @@ mod tests {
         let spatial_description = SpatialDescription::from_model_config(&config)?;
 
         let measurement_matrix =
-            MeasurementMatrix::from_model_spatial_description(&spatial_description);
+            MeasurementMatrix::from_model_spatial_description(&spatial_description)?;
 
         assert!(!measurement_matrix.is_empty());
 
@@ -413,12 +416,12 @@ mod tests {
             None,
             None,
         )
-        .unwrap();
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
         Ok(())
     }
 
     #[test]
-    fn equality_sparse_full() -> anyhow::Result<()> {
+    fn equality_sparse_full() -> Result<()> {
         let config_full = Model {
             common: Common {
                 sensors_per_axis: [10, 10, 10],
@@ -441,11 +444,11 @@ mod tests {
 
         let spatial_description_full = SpatialDescription::from_model_config(&config_full)?;
         let measurement_matrix_full =
-            MeasurementMatrix::from_model_spatial_description(&spatial_description_full);
+            MeasurementMatrix::from_model_spatial_description(&spatial_description_full)?;
 
         let spatial_description_sparse = SpatialDescription::from_model_config(&config_sparse)?;
         let measurement_matrix_sparse =
-            MeasurementMatrix::from_model_spatial_description(&spatial_description_sparse);
+            MeasurementMatrix::from_model_spatial_description(&spatial_description_sparse)?;
 
         assert_eq!(measurement_matrix_full, measurement_matrix_sparse);
         Ok(())
