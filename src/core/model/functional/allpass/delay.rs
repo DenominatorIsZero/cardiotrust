@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use itertools::Itertools;
 use ndarray::{s, ArrayBase, Dim, ViewRepr};
 use tracing::trace;
@@ -60,24 +60,34 @@ pub fn calculate_delay_samples_array(
                 continue;
             }
             let ouput_voxel_index = [
-                i32::try_from(x_in).unwrap() + x_offset,
-                i32::try_from(y_in).unwrap() + y_offset,
-                i32::try_from(z_in).unwrap() + z_offset,
+                i32::try_from(x_in)
+                    .with_context(|| format!("Voxel x-coordinate {} exceeds i32::MAX", x_in))? + x_offset,
+                i32::try_from(y_in)
+                    .with_context(|| format!("Voxel y-coordinate {} exceeds i32::MAX", y_in))? + y_offset,
+                i32::try_from(z_in)
+                    .with_context(|| format!("Voxel z-coordinate {} exceeds i32::MAX", z_in))? + z_offset,
             ];
             if !spatial_description.voxels.is_valid_index(ouput_voxel_index) {
                 continue;
             }
             let [x_out, y_out, z_out] = [
-                usize::try_from(i32::try_from(x_in).unwrap() + x_offset).unwrap(),
-                usize::try_from(i32::try_from(y_in).unwrap() + y_offset).unwrap(),
-                usize::try_from(i32::try_from(z_in).unwrap() + z_offset).unwrap(),
+                usize::try_from(i32::try_from(x_in)
+                    .with_context(|| format!("Voxel x-coordinate {} exceeds i32::MAX", x_in))? + x_offset)
+                    .with_context(|| format!("Output voxel x-coordinate calculation failed for input {} + offset {}", x_in, x_offset))?,
+                usize::try_from(i32::try_from(y_in)
+                    .with_context(|| format!("Voxel y-coordinate {} exceeds i32::MAX", y_in))? + y_offset)
+                    .with_context(|| format!("Output voxel y-coordinate calculation failed for input {} + offset {}", y_in, y_offset))?,
+                usize::try_from(i32::try_from(z_in)
+                    .with_context(|| format!("Voxel z-coordinate {} exceeds i32::MAX", z_in))? + z_offset)
+                    .with_context(|| format!("Output voxel z-coordinate calculation failed for input {} + offset {}", z_in, z_offset))?,
             ];
             let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
 
             let delay_s = calculate_delay_s(
                 input_position_mm,
                 output_position_mm,
-                *propagation_velocities_m_per_s.get(v_type).unwrap(),
+                *propagation_velocities_m_per_s.get(v_type)
+                    .with_context(|| format!("No propagation velocity configured for voxel type: {:?}", v_type))?,
             );
             let delay_samples = delay_s * sample_rate_hz;
 
@@ -90,7 +100,8 @@ pub fn calculate_delay_samples_array(
             }
 
             delay_samples_array[(
-                v_numbers[input_voxel_index].unwrap() / 3,
+                v_numbers[input_voxel_index]
+                    .with_context(|| format!("Voxel number not found for connectable voxel at index {:?}", input_voxel_index))? / 3,
                 offset_to_delay_index(x_offset, y_offset, z_offset)
                     .expect("Offsets to not all be zero."),
             )] = delay_samples;
@@ -104,6 +115,7 @@ mod test {
     use approx::assert_relative_eq;
     use ndarray::{arr1, Array1};
     use ndarray_stats::QuantileExt;
+    use anyhow::Context;
 
     use super::{calculate_delay_s, calculate_delay_samples_array};
     use crate::core::{
@@ -151,8 +163,7 @@ mod test {
             spatial_description,
             &config.common.propagation_velocities_m_per_s,
             sample_rate_hz,
-        )
-        .unwrap();
+        )?;
 
         let max = delay_samples.max_skipnan();
         let expected = (spatial_description.voxels.size_mm / 1000.0)
@@ -160,7 +171,7 @@ mod test {
                 .common
                 .propagation_velocities_m_per_s
                 .get(&VoxelType::Atrioventricular)
-                .unwrap()
+                .context("Missing atrioventricular propagation velocity in config")?
             * sample_rate_hz
             * 2.0_f32.sqrt();
 
