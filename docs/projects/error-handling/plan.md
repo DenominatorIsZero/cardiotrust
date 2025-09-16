@@ -31,11 +31,11 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 - [x] `src/core/model/spatial/nifti.rs` (10 unwraps)
 - [x] `src/core/model/spatial/sensors.rs` (5 unwraps)
 - [x] `src/core/model/spatial/voxels.rs` (19 unwraps)
-- [ ] `src/core/model/functional.rs` (2 unwraps)
-- [ ] `src/core/model/functional/allpass.rs` (44 unwraps)
-- [ ] `src/core/model/functional/allpass/delay.rs` (11 unwraps)
-- [ ] `src/core/model/functional/allpass/shapes.rs` (23 unwraps)
-- [ ] `src/core/model/functional/control.rs` (22 unwraps)
+- [x] `src/core/model/functional.rs` (2 unwraps)
+- [x] `src/core/model/functional/allpass.rs` (44 unwraps)
+- [x] `src/core/model/functional/allpass/delay.rs` (11 unwraps)
+- [x] `src/core/model/functional/allpass/shapes.rs` (already converted - only proper error handling patterns remain)
+- [x] `src/core/model/functional/control.rs` (8 unwraps converted to Result types with context)
 - [ ] `src/core/model/functional/measurement.rs` (19 unwraps)
 - [ ] `src/core/config.rs`
 - [ ] `src/core/config/algorithm.rs`

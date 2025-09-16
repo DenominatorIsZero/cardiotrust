@@ -36,25 +36,23 @@ impl ControlMatrix {
     /// `SpatialDescription`. Initializes the control matrix by setting the value
     /// for the state of the sinoatrial voxel to 1.0, and all other states to 0.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the `v_number` of the sinoatrial node is None.
-    #[must_use]
+    /// Returns an error if the sinoatrial node voxel number is not available.
     #[tracing::instrument(level = "debug")]
-    pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Self {
+    pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Result<Self> {
         debug!("Creating control matrix from model config");
         let mut control_matrix = Self::empty(spatial_description.voxels.count_states());
-        spatial_description
-            .voxels
-            .types
-            .iter()
-            .zip(spatial_description.voxels.numbers.iter())
-            .for_each(|(v_type, v_number)| {
-                if *v_type == VoxelType::Sinoatrial {
-                    control_matrix[v_number.unwrap()] = 1.0;
-                }
-            });
-        control_matrix
+
+        for (v_type, v_number) in spatial_description.voxels.types.iter().zip(spatial_description.voxels.numbers.iter()) {
+            if *v_type == VoxelType::Sinoatrial {
+                let voxel_number = v_number
+                    .context("Sinoatrial node voxel must have a valid voxel number for control matrix initialization")?;
+                control_matrix[voxel_number] = 1.0;
+            }
+        }
+
+        Ok(control_matrix)
     }
 
     /// Saves the control matrix to a .npy file at the given path.
@@ -146,24 +144,25 @@ impl ControlFunction {
     /// This allows creating a `ControlFunction` of arbitrary duration from a fixed
     /// length control function file.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the control function input file is missing.
-    #[must_use]
+    /// Returns an error if the control function input file cannot be read or
+    /// if resampling operations fail.
     #[tracing::instrument(level = "debug")]
     #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_precision_loss,
         clippy::cast_sign_loss
     )]
-    pub fn from_model_config(config: &Model, sample_rate_hz: f32, duration_s: f32) -> Self {
+    pub fn from_model_config(config: &Model, sample_rate_hz: f32, duration_s: f32) -> Result<Self> {
         debug!("Creating control function from model config");
         let desired_length_samples = (duration_s * sample_rate_hz) as usize;
 
         match config.common.control_function {
             config::model::ControlFunction::Ohara => {
                 let mut control_function_raw: Array1<f32> =
-                    read_npy("assets/control_function_ohara.npy").unwrap();
+                    read_npy("assets/control_function_ohara.npy")
+                        .with_context(|| "Failed to load O'Hara control function from assets/control_function_ohara.npy")?;
 
                 let from_sample_rate_hz = 2000.0;
 
@@ -182,11 +181,18 @@ impl ControlFunction {
                         control_function_raw.len(),
                         1,
                     )
-                    .unwrap();
+                    .with_context(|| format!(
+                        "Failed to create resampler for O'Hara control function (from {}Hz to {}Hz)",
+                        from_sample_rate_hz, sample_rate_hz
+                    ))?;
 
                     let input_frames: Vec<Vec<f32>> = vec![control_function_raw.to_vec()];
 
-                    let output_frames = resampler.process(&input_frames, None).unwrap();
+                    let output_frames = resampler.process(&input_frames, None)
+                        .with_context(|| format!(
+                            "Failed to resample O'Hara control function from {}Hz to {}Hz",
+                            from_sample_rate_hz, sample_rate_hz
+                        ))?;
 
                     control_function_raw = output_frames[0].clone().into();
                 }
@@ -198,7 +204,7 @@ impl ControlFunction {
                     })
                     .collect();
 
-                Self(Array1::from(control_function_values))
+                Ok(Self(Array1::from(control_function_values)))
             }
             config::model::ControlFunction::Triangle => {
                 let mut control_function_values = Array1::<f32>::zeros(desired_length_samples);
@@ -221,7 +227,7 @@ impl ControlFunction {
                         control_function_values[i % sample_rate_hz as usize];
                 }
 
-                Self(control_function_values)
+                Ok(Self(control_function_values))
             }
             config::model::ControlFunction::Ramp => {
                 let mut control_function_values = Array1::<f32>::zeros(desired_length_samples);
@@ -232,7 +238,7 @@ impl ControlFunction {
                     let value = i as f32 * increase_per_step;
                     control_function_values[i] = -value;
                 }
-                Self(control_function_values)
+                Ok(Self(control_function_values))
             }
         }
     }
@@ -323,23 +329,24 @@ mod test {
         );
 
         if !path.exists() {
-            std::fs::create_dir_all(path).unwrap();
+            std::fs::create_dir_all(path)
+                .expect("Failed to create test directory - filesystem issue");
         }
     }
 
     #[test]
-    fn matrix_from_model_config_no_crash() -> anyhow::Result<()> {
+    fn matrix_from_model_config_no_crash() -> Result<()> {
         let config = Model::default();
         let spatial_description = SpatialDescription::from_model_config(&config)?;
 
-        let control_matrix = ControlMatrix::from_model_config(&config, &spatial_description);
+        let control_matrix = ControlMatrix::from_model_config(&config, &spatial_description)?;
         let sum = control_matrix.sum();
         assert_relative_eq!(sum, 1.0);
         Ok(())
     }
 
     #[test]
-    fn function_from_model_config_no_crash() {
+    fn function_from_model_config_no_crash() -> Result<()> {
         let sample_rate_hz = 3000.0;
         let duration_s = 1.5;
         #[allow(
@@ -351,12 +358,13 @@ mod test {
         let config = Model::default();
 
         let control_function =
-            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
+            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s)?;
         assert_eq!(expected_length_samples, control_function.shape()[0]);
+        Ok(())
     }
 
     #[test]
-    fn function_from_model_config_no_crash_and_plot() {
+    fn function_from_model_config_no_crash_and_plot() -> Result<()> {
         setup(None);
         let sample_rate_hz = 3000.0;
         let duration_s = 1.5;
@@ -370,7 +378,7 @@ mod test {
         config.common.control_function = config::model::ControlFunction::Ohara;
 
         let control_function =
-            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
+            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s)?;
         assert_eq!(expected_length_samples, control_function.shape()[0]);
 
         let path = Path::new(COMMON_PATH).join("control_function_ohara.png");
@@ -381,11 +389,12 @@ mod test {
             "Control Function",
             "j [A/mm^2]",
         )
-        .unwrap();
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
+        Ok(())
     }
 
     #[test]
-    fn triangle_function_from_model_config_no_crash_and_plot() {
+    fn triangle_function_from_model_config_no_crash_and_plot() -> Result<()> {
         setup(None);
         let sample_rate_hz = 3000.0;
         let duration_s = 1.5;
@@ -399,7 +408,7 @@ mod test {
         config.common.control_function = config::model::ControlFunction::Triangle;
 
         let control_function =
-            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
+            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s)?;
         assert_eq!(expected_length_samples, control_function.shape()[0]);
 
         let path = Path::new(COMMON_PATH).join("control_function_triangle.png");
@@ -410,11 +419,12 @@ mod test {
             "Control Function",
             "j [A/mm^2]",
         )
-        .unwrap();
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
+        Ok(())
     }
 
     #[test]
-    fn ramp_function_from_model_config_no_crash_and_plot() {
+    fn ramp_function_from_model_config_no_crash_and_plot() -> Result<()> {
         setup(None);
         let sample_rate_hz = 3000.0;
         let duration_s = 1.5;
@@ -428,7 +438,7 @@ mod test {
         config.common.control_function = config::model::ControlFunction::Ramp;
 
         let control_function =
-            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s);
+            ControlFunction::from_model_config(&config, sample_rate_hz, duration_s)?;
         assert_eq!(expected_length_samples, control_function.shape()[0]);
 
         let path = Path::new(COMMON_PATH).join("control_function_ramp.png");
@@ -439,6 +449,7 @@ mod test {
             "Control Function",
             "j [A/mm^2]",
         )
-        .unwrap();
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
+        Ok(())
     }
 }

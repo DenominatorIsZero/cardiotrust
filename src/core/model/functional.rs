@@ -85,11 +85,11 @@ impl FunctionalDescription {
             APParameters::from_model_config(config, spatial_description, sample_rate_hz)?;
         let measurement_matrix =
             MeasurementMatrix::from_model_spatial_description(spatial_description);
-        let control_matrix = ControlMatrix::from_model_config(config, spatial_description);
+        let control_matrix = ControlMatrix::from_model_config(config, spatial_description)?;
         let measurement_covariance =
             MeasurementCovariance::from_model_config(config, spatial_description);
         let control_function_values =
-            ControlFunction::from_model_config(config, sample_rate_hz, duration_s);
+            ControlFunction::from_model_config(config, sample_rate_hz, duration_s)?;
 
         Ok(Self {
             ap_params,
