@@ -58,11 +58,12 @@ impl SpatialDescription {
     /// Saves the `heart`, `voxels`, and `sensors` fields to .npy files
     /// in the given `path`.
     #[tracing::instrument(level = "trace")]
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving spatial description to npy");
         let path = &path.join("spatial_description");
         self.voxels.save_npy(path);
-        self.sensors.save_npy(path);
+        self.sensors.save_npy(path)?;
+        Ok(())
     }
 }
 
