@@ -388,6 +388,51 @@ Transform CardioTrust from research-quality code into professional software whil
 
 ---
 
+### 21. Types as State Architecture Refactoring
+
+**Work Load**: 4 points
+**Prerequisites**: Error Handling Standardization
+**Priority**: Nice-to-have
+**Expected Outcome**: Eliminate runtime Option checks and unwraps through compile-time state guarantees using phantom types
+
+**Context**: The codebase extensively uses Option types for managing initialization state (e.g., `model: Option<Model>`, `functional_description: Option<FunctionalDescription>`), requiring runtime validation throughout algorithm chains. The typestate pattern can eliminate these runtime checks entirely through compile-time guarantees.
+
+**Technical Scope**:
+
+- **Typestate model design**: Transform `Model`, `Scenario`, and other core structs to use phantom types for state management
+- **State transition API**: Design safe state transition methods (e.g., `UninitializedScenario::initialize() -> InitializedScenario`)
+- **Algorithm chain safety**: Ensure algorithms can only be called on properly initialized states
+- **GPU context management**: Apply typestate pattern to GPU/CPU initialization and resource management
+- **Performance optimization**: Eliminate all runtime state validation overhead in hot paths
+- **Backward compatibility**: Maintain existing serialization and configuration file formats
+- **Comprehensive conversion**: Apply pattern to scenario lifecycle, model initialization, and GPU resource management
+
+**Example Transformation**:
+```rust
+// Current: Runtime validation required
+struct Model {
+    functional_description: Option<FunctionalDescription>,
+}
+
+// Target: Compile-time state guarantees
+struct Model<S: ModelState> {
+    _state: PhantomData<S>,
+}
+struct Uninitialized;
+struct Initialized { functional_description: FunctionalDescription }
+type InitializedModel = Model<Initialized>;
+```
+
+**Potential Roadblocks**:
+
+- Complex API redesign affecting all algorithm callers
+- Serialization compatibility with phantom type markers
+- GPU context state management complexity
+- Extensive refactoring required across entire codebase
+- Learning curve for phantom type patterns and compile-time state management
+
+---
+
 ## Code Quality Projects (Nice-to-have)
 
 ### 15. Clippy Allow Decorator Review & Code Quality Polish
