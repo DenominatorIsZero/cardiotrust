@@ -5,6 +5,7 @@ pub mod refinement;
 #[cfg(test)]
 mod tests;
 
+use anyhow::{Context, Result};
 use nalgebra::{DMatrix, SVD};
 use ndarray::{s, Array1};
 use rand::{rng, seq::SliceRandom};
@@ -25,9 +26,9 @@ use crate::core::algorithm::refinement::derivation::calculate_step_derivatives;
 /// This iterates through each time step, calculating the system state estimate, residuals, derivatives, and metrics at each step.
 /// It uses SVD to calculate the pseudo inverse of the measurement matrix.
 ///
-/// # Panics
+/// # Errors
 ///
-/// - svd calculation fails
+/// Returns an error if SVD calculation fails or matrix operations are invalid.
 ///
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn calculate_pseudo_inverse(
@@ -35,7 +36,7 @@ pub fn calculate_pseudo_inverse(
     results: &mut Results,
     data: &Data,
     config: &Algorithm,
-) {
+) -> Result<()> {
     debug!("Calculating pseudo inverse");
     let rows = functional_description.measurement_matrix.shape()[1];
     let columns = functional_description.measurement_matrix.shape()[2];
@@ -45,7 +46,8 @@ pub fn calculate_pseudo_inverse(
     let measurement_matrix = DMatrix::from_row_slice(
         rows,
         columns,
-        measurement_matrix.as_slice().expect("Slice to be some."),
+        measurement_matrix.as_slice()
+            .context("Failed to convert measurement matrix to slice for SVD computation")?,
     );
 
     let decomposition = SVD::new_unordered(measurement_matrix, true, true);
@@ -63,12 +65,16 @@ pub fn calculate_pseudo_inverse(
         let actual_measurements = actual_measurements.at_step(step);
 
         let rows = data.simulation.measurements.num_sensors();
-        let measurements =
-            DMatrix::from_row_slice(rows, 1, actual_measurements.as_slice().unwrap());
+        let measurements = DMatrix::from_row_slice(
+            rows,
+            1,
+            actual_measurements.as_slice()
+                .context("Failed to convert actual measurements to slice for pseudo-inverse calculation")?
+        );
 
         let system_states = decomposition
             .solve(&measurements, 1e-5)
-            .expect("SVD to be computed.");
+            .map_err(|_| anyhow::anyhow!("Failed to solve SVD system for pseudo-inverse - singular measurement matrix or numerical instability"))?;
 
         let system_states = Array1::from_iter(system_states.as_slice().iter().copied());
 
@@ -99,14 +105,19 @@ pub fn calculate_pseudo_inverse(
         );
     }
     metrics::calculate_batch(&mut results.metrics, 0);
+    Ok(())
 }
 
 /// Runs the algorithm for one epoch.
 ///
 /// This includes calculating the system estimates
 /// and performing one gradient descent step.
+///
+/// # Errors
+///
+/// Returns an error if the model is not properly initialized or algorithm computations fail.
 #[tracing::instrument(skip_all, level = "debug")]
-pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, config: &Algorithm) {
+pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, config: &Algorithm) -> Result<()> {
     results.derivatives.reset();
     let num_steps = results.estimations.system_states.num_steps();
     let num_beats = data.simulation.measurements.num_beats();
@@ -129,19 +140,25 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
         estimations.reset();
 
         for step in 0..num_steps {
+            let functional_description = &results
+                .model
+                .as_mut()
+                .context("Model not properly initialized before algorithm execution")?
+                .functional_description;
+
             calculate_system_prediction(
                 estimations,
-                &results.model.as_mut().unwrap().functional_description,
+                functional_description,
                 beat,
                 step,
-            );
+            )?;
 
             calculate_residuals(estimations, data, beat, step);
 
             calculate_step_derivatives(
                 derivatives,
                 estimations,
-                &results.model.as_mut().unwrap().functional_description,
+                functional_description,
                 config,
                 step,
                 beat,
@@ -159,25 +176,28 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
         if let Some(n) = batch.as_mut() {
             *n += 1;
             if *n == config.batch_size {
+                let model_ref = results
+                    .model
+                    .as_ref()
+                    .context("Model not available for batch processing")?;
+
                 calculate_average_delays(
                     &mut estimations.average_delays,
-                    &results
-                        .model
-                        .as_ref()
-                        .unwrap()
-                        .functional_description
-                        .ap_params,
+                    &model_ref.functional_description.ap_params,
                 );
                 calculate_batch_derivatives(
                     derivatives,
                     estimations,
-                    &results.model.as_ref().unwrap().functional_description,
+                    &model_ref.functional_description,
                     config,
                 );
-                results
+
+                let model_mut = results
                     .model
                     .as_mut()
-                    .unwrap()
+                    .context("Model not available for parameter update")?;
+
+                model_mut
                     .functional_description
                     .ap_params
                     .update(derivatives, config, num_steps, *n);
@@ -190,25 +210,28 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
     }
     if let Some(n) = batch {
         if n > 0 {
+            let model_ref = results
+                .model
+                .as_ref()
+                .context("Model not available for final batch processing")?;
+
             calculate_average_delays(
                 &mut estimations.average_delays,
-                &results
-                    .model
-                    .as_ref()
-                    .unwrap()
-                    .functional_description
-                    .ap_params,
+                &model_ref.functional_description.ap_params,
             );
             calculate_batch_derivatives(
                 derivatives,
                 estimations,
-                &results.model.as_ref().unwrap().functional_description,
+                &model_ref.functional_description,
                 config,
             );
-            results
+
+            let model_mut = results
                 .model
                 .as_mut()
-                .unwrap()
+                .context("Model not available for final parameter update")?;
+
+            model_mut
                 .functional_description
                 .ap_params
                 .update(&mut results.derivatives, config, num_steps, n);
@@ -216,31 +239,35 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
             *batch_index += 1;
         }
     } else {
+        let model_ref = results
+            .model
+            .as_ref()
+            .context("Model not available for full epoch processing")?;
+
         calculate_average_delays(
             &mut estimations.average_delays,
-            &results
-                .model
-                .as_ref()
-                .unwrap()
-                .functional_description
-                .ap_params,
+            &model_ref.functional_description.ap_params,
         );
         calculate_batch_derivatives(
             derivatives,
             estimations,
-            &results.model.as_ref().unwrap().functional_description,
+            &model_ref.functional_description,
             config,
         );
-        results
+
+        let model_mut = results
             .model
             .as_mut()
-            .unwrap()
+            .context("Model not available for epoch parameter update")?;
+
+        model_mut
             .functional_description
             .ap_params
             .update(&mut results.derivatives, config, num_steps, num_beats);
         metrics::calculate_batch(&mut results.metrics, *batch_index);
         *batch_index += 1;
     }
+    Ok(())
 }
 
 #[tracing::instrument(level = "trace")]

@@ -89,7 +89,11 @@ pub fn start_scenarios(
         let send_scenario = entry.scenario.clone();
         let (epoch_tx, epoch_rx) = channel();
         let (summary_tx, summary_rx) = channel();
-        let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
+        let handle = thread::spawn(move || {
+            if let Err(e) = run(send_scenario, &epoch_tx, &summary_tx) {
+                tracing::error!("Scenario failed: {:?}", e);
+            }
+        });
         entry.scenario.set_simulating();
         entry.join_handle = Some(handle);
         entry.epoch_rx = Some(Mutex::new(epoch_rx));

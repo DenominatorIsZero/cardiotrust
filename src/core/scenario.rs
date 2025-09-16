@@ -10,7 +10,7 @@ use std::{
     sync::mpsc::Sender,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use bincode;
 use chrono::{self, DateTime, Utc};
 use ndarray_stats::QuantileExt;
@@ -498,7 +498,7 @@ impl Scenario {
 /// Panics if simulation is none, an unimplemented algorithm is selected or
 /// the parameters do not yield a valid model.
 #[tracing::instrument(level = "info", skip_all, fields(id = %scenario.id))]
-pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender<Summary>) {
+pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender<Summary>) -> Result<()> {
     debug!("Running scenario with id {}", scenario.id);
 
     let simulation = &scenario.config.simulation;
@@ -545,7 +545,8 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
                 &mut summary,
                 epoch_tx,
                 summary_tx,
-            );
+            )
+            .context("Failed to execute model-based algorithm")?;
         }
         AlgorithmType::ModelBasedGPU => {
             results.model = Some(model);
@@ -559,7 +560,8 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
             ).expect("Failed to run model-based GPU algorithm");
         }
         AlgorithmType::PseudoInverse => {
-            run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary);
+            run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary)
+                .context("Failed to execute pseudo inverse algorithm")?;
             results.model = Some(model);
         }
     }
@@ -601,6 +603,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
     scenario.save().expect("Could not save scenario");
     let _ = epoch_tx.send(scenario.config.algorithm.epochs - 1);
     let _ = summary_tx.send(summary);
+    Ok(())
 }
 
 #[tracing::instrument(level = "trace", skip_all)]
@@ -660,6 +663,10 @@ pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
 
 /// Runs the pseudo inverse algorithm on the given scenario, model, and data.
 /// Calculates the pseudo inverse, runs estimations, and calculates summary metrics.
+///
+/// # Errors
+///
+/// Returns an error if the pseudo inverse algorithm fails due to SVD computation issues.
 #[tracing::instrument(level = "info", skip_all)]
 fn run_pseudo_inverse(
     scenario: &Scenario,
@@ -667,17 +674,18 @@ fn run_pseudo_inverse(
     results: &mut Results,
     data: &Data,
     summary: &mut Summary,
-) {
+) -> Result<()> {
     info!("Running pseudo inverse algorithm");
     calculate_pseudo_inverse(
         &model.functional_description,
         results,
         data,
         &scenario.config.algorithm,
-    );
+    )?;
     summary.loss = results.metrics.loss_batch[0];
     summary.loss_mse = results.metrics.loss_mse_batch[0];
     summary.loss_maximum_regularization = results.metrics.loss_maximum_regularization_batch[0];
+    Ok(())
 }
 
 /// Runs the model-based algorithm on the given scenario, model, and data.
@@ -693,7 +701,7 @@ fn run_model_based(
     summary: &mut Summary,
     epoch_tx: &Sender<usize>,
     summary_tx: &Sender<Summary>,
-) {
+) -> Result<()> {
     info!("Running model-based algorithm");
     let original_learning_rate = scenario.config.algorithm.learning_rate;
     let mut batch_index = 0;
@@ -709,7 +717,8 @@ fn run_model_based(
             scenario.config.algorithm.learning_rate *=
                 scenario.config.algorithm.learning_rate_reduction_factor;
         }
-        algorithm::run_epoch(results, &mut batch_index, data, &scenario.config.algorithm);
+        algorithm::run_epoch(results, &mut batch_index, data, &scenario.config.algorithm)
+            .with_context(|| format!("Failed to run algorithm epoch {}", epoch_index))?;
         scenario.status = Status::Running(epoch_index);
 
         summary.loss = results.metrics.loss_batch[batch_index - 1];
@@ -748,6 +757,7 @@ fn run_model_based(
             .ap_params,
     );
     scenario.config.algorithm.learning_rate = original_learning_rate;
+    Ok(())
 }
 
 #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]

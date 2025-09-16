@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use tracing::trace;
 
 use super::Estimations;
@@ -6,9 +7,9 @@ use crate::core::model::functional::FunctionalDescription;
 /// Calculates the system prediction by innovating the system states,
 /// adding the control function, and predicting measurements.
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if `ap_params_flat` is not set.
+/// Returns an error if algorithm parameters are not properly initialized.
 #[allow(clippy::module_name_repetitions)]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_system_prediction(
@@ -16,11 +17,12 @@ pub fn calculate_system_prediction(
     functional_description: &FunctionalDescription,
     beat: usize,
     step: usize,
-) {
+) -> Result<()> {
     trace!("Calculating system prediction");
-    innovate_system_states_v1(estimations, functional_description, step);
+    innovate_system_states_v1(estimations, functional_description, step)?;
     add_control_function(estimations, functional_description, step);
     predict_measurements(estimations, functional_description, beat, step);
+    Ok(())
 }
 
 /// Innovates the system states by calculating the all-pass filter outputs,
@@ -30,16 +32,16 @@ pub fn calculate_system_prediction(
 /// The outputs are multiplied by the gains and added to the system states.
 /// Uses unsafe indexing to avoid bounds checks.
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if output state indices are not initialized corrrectly.
+/// Returns an error if output state indices are not initialized correctly.
 #[inline]
 #[tracing::instrument(level = "trace")]
 pub fn innovate_system_states_v1(
     estimations: &mut Estimations,
     functional_description: &FunctionalDescription,
     step: usize,
-) {
+) -> Result<()> {
     trace!("Innovating system states");
     // copy last ap outputs (needed for derivative calculation)
     estimations
@@ -58,7 +60,8 @@ pub fn innovate_system_states_v1(
             if output_state_index.is_none() {
                 continue;
             }
-            let output_state_index = output_state_index.expect("Output state index to be some");
+            let output_state_index = output_state_index
+                .context("Output state index not initialized - algorithm parameter corruption")?;
             let coef_index = (index_state / 3, index_offset / 3);
             let coef = unsafe { *ap_params.coefs.uget(coef_index) };
             let delay = unsafe { *ap_params.delays.uget(coef_index) };
@@ -80,6 +83,7 @@ pub fn innovate_system_states_v1(
             };
         }
     }
+    Ok(())
 }
 
 /// Adds a control function value multiplied by the control matrix to the

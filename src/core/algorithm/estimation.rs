@@ -188,12 +188,13 @@ pub fn calculate_delays_delta(
 #[cfg(test)]
 mod tests {
     use ndarray::Dim;
+    use anyhow::Result;
 
     use super::{calculate_residuals, prediction::calculate_system_prediction, Estimations};
     use crate::core::{data::Data, model::functional::FunctionalDescription};
 
     #[test]
-    fn prediction_no_crash() {
+    fn prediction_no_crash() -> Result<()> {
         let number_of_states = 3000;
         let number_of_sensors = 300;
         let number_of_steps = 2000;
@@ -216,7 +217,8 @@ mod tests {
             voxels_in_dims,
         );
 
-        calculate_system_prediction(&mut estimations, &functional_description, beat, step);
+        calculate_system_prediction(&mut estimations, &functional_description, beat, step)?;
+        Ok(())
     }
 
     #[test]
