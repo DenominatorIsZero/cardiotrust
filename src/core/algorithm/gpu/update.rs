@@ -128,14 +128,14 @@ mod tests {
         clippy::too_many_lines,
         clippy::similar_names
     )]
-    fn test_update() {
+    fn test_update() -> anyhow::Result<()> {
         let mut config = Config::default();
         config.algorithm.freeze_delays = false;
         let mut results_cpu = Results::get_default();
         let gpu = GPU::new();
-        let results_gpu = results_cpu.to_gpu(&gpu.queue);
+        let results_gpu = results_cpu.to_gpu(&gpu.queue)?;
         let data = Data::get_default().expect("Failed to create default data for test");
-        let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue);
+        let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue)?;
         let number_of_states = data.simulation.system_states.num_states();
         let number_of_sensors = results_cpu
             .model
@@ -276,7 +276,7 @@ mod tests {
             &mut model.functional_description.ap_params.delays,
         );
         update_kernel.execute();
-        results_from_gpu.update_from_gpu(&results_gpu);
+        results_from_gpu.update_from_gpu(&results_gpu)?;
         assert_relative_eq!(
             results_cpu
                 .model
@@ -339,5 +339,6 @@ mod tests {
                 .as_slice()
                 .unwrap(),
         );
+        Ok(())
     }
 }

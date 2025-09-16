@@ -154,10 +154,10 @@ mod tests {
         clippy::too_many_lines,
         clippy::similar_names
     )]
-    fn test_innovate_system_states() {
+    fn test_innovate_system_states() -> anyhow::Result<()> {
         let mut results_cpu = Results::get_default();
         let gpu = GPU::new();
-        let results_gpu = results_cpu.to_gpu(&gpu.queue);
+        let results_gpu = results_cpu.to_gpu(&gpu.queue)?;
         let prediction_kernel = PredictionKernel::new(
             &gpu,
             &results_gpu.estimations,
@@ -195,7 +195,7 @@ mod tests {
                 .enq()
                 .unwrap();
             prediction_kernel.execute();
-            results_from_gpu.update_from_gpu(&results_gpu);
+            results_from_gpu.update_from_gpu(&results_gpu)?;
             let dif = &*results_cpu.estimations.ap_outputs_now
                 - &*results_from_gpu.estimations.ap_outputs_now;
             println!("Diference {:?}", dif.as_slice().unwrap());
@@ -209,7 +209,7 @@ mod tests {
                 epsilon = 1e-6
             );
         }
-        results_from_gpu.update_from_gpu(&results_gpu);
+        results_from_gpu.update_from_gpu(&results_gpu)?;
 
         assert_relative_eq!(
             results_cpu.estimations.ap_outputs_now.as_slice().unwrap(),
@@ -239,5 +239,6 @@ mod tests {
                 .unwrap(),
             epsilon = 1e-4
         );
+        Ok(())
     }
 }

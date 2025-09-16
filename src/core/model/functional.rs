@@ -2,7 +2,7 @@ pub mod allpass;
 pub mod control;
 pub mod measurement;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use ndarray::Dim;
 use ocl::{Buffer, Queue};
 use serde::{Deserialize, Serialize};

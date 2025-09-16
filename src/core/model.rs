@@ -3,7 +3,7 @@ pub mod spatial;
 #[cfg(test)]
 mod tests;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};

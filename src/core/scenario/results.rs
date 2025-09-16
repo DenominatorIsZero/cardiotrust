@@ -375,10 +375,10 @@ mod tests {
     use crate::core::algorithm::gpu::GPU;
     #[test]
     #[allow(clippy::cast_precision_loss, clippy::similar_names)]
-    fn test_results_gpu_transfer() {
+    fn test_results_gpu_transfer() -> anyhow::Result<()> {
         let mut results_from_cpu = Results::get_default();
         let gpu = GPU::new();
-        let results_gpu = results_from_cpu.to_gpu(&gpu.queue);
+        let results_gpu = results_from_cpu.to_gpu(&gpu.queue)?;
 
         // Create and build the modification kernel
         let kernel_src = r"
@@ -425,7 +425,7 @@ mod tests {
         }
 
         let mut results_from_gpu = results_from_cpu.clone();
-        results_from_gpu.update_from_gpu(&results_gpu);
+        results_from_gpu.update_from_gpu(&results_gpu)?;
 
         assert_relative_eq!(
             results_from_gpu
@@ -441,5 +441,6 @@ mod tests {
             epsilon = 1e-6
         );
         assert_eq!(results_from_cpu, results_from_gpu);
+        Ok(())
     }
 }
