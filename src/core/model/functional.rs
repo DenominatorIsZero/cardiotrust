@@ -105,15 +105,20 @@ impl FunctionalDescription {
     /// This exports the allpass filter parameters, process covariance,
     /// measurement matrix, control matrix, measurement covariance
     /// gain, and control function values to .npy files in the provided path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any of the component save operations fail.
     #[tracing::instrument(level = "trace")]
-    pub fn save_npy(&self, path: &std::path::Path) {
+    pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving functional description to npy");
         let path = &path.join("functional_description");
-        self.ap_params.save_npy(path);
-        self.measurement_matrix.save_npy(path);
-        self.control_matrix.save_npy(path);
-        self.measurement_covariance.save_npy(path);
-        self.control_function_values.save_npy(path);
+        self.ap_params.save_npy(path)?;
+        self.measurement_matrix.save_npy(path)?;
+        self.control_matrix.save_npy(path)?;
+        self.measurement_covariance.save_npy(path)?;
+        self.control_function_values.save_npy(path)?;
+        Ok(())
     }
 
     #[allow(clippy::missing_panics_doc)]

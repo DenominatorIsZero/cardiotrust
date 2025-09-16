@@ -107,15 +107,20 @@ impl APParameters {
     }
 
     /// Saves the allpass filter parameters to .npy files.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any of the component save operations fail.
     #[tracing::instrument(level = "debug")]
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         debug!("Saving allpass parameters to npy");
         let path = &path.join("allpass");
-        self.gains.save_npy(path, "gains.npy");
-        self.output_state_indices.save_npy(path);
-        self.coefs.save_npy(path);
-        self.delays.save_npy(path);
-        self.activation_time_ms.save_npy(path);
+        self.gains.save_npy(path, "gains.npy")?;
+        self.output_state_indices.save_npy(path)?;
+        self.coefs.save_npy(path)?;
+        self.delays.save_npy(path)?;
+        self.activation_time_ms.save_npy(path)?;
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -219,10 +224,23 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Indic
                 if x_offset == 0 && y_offset == 0 && z_offset == 0 {
                     continue;
                 }
+                let Ok(x_in_i32) = i32::try_from(x_in) else {
+                    tracing::error!("Voxel x-coordinate {} exceeds i32::MAX", x_in);
+                    continue;
+                };
+                let Ok(y_in_i32) = i32::try_from(y_in) else {
+                    tracing::error!("Voxel y-coordinate {} exceeds i32::MAX", y_in);
+                    continue;
+                };
+                let Ok(z_in_i32) = i32::try_from(z_in) else {
+                    tracing::error!("Voxel z-coordinate {} exceeds i32::MAX", z_in);
+                    continue;
+                };
+
                 let ouput_voxel_index_candidate = [
-                    i32::try_from(x_in).unwrap() + x_offset,
-                    i32::try_from(y_in).unwrap() + y_offset,
-                    i32::try_from(z_in).unwrap() + z_offset,
+                    x_in_i32 + x_offset,
+                    y_in_i32 + y_offset,
+                    z_in_i32 + z_offset,
                 ];
                 if !spatial_description
                     .voxels
@@ -230,20 +248,33 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Indic
                 {
                     continue;
                 }
-                let output_voxel_index = [
-                    usize::try_from(ouput_voxel_index_candidate[0]).unwrap(),
-                    usize::try_from(ouput_voxel_index_candidate[1]).unwrap(),
-                    usize::try_from(ouput_voxel_index_candidate[2]).unwrap(),
-                ];
+                let Ok(x_out_usize) = usize::try_from(ouput_voxel_index_candidate[0]) else {
+                    tracing::error!("Output voxel x-coordinate {} cannot be converted to usize", ouput_voxel_index_candidate[0]);
+                    continue;
+                };
+                let Ok(y_out_usize) = usize::try_from(ouput_voxel_index_candidate[1]) else {
+                    tracing::error!("Output voxel y-coordinate {} cannot be converted to usize", ouput_voxel_index_candidate[1]);
+                    continue;
+                };
+                let Ok(z_out_usize) = usize::try_from(ouput_voxel_index_candidate[2]) else {
+                    tracing::error!("Output voxel z-coordinate {} cannot be converted to usize", ouput_voxel_index_candidate[2]);
+                    continue;
+                };
+
+                let output_voxel_index = [x_out_usize, y_out_usize, z_out_usize];
                 for input_direction in 0..3 {
-                    let input_state_number =
-                        v_numbers[input_voxel_index].unwrap() + input_direction;
+                    let Some(input_base_number) = v_numbers[input_voxel_index] else { continue; };
+                    let input_state_number = input_base_number + input_direction;
                     for output_dimension in 0..3 {
-                        let gain_index =
-                            offset_to_gain_index(x_offset, y_offset, z_offset, output_dimension)
-                                .unwrap();
-                        let output_state_index =
-                            v_numbers[output_voxel_index].unwrap() + output_dimension;
+                        let Some(gain_index) = offset_to_gain_index(x_offset, y_offset, z_offset, output_dimension) else {
+                            tracing::error!("Failed to calculate gain index for offset ({}, {}, {}) and output dimension {}", x_offset, y_offset, z_offset, output_dimension);
+                            continue;
+                        };
+                        let Some(output_base_number) = v_numbers[output_voxel_index] else {
+                            tracing::error!("Output voxel at {:?} has no assigned number", output_voxel_index);
+                            continue;
+                        };
+                        let output_state_index = output_base_number + output_dimension;
                         output_state_indices[(input_state_number, gain_index)] =
                             Some(output_state_index);
                     }
@@ -289,8 +320,8 @@ fn connect_voxels(
         // with a voxel that is not yet activated.
         if !activation_time_s
             .iter()
-            .filter(|time_s| time_s.is_some())
-            .any(|time_s| time_s.unwrap() > current_time_s)
+            .filter_map(|time_s| *time_s)
+            .any(|time_s| time_s > current_time_s)
         {
             connected_something = false;
         }
@@ -317,8 +348,8 @@ fn connect_voxels(
         }
         let candidate_times_s: Vec<f32> = activation_time_s
             .iter()
-            .filter(|t| t.is_some() && t.unwrap() > current_time_s)
-            .map(|t| t.unwrap())
+            .filter_map(|&t| t)
+            .filter(|&t| t > current_time_s)
             .collect();
         let candidate_times_s = Array1::from_vec(candidate_times_s);
         current_time_s = *candidate_times_s.min_skipnan();
@@ -327,8 +358,7 @@ fn connect_voxels(
         .activation_time_ms
         .iter_mut()
         .zip(activation_time_s)
-        .filter(|(_, s)| s.is_some())
-        .for_each(|(ms, s)| *ms = Some(s.unwrap() * 1000.0));
+        .for_each(|(ms, s)| *ms = s.map(|time| time * 1000.0));
 }
 
 /// Attempts to connect the voxel at the given offset from the output voxel.
@@ -358,20 +388,42 @@ fn try_to_connect(
         return false;
     }
     let (x_out, y_out, z_out) = output_voxel_index;
+    let Ok(x_out_i32) = i32::try_from(x_out) else {
+        tracing::error!("Output voxel x-coordinate {} exceeds i32::MAX in try_to_connect", x_out);
+        return false;
+    };
+    let Ok(y_out_i32) = i32::try_from(y_out) else {
+        tracing::error!("Output voxel y-coordinate {} exceeds i32::MAX in try_to_connect", y_out);
+        return false;
+    };
+    let Ok(z_out_i32) = i32::try_from(z_out) else {
+        tracing::error!("Output voxel z-coordinate {} exceeds i32::MAX in try_to_connect", z_out);
+        return false;
+    };
+
     let input_voxel_index = [
-        i32::try_from(x_out).unwrap() - x_offset,
-        i32::try_from(y_out).unwrap() - y_offset,
-        i32::try_from(z_out).unwrap() - z_offset,
+        x_out_i32 - x_offset,
+        y_out_i32 - y_offset,
+        z_out_i32 - z_offset,
     ];
     // Skip if the input voxel doesn't exist
     if !spatial_description.voxels.is_valid_index(input_voxel_index) {
         return false;
     }
-    let input_voxel_index = [
-        usize::try_from(i32::try_from(x_out).unwrap() - x_offset).unwrap(),
-        usize::try_from(i32::try_from(y_out).unwrap() - y_offset).unwrap(),
-        usize::try_from(i32::try_from(z_out).unwrap() - z_offset).unwrap(),
-    ];
+    let Ok(x_in_usize) = usize::try_from(x_out_i32 - x_offset) else {
+        tracing::error!("Input voxel x-coordinate {} cannot be converted to usize in try_to_connect", x_out_i32 - x_offset);
+        return false;
+    };
+    let Ok(y_in_usize) = usize::try_from(y_out_i32 - y_offset) else {
+        tracing::error!("Input voxel y-coordinate {} cannot be converted to usize in try_to_connect", y_out_i32 - y_offset);
+        return false;
+    };
+    let Ok(z_in_usize) = usize::try_from(z_out_i32 - z_offset) else {
+        tracing::error!("Input voxel z-coordinate {} cannot be converted to usize in try_to_connect", z_out_i32 - z_offset);
+        return false;
+    };
+
+    let input_voxel_index = [x_in_usize, y_in_usize, z_in_usize];
     // SKip if the input voxel is already connected
     if activation_time_s[input_voxel_index].is_some() {
         return false;
@@ -389,23 +441,32 @@ fn try_to_connect(
         return false;
     }
     // Now we finally found something that we want to connect.
-    let input_state_number = v_numbers[input_voxel_index].unwrap();
+    let Some(input_state_number) = v_numbers[input_voxel_index] else {
+        tracing::error!("Input voxel at {:?} has no assigned number in try_to_connect", input_voxel_index);
+        return false;
+    };
     let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
     let [x_in, y_in, z_in] = input_voxel_index;
     let input_position_mm = &v_position_mm.slice(s![x_in, y_in, z_in, ..]);
-    let propagation_velocity_m_per_s = config
+    let Some(propagation_velocity_m_per_s) = config
         .common
         .propagation_velocities_m_per_s
         .get(input_voxel_type)
-        .unwrap();
+    else {
+        tracing::warn!("No propagation velocity found for voxel type {:?}", input_voxel_type);
+        return false;
+    };
     let delay_s = delay::calculate_delay_s(
         input_position_mm,
         output_position_mm,
         *propagation_velocity_m_per_s,
     );
     // update activation time of input voxel, marking them as connected
-    activation_time_s[input_voxel_index] =
-        Some(activation_time_s[output_voxel_index].unwrap() + delay_s);
+    let Some(output_activation_time) = activation_time_s[output_voxel_index] else {
+        tracing::error!("Output voxel at {:?} has no activation time in try_to_connect", output_voxel_index);
+        return false;
+    };
+    activation_time_s[input_voxel_index] = Some(output_activation_time + delay_s);
     let direction = direction::calculate(input_position_mm, output_position_mm);
     current_directions
         .slice_mut(s![x_in, y_in, z_in, ..])
@@ -569,8 +630,9 @@ fn find_candidate_voxels(
     trace!("Finding candidate voxels at time {}", current_time_s);
     let output_voxel_indices: Vec<(usize, usize, usize)> = activation_time_s
         .indexed_iter()
-        .filter(|(_, time_s)| time_s.is_some() && relative_eq!(time_s.unwrap(), current_time_s))
-        .map(|(index, _)| index)
+        .filter_map(|(index, &time_s)| {
+            time_s.filter(|&t| relative_eq!(t, current_time_s)).map(|_| index)
+        })
         .collect();
     output_voxel_indices
 }

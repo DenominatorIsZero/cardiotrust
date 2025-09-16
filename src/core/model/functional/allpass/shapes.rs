@@ -34,17 +34,24 @@ impl ActivationTimeMs {
     /// The values are mapped from Option<f32> to f32, replacing None with -1.0.
     /// The file contains a single 3D array with the activation time values.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the values cannot be written to the file.
+    /// Returns an error if the directory cannot be created or the file cannot be written.
     #[tracing::instrument(level = "trace")]
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving activation time to npy");
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("activation_time.npy")).unwrap());
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory for activation time: {}", path.display()))?;
+
+        let file_path = path.join("activation_time.npy");
+        let writer = BufWriter::new(File::create(&file_path)
+            .with_context(|| format!("Failed to create activation time file: {}", file_path.display()))?);
+
         self.map(|v| v.as_ref().map_or_else(|| -1.0, |index| *index))
             .write_npy(writer)
-            .unwrap();
+            .with_context(|| format!("Failed to write activation time to: {}", file_path.display()))?;
+
+        Ok(())
     }
 }
 
@@ -81,16 +88,24 @@ impl Gains {
     /// Saves the array values to a .npy file at the given path with the given name.
     /// The values are written directly to the file using `write_npy`.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the file cannot be created or written to.
+    /// Returns an error if the directory cannot be created or the file cannot be written.
     #[allow(dead_code)]
     #[tracing::instrument(level = "trace")]
-    pub(crate) fn save_npy(&self, path: &std::path::Path, name: &str) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path, name: &str) -> Result<()> {
         trace!("Saving gains to npy");
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join(name)).unwrap());
-        self.write_npy(writer).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory for gains: {}", path.display()))?;
+
+        let file_path = path.join(name);
+        let writer = BufWriter::new(File::create(&file_path)
+            .with_context(|| format!("Failed to create gains file: {}", file_path.display()))?);
+
+        self.write_npy(writer)
+            .with_context(|| format!("Failed to write gains to: {}", file_path.display()))?;
+
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -150,24 +165,37 @@ impl Indices {
         Self(Array2::from_elem((number_of_states, 78), None))
     }
 
-    /// Saves the array indices values to a .npy file at the given path.  
+    /// Saves the array indices values to a .npy file at the given path.
     /// The indices are converted to i32 and any None values are converted to -1.
     /// The values are then written directly to the file using `write_npy`.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the file cannot be created or written to.
+    /// Returns an error if the directory cannot be created or the file cannot be written.
     #[tracing::instrument(level = "trace")]
-    pub fn save_npy(&self, path: &std::path::Path) {
+    pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving indices gains to npy");
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("output_state_indices.npy")).unwrap());
-        self.map(|v| {
-            v.as_ref()
-                .map_or(-1, |index| i32::try_from(*index).unwrap())
-        })
-        .write_npy(writer)
-        .unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory for indices: {}", path.display()))?;
+
+        let file_path = path.join("output_state_indices.npy");
+        let writer = BufWriter::new(File::create(&file_path)
+            .with_context(|| format!("Failed to create indices file: {}", file_path.display()))?);
+
+        let converted_indices = self.map(|v| {
+            v.as_ref().map_or(-1, |index| {
+                i32::try_from(*index)
+                    .unwrap_or_else(|_| {
+                        tracing::warn!("Index {} exceeds i32::MAX, using -1", index);
+                        -1
+                    })
+            })
+        });
+
+        converted_indices.write_npy(writer)
+            .with_context(|| format!("Failed to write indices to: {}", file_path.display()))?;
+
+        Ok(())
     }
 }
 
@@ -211,15 +239,23 @@ impl Coefs {
     ///
     /// The .npy file will be named `coefs.npy`.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the file cannot be created or written to.
+    /// Returns an error if the directory cannot be created or the file cannot be written.
     #[tracing::instrument(level = "trace")]
-    pub fn save_npy(&self, path: &std::path::Path) {
+    pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving delays to npy");
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("coefs.npy")).unwrap());
-        self.write_npy(writer).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory for coefs: {}", path.display()))?;
+
+        let file_path = path.join("coefs.npy");
+        let writer = BufWriter::new(File::create(&file_path)
+            .with_context(|| format!("Failed to create coefs file: {}", file_path.display()))?);
+
+        self.write_npy(writer)
+            .with_context(|| format!("Failed to write coefs to: {}", file_path.display()))?;
+
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -281,18 +317,31 @@ impl UnitDelays {
     ///
     /// Casts the `usize` values to `u32` before writing to satisfy `.npy` format limitations.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// If the target directory cannot be created, the file cannot be opened,
-    /// or if a delay value cannot be converted to `u32`.
+    /// Returns an error if the directory cannot be created or the file cannot be written.
     #[tracing::instrument(level = "trace")]
-    pub fn save_npy(&self, path: &std::path::Path) {
+    pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving delays to npy");
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("delays.npy")).unwrap());
-        self.map(|v| u32::try_from(*v).unwrap())
-            .write_npy(writer)
-            .unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory for delays: {}", path.display()))?;
+
+        let file_path = path.join("delays.npy");
+        let writer = BufWriter::new(File::create(&file_path)
+            .with_context(|| format!("Failed to create delays file: {}", file_path.display()))?);
+
+        let converted_delays = self.map(|v| {
+            u32::try_from(*v)
+                .unwrap_or_else(|_| {
+                    tracing::warn!("Delay value {} exceeds u32::MAX, using u32::MAX", v);
+                    u32::MAX
+                })
+        });
+
+        converted_delays.write_npy(writer)
+            .with_context(|| format!("Failed to write delays to: {}", file_path.display()))?;
+
+        Ok(())
     }
 }
 

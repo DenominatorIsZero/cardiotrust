@@ -59,12 +59,24 @@ impl ControlMatrix {
 
     /// Saves the control matrix to a .npy file at the given path.
     /// Creates any missing directories in the path if needed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the directory cannot be created or the file cannot be written.
     #[tracing::instrument(level = "trace")]
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving control matrix to npy");
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("control_matrix.npy")).unwrap());
-        self.write_npy(writer).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory for control matrix: {}", path.display()))?;
+
+        let file_path = path.join("control_matrix.npy");
+        let writer = BufWriter::new(File::create(&file_path)
+            .with_context(|| format!("Failed to create control matrix file: {}", file_path.display()))?);
+
+        self.write_npy(writer)
+            .with_context(|| format!("Failed to write control matrix to: {}", file_path.display()))?;
+
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -228,13 +240,24 @@ impl ControlFunction {
     /// Saves the control function values to a .npy file at the given path.
     /// Creates any missing directories in the path, opens a file for writing,
     /// and writes the values using the numpy npy format.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the directory cannot be created or the file cannot be written.
     #[tracing::instrument(level = "trace")]
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving control function values to npy");
-        fs::create_dir_all(path).unwrap();
-        let writer =
-            BufWriter::new(File::create(path.join("control_function_values.npy")).unwrap());
-        self.write_npy(writer).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory for control function: {}", path.display()))?;
+
+        let file_path = path.join("control_function_values.npy");
+        let writer = BufWriter::new(File::create(&file_path)
+            .with_context(|| format!("Failed to create control function file: {}", file_path.display()))?);
+
+        self.write_npy(writer)
+            .with_context(|| format!("Failed to write control function to: {}", file_path.display()))?;
+
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
