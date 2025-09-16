@@ -46,7 +46,7 @@ fn run_simulation_default() {
 #[test]
 #[ignore = "expensive integration test"]
 #[allow(clippy::too_many_lines)]
-fn run_simulation_default_and_plot() {
+fn run_simulation_default_and_plot() -> anyhow::Result<()> {
     let folder = Path::new(COMMON_PATH).join("healthy");
     setup_folder(&folder);
     let config = &SimulationConfig::default();
@@ -61,7 +61,7 @@ fn run_simulation_default_and_plot() {
         .model
         .spatial_description
         .voxels
-        .get_first_state_of_type(VoxelType::Sinoatrial);
+        .get_first_state_of_type(VoxelType::Sinoatrial)?;
 
     let path = folder.join("sa.png");
     plot_state_xyz(
@@ -77,7 +77,7 @@ fn run_simulation_default_and_plot() {
         .model
         .spatial_description
         .voxels
-        .get_first_state_of_type(VoxelType::Atrioventricular);
+        .get_first_state_of_type(VoxelType::Atrioventricular)?;
 
     let path = folder.join("av.png");
     plot_state_xyz(
@@ -169,6 +169,7 @@ fn run_simulation_default_and_plot() {
         Some(fps),
     )
     .unwrap();
+    Ok(())
 }
 
 #[test]
@@ -186,7 +187,7 @@ fn run_simulation_pathological() {
 #[test]
 #[ignore = "expensive integration test"]
 #[allow(clippy::too_many_lines)]
-fn run_simulation_pathological_and_plot() {
+fn run_simulation_pathological_and_plot() -> anyhow::Result<()> {
     let folder = Path::new(COMMON_PATH).join("pathological");
     setup_folder(&folder);
     let mut config = SimulationConfig::default();
@@ -202,7 +203,7 @@ fn run_simulation_pathological_and_plot() {
         .model
         .spatial_description
         .voxels
-        .get_first_state_of_type(VoxelType::Sinoatrial);
+        .get_first_state_of_type(VoxelType::Sinoatrial)?;
 
     let path = folder.join("sa.png");
     plot_state_xyz(
@@ -218,7 +219,7 @@ fn run_simulation_pathological_and_plot() {
         .model
         .spatial_description
         .voxels
-        .get_first_state_of_type(VoxelType::Atrioventricular);
+        .get_first_state_of_type(VoxelType::Atrioventricular)?;
 
     let path = folder.join("av.png");
     plot_state_xyz(
@@ -309,6 +310,7 @@ fn run_simulation_pathological_and_plot() {
         Some(fps),
     )
     .unwrap();
+    Ok(())
 }
 
 #[test]
@@ -378,7 +380,7 @@ fn crawl_through_states(simulation: &Simulation, state: usize) {
 #[test]
 #[ignore = "expensive integration test"]
 #[allow(clippy::too_many_lines)]
-fn run_simulation_mri_and_plot() {
+fn run_simulation_mri_and_plot() -> anyhow::Result<()> {
     let folder = Path::new(COMMON_PATH).join("mri");
     setup_folder(&folder);
     let mut config = SimulationConfig::default();
@@ -395,7 +397,7 @@ fn run_simulation_mri_and_plot() {
         .model
         .spatial_description
         .voxels
-        .get_first_state_of_type(VoxelType::Sinoatrial);
+        .get_first_state_of_type(VoxelType::Sinoatrial)?;
 
     let path = folder.join("sa.png");
     plot_state_xyz(
@@ -486,4 +488,5 @@ fn run_simulation_mri_and_plot() {
         Some(fps),
     )
     .unwrap();
+    Ok(())
 }

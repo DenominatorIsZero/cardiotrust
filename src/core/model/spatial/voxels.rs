@@ -58,7 +58,9 @@ impl Voxels {
     pub fn from_mri_model_config(config: &Model) -> anyhow::Result<Self> {
         debug!("Creating voxels from mri model config");
 
-        let mri_data = load_from_nii(&config.mri.as_ref().unwrap().path)?;
+        let mri_config = config.mri.as_ref()
+            .with_context(|| "MRI configuration is required but not provided")?;
+        let mri_data = load_from_nii(&mri_config.path)?;
 
         let positions = VoxelPositions::from_mri_model_config(config, &mri_data);
         let types = VoxelTypes::from_mri_model_config(config, &positions, &mri_data)?;
@@ -109,55 +111,71 @@ impl Voxels {
     /// and that the voxel type at that index is not `VoxelType::None`.
     ///
     /// Returns `true` if the index is valid, `false` otherwise.
-    ///
-    /// # Panics
-    ///
-    /// Panics if number of voxels in any direction
-    /// exceed `i32::MAX`.
+    /// Returns `false` if dimensions exceed conversion bounds.
     #[must_use]
     #[tracing::instrument(level = "trace")]
     pub fn is_valid_index(&self, index: [i32; 3]) -> bool {
         trace!("Checking if index is valid");
         let [x, y, z] = index;
         let [x_max, y_max, z_max] = self.count_xyz();
-        (0 <= x && x < (i32::try_from(x_max).unwrap()))
-            && (0 <= y && y < (i32::try_from(y_max).unwrap()))
-            && (0 <= z && z < (i32::try_from(z_max).unwrap()))
-            && self.types[(
-                usize::try_from(x).unwrap(),
-                usize::try_from(y).unwrap(),
-                usize::try_from(z).unwrap(),
-            )]
-                .is_connectable()
+
+        // Check if dimensions can be safely converted
+        let Ok(x_max_i32) = i32::try_from(x_max) else { return false; };
+        let Ok(y_max_i32) = i32::try_from(y_max) else { return false; };
+        let Ok(z_max_i32) = i32::try_from(z_max) else { return false; };
+
+        // Check bounds
+        if !(0 <= x && x < x_max_i32 && 0 <= y && y < y_max_i32 && 0 <= z && z < z_max_i32) {
+            return false;
+        }
+
+        // Convert back to usize for array indexing
+        let Ok(x_usize) = usize::try_from(x) else { return false; };
+        let Ok(y_usize) = usize::try_from(y) else { return false; };
+        let Ok(z_usize) = usize::try_from(z) else { return false; };
+
+        self.types[(x_usize, y_usize, z_usize)].is_connectable()
     }
 
     /// Returns the index of the first voxel of type `v_type`.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if no voxel of `v_type` is present in `Voxels`.
-    #[must_use]
+    /// Returns an error if no voxel of `v_type` is present in `Voxels` or if
+    /// the voxel has no assigned number.
     #[tracing::instrument(level = "trace")]
-    pub fn get_first_state_of_type(&self, v_type: VoxelType) -> usize {
+    pub fn get_first_state_of_type(&self, v_type: VoxelType) -> anyhow::Result<usize> {
         trace!("Getting first state of type {:?}", v_type);
         let query = self
             .types
             .iter()
             .zip(self.numbers.iter())
             .find(|(this_type, _)| **this_type == v_type);
-        query.unwrap().1.unwrap()
+
+        let (_, number_option) = query
+            .with_context(|| format!("No voxel of type {:?} found in voxels", v_type))?;
+
+        number_option
+            .with_context(|| format!("Voxel of type {:?} has no assigned number", v_type))
     }
 
     /// Saves the voxel grid data to .npy files in the given path.
     #[tracing::instrument(level = "trace")]
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving voxels to npy files");
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("voxel_size_mm.npy")).unwrap());
-        arr1(&[self.size_mm]).write_npy(writer).unwrap();
-        self.types.save_npy(path);
-        self.numbers.save_npy(path);
-        self.positions_mm.save_npy(path);
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory for voxels: {}", path.display()))?;
+
+        let size_file_path = path.join("voxel_size_mm.npy");
+        let writer = BufWriter::new(File::create(&size_file_path)
+            .with_context(|| format!("Failed to create voxel size file: {}", size_file_path.display()))?);
+        arr1(&[self.size_mm]).write_npy(writer)
+            .with_context(|| format!("Failed to write voxel size to: {}", size_file_path.display()))?;
+
+        self.types.save_npy(path)?;
+        self.numbers.save_npy(path)?;
+        self.positions_mm.save_npy(path)?;
+        Ok(())
     }
 }
 
@@ -266,10 +284,14 @@ impl VoxelTypes {
     }
 
     #[tracing::instrument(level = "trace")]
-    fn save_npy(&self, path: &std::path::Path) {
+    fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving voxel types to npy files");
-        let writer = BufWriter::new(File::create(path.join("voxel_types.npy")).unwrap());
-        self.map(|v| *v as u32).write_npy(writer).unwrap();
+        let types_file_path = path.join("voxel_types.npy");
+        let writer = BufWriter::new(File::create(&types_file_path)
+            .with_context(|| format!("Failed to create voxel types file: {}", types_file_path.display()))?);
+        self.map(|v| *v as u32).write_npy(writer)
+            .with_context(|| format!("Failed to write voxel types to: {}", types_file_path.display()))?;
+        Ok(())
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -373,15 +395,25 @@ impl VoxelNumbers {
     /// The voxel numbers are converted to i32, with -1 representing None.
     /// Uses numpy's .npy format for efficient storage and loading.
     #[tracing::instrument(level = "trace")]
-    fn save_npy(&self, path: &std::path::Path) {
+    fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving voxel numbers to npy files");
-        let writer = BufWriter::new(File::create(path.join("voxel_numbers.npy")).unwrap());
-        self.map(|v| {
-            v.as_ref()
-                .map_or(-1, |number| i32::try_from(*number).unwrap())
-        })
-        .write_npy(writer)
-        .unwrap();
+        let numbers_file_path = path.join("voxel_numbers.npy");
+        let writer = BufWriter::new(File::create(&numbers_file_path)
+            .with_context(|| format!("Failed to create voxel numbers file: {}", numbers_file_path.display()))?);
+
+        let converted_numbers = self.map(|v| {
+            v.as_ref().map_or(-1, |number| {
+                i32::try_from(*number)
+                    .unwrap_or_else(|_| {
+                        tracing::warn!("Voxel number {} exceeds i32::MAX, using -1", number);
+                        -1
+                    })
+            })
+        });
+
+        converted_numbers.write_npy(writer)
+            .with_context(|| format!("Failed to write voxel numbers to: {}", numbers_file_path.display()))?;
+        Ok(())
     }
 }
 
@@ -541,10 +573,14 @@ impl VoxelPositions {
     /// (x, y, z, 3), where the last dimension contains the x, y, z
     /// coordinates for each voxel position.
     #[tracing::instrument(level = "trace")]
-    fn save_npy(&self, path: &std::path::Path) {
+    fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving voxel positions to npy files");
-        let writer = BufWriter::new(File::create(path.join("voxel_positions_mm.npy")).unwrap());
-        self.write_npy(writer).unwrap();
+        let positions_file_path = path.join("voxel_positions_mm.npy");
+        let writer = BufWriter::new(File::create(&positions_file_path)
+            .with_context(|| format!("Failed to create voxel positions file: {}", positions_file_path.display()))?);
+        self.write_npy(writer)
+            .with_context(|| format!("Failed to write voxel positions to: {}", positions_file_path.display()))?;
+        Ok(())
     }
 }
 

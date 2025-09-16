@@ -30,7 +30,7 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 - [x] `src/core/model/spatial.rs` (9 unwraps)
 - [x] `src/core/model/spatial/nifti.rs` (10 unwraps)
 - [x] `src/core/model/spatial/sensors.rs` (5 unwraps)
-- [ ] `src/core/model/spatial/voxels.rs` (19 unwraps)
+- [x] `src/core/model/spatial/voxels.rs` (19 unwraps)
 - [ ] `src/core/model/functional.rs` (2 unwraps)
 - [ ] `src/core/model/functional/allpass.rs` (44 unwraps)
 - [ ] `src/core/model/functional/allpass/delay.rs` (11 unwraps)
