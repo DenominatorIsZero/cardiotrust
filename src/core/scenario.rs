@@ -802,7 +802,7 @@ fn run_model_based_gpu(
         number_of_states as i32,
         number_of_sensors as i32,
         number_of_steps as i32,
-    );
+    )?;
 
     for epoch_index in 0..scenario.config.algorithm.epochs {
         if epoch_index == 0 {
@@ -812,7 +812,7 @@ fn run_model_based_gpu(
             epoch_kernel.set_freeze_delays(scenario.config.algorithm.freeze_delays);
             epoch_kernel.set_freeze_gains(scenario.config.algorithm.freeze_gains);
         }
-        epoch_kernel.execute();
+        epoch_kernel.execute()?;
         results.metrics.update_from_gpu(&results_gpu.metrics);
 
         summary.loss = results.metrics.loss_batch[epoch_index];

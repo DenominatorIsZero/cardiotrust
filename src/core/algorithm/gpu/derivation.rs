@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use ocl::{Buffer, Kernel, Program};
 
 use super::GPU;
@@ -22,14 +23,12 @@ pub struct DerivationKernel {
 
 impl DerivationKernel {
     #[allow(
-        clippy::missing_panics_doc,
         clippy::cast_sign_loss,
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
         clippy::cast_precision_loss,
         clippy::too_many_lines
     )]
-    #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(
         gpu: &GPU,
@@ -41,16 +40,18 @@ impl DerivationKernel {
         number_of_sensors: i32,
         number_of_steps: i32,
         config: &Algorithm,
-    ) -> Self {
+    ) -> Result<Self> {
         let context = &gpu.context;
         let queue = &gpu.queue;
         let device = &gpu.device;
         let number_of_voxels = number_of_states / 3;
 
-        let residual_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/calculate_residuals.cl")
-                .unwrap();
-        let residual_program = Program::builder().src(residual_src).build(context).unwrap();
+        let residual_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/calculate_residuals.cl")
+            .context("Failed to read residuals kernel source file - ensure GPU kernels are available")?;
+        let residual_program = Program::builder()
+            .src(residual_src)
+            .build(context)
+            .context("Failed to compile residuals kernel for GPU device")?;
         let residual_kernel = Kernel::builder()
             .program(&residual_program)
             .name("calculate_residuals")
@@ -64,16 +65,16 @@ impl DerivationKernel {
             .arg(number_of_sensors)
             .arg(number_of_steps)
             .build()
-            .unwrap();
+            .context("Failed to build residuals kernel - check GPU device compatibility")?;
 
-        let atomic_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl").unwrap();
-        let mapped_residual_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/mapped_residual.cl").unwrap();
+        let atomic_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl")
+            .context("Failed to read atomic operations kernel source file")?;
+        let mapped_residual_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/mapped_residual.cl")
+            .context("Failed to read mapped residual kernel source file")?;
         let mapped_residuals_program = Program::builder()
             .src(format!("{atomic_src}\n{mapped_residual_src}"))
             .build(context)
-            .unwrap();
+            .context("Failed to compile mapped residuals kernel for GPU device")?;
 
         let reset_mapped_residual_kernel = Kernel::builder()
             .program(&mapped_residuals_program)
@@ -83,9 +84,10 @@ impl DerivationKernel {
             .arg(&derivatives.mapped_residuals)
             .arg(number_of_states)
             .build()
-            .unwrap();
+            .context("Failed to build reset mapped residuals kernel")?;
 
-        let max_size = device.max_wg_size().unwrap();
+        let max_size = device.max_wg_size()
+            .context("Failed to query GPU device maximum work group size")?;
         let work_group_size = max_size.min(number_of_sensors as usize).next_power_of_two();
         let sensors_work_group_size =
             (number_of_sensors as usize).next_multiple_of(work_group_size) as i32;
@@ -103,17 +105,17 @@ impl DerivationKernel {
             .arg(number_of_states)
             .arg(number_of_sensors)
             .build()
-            .unwrap();
+            .context("Failed to build mapped residuals kernel - check work group size compatibility")?;
 
-        let maximum_regularization_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/maximum_regularization.cl")
-                .unwrap();
+        let maximum_regularization_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/maximum_regularization.cl")
+            .context("Failed to read maximum regularization kernel source file")?;
         let maximum_regularization_program = Program::builder()
             .src(format!("{atomic_src}\n{maximum_regularization_src}"))
             .build(context)
-            .unwrap();
+            .context("Failed to compile maximum regularization kernel for GPU device")?;
 
-        let max_size = device.max_wg_size().unwrap();
+        let max_size = device.max_wg_size()
+            .context("Failed to query GPU device maximum work group size for regularization")?;
         let work_group_size = max_size.min(number_of_voxels as usize).next_power_of_two();
         let voxel_work_group_size =
             (number_of_voxels as usize).next_multiple_of(work_group_size) as i32;
@@ -132,16 +134,16 @@ impl DerivationKernel {
             .arg(config.maximum_regularization_threshold)
             .arg(number_of_voxels)
             .build()
-            .unwrap();
+            .context("Failed to build maximum regularization kernel - check work group configuration")?;
 
         let derivatives_gains_src = std::fs::read_to_string(
             "src/core/algorithm/gpu/kernels/calculate_derivatives_gains.cl",
         )
-        .unwrap();
+        .context("Failed to read derivatives gains kernel source file")?;
         let derivatives_gains_program = Program::builder()
             .src(derivatives_gains_src)
             .build(context)
-            .unwrap();
+            .context("Failed to compile derivatives gains kernel for GPU device")?;
 
         let gains_kernel = Kernel::builder()
             .program(&derivatives_gains_program)
@@ -156,16 +158,16 @@ impl DerivationKernel {
             .arg(config.maximum_regularization_strength)
             .arg(number_of_states)
             .build()
-            .unwrap();
+            .context("Failed to build derivatives gains kernel")?;
 
         let derivatives_coefs_src = std::fs::read_to_string(
             "src/core/algorithm/gpu/kernels/calculate_derivatives_coefs.cl",
         )
-        .unwrap();
+        .context("Failed to read derivatives coefficients kernel source file")?;
         let derivatives_coefs_program = Program::builder()
             .src(derivatives_coefs_src)
             .build(context)
-            .unwrap();
+            .context("Failed to compile derivatives coefficients kernel for GPU device")?;
 
         let fir_kernel = Kernel::builder()
             .program(&derivatives_coefs_program)
@@ -180,7 +182,7 @@ impl DerivationKernel {
             .arg(&estimations.step)
             .arg(number_of_states)
             .build()
-            .unwrap();
+            .context("Failed to build FIR derivatives coefficients kernel")?;
 
         let iir_kernel = Kernel::builder()
             .program(&derivatives_coefs_program)
@@ -194,7 +196,7 @@ impl DerivationKernel {
             .arg(&estimations.step)
             .arg(number_of_states)
             .build()
-            .unwrap();
+            .context("Failed to build IIR derivatives coefficients kernel")?;
 
         let coefs_kernel = Kernel::builder()
             .program(&derivatives_coefs_program)
@@ -213,9 +215,9 @@ impl DerivationKernel {
             .arg(config.mse_strength / number_of_sensors as f32)
             .arg(number_of_states)
             .build()
-            .unwrap();
+            .context("Failed to build combined coefficients kernel - check local work size compatibility")?;
 
-        Self {
+        Ok(Self {
             residual_kernel,
             reset_mapped_residual_kernel,
             mapped_residual_kernel,
@@ -226,31 +228,39 @@ impl DerivationKernel {
             coefs_kernel,
             freeze_gains: config.freeze_gains,
             freeze_delays: config.freeze_delays,
-        }
+        })
     }
 
-    #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn execute(&self) {
+    pub fn execute(&self) -> Result<()> {
         // TODO: Optimize prediction by running multiple beats in parallel using async kernel execution.
         // This would allow better GPU utilization by processing independent beats simultaneously.
         // See prediction.rs for implementation details.
         unsafe {
-            self.residual_kernel.enq().unwrap();
+            self.residual_kernel.enq()
+                .context("Failed to execute residuals kernel on GPU")?;
             if !(self.freeze_gains && self.freeze_delays) {
-                self.reset_mapped_residual_kernel.enq().unwrap();
-                self.mapped_residual_kernel.enq().unwrap();
+                self.reset_mapped_residual_kernel.enq()
+                    .context("Failed to execute reset mapped residuals kernel on GPU")?;
+                self.mapped_residual_kernel.enq()
+                    .context("Failed to execute mapped residuals kernel on GPU")?;
             }
-            self.maximum_regularization_kernel.enq().unwrap();
+            self.maximum_regularization_kernel.enq()
+                .context("Failed to execute maximum regularization kernel on GPU")?;
             if !self.freeze_gains {
-                self.gains_kernel.enq().unwrap();
+                self.gains_kernel.enq()
+                    .context("Failed to execute gains derivation kernel on GPU")?;
             }
             if !self.freeze_delays {
-                self.fir_kernel.enq().unwrap();
-                self.iir_kernel.enq().unwrap();
-                self.coefs_kernel.enq().unwrap();
+                self.fir_kernel.enq()
+                    .context("Failed to execute FIR coefficients derivation kernel on GPU")?;
+                self.iir_kernel.enq()
+                    .context("Failed to execute IIR coefficients derivation kernel on GPU")?;
+                self.coefs_kernel.enq()
+                    .context("Failed to execute combined coefficients derivation kernel on GPU")?;
             }
         }
+        Ok(())
     }
 
     pub const fn set_freeze_delays(&mut self, value: bool) {
@@ -265,6 +275,7 @@ impl DerivationKernel {
 mod tests {
 
     use approx::assert_relative_eq;
+    use anyhow::Context;
     use ocl::{Buffer, Kernel, MemFlags, Program};
 
     use crate::core::{
@@ -335,23 +346,25 @@ mod tests {
             results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("Model not available for derivation test")?
                 .spatial_description
                 .sensors
                 .count() as i32,
             results_cpu.estimations.measurements.num_steps() as i32,
             &config.algorithm,
-        );
+        )?;
 
         let mut results_from_gpu = results_cpu.clone();
         // comparison loop
         for step in 0..results_cpu.estimations.measurements.num_steps() {
             calculate_system_prediction(
                 &mut results_cpu.estimations,
-                &results_cpu.model.as_ref().unwrap().functional_description,
+                &results_cpu.model.as_ref()
+                    .context("Model not available for system prediction test")?
+                    .functional_description,
                 0,
                 step,
-            );
+            )?;
             calculate_residuals(&mut results_cpu.estimations, &data, 0, step);
             calculate_mapped_residuals(
                 &mut results_cpu.derivatives.mapped_residuals,
@@ -359,7 +372,7 @@ mod tests {
                 &results_cpu
                     .model
                     .as_ref()
-                    .unwrap()
+                    .context("Model not available for mapped residuals test")?
                     .functional_description
                     .measurement_matrix
                     .at_beat(0),
@@ -381,31 +394,36 @@ mod tests {
             calculate_derivatives_coefs_textbook(
                 &mut results_cpu.derivatives,
                 &results_cpu.estimations,
-                &results_cpu.model.as_ref().unwrap().functional_description,
+                &results_cpu.model.as_ref()
+                    .context("Model not available for derivatives coefficients test")?
+                    .functional_description,
                 step,
                 &config.algorithm,
-            );
+            )?;
             results_gpu
                 .estimations
                 .step
                 .write([step as i32].as_slice())
                 .enq()
-                .unwrap();
+                .context("Failed to write step data to GPU buffer")?;
             prediction_kernel.execute();
-            derivation_kernel.execute();
+            derivation_kernel.execute()?;
             results_from_gpu.update_from_gpu(&results_gpu)?;
             assert_relative_eq!(
-                results_cpu.estimations.residuals.as_slice().unwrap(),
-                results_from_gpu.estimations.residuals.as_slice().unwrap(),
+                results_cpu.estimations.residuals.as_slice()
+                    .context("Failed to convert CPU residuals to slice for comparison")?,
+                results_from_gpu.estimations.residuals.as_slice()
+                    .context("Failed to convert GPU residuals to slice for comparison")?,
                 epsilon = 1e-6
             );
             assert_relative_eq!(
-                results_cpu.derivatives.mapped_residuals.as_slice().unwrap(),
+                results_cpu.derivatives.mapped_residuals.as_slice()
+                    .context("Failed to convert CPU mapped residuals to slice for comparison")?,
                 results_from_gpu
                     .derivatives
                     .mapped_residuals
                     .as_slice()
-                    .unwrap(),
+                    .context("Failed to convert GPU mapped residuals to slice for comparison")?,
                 epsilon = 1e-5
             );
             assert_relative_eq!(
@@ -413,12 +431,12 @@ mod tests {
                     .derivatives
                     .maximum_regularization
                     .as_slice()
-                    .unwrap(),
+                    .context("Failed to convert CPU maximum regularization to slice for comparison")?,
                 results_from_gpu
                     .derivatives
                     .maximum_regularization
                     .as_slice()
-                    .unwrap(),
+                    .context("Failed to convert GPU maximum regularization to slice for comparison")?,
                 epsilon = 1e-5
             );
             assert_relative_eq!(
@@ -427,23 +445,31 @@ mod tests {
                 max_relative = 0.01
             );
             assert_relative_eq!(
-                results_cpu.derivatives.gains.as_slice().unwrap(),
-                results_from_gpu.derivatives.gains.as_slice().unwrap(),
+                results_cpu.derivatives.gains.as_slice()
+                    .context("Failed to convert CPU gains to slice for comparison")?,
+                results_from_gpu.derivatives.gains.as_slice()
+                    .context("Failed to convert GPU gains to slice for comparison")?,
                 epsilon = 1e-5
             );
             assert_relative_eq!(
-                results_cpu.derivatives.coefs_iir.as_slice().unwrap(),
-                results_from_gpu.derivatives.coefs_iir.as_slice().unwrap(),
+                results_cpu.derivatives.coefs_iir.as_slice()
+                    .context("Failed to convert CPU IIR coefficients to slice for comparison")?,
+                results_from_gpu.derivatives.coefs_iir.as_slice()
+                    .context("Failed to convert GPU IIR coefficients to slice for comparison")?,
                 epsilon = 1e-6
             );
             assert_relative_eq!(
-                results_cpu.derivatives.coefs_fir.as_slice().unwrap()[..1000],
-                results_from_gpu.derivatives.coefs_fir.as_slice().unwrap()[..1000],
+                &results_cpu.derivatives.coefs_fir.as_slice()
+                    .context("Failed to convert CPU FIR coefficients to slice for comparison")?[..1000],
+                &results_from_gpu.derivatives.coefs_fir.as_slice()
+                    .context("Failed to convert GPU FIR coefficients to slice for comparison")?[..1000],
                 epsilon = 1e-6
             );
             assert_relative_eq!(
-                results_cpu.derivatives.coefs.as_slice().unwrap(),
-                results_from_gpu.derivatives.coefs.as_slice().unwrap(),
+                results_cpu.derivatives.coefs.as_slice()
+                    .context("Failed to convert CPU coefficients to slice for comparison")?,
+                results_from_gpu.derivatives.coefs.as_slice()
+                    .context("Failed to convert GPU coefficients to slice for comparison")?,
                 epsilon = 1e-6
             );
         }
@@ -482,7 +508,7 @@ mod tests {
             .flags(MemFlags::new().write_only())
             .len(num_states)
             .build()
-            .unwrap();
+            .context("Failed to create mapped residuals buffer on GPU")?;
 
         let measurement_matrix_buffer = Buffer::builder()
             .queue(gpu.queue.clone())
@@ -490,7 +516,7 @@ mod tests {
             .copy_host_slice(&measurement_matrix)
             .len(measurement_matrix.len())
             .build()
-            .unwrap();
+            .context("Failed to create measurement matrix buffer on GPU")?;
 
         let residuals_buffer = Buffer::builder()
             .queue(gpu.queue.clone())
@@ -498,7 +524,7 @@ mod tests {
             .copy_host_slice(&residuals)
             .len(residuals.len())
             .build()
-            .unwrap();
+            .context("Failed to create residuals buffer on GPU")?;
 
         let beat_buffer = Buffer::builder()
             .queue(gpu.queue.clone())
@@ -506,19 +532,20 @@ mod tests {
             .len(beat.len())
             .copy_host_slice(&beat)
             .build()
-            .unwrap();
+            .context("Failed to create beat buffer on GPU")?;
 
         // Set up kernel
-        let atomic_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl").unwrap();
-        let mapped_residual_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/mapped_residual.cl").unwrap();
+        let atomic_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl")
+            .context("Failed to read atomic kernel source for test")?;
+        let mapped_residual_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/mapped_residual.cl")
+            .context("Failed to read mapped residual kernel source for test")?;
         let program = Program::builder()
             .src(format!("{atomic_src}\n{mapped_residual_src}"))
             .build(&gpu.context)
-            .unwrap();
+            .context("Failed to build test kernel program")?;
 
-        let max_size = gpu.device.max_wg_size().unwrap();
+        let max_size = gpu.device.max_wg_size()
+            .context("Failed to query GPU device work group size for test")?;
         let work_group_size = max_size.min(num_sensors as usize);
         let sensors_work_group_size = (work_group_size
             * (num_sensors as f32 / work_group_size as f32).ceil() as usize)
@@ -537,18 +564,20 @@ mod tests {
             .arg(num_states)
             .arg(num_sensors)
             .build()
-            .unwrap();
+            .context("Failed to build test kernel")?;
 
         // Execute and verify
         let mut result = vec![0.0f32; num_states as usize];
         mapped_residuals_buffer
             .write(&vec![0.0f32; num_states as usize])
             .enq()
-            .unwrap();
+            .context("Failed to write initial data to GPU buffer")?;
         unsafe {
-            kernel.enq().unwrap();
+            kernel.enq()
+                .context("Failed to execute test kernel on GPU")?;
         }
-        mapped_residuals_buffer.read(&mut result).enq().unwrap();
+        mapped_residuals_buffer.read(&mut result).enq()
+            .context("Failed to read test results from GPU buffer")?;
 
         // Calculate expected result
         let expected = [

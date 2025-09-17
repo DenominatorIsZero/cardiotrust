@@ -103,6 +103,7 @@ impl UpdateKernel {
 mod tests {
 
     use approx::assert_relative_eq;
+    use anyhow::Context;
 
     use super::UpdateKernel;
     use crate::core::{
@@ -176,13 +177,13 @@ mod tests {
             results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("Model not available for update derivation test")?
                 .spatial_description
                 .sensors
                 .count() as i32,
             results_cpu.estimations.measurements.num_steps() as i32,
             &config.algorithm,
-        );
+        )?;
 
         let update_kernel = UpdateKernel::new(
             &gpu,
@@ -242,7 +243,7 @@ mod tests {
                 .enq()
                 .unwrap();
             prediction_kernel.execute();
-            derivation_kernel.execute();
+            derivation_kernel.execute()?;
         }
         let batch_size = results_cpu.estimations.measurements.num_steps();
         update_gains_sgd(

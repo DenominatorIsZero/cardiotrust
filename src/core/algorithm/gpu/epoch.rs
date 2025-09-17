@@ -1,3 +1,4 @@
+use anyhow::Result;
 use ocl::Buffer;
 
 use super::{
@@ -18,14 +19,12 @@ pub struct EpochKernel {
 
 impl EpochKernel {
     #[allow(
-        clippy::missing_panics_doc,
         clippy::cast_sign_loss,
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
         clippy::cast_precision_loss,
         clippy::too_many_lines
     )]
-    #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(
         gpu: &GPU,
@@ -35,7 +34,7 @@ impl EpochKernel {
         number_of_states: i32,
         number_of_sensors: i32,
         number_of_steps: i32,
-    ) -> Self {
+    ) -> Result<Self> {
         let reset_kernel = ResetKernel::new(
             gpu,
             &results.estimations,
@@ -63,7 +62,7 @@ impl EpochKernel {
             number_of_sensors,
             number_of_steps,
             config,
-        );
+        )?;
         let update_kernel = UpdateKernel::new(
             gpu,
             &results.derivatives,
@@ -82,7 +81,7 @@ impl EpochKernel {
             config,
         );
         let helper_kernel = HelperKernel::new(gpu, &results.estimations);
-        Self {
+        Ok(Self {
             reset_kernel,
             prediction_kernel,
             derivation_kernel,
@@ -90,12 +89,11 @@ impl EpochKernel {
             metrics_kernel,
             helper_kernel,
             number_of_steps,
-        }
+        })
     }
 
-    #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn execute(&self) {
+    pub fn execute(&self) -> Result<()> {
         // TODO: Optimize prediction by running multiple beats in parallel using async kernel execution.
         // This would allow better GPU utilization by processing independent beats simultaneously.
         // See prediction.rs for implementation details.
@@ -108,13 +106,14 @@ impl EpochKernel {
 
         for _ in 0..self.number_of_steps {
             self.prediction_kernel.execute();
-            self.derivation_kernel.execute();
+            self.derivation_kernel.execute()?;
             self.metrics_kernel.execute_step();
             self.helper_kernel.increase_step();
         }
         self.update_kernel.execute();
         self.metrics_kernel.execute_batch();
         self.helper_kernel.increase_epoch();
+        Ok(())
     }
     pub const fn set_freeze_delays(&mut self, value: bool) {
         self.derivation_kernel.set_freeze_delays(value);
@@ -129,6 +128,7 @@ impl EpochKernel {
 #[cfg(test)]
 mod tests {
     use approx::assert_relative_eq;
+    use anyhow::Context;
     use ndarray_stats::QuantileExt;
 
     use crate::core::{
@@ -162,7 +162,7 @@ mod tests {
         let number_of_sensors = results_cpu
             .model
             .as_ref()
-            .unwrap()
+            .context("Model not available for epoch test")?
             .spatial_description
             .sensors
             .count();
@@ -174,14 +174,14 @@ mod tests {
             number_of_states as i32,
             number_of_sensors as i32,
             results_cpu.estimations.measurements.num_steps() as i32,
-        );
+        )?;
         let mut results_from_gpu = results_cpu.clone();
 
         let mut batch_index = 0;
         for epoch in 0..config.algorithm.epochs {
             println!("Epoch: {epoch}");
             run_epoch(&mut results_cpu, &mut batch_index, &data, &config.algorithm);
-            epoch_kernel.execute();
+            epoch_kernel.execute()?;
             results_from_gpu.update_from_gpu(&results_gpu)?;
             // Model Parameters
             let delta_states = &*results_cpu.estimations.system_states
@@ -220,16 +220,16 @@ mod tests {
                 delta_loss_mr.min_skipnan()
             );
             assert_relative_eq!(
-                results_cpu
+                &results_cpu
                     .metrics
                     .loss_maximum_regularization
                     .as_slice()
-                    .unwrap()[..100],
-                results_from_gpu
+                    .context("Failed to convert CPU loss regularization to slice for comparison")?[..100],
+                &results_from_gpu
                     .metrics
                     .loss_maximum_regularization
                     .as_slice()
-                    .unwrap()[..100],
+                    .context("Failed to convert GPU loss regularization to slice for comparison")?[..100],
                 epsilon = 1e-5
             );
             let delta_loss = &*results_cpu.metrics.loss - &*results_from_gpu.metrics.loss;
@@ -241,14 +241,14 @@ mod tests {
             let delta_gains = &*results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("CPU model not available for gains comparison")?
                 .functional_description
                 .ap_params
                 .gains
                 - &*results_from_gpu
                     .model
                     .as_ref()
-                    .unwrap()
+                    .context("GPU model not available for gains comparison")?
                     .functional_description
                     .ap_params
                     .gains;
@@ -260,14 +260,14 @@ mod tests {
             let delta_coefs = &*results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("CPU model not available for coefficients comparison")?
                 .functional_description
                 .ap_params
                 .coefs
                 - &*results_from_gpu
                     .model
                     .as_ref()
-                    .unwrap()
+                    .context("GPU model not available for coefficients comparison")?
                     .functional_description
                     .ap_params
                     .coefs;
@@ -279,21 +279,23 @@ mod tests {
             let delta_delays = &*results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("CPU model not available for delays comparison")?
                 .functional_description
                 .ap_params
                 .delays
                 - &*results_from_gpu
                     .model
                     .as_ref()
-                    .unwrap()
+                    .context("GPU model not available for delays comparison")?
                     .functional_description
                     .ap_params
                     .delays;
             println!(
                 "delays: delta_max {}, delta_min {}",
-                delta_delays.max().unwrap(),
-                delta_delays.min().unwrap()
+                delta_delays.max()
+                    .context("Failed to calculate maximum delay difference")?,
+                delta_delays.min()
+                    .context("Failed to calculate minimum delay difference")?
             );
         }
         let delta_loss = &*results_cpu.metrics.loss - &*results_from_gpu.metrics.loss;
@@ -303,8 +305,10 @@ mod tests {
             delta_loss.min_skipnan()
         );
         assert_relative_eq!(
-            results_cpu.metrics.loss_batch.as_slice().unwrap(),
-            results_from_gpu.metrics.loss_batch.as_slice().unwrap(),
+            results_cpu.metrics.loss_batch.as_slice()
+                .context("Failed to convert CPU loss batch to slice for final comparison")?,
+            results_from_gpu.metrics.loss_batch.as_slice()
+                .context("Failed to convert GPU loss batch to slice for final comparison")?,
             epsilon = 1e-5
         );
         Ok(())
