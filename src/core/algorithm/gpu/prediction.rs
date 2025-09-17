@@ -1,3 +1,4 @@
+use anyhow::{Context as AnyhowContext, Result};
 use ocl::{Kernel, Program};
 
 use super::GPU;
@@ -12,12 +13,10 @@ pub struct PredictionKernel {
 
 impl PredictionKernel {
     #[allow(
-        clippy::missing_panics_doc,
         clippy::cast_sign_loss,
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap
     )]
-    #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(
         gpu: &GPU,
@@ -26,19 +25,21 @@ impl PredictionKernel {
         number_of_states: i32,
         number_of_sensors: i32,
         number_of_steps: i32,
-    ) -> Self {
+    ) -> Result<Self> {
         let context = &gpu.context;
         let queue = &gpu.queue;
         let device = &gpu.device;
 
         let atomic_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl").unwrap();
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl")
+                .context("Failed to read atomic kernel source file")?;
         let innovate_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/innovate.cl").unwrap();
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/innovate.cl")
+                .context("Failed to read innovate kernel source file")?;
         let innovate_program = Program::builder()
             .src(format!("{atomic_src}\n{innovate_src}"))
             .build(context)
-            .unwrap();
+            .context("Failed to build OpenCL program for innovate kernels")?;
 
         let innovate_kernel = Kernel::builder()
             .program(&innovate_program)
@@ -57,14 +58,15 @@ impl PredictionKernel {
             .arg_local::<f32>(128)
             .arg_named("num_states", number_of_states)
             .build()
-            .unwrap();
+            .context("Failed to build innovate system states kernel")?;
 
         let add_control_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/add_control.cl").unwrap();
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/add_control.cl")
+                .context("Failed to read add_control kernel source file")?;
         let add_control_program = Program::builder()
             .src(add_control_src)
             .build(context)
-            .unwrap();
+            .context("Failed to build OpenCL program for add_control kernel")?;
         let add_control_kernel = Kernel::builder()
             .program(&add_control_program)
             .name("add_control_function")
@@ -82,20 +84,21 @@ impl PredictionKernel {
             )
             .arg_named("num_states", number_of_states)
             .build()
-            .unwrap();
+            .context("Failed to build add control function kernel")?;
 
-        let max_size = device.max_wg_size().unwrap();
+        let max_size = device.max_wg_size()
+            .context("Failed to query GPU device maximum work group size")?;
         let work_group_size = max_size.min(number_of_states as usize).next_power_of_two();
         let states_work_group_size =
             (number_of_states as usize).next_multiple_of(work_group_size) as i32;
 
         let predict_measurements_src =
             std::fs::read_to_string("src/core/algorithm/gpu/kernels/predict_measurements_local.cl")
-                .unwrap();
+                .context("Failed to read predict_measurements_local kernel source file")?;
         let predict_measurements_program = Program::builder()
             .src(format!("{atomic_src}\n{predict_measurements_src}"))
             .build(context)
-            .unwrap();
+            .context("Failed to build OpenCL program for predict_measurements kernel")?;
         let predict_measurements_kernel = Kernel::builder()
             .program(&predict_measurements_program)
             .name("predict_measurements")
@@ -112,26 +115,29 @@ impl PredictionKernel {
             .arg_named("num_states", number_of_states)
             .arg_named("num_steps", number_of_steps)
             .build()
-            .unwrap();
+            .context("Failed to build predict measurements kernel")?;
 
-        Self {
+        Ok(Self {
             innovate_kernel,
             add_control_kernel,
             predict_measurements_kernel,
-        }
+        })
     }
 
-    #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn execute(&self) {
+    pub fn execute(&self) -> Result<()> {
         // TODO: Optimize prediction by running multiple beats in parallel using async kernel execution.
         // This would allow better GPU utilization by processing independent beats simultaneously.
         // See prediction.rs for implementation details.
         unsafe {
-            self.innovate_kernel.enq().unwrap();
-            self.add_control_kernel.enq().unwrap();
-            self.predict_measurements_kernel.enq().unwrap();
+            self.innovate_kernel.enq()
+                .context("Failed to execute innovate system states kernel")?;
+            self.add_control_kernel.enq()
+                .context("Failed to execute add control function kernel")?;
+            self.predict_measurements_kernel.enq()
+                .context("Failed to execute predict measurements kernel")?;
         }
+        Ok(())
     }
 }
 
@@ -177,7 +183,7 @@ mod tests {
                 .sensors
                 .count() as i32,
             results_cpu.estimations.measurements.num_steps() as i32,
-        );
+        )?;
 
         let mut results_from_gpu = results_cpu.clone();
         // comparison loop
@@ -193,8 +199,8 @@ mod tests {
                 .step
                 .write([step as i32].as_slice())
                 .enq()
-                .unwrap();
-            prediction_kernel.execute();
+                .context("Failed to write step value to GPU buffer")?;
+            prediction_kernel.execute()?;
             results_from_gpu.update_from_gpu(&results_gpu)?;
             let dif = &*results_cpu.estimations.ap_outputs_now
                 - &*results_from_gpu.estimations.ap_outputs_now;

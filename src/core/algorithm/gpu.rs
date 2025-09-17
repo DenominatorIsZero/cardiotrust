@@ -31,11 +31,11 @@ impl GPU {
     pub fn new() -> Result<Self> {
         let platform = Platform::default();
         let device = Device::first(platform)
-            .with_context(|| "Failed to find first GPU device - no OpenCL devices available")?;
+            .context("Failed to find first GPU device - no OpenCL devices available")?;
 
         let device_type = device
             .info(ocl::core::DeviceInfo::Type)
-            .with_context(|| "Failed to query GPU device type information")?;
+            .context("Failed to query GPU device type information")?;
 
         if device_type.to_string() != ocl::core::DeviceInfoResult::Type(ocl::core::DeviceType::GPU).to_string() {
             return Err(anyhow::anyhow!(
@@ -48,10 +48,10 @@ impl GPU {
             .platform(platform)
             .devices(device)
             .build()
-            .with_context(|| "Failed to create OpenCL context for GPU device")?;
+            .context("Failed to create OpenCL context for GPU device")?;
 
         let queue = Queue::new(&context, device, None)
-            .with_context(|| "Failed to create OpenCL command queue")?;
+            .context("Failed to create OpenCL command queue")?;
 
         Ok(Self {
             queue,
@@ -75,14 +75,14 @@ mod tests {
         // Setup OpenCL
         let platform = Platform::default();
         let device = Device::first(platform)
-            .with_context(|| "Failed to find OpenCL device for atomic test")?;
+            .context("Failed to find OpenCL device for atomic test")?;
         let context = Context::builder()
             .platform(platform)
             .devices(device)
             .build()
-            .with_context(|| "Failed to create OpenCL context for atomic test")?;
+            .context("Failed to create OpenCL context for atomic test")?;
         let queue = Queue::new(&context, device, None)
-            .with_context(|| "Failed to create OpenCL queue for atomic test")?;
+            .context("Failed to create OpenCL queue for atomic test")?;
 
         // Create test buffer
         let initial_value = vec![1.0f32];
@@ -92,11 +92,11 @@ mod tests {
             .len(1)
             .copy_host_slice(&initial_value)
             .build()
-            .with_context(|| "Failed to create test buffer for atomic operations")?;
+            .context("Failed to create test buffer for atomic operations")?;
 
         // Load and build kernel
         let kernel_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl")
-            .with_context(|| "Failed to read atomic kernel source file")?;
+            .context("Failed to read atomic kernel source file")?;
         let test_src = r"
             __kernel void test_atomic_add(__global float* value) {
                 atomic_add_float(value, 1.0f);
@@ -106,7 +106,7 @@ mod tests {
         let program = Program::builder()
             .src(format!("{kernel_src}\n{test_src}"))
             .build(&context)
-            .with_context(|| "Failed to build OpenCL program for atomic test")?;
+            .context("Failed to build OpenCL program for atomic test")?;
 
         let kernel = Kernel::builder()
             .program(&program)
@@ -115,17 +115,17 @@ mod tests {
             .global_work_size(100) // Run 100 parallel additions
             .arg(&buffer)
             .build()
-            .with_context(|| "Failed to build atomic test kernel")?;
+            .context("Failed to build atomic test kernel")?;
 
         // Run kernel
         unsafe {
             kernel.enq()
-                .with_context(|| "Failed to execute atomic test kernel")?;
+                .context("Failed to execute atomic test kernel")?;
         }
         // Verify result
         let mut result = vec![0.0f32];
         buffer.read(&mut result).enq()
-            .with_context(|| "Failed to read atomic test results from GPU buffer")?;
+            .context("Failed to read atomic test results from GPU buffer")?;
 
         assert_relative_eq!(result[0], 101.0, epsilon = 1e-6); // Initial 1.0 + 100 additions of 1.0
         Ok(())

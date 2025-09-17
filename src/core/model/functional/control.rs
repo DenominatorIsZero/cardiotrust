@@ -162,7 +162,7 @@ impl ControlFunction {
             config::model::ControlFunction::Ohara => {
                 let mut control_function_raw: Array1<f32> =
                     read_npy("assets/control_function_ohara.npy")
-                        .with_context(|| "Failed to load O'Hara control function from assets/control_function_ohara.npy")?;
+                        .context("Failed to load O'Hara control function from assets/control_function_ohara.npy")?;
 
                 let from_sample_rate_hz = 2000.0;
 

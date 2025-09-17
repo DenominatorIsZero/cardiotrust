@@ -59,7 +59,7 @@ impl Voxels {
         debug!("Creating voxels from mri model config");
 
         let mri_config = config.mri.as_ref()
-            .with_context(|| "MRI configuration is required but not provided")?;
+            .context("MRI configuration is required but not provided")?;
         let mri_data = load_from_nii(&mri_config.path)?;
 
         let positions = VoxelPositions::from_mri_model_config(config, &mri_data);

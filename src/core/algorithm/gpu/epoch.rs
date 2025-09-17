@@ -51,7 +51,7 @@ impl EpochKernel {
             number_of_states,
             number_of_sensors,
             number_of_steps,
-        );
+        )?;
         let derivation_kernel = DerivationKernel::new(
             gpu,
             &results.estimations,
@@ -79,8 +79,8 @@ impl EpochKernel {
             number_of_sensors,
             number_of_steps,
             config,
-        );
-        let helper_kernel = HelperKernel::new(gpu, &results.estimations);
+        )?;
+        let helper_kernel = HelperKernel::new(gpu, &results.estimations)?;
         Ok(Self {
             reset_kernel,
             prediction_kernel,
@@ -105,14 +105,14 @@ impl EpochKernel {
         // TODO: Add support for multiple beats.
 
         for _ in 0..self.number_of_steps {
-            self.prediction_kernel.execute();
+            self.prediction_kernel.execute()?;
             self.derivation_kernel.execute()?;
-            self.metrics_kernel.execute_step();
-            self.helper_kernel.increase_step();
+            self.metrics_kernel.execute_step()?;
+            self.helper_kernel.increase_step()?;
         }
         self.update_kernel.execute();
-        self.metrics_kernel.execute_batch();
-        self.helper_kernel.increase_epoch();
+        self.metrics_kernel.execute_batch()?;
+        self.helper_kernel.increase_epoch()?;
         Ok(())
     }
     pub const fn set_freeze_delays(&mut self, value: bool) {

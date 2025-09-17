@@ -1,3 +1,4 @@
+use anyhow::{Context as AnyhowContext, Result};
 use ocl::{Kernel, Program};
 
 use super::GPU;
@@ -10,22 +11,22 @@ pub struct HelperKernel {
 
 impl HelperKernel {
     #[allow(
-        clippy::missing_panics_doc,
         clippy::cast_sign_loss,
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
         clippy::cast_precision_loss,
         clippy::too_many_lines
     )]
-    #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn new(gpu: &GPU, estimations: &EstimationsGPU) -> Self {
+    pub fn new(gpu: &GPU, estimations: &EstimationsGPU) -> Result<Self> {
         let context = &gpu.context;
         let queue = &gpu.queue;
 
         let helper_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/helper.cl").unwrap();
-        let helper_program = Program::builder().src(helper_src).build(context).unwrap();
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/helper.cl")
+                .context("Failed to read helper kernel source file")?;
+        let helper_program = Program::builder().src(helper_src).build(context)
+            .context("Failed to build OpenCL program for helper kernels")?;
         let step_kernel = Kernel::builder()
             .program(&helper_program)
             .name("increase_int")
@@ -33,7 +34,7 @@ impl HelperKernel {
             .global_work_size(1)
             .arg(&estimations.step)
             .build()
-            .unwrap();
+            .context("Failed to build step increment kernel")?;
         let epoch_kernel = Kernel::builder()
             .program(&helper_program)
             .name("increase_int")
@@ -41,26 +42,28 @@ impl HelperKernel {
             .global_work_size(1)
             .arg(&estimations.epoch)
             .build()
-            .unwrap();
+            .context("Failed to build epoch increment kernel")?;
 
-        Self {
+        Ok(Self {
             step_kernel,
             epoch_kernel,
-        }
+        })
     }
 
-    #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn increase_step(&self) {
+    pub fn increase_step(&self) -> Result<()> {
         unsafe {
-            self.step_kernel.enq().unwrap();
+            self.step_kernel.enq()
+                .context("Failed to execute step increment kernel")?;
         }
+        Ok(())
     }
-    #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn increase_epoch(&self) {
+    pub fn increase_epoch(&self) -> Result<()> {
         unsafe {
-            self.epoch_kernel.enq().unwrap();
+            self.epoch_kernel.enq()
+                .context("Failed to execute epoch increment kernel")?;
         }
+        Ok(())
     }
 }

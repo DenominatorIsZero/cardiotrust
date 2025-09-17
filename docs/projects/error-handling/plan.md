@@ -59,9 +59,9 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 - [x] `src/core/algorithm/gpu.rs` (13 unwraps)
 - [x] `src/core/algorithm/gpu/derivation.rs` (63 unwraps - critical GPU operations)
 - [x] `src/core/algorithm/gpu/epoch.rs` (13 unwraps)
-- [ ] `src/core/algorithm/gpu/helper.rs` (6 unwraps)
-- [ ] `src/core/algorithm/gpu/metrics.rs` (13 unwraps)
-- [ ] `src/core/algorithm/gpu/prediction.rs` (27 unwraps)
+- [x] `src/core/algorithm/gpu/helper.rs` (6 unwraps)
+- [x] `src/core/algorithm/gpu/metrics.rs` (13 unwraps)
+- [x] `src/core/algorithm/gpu/prediction.rs` (27 unwraps)
 - [ ] `src/core/algorithm/gpu/reset.rs` (22 unwraps)
 - [ ] `src/core/algorithm/gpu/update.rs` (31 unwraps)
 
