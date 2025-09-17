@@ -55,11 +55,16 @@ impl Data {
 
     /// # Panics
     ///
-    /// Panics if simulation is none.
+    /// Saves the data to NumPy files at the given path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any file I/O operation fails.
     #[tracing::instrument(level = "trace")]
-    pub fn save_npy(&self, path: &std::path::Path) {
+    pub fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving data to npy");
-        self.simulation.save_npy(&path.join("simulation"));
+        self.simulation.save_npy(&path.join("simulation"))?;
+        Ok(())
     }
 
     #[allow(dead_code)]

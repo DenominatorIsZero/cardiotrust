@@ -55,8 +55,8 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 - [x] `src/core/algorithm/refinement.rs`
 - [x] `src/core/algorithm/refinement/derivation.rs` (20 unwraps)
 - [x] `src/core/algorithm/refinement/update.rs` (4 unwraps)
-- [ ] `src/core/algorithm/metrics.rs` (25 unwraps)
-- [ ] `src/core/algorithm/gpu.rs` (13 unwraps)
+- [x] `src/core/algorithm/metrics.rs` (25 unwraps)
+- [x] `src/core/algorithm/gpu.rs` (13 unwraps)
 - [ ] `src/core/algorithm/gpu/derivation.rs` (63 unwraps - critical GPU operations)
 - [ ] `src/core/algorithm/gpu/epoch.rs` (13 unwraps)
 - [ ] `src/core/algorithm/gpu/helper.rs` (6 unwraps)

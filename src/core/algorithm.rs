@@ -104,7 +104,7 @@ pub fn calculate_pseudo_inverse(
             step,
         );
     }
-    metrics::calculate_batch(&mut results.metrics, 0);
+    metrics::calculate_batch(&mut results.metrics, 0)?;
     Ok(())
 }
 
@@ -203,7 +203,7 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
                     .update(derivatives, config, num_steps, *n)?;
                 derivatives.reset();
                 *n = 0;
-                metrics::calculate_batch(&mut results.metrics, *batch_index);
+                metrics::calculate_batch(&mut results.metrics, *batch_index)?;
                 *batch_index += 1;
             }
         }
@@ -235,7 +235,7 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
                 .functional_description
                 .ap_params
                 .update(&mut results.derivatives, config, num_steps, n)?;
-            metrics::calculate_batch(&mut results.metrics, *batch_index);
+            metrics::calculate_batch(&mut results.metrics, *batch_index)?;
             *batch_index += 1;
         }
     } else {
@@ -264,7 +264,7 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
             .functional_description
             .ap_params
             .update(&mut results.derivatives, config, num_steps, num_beats)?;
-        metrics::calculate_batch(&mut results.metrics, *batch_index);
+        metrics::calculate_batch(&mut results.metrics, *batch_index)?;
         *batch_index += 1;
     }
     Ok(())

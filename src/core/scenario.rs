@@ -473,18 +473,21 @@ impl Scenario {
 
     /// Saves the scenario data and results as .npy files in the results directory.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if a file or directory cant be created or written to.
+    /// Returns an error if file or directory creation fails or any save operation fails.
     #[tracing::instrument(level = "debug")]
-    pub fn save_npy(&self) {
+    pub fn save_npy(&self) -> Result<()> {
         debug!("Saving scenario data and results as npy");
         let path = Path::new("./results").join(&self.id).join("npy");
-        self.data.as_ref().unwrap().save_npy(&path.join("data"));
+        self.data.as_ref()
+            .context("Scenario data not available for NPY export")?
+            .save_npy(&path.join("data"))?;
         self.results
             .as_ref()
-            .unwrap()
-            .save_npy(&path.join("results"));
+            .context("Scenario results not available for NPY export")?
+            .save_npy(&path.join("results"))?;
+        Ok(())
     }
 }
 
@@ -773,7 +776,7 @@ fn run_model_based_gpu(
 ) -> Result<()> {
     info!("Running model-based algorithm on gpu");
     // move data to gpu
-    let gpu = GPU::new();
+    let gpu = GPU::new()?;
     let results_gpu = results.to_gpu(&gpu.queue)?;
     let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue)?;
     let number_of_states = results

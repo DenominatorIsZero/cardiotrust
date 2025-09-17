@@ -156,7 +156,7 @@ mod tests {
     )]
     fn test_innovate_system_states() -> anyhow::Result<()> {
         let mut results_cpu = Results::get_default();
-        let gpu = GPU::new();
+        let gpu = GPU::new()?;
         let results_gpu = results_cpu.to_gpu(&gpu.queue)?;
         let prediction_kernel = PredictionKernel::new(
             &gpu,

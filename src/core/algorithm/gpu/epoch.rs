@@ -154,7 +154,7 @@ mod tests {
         config.algorithm.freeze_delays = false;
         config.algorithm.learning_rate = 100.0;
         let mut results_cpu = Results::get_default();
-        let gpu = GPU::new();
+        let gpu = GPU::new()?;
         let results_gpu = results_cpu.to_gpu(&gpu.queue)?;
         let data = Data::get_default().expect("Failed to create default data for test");
         let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue)?;

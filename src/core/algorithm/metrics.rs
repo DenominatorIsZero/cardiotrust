@@ -76,32 +76,47 @@ impl Metrics {
 
     /// Saves all metric arrays to .npy files in the given path.
     /// Creates the directory if it does not exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if directory creation fails or any file I/O operation fails.
     #[tracing::instrument(level = "trace")]
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving metrics to npy");
-        fs::create_dir_all(path).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create metrics directory: {}", path.display()))?;
 
-        self.loss.save_npy(path, "loss.npy");
-        self.loss_batch.save_npy(path, "loss_epoch.npy");
+        self.loss.save_npy(path, "loss.npy")?;
+        self.loss_batch.save_npy(path, "loss_epoch.npy")?;
 
-        self.loss_mse.save_npy(path, "loss_mse.npy");
-        self.loss_mse_batch.save_npy(path, "loss_mse_epoch.npy");
+        self.loss_mse.save_npy(path, "loss_mse.npy")?;
+        self.loss_mse_batch.save_npy(path, "loss_mse_epoch.npy")?;
         self.loss_maximum_regularization
-            .save_npy(path, "loss_maximum_regularization.npy");
+            .save_npy(path, "loss_maximum_regularization.npy")?;
         self.loss_maximum_regularization_batch
-            .save_npy(path, "loss_maximum_regularization_epoch.npy");
+            .save_npy(path, "loss_maximum_regularization_epoch.npy")?;
 
-        let writer = BufWriter::new(File::create(path.join("dice.npy")).unwrap());
-        self.dice_score_over_threshold.write_npy(writer).unwrap();
+        let writer = BufWriter::new(File::create(path.join("dice.npy"))
+            .with_context(|| format!("Failed to create dice.npy file in {}", path.display()))?);
+        self.dice_score_over_threshold.write_npy(writer)
+            .context("Failed to write dice score data to NPY file")?;
 
-        let writer = BufWriter::new(File::create(path.join("iou.npy")).unwrap());
-        self.iou_over_threshold.write_npy(writer).unwrap();
+        let writer = BufWriter::new(File::create(path.join("iou.npy"))
+            .with_context(|| format!("Failed to create iou.npy file in {}", path.display()))?);
+        self.iou_over_threshold.write_npy(writer)
+            .context("Failed to write IoU data to NPY file")?;
 
-        let writer = BufWriter::new(File::create(path.join("precision.npy")).unwrap());
-        self.precision_over_threshold.write_npy(writer).unwrap();
+        let writer = BufWriter::new(File::create(path.join("precision.npy"))
+            .with_context(|| format!("Failed to create precision.npy file in {}", path.display()))?);
+        self.precision_over_threshold.write_npy(writer)
+            .context("Failed to write precision data to NPY file")?;
 
-        let writer = BufWriter::new(File::create(path.join("recall.npy")).unwrap());
-        self.recall_over_threshold.write_npy(writer).unwrap();
+        let writer = BufWriter::new(File::create(path.join("recall.npy"))
+            .with_context(|| format!("Failed to create recall.npy file in {}", path.display()))?);
+        self.recall_over_threshold.write_npy(writer)
+            .context("Failed to write recall data to NPY file")?;
+
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -167,16 +182,19 @@ pub fn calculate_step(
 
 /// Calculates epoch metrics by taking the mean of step metrics.
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if any loss array is None.
+/// Returns an error if metric array calculations fail due to invalid data.
 #[tracing::instrument(level = "debug")]
-pub fn calculate_batch(metrics: &mut Metrics, epoch_index: usize) {
+pub fn calculate_batch(metrics: &mut Metrics, epoch_index: usize) -> Result<()> {
     debug!("Calculating metrics for epoch {}", epoch_index);
-    metrics.loss_mse_batch[epoch_index] = metrics.loss_mse.mean().unwrap();
-    metrics.loss_maximum_regularization_batch[epoch_index] =
-        metrics.loss_maximum_regularization.mean().unwrap();
-    metrics.loss_batch[epoch_index] = metrics.loss.mean().unwrap();
+    metrics.loss_mse_batch[epoch_index] = metrics.loss_mse.mean()
+        .context("Failed to calculate mean MSE loss - metric data may be invalid")?;
+    metrics.loss_maximum_regularization_batch[epoch_index] = metrics.loss_maximum_regularization.mean()
+        .context("Failed to calculate mean maximum regularization loss - metric data may be invalid")?;
+    metrics.loss_batch[epoch_index] = metrics.loss.mean()
+        .context("Failed to calculate mean total loss - metric data may be invalid")?;
+    Ok(())
 }
 
 /// Calculates metrics over the full range of thresholds from 0 to 1 by incrementing
@@ -386,21 +404,21 @@ pub fn predict_voxeltype(
     predictions
         .iter_mut()
         .zip(voxel_numbers.iter())
-        .filter(|(_, number)| number.is_some())
         .for_each(|(prediction, number)| {
-            let voxel_index = number.unwrap();
-            abs.indexed_iter_mut().for_each(|(time_index, entry)| {
-                *entry = system_states[[time_index, voxel_index]].abs()
-                    + system_states[[time_index, voxel_index + 1]].abs()
-                    + system_states[[time_index, voxel_index + 2]].abs();
-            });
-            if *abs.max_skipnan() <= threshold {
-                *prediction = VoxelType::Pathological;
-            } else {
-                // just using ventricle here to differentiate the prediction
-                // from pathological and none.
-                // Might make more sense to introduce a 'healthy' type...
-                *prediction = VoxelType::Ventricle;
+            if let Some(voxel_index) = number {
+                abs.indexed_iter_mut().for_each(|(time_index, entry)| {
+                    *entry = system_states[[time_index, *voxel_index]].abs()
+                        + system_states[[time_index, *voxel_index + 1]].abs()
+                        + system_states[[time_index, *voxel_index + 2]].abs();
+                });
+                if *abs.max_skipnan() <= threshold {
+                    *prediction = VoxelType::Pathological;
+                } else {
+                    // just using ventricle here to differentiate the prediction
+                    // from pathological and none.
+                    // Might make more sense to introduce a 'healthy' type...
+                    *prediction = VoxelType::Ventricle;
+                }
             }
         });
 
@@ -422,12 +440,20 @@ impl SampleWiseMetric {
 
     /// Saves the array values to a .npy file at the given path with the given name.
     /// Creates any missing directories in the path if needed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if directory creation fails or file I/O operation fails.
     #[tracing::instrument(level = "trace")]
-    fn save_npy(&self, path: &std::path::Path, name: &str) {
+    fn save_npy(&self, path: &std::path::Path, name: &str) -> Result<()> {
         trace!("Saving ArrayMetricsSample");
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join(name)).unwrap());
-        self.write_npy(writer).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory for sample-wise metrics: {}", path.display()))?;
+        let writer = BufWriter::new(File::create(path.join(name))
+            .with_context(|| format!("Failed to create sample-wise metric file: {}", name))?);
+        self.write_npy(writer)
+            .with_context(|| format!("Failed to write sample-wise metric data to file: {}", name))?;
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
@@ -485,14 +511,22 @@ impl BatchWiseMetric {
         Self(Array1::zeros(number_of_epochs * number_of_batches))
     }
 
-    /// Saves the array values to a .npy file at the given path with the given name.  
+    /// Saves the array values to a .npy file at the given path with the given name.
     /// Creates any missing directories in the path if needed.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if directory creation fails or file I/O operation fails.
     #[tracing::instrument(level = "trace")]
-    fn save_npy(&self, path: &std::path::Path, name: &str) {
+    fn save_npy(&self, path: &std::path::Path, name: &str) -> Result<()> {
         trace!("Saving ArrayMetricsEpoch to npy");
-        fs::create_dir_all(path).unwrap();
-        let writer = BufWriter::new(File::create(path.join(name)).unwrap());
-        self.write_npy(writer).unwrap();
+        fs::create_dir_all(path)
+            .with_context(|| format!("Failed to create directory for batch-wise metrics: {}", path.display()))?;
+        let writer = BufWriter::new(File::create(path.join(name))
+            .with_context(|| format!("Failed to create batch-wise metric file: {}", name))?);
+        self.write_npy(writer)
+            .with_context(|| format!("Failed to write batch-wise metric data to file: {}", name))?;
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]

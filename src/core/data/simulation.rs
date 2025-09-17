@@ -187,12 +187,17 @@ impl Simulation {
 
     /// Saves the simulation data (measurements, system states, model) to `NumPy` files at the given path.
     /// The measurements, system states, and model are saved to separate .npy files.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any file I/O operation fails.
     #[tracing::instrument(level = "trace")]
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving simulation data to npy");
-        self.measurements.save_npy(path);
-        self.system_states.save_npy(path);
-        self.model.save_npy(path);
+        self.measurements.save_npy(path)?;
+        self.system_states.save_npy(path)?;
+        self.model.save_npy(path)?;
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]

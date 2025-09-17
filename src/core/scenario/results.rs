@@ -100,12 +100,19 @@ impl Results {
     }
 
     /// Saves the metrics, estimations, and model as .npy files to the given path.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if any file I/O operation fails.
     #[tracing::instrument(level = "trace")]
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving results to.npy files");
-        self.metrics.save_npy(&path.join("metrics"));
+        self.metrics.save_npy(&path.join("metrics"))?;
         self.estimations.save_npy(&path.join("estimations"));
-        self.model.as_ref().unwrap().save_npy(&path.join("model"));
+        self.model.as_ref()
+            .context("Model not available for saving NPY files")?
+            .save_npy(&path.join("model"))?;
+        Ok(())
     }
 
     #[allow(clippy::missing_panics_doc)]
@@ -377,7 +384,7 @@ mod tests {
     #[allow(clippy::cast_precision_loss, clippy::similar_names)]
     fn test_results_gpu_transfer() -> anyhow::Result<()> {
         let mut results_from_cpu = Results::get_default();
-        let gpu = GPU::new();
+        let gpu = GPU::new()?;
         let results_gpu = results_from_cpu.to_gpu(&gpu.queue)?;
 
         // Create and build the modification kernel

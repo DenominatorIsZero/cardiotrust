@@ -291,7 +291,7 @@ mod tests {
         let mut config = Config::default();
         config.algorithm.freeze_delays = false;
         let mut results_cpu = Results::get_default();
-        let gpu = GPU::new();
+        let gpu = GPU::new()?;
         let results_gpu = results_cpu.to_gpu(&gpu.queue)?;
         let data = Data::get_default().expect("Failed to create default data for test");
         let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue)?;
@@ -459,8 +459,8 @@ mod tests {
         clippy::cast_precision_loss,
         clippy::suboptimal_flops
     )]
-    fn test_mapped_residuals_kernel() {
-        let gpu = GPU::new();
+    fn test_mapped_residuals_kernel() -> anyhow::Result<()> {
+        let gpu = GPU::new()?;
 
         // Simple test dimensions
         let num_states = 2;
@@ -557,5 +557,6 @@ mod tests {
         ];
 
         assert_relative_eq!(&result[..], &expected[..], epsilon = 1e-6);
+        Ok(())
     }
 }
