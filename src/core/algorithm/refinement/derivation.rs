@@ -165,9 +165,9 @@ impl Derivatives {
 /// CAUTION: adds to old values. use "reset" after using the
 /// derivatives to update the parameters.
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if `ap_params` is not set.
+/// Returns an error if algorithm parameters are not properly initialized.
 #[inline]
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn calculate_step_derivatives(
@@ -178,7 +178,7 @@ pub fn calculate_step_derivatives(
     step: usize,
     beat: usize,
     number_of_sensors: usize,
-) {
+) -> Result<()> {
     debug!("Calculating derivatives");
     calculate_mapped_residuals(
         &mut derivates.mapped_residuals,
@@ -212,7 +212,7 @@ pub fn calculate_step_derivatives(
                     functional_description,
                     step,
                     config,
-                );
+                )?;
             }
             APDerivative::Textbook => {
                 calculate_derivatives_coefs_textbook(
@@ -221,10 +221,11 @@ pub fn calculate_step_derivatives(
                     functional_description,
                     step,
                     config,
-                );
+                )?;
             }
         }
     }
+    Ok(())
 }
 
 /// Calculates batch-wise derivatives.
@@ -232,9 +233,9 @@ pub fn calculate_step_derivatives(
 /// CAUTION: adds to old values. use "reset" after using the
 /// derivatives to update the parameters.
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if `ap_params` is not set.
+/// Returns an error if algorithm parameters are not properly initialized.
 #[inline]
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn calculate_batch_derivatives(
@@ -242,15 +243,16 @@ pub fn calculate_batch_derivatives(
     estimations: &Estimations,
     functional_description: &FunctionalDescription,
     config: &Algorithm,
-) {
+) -> Result<()> {
     debug!("Calculating batch derivatives");
     if !config.freeze_delays
         && config
             .smoothness_regularization_strength
             .abs_diff_ne(&0.0, f32::EPSILON)
     {
-        calculate_smoothness_derivatives(derivatives, estimations, functional_description, config);
+        calculate_smoothness_derivatives(derivatives, estimations, functional_description, config)?;
     }
+    Ok(())
 }
 
 #[allow(clippy::cast_precision_loss)]
@@ -260,15 +262,14 @@ pub fn calculate_smoothness_derivatives(
     estimations: &Estimations,
     functional_description: &FunctionalDescription,
     config: &Algorithm,
-) {
+) -> Result<()> {
     debug!("Calculating smoothness derivatives");
     for voxel_index in 0..derivatives.coefs.shape()[0] {
         for output_offset in 0..derivatives.coefs.shape()[1] {
             let average_delay_in_voxel = unsafe { *estimations.average_delays.uget(voxel_index) };
-            if average_delay_in_voxel.is_none() {
+            let Some(average_delay_in_voxel) = average_delay_in_voxel else {
                 continue;
-            }
-            let average_delay_in_voxel = average_delay_in_voxel.unwrap();
+            };
             let mut average_delay_in_neighborhood = average_delay_in_voxel;
             let mut divisor = 1.0;
 
@@ -279,13 +280,13 @@ pub fn calculate_smoothness_derivatives(
                         .output_state_indices
                         .uget((voxel_index * 3, voxel_offset * 3))
                 };
-                if neighbor_index.is_none() {
+                let Some(neighbor_index) = neighbor_index else {
                     continue;
-                }
-                let neighbor_index = neighbor_index.unwrap() / 3;
+                };
+                let neighbor_index = neighbor_index / 3;
                 let delay = unsafe { *estimations.average_delays.uget(neighbor_index) };
-                if delay.is_some() {
-                    average_delay_in_neighborhood += delay.unwrap();
+                if let Some(delay) = delay {
+                    average_delay_in_neighborhood += delay;
                     divisor += 1.0;
                 }
             }
@@ -297,6 +298,7 @@ pub fn calculate_smoothness_derivatives(
             *derivative += config.smoothness_regularization_strength * difference;
         }
     }
+    Ok(())
 }
 /// Calculates the derivatives for the allpass filter gains.
 #[inline]
@@ -326,6 +328,10 @@ pub fn calculate_derivatives_gains(
     }
 }
 /// Calculates the derivatives for the allpass filter coefficients using a simplified form for the AP derivative.
+///
+/// # Errors
+///
+/// Returns an error if algorithm parameters are not properly initialized.
 #[inline]
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace")]
@@ -335,7 +341,7 @@ pub fn calculate_derivatives_coefs_simple(
     functional_description: &FunctionalDescription,
     step: usize,
     config: &Algorithm,
-) {
+) -> Result<()> {
     let mse_scaling = 1.0 / estimations.measurements.num_sensors() as f32 * config.mse_strength;
     for state_index in 0..derivatives.coefs_iir.shape()[0] {
         for offset_index in 0..derivatives.coefs_iir.shape()[1] {
@@ -367,10 +373,12 @@ pub fn calculate_derivatives_coefs_simple(
                         .ap_outputs_last
                         .uget((state_index, offset_index))
                 };
+                let output_state = output_state
+                    .context("Output state index not initialized - algorithm parameter corruption")?;
                 let state_val = unsafe {
                     estimations
                         .system_states
-                        .uget((step - delay, output_state.unwrap()))
+                        .uget((step - delay, output_state))
                 };
                 let ap_gain = unsafe {
                     functional_description
@@ -388,9 +396,14 @@ pub fn calculate_derivatives_coefs_simple(
             }
         }
     }
+    Ok(())
 }
 
 /// Calculates the derivatives for the allpass filter coefficients using the textbook form for the AP derivative.
+///
+/// # Errors
+///
+/// Returns an error if algorithm parameters are not properly initialized.
 #[inline]
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace")]
@@ -400,7 +413,7 @@ pub fn calculate_derivatives_coefs_textbook(
     functional_description: &FunctionalDescription,
     step: usize,
     config: &Algorithm,
-) {
+) -> Result<()> {
     let mse_scaling = 1.0 / estimations.measurements.num_sensors() as f32 * config.mse_strength;
 
     // FIR derivatives calculation
@@ -421,10 +434,12 @@ pub fn calculate_derivatives_coefs_textbook(
             let coef = unsafe { functional_description.ap_params.coefs.uget(coef_index) };
 
             if step >= *delay {
+                let output_state = output_state
+                    .context("Output state index not initialized - algorithm parameter corruption")?;
                 let state_val = unsafe {
                     estimations
                         .system_states
-                        .uget((step - delay, output_state.unwrap()))
+                        .uget((step - delay, output_state))
                 };
                 let derivative_fir =
                     unsafe { derivatives.coefs_fir.uget_mut((state_index, offset_index)) };
@@ -486,6 +501,7 @@ pub fn calculate_derivatives_coefs_textbook(
             );
         }
     }
+    Ok(())
 }
 
 /// Calculates the maximum regularization for the given system states.
@@ -539,13 +555,14 @@ pub fn calculate_mapped_residuals(
 }
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace", skip_all)]
-pub fn calculate_average_delays(average_delays: &mut AverageDelays, ap_params: &APParameters) {
+pub fn calculate_average_delays(average_delays: &mut AverageDelays, ap_params: &APParameters) -> Result<()> {
     for voxel_index in 0..average_delays.shape()[0] {
         let mut delay_sum = 0.0;
         let mut gain_sum = 0.0;
 
         for offset in 0..ap_params.delays.shape()[1] {
-            let x_y_z_offset = delay_index_to_offset(offset).unwrap();
+            let x_y_z_offset = delay_index_to_offset(offset)
+                .context("Invalid delay offset index - algorithm parameter corruption")?;
             let x_y_z_sum: f32 = x_y_z_offset.map(i32::abs).iter().sum::<i32>() as f32;
 
             let delay = unsafe { *ap_params.delays.uget((voxel_index, offset)) } as f32
@@ -574,6 +591,7 @@ pub fn calculate_average_delays(average_delays: &mut AverageDelays, ap_params: &
             *average_delay = Some(delay_sum / gain_sum);
         }
     }
+    Ok(())
 }
 
 /// Shape for the mapped residuals.
@@ -771,7 +789,7 @@ mod tests {
         model::functional::{allpass::from_samples_to_coef, FunctionalDescription},
     };
     #[test]
-    fn coef_no_crash() {
+    fn coef_no_crash() -> Result<()> {
         let number_of_steps = 2000;
         let number_of_states = 3000;
         let number_of_sensors = 10;
@@ -803,7 +821,8 @@ mod tests {
             &functional_description,
             step,
             &config,
-        );
+        )?;
+        Ok(())
     }
 
     #[test]
@@ -847,7 +866,7 @@ mod tests {
     }
 
     #[test]
-    fn calculate_average_delays_single_voxel() {
+    fn calculate_average_delays_single_voxel() -> Result<()> {
         let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
 
         let mut average_delays = AverageDelays::empty(3);
@@ -859,12 +878,13 @@ mod tests {
         ap_params.coefs.assign(&coefs);
         ap_params.gains.assign(&gains);
 
-        calculate_average_delays(&mut average_delays, &ap_params);
+        calculate_average_delays(&mut average_delays, &ap_params)?;
         assert_relative_eq!(average_delays[0].unwrap(), 1.836_931_7, epsilon = 1e-6);
+        Ok(())
     }
 
     #[test]
-    fn test_calculate_average_delays_multiple_voxels() {
+    fn test_calculate_average_delays_multiple_voxels() -> Result<()> {
         let mut ap_params = APParameters::empty(6, Dim([2, 1, 1]));
 
         let mut average_delays = AverageDelays::empty(6);
@@ -876,13 +896,14 @@ mod tests {
         ap_params.coefs.assign(&coefs);
         ap_params.gains.assign(&gains);
 
-        calculate_average_delays(&mut average_delays, &ap_params);
+        calculate_average_delays(&mut average_delays, &ap_params)?;
         assert_relative_eq!(average_delays[0].unwrap(), 1.763_453_2, epsilon = 1e-4);
         assert_relative_eq!(average_delays[1].unwrap(), 1.763_453, epsilon = 1e-4);
+        Ok(())
     }
 
     #[test]
-    fn test_calculate_average_delays_zero_gains() {
+    fn test_calculate_average_delays_zero_gains() -> Result<()> {
         let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
 
         let mut average_delays = AverageDelays::empty(3);
@@ -894,12 +915,13 @@ mod tests {
         ap_params.coefs.assign(&coefs);
         ap_params.gains.assign(&gains);
 
-        calculate_average_delays(&mut average_delays, &ap_params);
+        calculate_average_delays(&mut average_delays, &ap_params)?;
         assert!(average_delays[0].is_none());
+        Ok(())
     }
 
     #[test]
-    fn test_calculate_average_delays_mixed_gains() {
+    fn test_calculate_average_delays_mixed_gains() -> Result<()> {
         let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
 
         let mut average_delays = AverageDelays::empty(3);
@@ -914,7 +936,8 @@ mod tests {
         ap_params.coefs.assign(&coefs);
         ap_params.gains.assign(&gains);
 
-        calculate_average_delays(&mut average_delays, &ap_params);
+        calculate_average_delays(&mut average_delays, &ap_params)?;
         assert_relative_eq!(average_delays[0].unwrap(), 1.504_952_5, epsilon = 1e-6);
+        Ok(())
     }
 }

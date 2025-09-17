@@ -94,7 +94,7 @@ pub fn calculate_pseudo_inverse(
             step,
             0,
             num_sensors,
-        );
+        )?;
 
         metrics::calculate_step(
             &mut results.metrics,
@@ -163,7 +163,7 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
                 step,
                 beat,
                 num_sensors,
-            );
+            )?;
 
             metrics::calculate_step(
                 &mut results.metrics,
@@ -184,13 +184,13 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
                 calculate_average_delays(
                     &mut estimations.average_delays,
                     &model_ref.functional_description.ap_params,
-                );
+                )?;
                 calculate_batch_derivatives(
                     derivatives,
                     estimations,
                     &model_ref.functional_description,
                     config,
-                );
+                )?;
 
                 let model_mut = results
                     .model
@@ -200,7 +200,7 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
                 model_mut
                     .functional_description
                     .ap_params
-                    .update(derivatives, config, num_steps, *n);
+                    .update(derivatives, config, num_steps, *n)?;
                 derivatives.reset();
                 *n = 0;
                 metrics::calculate_batch(&mut results.metrics, *batch_index);
@@ -218,13 +218,13 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
             calculate_average_delays(
                 &mut estimations.average_delays,
                 &model_ref.functional_description.ap_params,
-            );
+            )?;
             calculate_batch_derivatives(
                 derivatives,
                 estimations,
                 &model_ref.functional_description,
                 config,
-            );
+            )?;
 
             let model_mut = results
                 .model
@@ -234,7 +234,7 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
             model_mut
                 .functional_description
                 .ap_params
-                .update(&mut results.derivatives, config, num_steps, n);
+                .update(&mut results.derivatives, config, num_steps, n)?;
             metrics::calculate_batch(&mut results.metrics, *batch_index);
             *batch_index += 1;
         }
@@ -247,13 +247,13 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
         calculate_average_delays(
             &mut estimations.average_delays,
             &model_ref.functional_description.ap_params,
-        );
+        )?;
         calculate_batch_derivatives(
             derivatives,
             estimations,
             &model_ref.functional_description,
             config,
-        );
+        )?;
 
         let model_mut = results
             .model
@@ -263,7 +263,7 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
         model_mut
             .functional_description
             .ap_params
-            .update(&mut results.derivatives, config, num_steps, num_beats);
+            .update(&mut results.derivatives, config, num_steps, num_beats)?;
         metrics::calculate_batch(&mut results.metrics, *batch_index);
         *batch_index += 1;
     }

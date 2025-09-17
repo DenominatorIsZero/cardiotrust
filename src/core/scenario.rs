@@ -566,7 +566,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         }
     }
 
-    calculate_plotting_arrays(&mut results, &data);
+    calculate_plotting_arrays(&mut results, &data)?;
 
     metrics::calculate_final(
         &mut results.metrics,
@@ -607,7 +607,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
 }
 
 #[tracing::instrument(level = "trace", skip_all)]
-pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
+pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) -> Result<()> {
     results
         .estimations
         .system_states_spherical
@@ -659,6 +659,7 @@ pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) {
         .as_mut()
         .unwrap()
         .update_activation_time(&results.estimations.activation_times);
+    Ok(())
 }
 
 /// Runs the pseudo inverse algorithm on the given scenario, model, and data.
@@ -755,7 +756,7 @@ fn run_model_based(
             .unwrap()
             .functional_description
             .ap_params,
-    );
+    )?;
     scenario.config.algorithm.learning_rate = original_learning_rate;
     Ok(())
 }
@@ -856,7 +857,7 @@ fn run_model_based_gpu(
             .unwrap()
             .functional_description
             .ap_params,
-    );
+    )?;
     Ok(())
 }
 

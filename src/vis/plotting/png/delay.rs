@@ -114,7 +114,7 @@ mod test {
     const COMMON_PATH: &str = "tests/vis/plotting/png/delay";
 
     #[test]
-    fn test_average_delay_plot_default() {
+    fn test_average_delay_plot_default() -> anyhow::Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("test_average_delay_plot_default.png")];
@@ -129,7 +129,7 @@ mod test {
         calculate_average_delays(
             &mut average_delays,
             &data.simulation.model.functional_description.ap_params,
-        );
+        )?;
 
         average_delay_plot(
             &average_delays,
@@ -148,5 +148,6 @@ mod test {
         .unwrap();
 
         assert!(files[0].is_file());
+        Ok(())
     }
 }

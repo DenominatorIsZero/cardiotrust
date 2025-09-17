@@ -115,7 +115,7 @@ mod test {
     const COMMON_PATH: &str = "tests/vis/plotting/png/propagation_speed";
 
     #[test]
-    fn test_propagation_speed_plot_default() {
+    fn test_propagation_speed_plot_default() -> anyhow::Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("test_average_propagation_speed_default.png")];
@@ -130,7 +130,7 @@ mod test {
         calculate_average_delays(
             &mut average_delays,
             &data.simulation.model.functional_description.ap_params,
-        );
+        )?;
 
         average_propagation_speed_plot(
             &average_delays,
@@ -149,5 +149,6 @@ mod test {
         .unwrap();
 
         assert!(files[0].is_file());
+        Ok(())
     }
 }

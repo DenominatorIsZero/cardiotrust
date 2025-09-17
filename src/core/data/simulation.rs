@@ -166,12 +166,12 @@ impl Simulation {
                 }
             }
         }
-        self.calculate_plotting_arrays();
+        self.calculate_plotting_arrays()?;
         Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    pub(crate) fn calculate_plotting_arrays(&mut self) {
+    pub(crate) fn calculate_plotting_arrays(&mut self) -> anyhow::Result<()> {
         let system_states = &mut self.system_states;
         self.system_states_spherical.calculate(system_states);
         self.system_states_spherical_max
@@ -181,7 +181,8 @@ impl Simulation {
         calculate_average_delays(
             &mut self.average_delays,
             &self.model.functional_description.ap_params,
-        );
+        )?;
+        Ok(())
     }
 
     /// Saves the simulation data (measurements, system states, model) to `NumPy` files at the given path.

@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use tracing::debug;
 
 use super::derivation::Derivatives;
@@ -17,6 +18,10 @@ impl APParameters {
     /// to update the filter's gains and delays, based on the provided learning rate
     /// and batch size. Freezing gains or delays can be configured via the Algorithm
     /// config. Gradient clamping is also applied based on the config threshold.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if optimizer configuration is invalid (e.g. Adam optimizer without moment arrays).
     #[inline]
     #[tracing::instrument(level = "debug")]
     pub fn update(
@@ -25,7 +30,7 @@ impl APParameters {
         config: &Algorithm,
         number_of_steps: usize,
         number_of_beats: usize,
-    ) {
+    ) -> Result<()> {
         debug!("Updating allpass filter parameters");
         let batch_size = match config.batch_size {
             0 => number_of_steps * number_of_beats,
@@ -43,11 +48,15 @@ impl APParameters {
                     );
                 }
                 Optimizer::Adam => {
+                    let gains_first_moment = derivatives.gains_first_moment.as_mut()
+                        .context("Adam optimizer requires first moment arrays - optimizer configuration error")?;
+                    let gains_second_moment = derivatives.gains_second_moment.as_mut()
+                        .context("Adam optimizer requires second moment arrays - optimizer configuration error")?;
                     update_gains_adam(
                         &mut self.gains,
                         &derivatives.gains,
-                        derivatives.gains_first_moment.as_mut().unwrap(),
-                        derivatives.gains_second_moment.as_mut().unwrap(),
+                        gains_first_moment,
+                        gains_second_moment,
                         derivatives.step,
                         config.learning_rate,
                         batch_size,
@@ -65,19 +74,26 @@ impl APParameters {
                     batch_size,
                     config.slow_down_stregth,
                 ),
-                Optimizer::Adam => update_delays_adam(
-                    &mut self.coefs,
-                    &derivatives.coefs,
-                    derivatives.coefs_first_moment.as_mut().unwrap(),
-                    derivatives.coefs_second_moment.as_mut().unwrap(),
-                    derivatives.step,
-                    config.learning_rate,
-                    batch_size,
-                ),
+                Optimizer::Adam => {
+                    let coefs_first_moment = derivatives.coefs_first_moment.as_mut()
+                        .context("Adam optimizer requires coefficient first moment arrays - optimizer configuration error")?;
+                    let coefs_second_moment = derivatives.coefs_second_moment.as_mut()
+                        .context("Adam optimizer requires coefficient second moment arrays - optimizer configuration error")?;
+                    update_delays_adam(
+                        &mut self.coefs,
+                        &derivatives.coefs,
+                        coefs_first_moment,
+                        coefs_second_moment,
+                        derivatives.step,
+                        config.learning_rate,
+                        batch_size,
+                    );
+                },
             }
             roll_delays(&mut self.coefs, &mut self.delays);
         }
         derivatives.step += 1;
+        Ok(())
     }
 }
 

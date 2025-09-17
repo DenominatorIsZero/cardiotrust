@@ -49,12 +49,12 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 
 **Implementation Steps**:
 
-- [ ] `src/core/algorithm.rs` (14 unwraps)
-- [ ] `src/core/algorithm/estimation.rs` (3 unwraps)
-- [ ] `src/core/algorithm/estimation/prediction.rs` (1 unwrap)
-- [ ] `src/core/algorithm/refinement.rs`
-- [ ] `src/core/algorithm/refinement/derivation.rs` (20 unwraps)
-- [ ] `src/core/algorithm/refinement/update.rs` (4 unwraps)
+- [x] `src/core/algorithm.rs` (14 unwraps)
+- [x] `src/core/algorithm/estimation.rs` (3 unwraps)
+- [x] `src/core/algorithm/estimation/prediction.rs` (1 unwrap)
+- [x] `src/core/algorithm/refinement.rs`
+- [x] `src/core/algorithm/refinement/derivation.rs` (20 unwraps)
+- [x] `src/core/algorithm/refinement/update.rs` (4 unwraps)
 - [ ] `src/core/algorithm/metrics.rs` (25 unwraps)
 - [ ] `src/core/algorithm/gpu.rs` (13 unwraps)
 - [ ] `src/core/algorithm/gpu/derivation.rs` (63 unwraps - critical GPU operations)
