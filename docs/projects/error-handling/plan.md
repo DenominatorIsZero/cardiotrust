@@ -101,12 +101,12 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 - [x] `src/ui/scenario.rs` (7 unwraps converted with proper bounds checking and error logging)
 - [x] `src/ui/scenario/algorithm.rs` (already clean - no unwraps found)
 - [x] `src/ui/scenario/common.rs` (7 unwraps converted with configuration validation and default values)
-- [ ] `src/ui/scenario/data.rs`
-- [ ] `src/vis.rs`
-- [ ] `src/vis/heart.rs` (17 unwraps)
-- [ ] `src/vis/sensors.rs` (2 unwraps)
-- [ ] `src/vis/sample_tracker.rs` (1 unwrap)
-- [ ] `src/vis/plotting.rs`
+- [x] `src/ui/scenario/data.rs` (already clean - no unwraps found)
+- [x] `src/vis.rs` (already clean - no unwraps found)
+- [x] `src/vis/heart.rs` (17 unwraps converted with graceful 3D visualization degradation)
+- [x] `src/vis/sensors.rs` (2 unwraps converted with sensor positioning safety)
+- [x] `src/vis/sample_tracker.rs` (1 unwrap converted with animation continuity)
+- [x] `src/vis/plotting.rs` (already clean - no unwraps found; submodules deferred)
 - [ ] `src/vis/plotting/gif/states.rs` (4 unwraps)
 - [ ] `src/vis/plotting/gif/matrix.rs` (2 unwraps)
 - [ ] `src/vis/plotting/png/delay.rs` (3 unwraps)

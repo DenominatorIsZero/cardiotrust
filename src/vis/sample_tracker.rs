@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use tracing::error;
 
 use super::options::ColorOptions;
 use crate::core::scenario::Scenario;
@@ -48,13 +49,13 @@ impl Default for SampleTracker {
 pub fn init_sample_tracker(sample_tracker: &mut SampleTracker, scenario: &Scenario) {
     debug!("Initializing sample tracker.");
     sample_tracker.current_sample = 0;
-    sample_tracker.max_sample = scenario
-        .data
-        .as_ref()
-        .expect("Data to be some")
-        .simulation
-        .measurements
-        .num_steps();
+    sample_tracker.max_sample = match scenario.data.as_ref() {
+        Some(data) => data.simulation.measurements.num_steps(),
+        None => {
+            error!("No scenario data available for sample tracker initialization, using default");
+            1
+        }
+    };
     sample_tracker.sample_rate = scenario.config.simulation.sample_rate_hz;
 }
 /// If not in manual mode, calculates a new sample index based on the elapsed

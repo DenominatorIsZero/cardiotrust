@@ -6,6 +6,7 @@ use scarlet::{
     color::RGBColor,
     colormap::{ColorMap, ListedColorMap},
 };
+use tracing::error;
 use strum::EnumCount;
 
 use super::{
@@ -47,8 +48,12 @@ pub(crate) fn setup_material_atlas(
     let mut voxel_types: Vec<Handle<StandardMaterial>> = Vec::with_capacity(VoxelType::COUNT);
 
     for i in 0..VoxelType::COUNT {
+        let Some(voxel_type) = VoxelType::from_usize(i) else {
+            error!("Invalid voxel type index: {}", i);
+            continue;
+        };
         voxel_types.push(materials.add(StandardMaterial {
-            base_color: type_to_color(VoxelType::from_usize(i).unwrap()),
+            base_color: type_to_color(voxel_type),
             metallic: 0.0,
             ..Default::default()
         }));
@@ -68,9 +73,29 @@ pub(crate) fn setup_material_atlas(
         }));
     }
 
+    let voxel_types_array: [Handle<StandardMaterial>; VoxelType::COUNT] = match voxel_types.try_into() {
+        Ok(array) => array,
+        Err(v) => {
+            let vec_len = v.len();
+            error!("Failed to convert voxel_types vector to array, got {} items, expected {}", vec_len, VoxelType::COUNT);
+            // Create default array with proper size
+            std::array::from_fn(|_| materials.add(StandardMaterial::default()))
+        }
+    };
+
+    let scalar_array: [Handle<StandardMaterial>; 256] = match scalar.try_into() {
+        Ok(array) => array,
+        Err(v) => {
+            let vec_len = v.len();
+            error!("Failed to convert scalar vector to array, got {} items, expected 256", vec_len);
+            // Create default array with proper size
+            std::array::from_fn(|_| materials.add(StandardMaterial::default()))
+        }
+    };
+
     let atlas = MaterialAtlas {
-        voxel_types: voxel_types.try_into().unwrap(),
-        scalar: scalar.try_into().unwrap(),
+        voxel_types: voxel_types_array,
+        scalar: scalar_array,
     };
     commands.insert_resource(atlas);
 }
@@ -112,7 +137,10 @@ pub fn init_voxels(
     for (entity, _) in voxels.iter() {
         commands.entity(entity).despawn();
     }
-    let data = scenario.data.as_ref().expect("Data to be some");
+    let Some(data) = scenario.data.as_ref() else {
+        error!("No scenario data available for voxel initialization");
+        return;
+    };
     let model = &data.simulation.model;
     let voxels = &model.spatial_description.voxels;
     let voxel_count = model.spatial_description.voxels.count_xyz();
@@ -143,7 +171,13 @@ pub fn init_voxels(
                     MeshMaterial3d(materials.voxel_types[voxel_type as usize].clone()),
                     Transform::from_xyz(position[0], position[1], position[2]),
                     VoxelData {
-                        index: voxels.numbers[(x, y, z)].expect("Voxel numbes to be some."),
+                        index: match voxels.numbers[(x, y, z)] {
+                            Some(num) => num,
+                            None => {
+                                error!("No voxel number assigned at position ({}, {}, {})", x, y, z);
+                                continue;
+                            }
+                        },
                         colors: Array1::from_elem(
                             sample_tracker.max_sample,
                             materials.voxel_types[voxel_type as usize].clone(),
@@ -225,8 +259,15 @@ pub fn on_color_mode_changed(
         return;
     }
     debug!("Visualization mode changed to {:?}.", color_options.mode);
-    let scenario =
-        &scenario_list.entries[selected_scenario.index.expect("index to be some.")].scenario;
+    let Some(index) = selected_scenario.index else {
+        error!("No scenario selected for color mode change");
+        return;
+    };
+    let Some(entry) = scenario_list.entries.get(index) else {
+        error!("Selected scenario index {} is out of bounds", index);
+        return;
+    };
+    let scenario = &entry.scenario;
 
     match color_options.mode {
         ColorMode::EstimationVoxelTypes => {
@@ -311,26 +352,21 @@ fn set_heart_voxel_colors_to_types(
 ) {
     debug!("Setting heart voxel colors to types.");
     let voxel_types = if simulation_not_model {
-        &scenario
-            .data
-            .as_ref()
-            .expect("Data to be some")
-            .simulation
-            .model
-            .spatial_description
-            .voxels
-            .types
+        match scenario.data.as_ref() {
+            Some(data) => &data.simulation.model.spatial_description.voxels.types,
+            None => {
+                error!("No simulation data available for voxel type visualization");
+                return;
+            }
+        }
     } else {
-        &scenario
-            .results
-            .as_ref()
-            .expect("Results to be some.")
-            .model
-            .as_ref()
-            .expect("Model to be some.")
-            .spatial_description
-            .voxels
-            .types
+        match scenario.results.as_ref().and_then(|r| r.model.as_ref()) {
+            Some(model) => &model.spatial_description.voxels.types,
+            None => {
+                error!("No estimation model available for voxel type visualization");
+                return;
+            }
+        }
     };
 
     query.par_iter_mut().for_each(|mut data| {
@@ -420,21 +456,21 @@ fn set_heart_voxel_colors_to_norm(
 ) {
     debug!("Setting heart voxel colors to norm.");
     let system_states = if simulation_not_model {
-        &scenario
-            .data
-            .as_ref()
-            .expect("Data to be some")
-            .simulation
-            .system_states_spherical
-            .magnitude
+        match scenario.data.as_ref() {
+            Some(data) => &data.simulation.system_states_spherical.magnitude,
+            None => {
+                error!("No simulation data available for norm visualization");
+                return;
+            }
+        }
     } else {
-        &scenario
-            .results
-            .as_ref()
-            .expect("Results to be some.")
-            .estimations
-            .system_states_spherical
-            .magnitude
+        match scenario.results.as_ref() {
+            Some(results) => &results.estimations.system_states_spherical.magnitude,
+            None => {
+                error!("No estimation results available for norm visualization");
+                return;
+            }
+        }
     };
 
     query.par_iter_mut().for_each(|mut data| {
@@ -464,31 +500,31 @@ fn set_heart_voxel_colors_to_max(
     debug!("Setting heart voxel colors to max.");
     let system_states = match source {
         ColorSource::Simulation => {
-            &scenario
-                .data
-                .as_ref()
-                .expect("Data to be some")
-                .simulation
-                .system_states_spherical_max
-                .magnitude
+            match scenario.data.as_ref() {
+                Some(data) => &data.simulation.system_states_spherical_max.magnitude,
+                None => {
+                    error!("No simulation data available for max magnitude visualization");
+                    return;
+                }
+            }
         }
         ColorSource::Estimation => {
-            &scenario
-                .results
-                .as_ref()
-                .expect("Results to be some.")
-                .estimations
-                .system_states_spherical_max
-                .magnitude
+            match scenario.results.as_ref() {
+                Some(results) => &results.estimations.system_states_spherical_max.magnitude,
+                None => {
+                    error!("No estimation results available for max magnitude visualization");
+                    return;
+                }
+            }
         }
         ColorSource::Delta => {
-            &scenario
-                .results
-                .as_ref()
-                .expect("Results to be some.")
-                .estimations
-                .system_states_spherical_max_delta
-                .magnitude
+            match scenario.results.as_ref() {
+                Some(results) => &results.estimations.system_states_spherical_max_delta.magnitude,
+                None => {
+                    error!("No estimation delta results available for max magnitude visualization");
+                    return;
+                }
+            }
         }
     };
 
@@ -528,28 +564,31 @@ fn set_heart_voxel_colors_to_activation_time(
     debug!("Setting heart voxel colors to max.");
     let activation_time_ms = match source {
         ColorSource::Simulation => {
-            &scenario
-                .data
-                .as_ref()
-                .expect("Data to be some")
-                .simulation
-                .activation_times
+            match scenario.data.as_ref() {
+                Some(data) => &data.simulation.activation_times,
+                None => {
+                    error!("No simulation data available for activation time visualization");
+                    return;
+                }
+            }
         }
         ColorSource::Estimation => {
-            &scenario
-                .results
-                .as_ref()
-                .expect("Results to be some.")
-                .estimations
-                .activation_times
+            match scenario.results.as_ref() {
+                Some(results) => &results.estimations.activation_times,
+                None => {
+                    error!("No estimation results available for activation time visualization");
+                    return;
+                }
+            }
         }
         ColorSource::Delta => {
-            &scenario
-                .results
-                .as_ref()
-                .expect("Results to be some.")
-                .estimations
-                .activation_times_delta
+            match scenario.results.as_ref() {
+                Some(results) => &results.estimations.activation_times_delta,
+                None => {
+                    error!("No estimation delta results available for activation time visualization");
+                    return;
+                }
+            }
         }
     };
 

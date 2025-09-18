@@ -1,5 +1,6 @@
 use bevy::{math::vec3, prelude::*};
 use ndarray::Array2;
+use tracing::error;
 
 use super::{options::VisibilityOptions, sample_tracker::SampleTracker};
 use crate::core::scenario::Scenario;
@@ -30,7 +31,10 @@ pub(crate) fn spawn_sensors(
     for (entity, _) in sensors.iter() {
         commands.entity(entity).despawn();
     }
-    let data = scenario.data.as_ref().expect("Data to be some");
+    let Some(data) = scenario.data.as_ref() else {
+        error!("No scenario data available for sensor spawning");
+        return;
+    };
     let model = &data.simulation.model;
     let sensors = &model.spatial_description.sensors;
 
@@ -152,14 +156,11 @@ pub(crate) fn spawn_sensor_bracket(
         commands.entity(entity).despawn();
     }
 
-    let sensors = &scenario
-        .data
-        .as_ref()
-        .unwrap()
-        .simulation
-        .model
-        .spatial_description
-        .sensors;
+    let Some(data) = scenario.data.as_ref() else {
+        error!("No scenario data available for sensor bracket spawning");
+        return;
+    };
+    let sensors = &data.simulation.model.spatial_description.sensors;
     #[allow(clippy::no_effect_underscore_binding)]
     let radius = sensors.array_radius_mm;
     let motion_steps = sensors.array_offsets_mm.shape()[0];
