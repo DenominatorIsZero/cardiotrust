@@ -472,7 +472,8 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             &path,
             None,
             None,
-        ),
+        )
+        .map_err(|e| e.into()),
         ImageType::AveragePropagationSpeedSimulation => average_propagation_speed_plot(
             &data.simulation.average_delays,
             &data.simulation.model.spatial_description.voxels.numbers,
@@ -486,7 +487,8 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             data.simulation.sample_rate_hz,
             &path,
             None,
-        ),
+        )
+        .map_err(|e| e.into()),
         ImageType::AverageDelayAlgorithm => average_delay_plot(
             &estimations.average_delays,
             &model.spatial_description.voxels.numbers,
@@ -495,7 +497,8 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             &path,
             None,
             None,
-        ),
+        )
+        .map_err(|e| e.into()),
         ImageType::AveragePropagationSpeedAlgorithm => average_propagation_speed_plot(
             &estimations.average_delays,
             &model.spatial_description.voxels.numbers,
@@ -504,7 +507,8 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             data.simulation.sample_rate_hz,
             &path,
             None,
-        ),
+        )
+        .map_err(|e| e.into()),
         ImageType::AverageDelayDelta => average_delay_plot(
             &(&data.simulation.average_delays - &estimations.average_delays),
             &model.spatial_description.voxels.numbers,
@@ -513,7 +517,8 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             &path,
             None,
             None,
-        ),
+        )
+        .map_err(|e| e.into()),
         ImageType::LossEpoch => standard_log_y_plot(
             &metrics.loss_batch,
             &path,

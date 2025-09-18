@@ -65,13 +65,15 @@ where
     let mut height = 0;
 
     let range = range.map_or_else(
-        || {
-            let min = data.min().unwrap();
-            let max = data.max().unwrap();
-            (*min, *max)
+        || -> Result<(f32, f32), Box<dyn Error>> {
+            let min = data.min()
+                .map_err(|_| anyhow::anyhow!("Cannot find minimum value in data array for matrix GIF range calculation"))?;
+            let max = data.max()
+                .map_err(|_| anyhow::anyhow!("Cannot find maximum value in data array for matrix GIF range calculation"))?;
+            Ok((*min, *max))
         },
-        |range| range,
-    );
+        |range| Ok(range),
+    )?;
 
     for slice in 0..num_slices {
         let title = format!("{title}, Slice: {slice}");

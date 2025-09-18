@@ -1,5 +1,5 @@
 use core::f32;
-use std::{error::Error, path::Path};
+use std::path::Path;
 
 use ndarray::{Array2, Axis};
 use tracing::trace;
@@ -24,7 +24,7 @@ pub(crate) fn average_propagation_speed_plot(
     sample_rate_hz: f32,
     path: &Path,
     slice: Option<PlotSlice>,
-) -> Result<PngBundle, Box<dyn Error>> {
+) -> anyhow::Result<PngBundle> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let step = Some((voxel_size_mm, voxel_size_mm));
@@ -79,10 +79,14 @@ pub(crate) fn average_propagation_speed_plot(
     data.iter_mut()
         .zip(numbers.iter())
         .for_each(|(datum, number)| {
-            if number.is_some() {
-                *datum = voxel_size_mm
-                    / 1000.0
-                    / (average_delays[number.unwrap() / 3].unwrap_or(f32::MAX) / sample_rate_hz);
+            if let Some(voxel_number) = number {
+                let delay_index = voxel_number / 3;
+                if let Some(delay_value) = average_delays.get(delay_index) {
+                    let delay_seconds = delay_value.unwrap_or(f32::MAX) / sample_rate_hz;
+                    if delay_seconds > 0.0 && delay_seconds.is_finite() {
+                        *datum = voxel_size_mm / 1000.0 / delay_seconds;
+                    }
+                }
             }
         });
 
@@ -99,10 +103,12 @@ pub(crate) fn average_propagation_speed_plot(
         None,
         flip_axis,
     )
+    .map_err(|e| anyhow::anyhow!("Failed to generate propagation speed matrix plot: {}", e))
 }
 
 #[cfg(test)]
 mod test {
+    use anyhow::Context;
 
     use super::*;
     use crate::{
@@ -124,7 +130,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+            .context("Failed to create simulation data for propagation speed plot test")?;
 
         let mut average_delays = AverageDelays::empty(data.simulation.system_states.num_states());
         calculate_average_delays(
@@ -146,7 +152,7 @@ mod test {
             files[0].as_path(),
             Some(PlotSlice::Z(0)),
         )
-        .unwrap();
+        .context("Failed to generate average propagation speed plot for test")?;
 
         assert!(files[0].is_file());
         Ok(())

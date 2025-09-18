@@ -1,4 +1,4 @@
-use std::{error::Error, path::Path};
+use std::path::Path;
 
 use ndarray::{Array2, Axis};
 use tracing::trace;
@@ -23,7 +23,7 @@ pub(crate) fn average_delay_plot(
     path: &Path,
     max_delay_displayed_samples: Option<f32>,
     slice: Option<PlotSlice>,
-) -> Result<PngBundle, Box<dyn Error>> {
+) -> anyhow::Result<PngBundle> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let step = Some((voxel_size_mm, voxel_size_mm));
@@ -78,10 +78,13 @@ pub(crate) fn average_delay_plot(
     data.iter_mut()
         .zip(numbers.iter())
         .for_each(|(datum, number)| {
-            if number.is_some() {
-                *datum = average_delays[number.unwrap() / 3]
-                    .unwrap_or(0.0)
-                    .min(max_delay_displayed_samples.unwrap_or(f32::INFINITY));
+            if let Some(voxel_number) = number {
+                let delay_index = voxel_number / 3;
+                if let Some(delay_value) = average_delays.get(delay_index) {
+                    *datum = delay_value
+                        .unwrap_or(0.0)
+                        .min(max_delay_displayed_samples.unwrap_or(f32::INFINITY));
+                }
             }
         });
 
@@ -98,10 +101,12 @@ pub(crate) fn average_delay_plot(
         None,
         flip_axis,
     )
+    .map_err(|e| anyhow::anyhow!("Failed to generate delay matrix plot: {}", e))
 }
 
 #[cfg(test)]
 mod test {
+    use anyhow::Context;
 
     use super::*;
     use crate::{
@@ -123,7 +128,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+            .context("Failed to create simulation data for delay plot test")?;
 
         let mut average_delays = AverageDelays::empty(data.simulation.system_states.num_states());
         calculate_average_delays(
@@ -145,7 +150,7 @@ mod test {
             Some(10.0),
             Some(PlotSlice::Z(0)),
         )
-        .unwrap();
+        .context("Failed to generate average delay plot for test")?;
 
         assert!(files[0].is_file());
         Ok(())
