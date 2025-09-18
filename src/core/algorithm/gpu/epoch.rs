@@ -43,7 +43,7 @@ impl EpochKernel {
             number_of_states,
             number_of_sensors,
             number_of_steps,
-        );
+        )?;
         let prediction_kernel = PredictionKernel::new(
             gpu,
             &results.estimations,
@@ -70,7 +70,7 @@ impl EpochKernel {
             number_of_states,
             number_of_steps,
             config,
-        );
+        )?;
         let metrics_kernel = MetricsKernel::new(
             gpu,
             &results.estimations,
@@ -99,7 +99,7 @@ impl EpochKernel {
         // See prediction.rs for implementation details.
 
         // reset
-        self.reset_kernel.execute();
+        self.reset_kernel.execute()?;
 
         // prediction
         // TODO: Add support for multiple beats.
@@ -110,7 +110,7 @@ impl EpochKernel {
             self.metrics_kernel.execute_step()?;
             self.helper_kernel.increase_step()?;
         }
-        self.update_kernel.execute();
+        self.update_kernel.execute()?;
         self.metrics_kernel.execute_batch()?;
         self.helper_kernel.increase_epoch()?;
         Ok(())

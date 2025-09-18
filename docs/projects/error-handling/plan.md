@@ -44,7 +44,7 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 
 ### 3. Core Algorithms
 
-**Status**: [ ] Pending
+**Status**: [x] Complete
 **Dependencies**: Task 2 complete
 
 **Implementation Steps**:
@@ -62,8 +62,8 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 - [x] `src/core/algorithm/gpu/helper.rs` (6 unwraps)
 - [x] `src/core/algorithm/gpu/metrics.rs` (13 unwraps)
 - [x] `src/core/algorithm/gpu/prediction.rs` (27 unwraps)
-- [ ] `src/core/algorithm/gpu/reset.rs` (22 unwraps)
-- [ ] `src/core/algorithm/gpu/update.rs` (31 unwraps)
+- [x] `src/core/algorithm/gpu/reset.rs` (22 unwraps)
+- [x] `src/core/algorithm/gpu/update.rs` (31 unwraps)
 
 ### 4. Scenario Management
 

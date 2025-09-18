@@ -322,19 +322,19 @@ mod tests {
             results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("Model not available for derivation prediction test")?
                 .spatial_description
                 .voxels
                 .count_states() as i32,
             results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("Model not available for derivation prediction test")?
                 .spatial_description
                 .sensors
                 .count() as i32,
             results_cpu.estimations.measurements.num_steps() as i32,
-        );
+        )?;
 
         let derivation_kernel = DerivationKernel::new(
             &gpu,
@@ -406,7 +406,7 @@ mod tests {
                 .write([step as i32].as_slice())
                 .enq()
                 .context("Failed to write step data to GPU buffer")?;
-            prediction_kernel.execute();
+            prediction_kernel.execute()?;
             derivation_kernel.execute()?;
             results_from_gpu.update_from_gpu(&results_gpu)?;
             assert_relative_eq!(

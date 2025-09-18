@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use ocl::{Kernel, Program};
 
 use super::GPU;
@@ -21,14 +22,12 @@ pub struct ResetKernel {
 
 impl ResetKernel {
     #[allow(
-        clippy::missing_panics_doc,
         clippy::cast_sign_loss,
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
         clippy::cast_precision_loss,
         clippy::too_many_lines
     )]
-    #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(
         gpu: &GPU,
@@ -38,13 +37,17 @@ impl ResetKernel {
         number_of_states: i32,
         number_of_sensors: i32,
         number_of_steps: i32,
-    ) -> Self {
+    ) -> Result<Self> {
         let context = &gpu.context;
         let queue = &gpu.queue;
         let number_of_voxels = number_of_states / 3;
 
-        let reset_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/reset.cl").unwrap();
-        let reset_program = Program::builder().src(reset_src).build(context).unwrap();
+        let reset_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/reset.cl")
+            .context("Failed to read reset kernel source file")?;
+        let reset_program = Program::builder()
+            .src(reset_src)
+            .build(context)
+            .context("Failed to build OpenCL program for reset kernels")?;
         let system_states_kernel = Kernel::builder()
             .program(&reset_program)
             .name("reset_float")
@@ -52,7 +55,7 @@ impl ResetKernel {
             .global_work_size(number_of_steps * number_of_states)
             .arg(&estimations.system_states)
             .build()
-            .unwrap();
+            .context("Failed to build system states reset kernel")?;
         let measurements_kernel = Kernel::builder()
             .program(&reset_program)
             .name("reset_float")
@@ -60,7 +63,7 @@ impl ResetKernel {
             .global_work_size(number_of_steps * number_of_sensors)
             .arg(&estimations.measurements)
             .build()
-            .unwrap();
+            .context("Failed to build measurements reset kernel")?;
         let mse_kernel = Kernel::builder()
             .program(&reset_program)
             .name("reset_float")
@@ -68,7 +71,7 @@ impl ResetKernel {
             .global_work_size(number_of_steps)
             .arg(&metrics.loss_mse)
             .build()
-            .unwrap();
+            .context("Failed to build MSE reset kernel")?;
         let ap_outputs_kernel = Kernel::builder()
             .program(&reset_program)
             .name("reset_float")
@@ -76,7 +79,7 @@ impl ResetKernel {
             .global_work_size(number_of_states * 78)
             .arg(&estimations.ap_outputs_now)
             .build()
-            .unwrap();
+            .context("Failed to build AP outputs reset kernel")?;
         let gains_kernel = Kernel::builder()
             .program(&reset_program)
             .name("reset_float")
@@ -84,7 +87,7 @@ impl ResetKernel {
             .global_work_size(number_of_states * 78)
             .arg(&derivatives.gains)
             .build()
-            .unwrap();
+            .context("Failed to build gains reset kernel")?;
         let coefs_kernel = Kernel::builder()
             .program(&reset_program)
             .name("reset_float")
@@ -92,7 +95,7 @@ impl ResetKernel {
             .global_work_size(number_of_voxels * 26)
             .arg(&derivatives.coefs)
             .build()
-            .unwrap();
+            .context("Failed to build coefficients reset kernel")?;
         let iir_kernel = Kernel::builder()
             .program(&reset_program)
             .name("reset_float")
@@ -100,7 +103,7 @@ impl ResetKernel {
             .global_work_size(number_of_states * 78)
             .arg(&derivatives.coefs_iir)
             .build()
-            .unwrap();
+            .context("Failed to build IIR coefficients reset kernel")?;
         let fir_kernel = Kernel::builder()
             .program(&reset_program)
             .name("reset_float")
@@ -108,7 +111,7 @@ impl ResetKernel {
             .global_work_size(number_of_states * 78)
             .arg(&derivatives.coefs_fir)
             .build()
-            .unwrap();
+            .context("Failed to build FIR coefficients reset kernel")?;
         let maximum_regularization_sum_kernel = Kernel::builder()
             .program(&reset_program)
             .name("reset_float")
@@ -116,7 +119,7 @@ impl ResetKernel {
             .global_work_size(1)
             .arg(&derivatives.maximum_regularization_sum)
             .build()
-            .unwrap();
+            .context("Failed to build maximum regularization sum reset kernel")?;
         let step_kernel = Kernel::builder()
             .program(&reset_program)
             .name("reset_int")
@@ -124,9 +127,9 @@ impl ResetKernel {
             .global_work_size(1)
             .arg(&estimations.step)
             .build()
-            .unwrap();
+            .context("Failed to build step reset kernel")?;
 
-        Self {
+        Ok(Self {
             system_states_kernel,
             measurements_kernel,
             mse_kernel,
@@ -137,26 +140,36 @@ impl ResetKernel {
             fir_kernel,
             maximum_regularization_sum_kernel,
             step_kernel,
-        }
+        })
     }
 
-    #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn execute(&self) {
+    pub fn execute(&self) -> Result<()> {
         // TODO: Optimize prediction by running multiple beats in parallel using async kernel execution.
         // This would allow better GPU utilization by processing independent beats simultaneously.
         // See prediction.rs for implementation details.
         unsafe {
-            self.system_states_kernel.enq().unwrap();
-            self.measurements_kernel.enq().unwrap();
-            self.mse_kernel.enq().unwrap();
-            self.ap_outputs_kernel.enq().unwrap();
-            self.gains_kernel.enq().unwrap();
-            self.coefs_kernel.enq().unwrap();
-            self.iir_kernel.enq().unwrap();
-            self.fir_kernel.enq().unwrap();
-            self.maximum_regularization_sum_kernel.enq().unwrap();
-            self.step_kernel.enq().unwrap();
+            self.system_states_kernel.enq()
+                .context("Failed to execute system states reset kernel")?;
+            self.measurements_kernel.enq()
+                .context("Failed to execute measurements reset kernel")?;
+            self.mse_kernel.enq()
+                .context("Failed to execute MSE reset kernel")?;
+            self.ap_outputs_kernel.enq()
+                .context("Failed to execute AP outputs reset kernel")?;
+            self.gains_kernel.enq()
+                .context("Failed to execute gains reset kernel")?;
+            self.coefs_kernel.enq()
+                .context("Failed to execute coefficients reset kernel")?;
+            self.iir_kernel.enq()
+                .context("Failed to execute IIR coefficients reset kernel")?;
+            self.fir_kernel.enq()
+                .context("Failed to execute FIR coefficients reset kernel")?;
+            self.maximum_regularization_sum_kernel.enq()
+                .context("Failed to execute maximum regularization sum reset kernel")?;
+            self.step_kernel.enq()
+                .context("Failed to execute step reset kernel")?;
         }
+        Ok(())
     }
 }

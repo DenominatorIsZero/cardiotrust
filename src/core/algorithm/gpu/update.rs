@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use ocl::{Kernel, Program};
 
 use super::GPU;
@@ -15,14 +16,12 @@ pub struct UpdateKernel {
 
 impl UpdateKernel {
     #[allow(
-        clippy::missing_panics_doc,
         clippy::cast_sign_loss,
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,
         clippy::cast_precision_loss,
         clippy::too_many_lines
     )]
-    #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn new(
         gpu: &GPU,
@@ -31,14 +30,18 @@ impl UpdateKernel {
         number_of_states: i32,
         number_of_steps: i32,
         config: &Algorithm,
-    ) -> Self {
+    ) -> Result<Self> {
         let context = &gpu.context;
         let queue = &gpu.queue;
         let number_of_voxels = number_of_states / 3;
 
         let gains_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/update_gains.cl").unwrap();
-        let gains_program = Program::builder().src(gains_src).build(context).unwrap();
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/update_gains.cl")
+                .context("Failed to read update_gains kernel source file")?;
+        let gains_program = Program::builder()
+            .src(gains_src)
+            .build(context)
+            .context("Failed to build OpenCL program for update_gains kernel")?;
         let gains_kernel = Kernel::builder()
             .program(&gains_program)
             .name("update_gains")
@@ -49,11 +52,15 @@ impl UpdateKernel {
             .arg(config.learning_rate / number_of_steps as f32) // not accounting for batch size at the moment. might want to fix that later
             .arg(number_of_states)
             .build()
-            .unwrap();
+            .context("Failed to build update gains kernel")?;
 
         let coefs_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/update_coefs.cl").unwrap();
-        let coefs_program = Program::builder().src(coefs_src).build(context).unwrap();
+            std::fs::read_to_string("src/core/algorithm/gpu/kernels/update_coefs.cl")
+                .context("Failed to read update_coefs kernel source file")?;
+        let coefs_program = Program::builder()
+            .src(coefs_src)
+            .build(context)
+            .context("Failed to build OpenCL program for update_coefs kernel")?;
 
         let coefs_kernel = Kernel::builder()
             .program(&coefs_program)
@@ -66,30 +73,32 @@ impl UpdateKernel {
             .arg(config.learning_rate / number_of_steps as f32) // not accounting for batch size at the moment. might want to fix that later
             .arg(number_of_states)
             .build()
-            .unwrap();
+            .context("Failed to build update coefficients kernel")?;
 
-        Self {
+        Ok(Self {
             gains_kernel,
             coefs_kernel,
             freeze_gains: config.freeze_gains,
             freeze_delays: config.freeze_delays,
-        }
+        })
     }
 
-    #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn execute(&self) {
+    pub fn execute(&self) -> Result<()> {
         // TODO: Optimize prediction by running multiple beats in parallel using async kernel execution.
         // This would allow better GPU utilization by processing independent beats simultaneously.
         // See prediction.rs for implementation details.
         unsafe {
             if !self.freeze_gains {
-                self.gains_kernel.enq().unwrap();
+                self.gains_kernel.enq()
+                    .context("Failed to execute update gains kernel")?;
             }
             if !self.freeze_delays {
-                self.coefs_kernel.enq().unwrap();
+                self.coefs_kernel.enq()
+                    .context("Failed to execute update coefficients kernel")?;
             }
         }
+        Ok(())
     }
     pub const fn set_freeze_delays(&mut self, value: bool) {
         self.freeze_delays = value;
@@ -153,19 +162,19 @@ mod tests {
             results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("Model not available for update prediction test")?
                 .spatial_description
                 .voxels
                 .count_states() as i32,
             results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("Model not available for update prediction test")?
                 .spatial_description
                 .sensors
                 .count() as i32,
             results_cpu.estimations.measurements.num_steps() as i32,
-        );
+        )?;
 
         let derivation_kernel = DerivationKernel::new(
             &gpu,
@@ -192,7 +201,7 @@ mod tests {
             number_of_states as i32,
             results_cpu.estimations.measurements.num_steps() as i32,
             &config.algorithm,
-        );
+        )?;
 
         let mut results_from_gpu = results_cpu.clone();
         // comparison loop
@@ -241,8 +250,8 @@ mod tests {
                 .step
                 .write([step as i32].as_slice())
                 .enq()
-                .unwrap();
-            prediction_kernel.execute();
+                .context("Failed to write step value to GPU buffer")?;
+            prediction_kernel.execute()?;
             derivation_kernel.execute()?;
         }
         let batch_size = results_cpu.estimations.measurements.num_steps();
@@ -276,69 +285,69 @@ mod tests {
             &mut model.functional_description.ap_params.coefs,
             &mut model.functional_description.ap_params.delays,
         );
-        update_kernel.execute();
+        update_kernel.execute()?;
         results_from_gpu.update_from_gpu(&results_gpu)?;
         assert_relative_eq!(
             results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("CPU model not available for gains comparison")?
                 .functional_description
                 .ap_params
                 .gains
                 .as_slice()
-                .unwrap(),
+                .context("Failed to get CPU gains slice for comparison")?,
             results_from_gpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("GPU model not available for gains comparison")?
                 .functional_description
                 .ap_params
                 .gains
                 .as_slice()
-                .unwrap(),
+                .context("Failed to get GPU gains slice for comparison")?,
             epsilon = 1e-5
         );
         assert_relative_eq!(
             results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("CPU model not available for coefs comparison")?
                 .functional_description
                 .ap_params
                 .coefs
                 .as_slice()
-                .unwrap(),
+                .context("Failed to get CPU coefs slice for comparison")?,
             results_from_gpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("GPU model not available for coefs comparison")?
                 .functional_description
                 .ap_params
                 .coefs
                 .as_slice()
-                .unwrap(),
+                .context("Failed to get GPU coefs slice for comparison")?,
             epsilon = 1e-5
         );
         assert_eq!(
             results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("CPU model not available for delays comparison")?
                 .functional_description
                 .ap_params
                 .delays
                 .as_slice()
-                .unwrap(),
+                .context("Failed to get CPU delays slice for comparison")?,
             results_from_gpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("GPU model not available for delays comparison")?
                 .functional_description
                 .ap_params
                 .delays
                 .as_slice()
-                .unwrap(),
+                .context("Failed to get GPU delays slice for comparison")?,
         );
         Ok(())
     }
