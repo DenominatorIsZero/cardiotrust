@@ -31,7 +31,14 @@ pub fn draw_ui_explorer(
     mut cameras: Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Drawing UI for explorer tab");
-    egui::CentralPanel::default().show(contexts.ctx_mut().expect("EGUI context available"), |ui| {
+    let ctx = match contexts.ctx_mut() {
+        Ok(ctx) => ctx,
+        Err(e) => {
+            error!("EGUI context not available for explorer: {}", e);
+            return;
+        }
+    };
+    egui::CentralPanel::default().show(ctx, |ui| {
             for mut camera in &mut cameras {
                 if ui.ui_contains_pointer() {
                     camera.enabled_motion = EnabledMotion {

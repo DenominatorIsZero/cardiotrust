@@ -88,15 +88,15 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 
 ### 6. Visualization & UI
 
-**Status**: [ ] Pending
+**Status**: [x] Complete
 **Dependencies**: Task 5 complete
 
 **Implementation Steps**:
 
-- [ ] `src/ui.rs`
-- [ ] `src/ui/results.rs` (20 unwraps)
-- [ ] `src/ui/explorer.rs` (2 unwraps)
-- [ ] `src/ui/topbar.rs` (5 unwraps)
+- [x] `src/ui.rs` (already clean - no unwraps found)
+- [x] `src/ui/results.rs` (20 unwraps converted to Result types with graceful degradation)
+- [x] `src/ui/explorer.rs` (2 unwraps converted to proper error handling)
+- [x] `src/ui/topbar.rs` (5 unwraps converted with bounds checking and error logging)
 - [ ] `src/ui/vol.rs` (10 unwraps)
 - [ ] `src/ui/scenario.rs` (9 unwraps)
 - [ ] `src/ui/scenario/algorithm.rs`

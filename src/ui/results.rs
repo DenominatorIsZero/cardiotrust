@@ -1,10 +1,11 @@
 use std::{
     collections::HashMap,
-    error::Error,
     fs,
     path::Path,
     thread::{self, JoinHandle},
 };
+
+use anyhow::{Context, Result};
 
 use bevy::prelude::*;
 use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
@@ -163,8 +164,22 @@ pub fn draw_ui_results(
     mut cameras: Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Runing system to draw results UI");
-    egui_extras::install_image_loaders(contexts.ctx_mut().expect("EGUI context available"));
-    egui::CentralPanel::default().show(contexts.ctx_mut().expect("EGUI context available"), |ui| {
+    let ctx = match contexts.ctx_mut() {
+        Ok(ctx) => ctx,
+        Err(e) => {
+            error!("EGUI context not available: {}", e);
+            return;
+        }
+    };
+    egui_extras::install_image_loaders(ctx);
+    let ctx = match contexts.ctx_mut() {
+        Ok(ctx) => ctx,
+        Err(e) => {
+            error!("EGUI context not available for central panel: {}", e);
+            return;
+        }
+    };
+    egui::CentralPanel::default().show(ctx, |ui| {
         for mut camera in &mut cameras {
             if ui.ui_contains_pointer() {
                 camera.enabled_motion = EnabledMotion {
@@ -193,46 +208,62 @@ pub fn draw_ui_results(
                 .add(egui::Button::new("Generate Algorithm Gif"))
                 .clicked()
             {
-                let scenario = &scenario_list.entries[selected_scenario.index.unwrap()].scenario;
-                let send_scenario = scenario.clone();
-                let send_playback_speed = playback_speed.value;
-                thread::spawn(move || {
-                    generate_gifs(send_scenario, GifType::StatesAlgorithm, send_playback_speed)
-                        .unwrap();
-                });
+                if let Some(index) = selected_scenario.index {
+                    let scenario = &scenario_list.entries[index].scenario;
+                    let send_scenario = scenario.clone();
+                    let send_playback_speed = playback_speed.value;
+                    thread::spawn(move || {
+                        if let Err(e) = generate_gifs(send_scenario, GifType::StatesAlgorithm, send_playback_speed) {
+                            error!("Failed to generate algorithm GIF: {}", e);
+                        }
+                    });
+                } else {
+                    error!("No scenario selected for GIF generation");
+                }
             }
             if ui
                 .add(egui::Button::new("Generate Simulation Gif"))
                 .clicked()
             {
-                let scenario = &scenario_list.entries[selected_scenario.index.unwrap()].scenario;
-                let send_scenario = scenario.clone();
-                let send_playback_speed = playback_speed.value;
-                thread::spawn(move || {
-                    generate_gifs(
-                        send_scenario,
-                        GifType::StatesSimulation,
-                        send_playback_speed,
-                    )
-                    .unwrap();
-                });
+                if let Some(index) = selected_scenario.index {
+                    let scenario = &scenario_list.entries[index].scenario;
+                    let send_scenario = scenario.clone();
+                    let send_playback_speed = playback_speed.value;
+                    thread::spawn(move || {
+                        if let Err(e) = generate_gifs(
+                            send_scenario,
+                            GifType::StatesSimulation,
+                            send_playback_speed,
+                        ) {
+                            error!("Failed to generate simulation GIF: {}", e);
+                        }
+                    });
+                } else {
+                    error!("No scenario selected for GIF generation");
+                }
             }
             if ui.add(egui::Button::new("Export to .npy")).clicked() {
-                let scenario = &scenario_list.entries[selected_scenario.index.unwrap()].scenario;
-                let send_scenario = scenario.clone();
-                thread::spawn(move || {
-                    send_scenario.save_npy();
-                });
+                if let Some(index) = selected_scenario.index {
+                    let scenario = &scenario_list.entries[index].scenario;
+                    let send_scenario = scenario.clone();
+                    thread::spawn(move || {
+                        send_scenario.save_npy();
+                    });
+                } else {
+                    error!("No scenario selected for NPY export");
+                }
             }
         });
-        let image_bundle = result_images
+        let Some(image_bundle) = result_images
             .image_bundles
-            .get_mut(&selected_image.image_type)
-            .unwrap();
+            .get_mut(&selected_image.image_type) else {
+                error!("Image bundle not found for type: {:?}", selected_image.image_type);
+                return;
+            };
         if let Some(image_path) = image_bundle.path.as_ref() {
             ui.image(image_path);
-        } else {
-            let scenario = &scenario_list.entries[selected_scenario.index.unwrap()].scenario;
+        } else if let Some(index) = selected_scenario.index {
+            let scenario = &scenario_list.entries[index].scenario;
             let send_scenario = scenario.clone();
             let image_type = selected_image.image_type;
             match image_bundle.join_handle.as_mut() {
@@ -244,11 +275,16 @@ pub fn draw_ui_results(
                 }
                 None => {
                     image_bundle.join_handle = Some(thread::spawn(move || {
-                        generate_image(send_scenario, image_type).unwrap();
+                        if let Err(e) = generate_image(send_scenario, image_type) {
+                            error!("Failed to generate image for type {:?}: {}", image_type, e);
+                        }
                     }));
                 }
             }
             ui.add(Spinner::new().size(480.0));
+        } else {
+            error!("No scenario selected for image generation");
+            ui.label("No scenario selected");
         }
     });
 }
@@ -279,19 +315,27 @@ fn get_image_path(scenario: &Scenario, image_type: ImageType) -> String {
     unreachable_code
 )]
 #[tracing::instrument(level = "debug")]
-fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<dyn Error>> {
+fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
     debug!("Generating image");
     let mut path = Path::new("results").join(scenario.get_id()).join("img");
-    fs::create_dir_all(&path).unwrap();
+    fs::create_dir_all(&path)
+        .with_context(|| format!("Failed to create image directory: {}", path.display()))?;
     path = path.join(image_type.to_string()).with_extension("png");
     if path.is_file() {
         return Ok(());
     }
     let _file_name = path.with_extension("");
-    let estimations = &scenario.results.as_ref().unwrap().estimations;
-    let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
-    let data = scenario.data.as_ref().unwrap();
-    let metrics = &scenario.results.as_ref().unwrap().metrics;
+    let Some(results) = scenario.results.as_ref() else {
+        return Err(anyhow::anyhow!("Scenario results not available for image generation"));
+    };
+    let estimations = &results.estimations;
+    let Some(model) = results.model.as_ref() else {
+        return Err(anyhow::anyhow!("Model not available in results for image generation"));
+    };
+    let Some(data) = scenario.data.as_ref() else {
+        return Err(anyhow::anyhow!("Scenario data not available for image generation"));
+    };
+    let metrics = &results.metrics;
     match image_type {
         // might want to return this at some later point
         ImageType::StatesMaxAlgorithm => states_spherical_plot(
@@ -406,7 +450,9 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
                 estimations,
                 &data.simulation.model.spatial_description.voxels.types,
                 &model.spatial_description.voxels.numbers,
-                scenario.summary.unwrap().threshold,
+                scenario.summary
+                    .ok_or_else(|| anyhow::anyhow!("Scenario summary not available for voxel type prediction"))?
+                    .threshold,
             ),
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
@@ -606,7 +652,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<(), Box<d
             "Measurement 0 Delta",
             "z [pT]",
         ),
-    }?;
+    }.map_err(|e| anyhow::anyhow!("Plotting error: {}", e))?;
     Ok(())
 }
 
@@ -625,17 +671,25 @@ fn generate_gifs(
     scenario: Scenario,
     gif_type: GifType,
     playback_speed: f32,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     debug!("Generating GIFs for scenario {}", scenario.get_id());
     let mut path = Path::new("results").join(scenario.get_id()).join("img");
-    fs::create_dir_all(&path).unwrap();
+    fs::create_dir_all(&path)
+        .with_context(|| format!("Failed to create GIF directory: {}", path.display()))?;
     path = path.join(gif_type.to_string()).with_extension("gif");
     if path.is_file() {
         return Ok(());
     }
-    let model = scenario.results.as_ref().unwrap().model.as_ref().unwrap();
-    let data = scenario.data.as_ref().unwrap();
-    let estimations = &scenario.results.as_ref().unwrap().estimations;
+    let Some(results) = scenario.results.as_ref() else {
+        return Err(anyhow::anyhow!("Scenario results not available for GIF generation"));
+    };
+    let Some(model) = results.model.as_ref() else {
+        return Err(anyhow::anyhow!("Model not available in results for GIF generation"));
+    };
+    let Some(data) = scenario.data.as_ref() else {
+        return Err(anyhow::anyhow!("Scenario data not available for GIF generation"));
+    };
+    let estimations = &results.estimations;
     match gif_type {
         GifType::StatesAlgorithm => states_spherical_plot_over_time(
             &estimations.system_states_spherical,
@@ -668,6 +722,6 @@ fn generate_gifs(
             Some(playback_speed),
             Some(20),
         ),
-    }?;
+    }.map_err(|e| anyhow::anyhow!("GIF generation error: {}", e))?;
     Ok(())
 }

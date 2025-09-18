@@ -27,7 +27,14 @@ pub fn draw_ui_topbar(
     mut cameras: Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Running system to draw topbar.");
-    egui::TopBottomPanel::top("menu_panel").show(contexts.ctx_mut().expect("EGUI context available"), |ui| {
+    let ctx = match contexts.ctx_mut() {
+        Ok(ctx) => ctx,
+        Err(e) => {
+            error!("EGUI context not available for topbar: {}", e);
+            return;
+        }
+    };
+    egui::TopBottomPanel::top("menu_panel").show(ctx, |ui| {
         for mut camera in &mut cameras {
             if ui.ui_contains_pointer() {
                 camera.enabled_motion = EnabledMotion {
@@ -60,47 +67,61 @@ pub fn draw_ui_topbar(
                 .add_enabled(
                     ui_state.get() != &UiState::Results
                         && selected_scenario.index.is_some()
-                        && scenario_list.entries
-                            [selected_scenario.index.expect("Index to be some.")]
-                        .scenario
-                        .get_status()
-                            == &Status::Done,
+                        && selected_scenario.index
+                            .map(|index| scenario_list.entries.get(index)
+                                .map(|entry| entry.scenario.get_status() == &Status::Done)
+                                .unwrap_or(false))
+                            .unwrap_or(false),
                     egui::Button::new("Results"),
                 )
                 .clicked()
             {
-                let index = selected_scenario.index.expect("Index to be some.");
-                let scenario = &mut scenario_list.entries[index].scenario;
-                if let Err(e) = scenario.load_data() {
-                    error!("Failed to load scenario data: {}", e);
+                if let Some(index) = selected_scenario.index {
+                    if let Some(entry) = scenario_list.entries.get_mut(index) {
+                        let scenario = &mut entry.scenario;
+                        if let Err(e) = scenario.load_data() {
+                            error!("Failed to load scenario data: {}", e);
+                        }
+                        if let Err(e) = scenario.load_results() {
+                            error!("Failed to load scenario results: {}", e);
+                        }
+                        commands.insert_resource(NextState::Pending(UiState::Results));
+                    } else {
+                        error!("Selected scenario index {} is out of bounds", index);
+                    }
+                } else {
+                    error!("No scenario selected for Results view");
                 }
-                if let Err(e) = scenario.load_results() {
-                    error!("Failed to load scenario results: {}", e);
-                }
-                commands.insert_resource(NextState::Pending(UiState::Results));
             }
             if ui
                 .add_enabled(
                     ui_state.get() != &UiState::Volumetric
                         && selected_scenario.index.is_some()
-                        && scenario_list.entries
-                            [selected_scenario.index.expect("Index to be some.")]
-                        .scenario
-                        .get_status()
-                            == &Status::Done,
+                        && selected_scenario.index
+                            .map(|index| scenario_list.entries.get(index)
+                                .map(|entry| entry.scenario.get_status() == &Status::Done)
+                                .unwrap_or(false))
+                            .unwrap_or(false),
                     egui::Button::new("Volumetric"),
                 )
                 .clicked()
             {
-                let index = selected_scenario.index.expect("Index to be some.");
-                let scenario = &mut scenario_list.entries[index].scenario;
-                if let Err(e) = scenario.load_data() {
-                    error!("Failed to load scenario data: {}", e);
+                if let Some(index) = selected_scenario.index {
+                    if let Some(entry) = scenario_list.entries.get_mut(index) {
+                        let scenario = &mut entry.scenario;
+                        if let Err(e) = scenario.load_data() {
+                            error!("Failed to load scenario data: {}", e);
+                        }
+                        if let Err(e) = scenario.load_results() {
+                            error!("Failed to load scenario results: {}", e);
+                        }
+                        commands.insert_resource(NextState::Pending(UiState::Volumetric));
+                    } else {
+                        error!("Selected scenario index {} is out of bounds", index);
+                    }
+                } else {
+                    error!("No scenario selected for Volumetric view");
                 }
-                if let Err(e) = scenario.load_results() {
-                    error!("Failed to load scenario results: {}", e);
-                }
-                commands.insert_resource(NextState::Pending(UiState::Volumetric));
             }
             ui.add(Separator::default().spacing(200.0));
             if ui
