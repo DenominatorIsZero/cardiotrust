@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use egui_extras::{Column, TableBuilder};
-use tracing::trace;
+use tracing::{error, trace};
 
 use super::{FIRST_COLUMN_WIDTH, PADDING, ROW_HEIGHT, SECOND_COLUMN_WIDTH};
 use crate::core::{
@@ -234,16 +234,13 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                         ui.label("Sinoatrial Node");
                     });
                     row.col(|ui| {
+                        if !model.common.propagation_velocities_m_per_s.contains_key(&VoxelType::Sinoatrial) {
+                            error!("No propagation velocity configured for Sinoatrial voxel type");
+                            model.common.propagation_velocities_m_per_s.insert(VoxelType::Sinoatrial, 1.0);
+                        }
+                        let velocity = model.common.propagation_velocities_m_per_s.get_mut(&VoxelType::Sinoatrial).unwrap();
                         ui.add(
-                            egui::Slider::new(
-                                model
-                                    .common
-                                    .propagation_velocities_m_per_s
-                                    .get_mut(&VoxelType::Sinoatrial)
-                                    .unwrap(),
-                                0.01..=10.0,
-                            )
-                            .suffix(" m/s"),
+                            egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
                         );
                     });
                     row.col(|ui| {
@@ -264,16 +261,13 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                         ui.label("Atrium");
                     });
                     row.col(|ui| {
+                        if !model.common.propagation_velocities_m_per_s.contains_key(&VoxelType::Atrium) {
+                            error!("No propagation velocity configured for Atrium voxel type");
+                            model.common.propagation_velocities_m_per_s.insert(VoxelType::Atrium, 0.5);
+                        }
+                        let velocity = model.common.propagation_velocities_m_per_s.get_mut(&VoxelType::Atrium).unwrap();
                         ui.add(
-                            egui::Slider::new(
-                                model
-                                    .common
-                                    .propagation_velocities_m_per_s
-                                    .get_mut(&VoxelType::Atrium)
-                                    .unwrap(),
-                                0.01..=10.0,
-                            )
-                            .suffix(" m/s"),
+                            egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
                         );
                     });
                     row.col(|ui| {
@@ -294,16 +288,13 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                         ui.label("Atrioventricular node");
                     });
                     row.col(|ui| {
+                        if !model.common.propagation_velocities_m_per_s.contains_key(&VoxelType::Atrioventricular) {
+                            error!("No propagation velocity configured for Atrioventricular voxel type");
+                            model.common.propagation_velocities_m_per_s.insert(VoxelType::Atrioventricular, 0.2);
+                        }
+                        let velocity = model.common.propagation_velocities_m_per_s.get_mut(&VoxelType::Atrioventricular).unwrap();
                         ui.add(
-                            egui::Slider::new(
-                                model
-                                    .common
-                                    .propagation_velocities_m_per_s
-                                    .get_mut(&VoxelType::Atrioventricular)
-                                    .unwrap(),
-                                0.01..=10.0,
-                            )
-                            .suffix(" m/s"),
+                            egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
                         );
                     });
                     row.col(|ui| {
@@ -324,16 +315,13 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                         ui.label("His-Purkinje S.");
                     });
                     row.col(|ui| {
+                        if !model.common.propagation_velocities_m_per_s.contains_key(&VoxelType::HPS) {
+                            error!("No propagation velocity configured for HPS voxel type");
+                            model.common.propagation_velocities_m_per_s.insert(VoxelType::HPS, 4.0);
+                        }
+                        let velocity = model.common.propagation_velocities_m_per_s.get_mut(&VoxelType::HPS).unwrap();
                         ui.add(
-                            egui::Slider::new(
-                                model
-                                    .common
-                                    .propagation_velocities_m_per_s
-                                    .get_mut(&VoxelType::HPS)
-                                    .unwrap(),
-                                0.01..=10.0,
-                            )
-                            .suffix(" m/s"),
+                            egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
                         );
                     });
                     row.col(|ui| {
@@ -354,16 +342,13 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                         ui.label("Ventricle");
                     });
                     row.col(|ui| {
+                        if !model.common.propagation_velocities_m_per_s.contains_key(&VoxelType::Ventricle) {
+                            error!("No propagation velocity configured for Ventricle voxel type");
+                            model.common.propagation_velocities_m_per_s.insert(VoxelType::Ventricle, 0.8);
+                        }
+                        let velocity = model.common.propagation_velocities_m_per_s.get_mut(&VoxelType::Ventricle).unwrap();
                         ui.add(
-                            egui::Slider::new(
-                                model
-                                    .common
-                                    .propagation_velocities_m_per_s
-                                    .get_mut(&VoxelType::Ventricle)
-                                    .unwrap(),
-                                0.01..=10.0,
-                            )
-                            .suffix(" m/s"),
+                            egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
                         );
                     });
                     row.col(|ui| {
@@ -385,16 +370,13 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                             ui.label("Pathological");
                         });
                         row.col(|ui| {
+                            if !model.common.propagation_velocities_m_per_s.contains_key(&VoxelType::Pathological) {
+                                error!("No propagation velocity configured for Pathological voxel type");
+                                model.common.propagation_velocities_m_per_s.insert(VoxelType::Pathological, 0.1);
+                            }
+                            let velocity = model.common.propagation_velocities_m_per_s.get_mut(&VoxelType::Pathological).unwrap();
                             ui.add(
-                                egui::Slider::new(
-                                    model
-                                        .common
-                                        .propagation_velocities_m_per_s
-                                        .get_mut(&VoxelType::Pathological)
-                                        .unwrap(),
-                                    0.01..=10.0,
-                                )
-                                .suffix(" m/s"),
+                                egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
                             );
                         });
                         row.col(|ui| {
@@ -780,7 +762,12 @@ fn draw_mri_settings(ui: &mut egui::Ui, mri: &mut Mri, _patholoical: bool) {
                         ui.label("Path");
                     });
                     row.col(|ui| {
-                        let mut path = mri.path.to_str().unwrap().to_string();
+                        let mut path = mri.path.to_str()
+                            .unwrap_or_else(|| {
+                                error!("MRI path contains invalid UTF-8: {:?}", mri.path);
+                                "<invalid path>"
+                            })
+                            .to_string();
                         ui.add(egui::TextEdit::singleline(&mut path));
                         mri.path = PathBuf::from(path);
                     });

@@ -97,10 +97,10 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 - [x] `src/ui/results.rs` (20 unwraps converted to Result types with graceful degradation)
 - [x] `src/ui/explorer.rs` (2 unwraps converted to proper error handling)
 - [x] `src/ui/topbar.rs` (5 unwraps converted with bounds checking and error logging)
-- [ ] `src/ui/vol.rs` (10 unwraps)
-- [ ] `src/ui/scenario.rs` (9 unwraps)
-- [ ] `src/ui/scenario/algorithm.rs`
-- [ ] `src/ui/scenario/common.rs` (7 unwraps)
+- [x] `src/ui/vol.rs` (10 unwraps converted with graceful UI degradation and data validation)
+- [x] `src/ui/scenario.rs` (7 unwraps converted with proper bounds checking and error logging)
+- [x] `src/ui/scenario/algorithm.rs` (already clean - no unwraps found)
+- [x] `src/ui/scenario/common.rs` (7 unwraps converted with configuration validation and default values)
 - [ ] `src/ui/scenario/data.rs`
 - [ ] `src/vis.rs`
 - [ ] `src/vis/heart.rs` (17 unwraps)

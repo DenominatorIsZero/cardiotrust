@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_editor_cam::controller::component::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
 use egui_plot::{Line, Plot, PlotPoints, VLine};
+use tracing::error;
 
 use crate::{
     vis::{
@@ -40,18 +41,24 @@ pub fn draw_ui_volumetric(
 ) {
     trace!("Running system to draw volumetric UI.");
     let scenario = if let Some(index) = selected_scenario.index {
-        Some(
-            &scenario_list
-                .entries
-                .get(index)
-                .as_ref()
-                .expect("Scenario to exist.")
-                .scenario,
-        )
+        match scenario_list.entries.get(index) {
+            Some(entry) => Some(&entry.scenario),
+            None => {
+                error!("Selected scenario index {} is out of bounds", index);
+                None
+            }
+        }
     } else {
         None
     };
-    egui::SidePanel::left("volumetric_left_panel").show(contexts.ctx_mut().expect("EGUI context available"), |ui| {
+    let ctx = match contexts.ctx_mut() {
+        Ok(ctx) => ctx,
+        Err(e) => {
+            error!("EGUI context not available for volumetric panel: {}", e);
+            return;
+        }
+    };
+    egui::SidePanel::left("volumetric_left_panel").show(ctx, |ui| {
         for mut camera in &mut cameras {
             if ui.ui_contains_pointer() {
                 camera.enabled_motion = EnabledMotion {
@@ -65,8 +72,12 @@ pub fn draw_ui_volumetric(
             .add_enabled(scenario.is_some(), egui::Button::new("Init Voxels"))
             .clicked()
         {
-            let scenario = (**scenario.as_ref().unwrap()).clone();
-            ev_setup.write(SetupHeartAndSensors(scenario));
+            if let Some(scenario) = scenario {
+                let scenario = scenario.clone();
+                ev_setup.write(SetupHeartAndSensors(scenario));
+            } else {
+                error!("No scenario available for voxel initialization");
+            }
         }
         ui.label(egui::RichText::new("Voxel coloring").underline());
         ui.group(|ui| {
@@ -157,19 +168,10 @@ pub fn draw_ui_volumetric(
                 ui.add(egui::Slider::new(
                     &mut motion_step,
                     0..=scenario
-                        .as_ref()
-                        .expect("Scenario to be some")
-                        .results
-                        .as_ref()
-                        .expect("Results to be some.")
-                        .model
-                        .as_ref()
-                        .expect("Model to be some.")
-                        .spatial_description
-                        .sensors
-                        .array_offsets_mm
-                        .shape()[0]
-                        - 1,
+                        .and_then(|s| s.results.as_ref())
+                        .and_then(|r| r.model.as_ref())
+                        .map(|m| m.spatial_description.sensors.array_offsets_mm.shape()[0].saturating_sub(1))
+                        .unwrap_or(0),
                 ));
                 if motion_step != sample_tracker.selected_beat {
                     sample_tracker.selected_beat = motion_step;
@@ -180,15 +182,9 @@ pub fn draw_ui_volumetric(
                 ui.add(egui::Slider::new(
                     &mut selected_sensor,
                     0..=scenario
-                        .as_ref()
-                        .expect("Scenario to be some")
-                        .results
-                        .as_ref()
-                        .expect("Results to be some.")
-                        .estimations
-                        .measurements
-                        .num_sensors()
-                        - 1,
+                        .and_then(|s| s.results.as_ref())
+                        .map(|r| r.estimations.measurements.num_sensors().saturating_sub(1))
+                        .unwrap_or(0),
                 ));
                 if selected_sensor != sample_tracker.selected_sensor {
                     sample_tracker.selected_sensor = selected_sensor;
@@ -288,9 +284,16 @@ pub fn draw_ui_volumetric(
         });
     });
     if let Some(scenario) = scenario {
+        let ctx = match contexts.ctx_mut() {
+            Ok(ctx) => ctx,
+            Err(e) => {
+                error!("EGUI context not available for volumetric bottom panel: {}", e);
+                return;
+            }
+        };
         egui::TopBottomPanel::bottom("Volumetric bottom panel")
             .exact_height(400.0)
-            .show(contexts.ctx_mut().expect("EGUI context available"), |ui| {
+            .show(ctx, |ui| {
                 for mut camera in &mut cameras {
                     if ui.ui_contains_pointer() {
                         camera.enabled_motion = EnabledMotion {
@@ -307,18 +310,15 @@ pub fn draw_ui_volumetric(
                         let x = i as f64 / samplerate_hz;
                         [
                             x,
-                            f64::from(
-                                scenario
-                                    .results
-                                    .as_ref()
-                                    .expect("Results to be some")
-                                    .estimations
-                                    .measurements[(
+                            scenario
+                                .results
+                                .as_ref()
+                                .map(|r| f64::from(r.estimations.measurements[(
                                     sample_tracker.selected_beat,
                                     i,
                                     sample_tracker.selected_sensor,
-                                )],
-                            ),
+                                )]))
+                                .unwrap_or(0.0),
                         ]
                     })
                     .collect();

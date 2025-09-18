@@ -38,7 +38,13 @@ pub fn draw_ui_scenario(
     mut cameras: Query<&mut EditorCam, With<Camera>>,
 ) {
     trace!("Running system to draw scenario UI.");
-    let context = contexts.ctx_mut().expect("EGUI context available");
+    let context = match contexts.ctx_mut() {
+        Ok(ctx) => ctx,
+        Err(e) => {
+            error!("EGUI context not available for scenario UI: {}", e);
+            return;
+        }
+    };
 
     draw_ui_scenario_topbar(
         context,
@@ -47,8 +53,15 @@ pub fn draw_ui_scenario(
         &mut cameras,
     );
 
-    let index = selected_scenario.index.unwrap();
-    let scenario = &mut scenarios.entries[index].scenario;
+    let Some(index) = selected_scenario.index else {
+        error!("No scenario selected for scenario UI");
+        return;
+    };
+    let Some(entry) = scenarios.entries.get_mut(index) else {
+        error!("Selected scenario index {} is out of bounds", index);
+        return;
+    };
+    let scenario = &mut entry.scenario;
     draw_ui_scenario_central_panel(context, scenario, &mut cameras);
 }
 
@@ -78,8 +91,15 @@ fn draw_ui_scenario_topbar(
             }
         }
         ui.with_layout(egui::Layout::left_to_right(Align::TOP), |ui| {
-            let index = selected_scenario.index.unwrap();
-            let scenario = &mut scenarios.entries[index].scenario;
+            let Some(index) = selected_scenario.index else {
+                error!("No scenario selected for topbar operations");
+                return;
+            };
+            let Some(entry) = scenarios.entries.get_mut(index) else {
+                error!("Selected scenario index {} is out of bounds in topbar", index);
+                return;
+            };
+            let scenario = &mut entry.scenario;
             ui.label(format!("Scenario with ID: {}", scenario.get_id()));
             ui.separator();
             ui.label(format!("Status: {}", scenario.get_status_str()));
@@ -116,12 +136,16 @@ fn draw_ui_scenario_topbar(
             match scenario.get_status() {
                 Status::Planning => {
                     if ui.button("Schedule").clicked() {
-                        scenario.schedule().unwrap();
+                        if let Err(e) = scenario.schedule() {
+                            error!("Failed to schedule scenario: {}", e);
+                        }
                     }
                 }
                 Status::Scheduled => {
                     if ui.button("Unschedule").clicked() {
-                        scenario.unschedule().unwrap();
+                        if let Err(e) = scenario.unschedule() {
+                            error!("Failed to unschedule scenario: {}", e);
+                        }
                     }
                 }
                 _ => (),
@@ -131,9 +155,12 @@ fn draw_ui_scenario_topbar(
                     error!("Failed to save scenario: {}", e);
                 }
             } else if ui.button("Delete").clicked() {
-                scenario.delete().unwrap();
-                scenarios.entries.remove(index);
-                selected_scenario.index = Some(0);
+                if let Err(e) = scenario.delete() {
+                    error!("Failed to delete scenario: {}", e);
+                } else {
+                    scenarios.entries.remove(index);
+                    selected_scenario.index = Some(0);
+                }
             } else if ui.button("Copy").clicked() {
                 let mut new_scenario = Scenario::build(None);
                 new_scenario.config = scenario.config.clone();
@@ -147,8 +174,15 @@ fn draw_ui_scenario_topbar(
                 selected_scenario.index = Some(scenarios.entries.len() - 1);
             }
             ui.separator();
-            let index = selected_scenario.index.unwrap();
-            let scenario = &mut scenarios.entries[index].scenario;
+            let Some(index) = selected_scenario.index else {
+                error!("No scenario selected for comment editing");
+                return;
+            };
+            let Some(entry) = scenarios.entries.get_mut(index) else {
+                error!("Selected scenario index {} is out of bounds for comment editing", index);
+                return;
+            };
+            let scenario = &mut entry.scenario;
             if ui
                 .add(egui::TextEdit::multiline(&mut scenario.comment).desired_width(f32::INFINITY))
                 .lost_focus()
