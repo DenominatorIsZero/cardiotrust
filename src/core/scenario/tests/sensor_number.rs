@@ -6,6 +6,7 @@ use std::{
     thread,
 };
 
+use anyhow::Result;
 use ndarray::Array1;
 use ndarray_npy::WriteNpyExt;
 
@@ -44,7 +45,7 @@ enum ScenarioType {
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_sensor_number_sheet() {
+fn heavy_sensor_number_sheet() -> Result<()> {
     let base_id = "Sensor Number Sheet";
     let path = Path::new(COMMON_PATH);
 
@@ -60,7 +61,8 @@ fn heavy_sensor_number_sheet() {
         trials,
         base_id,
         path,
-    );
+    )?;
+    Ok(())
 }
 
 #[allow(
@@ -71,7 +73,7 @@ fn heavy_sensor_number_sheet() {
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_sensor_number_line() {
+fn heavy_sensor_number_line() -> Result<()> {
     let base_id = "Sensor Number Line";
     let path = Path::new(COMMON_PATH);
 
@@ -87,7 +89,8 @@ fn heavy_sensor_number_line() {
         trials,
         base_id,
         path,
-    );
+    )?;
+    Ok(())
 }
 
 #[allow(
@@ -562,7 +565,7 @@ fn create_and_run(
     trials: usize,
     base_id: &str,
     path: &Path,
-) {
+) -> Result<()> {
     let mut join_handles = Vec::new();
     let mut scenarios = Vec::new();
 
@@ -577,7 +580,7 @@ fn create_and_run(
                 println!("Looking for scenario {path:?}");
                 let scenario = if path.is_dir() {
                     println!("Found scenario. Loading it!");
-                    let scenario = Scenario::load(path.as_path());
+                    let scenario = Scenario::load(path.as_path())?;
                     scenario
                 } else {
                     println!("Didn't find scenario. Building it!");
@@ -611,7 +614,7 @@ fn create_and_run(
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
-            *scenario = Scenario::load(path.as_path());
+            *scenario = Scenario::load(path.as_path())?;
         }
     }
     plot_results(
@@ -623,4 +626,5 @@ fn create_and_run(
         trials,
         scenario_type,
     );
+    Ok(())
 }

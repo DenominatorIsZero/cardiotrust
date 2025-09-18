@@ -23,7 +23,7 @@ const COMMON_PATH: &str = "tests/core/scenario/smoothness_regularization/";
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_center_patch() {
+fn heavy_center_patch() -> anyhow::Result<()> {
     let base_id = "Smoothness Regularization".to_string();
     let base_title = "Smoothness Regularization";
     let path = Path::new(COMMON_PATH).join("center_patch");
@@ -48,7 +48,8 @@ fn heavy_center_patch() {
         &base_id,
         &path,
         base_title,
-    );
+    )?;
+    Ok(())
 }
 
 #[allow(
@@ -261,7 +262,7 @@ fn create_and_run(
     base_id: &str,
     img_path: &Path,
     base_title: &str,
-) {
+) -> anyhow::Result<()> {
     let mut scenarios = Vec::new();
     let mut join_handles = Vec::new();
 
@@ -272,9 +273,9 @@ fn create_and_run(
         let path = Path::new("results").join(id);
         if path.is_dir() {
             println!("Found scenario. Loading it!");
-            let mut scenario = Scenario::load(path.as_path());
-            scenario.load_data();
-            scenario.load_results();
+            let mut scenario = Scenario::load(path.as_path())?;
+            scenario.load_data()?;
+            scenario.load_results()?;
             scenarios.push(scenario);
         } else {
             println!("Didn't find scenario. Building it!");
@@ -302,11 +303,12 @@ fn create_and_run(
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
-            *scenario = Scenario::load(path.as_path());
-            scenario.load_data();
-            scenario.load_results();
+            *scenario = Scenario::load(path.as_path())?;
+            scenario.load_data()?;
+            scenario.load_results()?;
         }
     }
 
     plot_results(img_path, base_title, scenarios);
+    Ok(())
 }

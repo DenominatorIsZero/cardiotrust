@@ -6,6 +6,8 @@ use std::{
     thread,
 };
 
+use anyhow::Result;
+
 use nalgebra::ComplexField;
 use ndarray::{s, Array1};
 use ndarray_npy::WriteNpyExt;
@@ -32,7 +34,7 @@ const COMMON_PATH: &str = "tests/core/scenario/single_ap/";
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_no_roll_up() {
+fn heavy_no_roll_up() -> Result<()> {
     let base_id = "Single AP - No Roll - up - ".to_string();
     let path = Path::new(COMMON_PATH).join("no_roll_up");
 
@@ -51,7 +53,8 @@ fn heavy_no_roll_up() {
         target_delays.push(target_delay);
     }
 
-    create_and_run(target_delays, initial_delay, &base_id, &path);
+    create_and_run(target_delays, initial_delay, &base_id, &path)?;
+    Ok(())
 }
 
 #[allow(
@@ -62,7 +65,7 @@ fn heavy_no_roll_up() {
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_no_roll_down() {
+fn heavy_no_roll_down() -> Result<()> {
     let base_id = "Single AP - No Roll - down - ".to_string();
     let path = Path::new(COMMON_PATH).join("no_roll_down");
 
@@ -80,7 +83,8 @@ fn heavy_no_roll_down() {
         target_delays.push(target_delay);
     }
 
-    create_and_run(target_delays, initial_delay, &base_id, &path);
+    create_and_run(target_delays, initial_delay, &base_id, &path)?;
+    Ok(())
 }
 
 #[allow(
@@ -91,7 +95,7 @@ fn heavy_no_roll_down() {
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_yes_roll_up() {
+fn heavy_yes_roll_up() -> Result<()> {
     let base_id = "Single AP - Yes Roll - Up - ".to_string();
     let path = Path::new(COMMON_PATH).join("yes_roll_up");
 
@@ -107,7 +111,8 @@ fn heavy_yes_roll_up() {
         let target_delay = integer_part + target_interger_part as f32 + fractional_part;
         target_delays.push(target_delay);
     }
-    create_and_run(target_delays, initial_delay, &base_id, &path);
+    create_and_run(target_delays, initial_delay, &base_id, &path)?;
+    Ok(())
 }
 
 #[allow(
@@ -118,7 +123,7 @@ fn heavy_yes_roll_up() {
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_yes_roll_down() {
+fn heavy_yes_roll_down() -> Result<()> {
     let base_id = "Single AP - Yes Roll - Down - ".to_string();
     let path = Path::new(COMMON_PATH).join("yes_roll_down");
 
@@ -135,7 +140,8 @@ fn heavy_yes_roll_down() {
         target_delays.push(target_delay);
     }
 
-    create_and_run(target_delays, initial_delay, &base_id, &path);
+    create_and_run(target_delays, initial_delay, &base_id, &path)?;
+    Ok(())
 }
 
 #[tracing::instrument(level = "trace")]
@@ -609,7 +615,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
 }
 
 #[tracing::instrument(level = "trace")]
-fn create_and_run(target_delays: Vec<f32>, initial_delay: f32, base_id: &str, path: &Path) {
+fn create_and_run(target_delays: Vec<f32>, initial_delay: f32, base_id: &str, path: &Path) -> Result<()> {
     let mut scenarios = Vec::new();
     let mut join_handles = Vec::new();
 
@@ -626,9 +632,9 @@ fn create_and_run(target_delays: Vec<f32>, initial_delay: f32, base_id: &str, pa
         let path = Path::new("results").join(&id);
         if path.is_dir() {
             println!("Found scenario. Loading it!");
-            let mut scenario = Scenario::load(path.as_path());
-            scenario.load_data();
-            scenario.load_results();
+            let mut scenario = Scenario::load(path.as_path())?;
+            scenario.load_data()?;
+            scenario.load_results()?;
             scenarios.push(scenario);
         } else {
             println!("Didn't find scenario. Building it!");
@@ -651,11 +657,12 @@ fn create_and_run(target_delays: Vec<f32>, initial_delay: f32, base_id: &str, pa
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
-            *scenario = Scenario::load(path.as_path());
-            scenario.load_data();
-            scenario.load_results();
+            *scenario = Scenario::load(path.as_path())?;
+            scenario.load_data()?;
+            scenario.load_results()?;
         }
     }
 
     plot_results(path, base_id, scenarios);
+    Ok(())
 }

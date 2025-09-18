@@ -6,6 +6,7 @@ use std::{
     thread,
 };
 
+use anyhow::Result;
 use approx::RelativeEq;
 use ndarray::Array1;
 use ndarray_npy::WriteNpyExt;
@@ -31,7 +32,7 @@ const COMMON_PATH: &str = "tests/core/scenario/sheet_ap/";
 )]
 #[test]
 #[ignore = "expensive scenario test"]
-fn heavy_homogeneous_down() {
+fn heavy_homogeneous_down() -> Result<()> {
     let base_id = "Sheet AP - Homogenous - Down - ";
     let path = Path::new(COMMON_PATH).join("homogeneous_down");
 
@@ -48,7 +49,8 @@ fn heavy_homogeneous_down() {
         learning_rates,
         base_id,
         &path,
-    );
+    )?;
+    Ok(())
 }
 
 #[allow(
@@ -545,7 +547,7 @@ fn create_and_run(
     learning_rates: Vec<f32>,
     base_id: &str,
     img_path: &Path,
-) {
+) -> Result<()> {
     let mut join_handles = Vec::new();
     let mut scenarios = Vec::new();
 
@@ -556,7 +558,7 @@ fn create_and_run(
             println!("Looking for scenario {path:?}");
             let scenario = if path.is_dir() {
                 println!("Found scenario. Loading it!");
-                let scenario = Scenario::load(path.as_path());
+                let scenario = Scenario::load(path.as_path())?;
                 scenario
             } else {
                 println!("Didn't find scenario. Building it!");
@@ -587,7 +589,7 @@ fn create_and_run(
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
-            *scenario = Scenario::load(path.as_path());
+            *scenario = Scenario::load(path.as_path())?;
         }
     }
 
@@ -598,4 +600,5 @@ fn create_and_run(
         voxels_per_axis,
         learning_rates,
     );
+    Ok(())
 }

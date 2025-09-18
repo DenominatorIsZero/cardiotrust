@@ -128,31 +128,53 @@ pub fn check_scenarios(
                 || entry.scenario.get_status() == &Status::Simulating
         })
         .for_each(|entry| {
+            let mut cleanup_needed = false;
+            let mut epoch_poisoned = false;
+            let mut summary_poisoned = false;
+
+            // Handle epoch receiver
             match &entry.epoch_rx {
                 Some(epoch_rx) => {
-                    let epoch = epoch_rx
-                        .lock()
-                        .expect("Lock to not already be held")
-                        .try_recv();
-                    if let Ok(epoch) = epoch {
-                        entry.scenario.set_running(epoch);
+                    match epoch_rx.lock() {
+                        Ok(receiver) => {
+                            if let Ok(epoch) = receiver.try_recv() {
+                                entry.scenario.set_running(epoch);
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to acquire epoch receiver lock for scenario {}: {}", entry.scenario.get_id(), e);
+                            epoch_poisoned = true;
+                        }
                     }
                 }
-                None => panic!("Running scenario has to epoch receiver."),
-            }
-            match &entry.summary_rx {
-                Some(summary_rx) => {
-                    let summary = summary_rx
-                        .lock()
-                        .expect("Lock to not already be held")
-                        .try_recv();
-                    if let Ok(summary) = summary {
-                        entry.scenario.summary = Some(summary);
-                    }
+                None => {
+                    error!("Running scenario {} missing epoch receiver - cleaning up", entry.scenario.get_id());
+                    cleanup_needed = true;
                 }
-                None => panic!("Running scenario has no summary receiver."),
             }
 
+            // Handle summary receiver
+            match &entry.summary_rx {
+                Some(summary_rx) => {
+                    match summary_rx.lock() {
+                        Ok(receiver) => {
+                            if let Ok(summary) = receiver.try_recv() {
+                                entry.scenario.summary = Some(summary);
+                            }
+                        }
+                        Err(e) => {
+                            error!("Failed to acquire summary receiver lock for scenario {}: {}", entry.scenario.get_id(), e);
+                            summary_poisoned = true;
+                        }
+                    }
+                }
+                None => {
+                    error!("Running scenario {} missing summary receiver - cleaning up", entry.scenario.get_id());
+                    cleanup_needed = true;
+                }
+            }
+
+            // Handle join handle
             match &entry.join_handle {
                 Some(join_handle) => {
                     if join_handle.is_finished() {
@@ -165,7 +187,18 @@ pub fn check_scenarios(
                         }
                     }
                 }
-                None => panic!("Running scenario does not have a join handle."),
+                None => {
+                    error!("Running scenario {} missing join handle - cleaning up", entry.scenario.get_id());
+                    cleanup_needed = true;
+                }
+            }
+
+            // Clean up corrupted or missing resources
+            if cleanup_needed || epoch_poisoned || summary_poisoned {
+                entry.scenario.set_done();
+                entry.join_handle = None;
+                entry.epoch_rx = None;
+                entry.summary_rx = None;
             }
         });
 

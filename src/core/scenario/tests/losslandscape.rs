@@ -6,6 +6,8 @@ use std::{
     thread,
 };
 
+use anyhow::Result;
+
 use ndarray::Array1;
 use ndarray_npy::WriteNpyExt;
 
@@ -31,7 +33,7 @@ const COMMON_PATH: &str = "tests/core/scenario/losslandscape/";
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_loss_landscape() {
+fn heavy_loss_landscape() -> Result<()> {
     let base_id = "Single AP - Loss Landscape".to_string();
     let base_title = "Single AP - Loss Landscape";
     let path = Path::new(COMMON_PATH).join("loss_landscape");
@@ -54,7 +56,8 @@ fn heavy_loss_landscape() {
         &base_id,
         &path,
         base_title,
-    );
+    )?;
+    Ok(())
 }
 
 #[allow(
@@ -65,7 +68,7 @@ fn heavy_loss_landscape() {
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_loss_landscape_single_sensor() {
+fn heavy_loss_landscape_single_sensor() -> Result<()> {
     let base_id = "Single AP - Loss Landscape - Single Sensor".to_string();
     let base_title = "Single AP - Loss Landscape - Single Sensor";
     let path = Path::new(COMMON_PATH).join("single_sensor");
@@ -88,7 +91,8 @@ fn heavy_loss_landscape_single_sensor() {
         &base_id,
         &path,
         base_title,
-    );
+    )?;
+    Ok(())
 }
 
 #[allow(
@@ -99,7 +103,7 @@ fn heavy_loss_landscape_single_sensor() {
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_loss_landscape_triangle() {
+fn heavy_loss_landscape_triangle() -> Result<()> {
     let base_id = "Single AP - Loss Landscape - Triangle".to_string();
     let base_title = "Single AP - Loss Landscape - Triangle";
     let path = Path::new(COMMON_PATH).join("triangle");
@@ -122,7 +126,8 @@ fn heavy_loss_landscape_triangle() {
         &base_id,
         &path,
         base_title,
-    );
+    )?;
+    Ok(())
 }
 
 #[allow(
@@ -133,7 +138,7 @@ fn heavy_loss_landscape_triangle() {
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_loss_landscape_ramp() {
+fn heavy_loss_landscape_ramp() -> Result<()> {
     let base_id = "Single AP - Loss Landscape - Ramp".to_string();
     let base_title = "Single AP - Loss Landscape - Ramp";
     let path = Path::new(COMMON_PATH).join("ramp");
@@ -156,7 +161,8 @@ fn heavy_loss_landscape_ramp() {
         &base_id,
         &path,
         base_title,
-    );
+    )?;
+    Ok(())
 }
 
 #[allow(
@@ -176,7 +182,7 @@ fn create_and_run(
     base_id: &str,
     path: &Path,
     base_title: &str,
-) {
+) -> Result<()> {
     let sample_rate_hz = 2000.0;
     let voxel_size_mm = 2.5;
     let step = (max_delay - min_delay) / support_points as f32;
@@ -195,9 +201,9 @@ fn create_and_run(
         let path = Path::new("results").join(&id);
         if path.is_dir() {
             println!("Found scenario. Loading it!");
-            let mut scenario = Scenario::load(path.as_path());
-            scenario.load_data();
-            scenario.load_results();
+            let mut scenario = Scenario::load(path.as_path())?;
+            scenario.load_data()?;
+            scenario.load_results()?;
             scenarios.push(scenario);
         } else {
             println!("Didn't find scenario. Building it!");
@@ -226,13 +232,14 @@ fn create_and_run(
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
-            *scenario = Scenario::load(path.as_path());
-            scenario.load_data();
-            scenario.load_results();
+            *scenario = Scenario::load(path.as_path())?;
+            scenario.load_data()?;
+            scenario.load_results()?;
         }
     }
 
     plot_results(path, base_title, scenarios);
+    Ok(())
 }
 
 #[tracing::instrument(level = "trace")]

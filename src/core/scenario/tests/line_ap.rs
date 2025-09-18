@@ -30,7 +30,7 @@ const COMMON_PATH: &str = "tests/core/scenario/line_ap/";
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_sgd() {
+fn heavy_sgd() -> anyhow::Result<()> {
     let base_id = "Line AP";
     let path = Path::new(COMMON_PATH).join("sgd");
 
@@ -50,7 +50,8 @@ fn heavy_sgd() {
         learning_rates,
         base_id,
         &path,
-    );
+    )?;
+    Ok(())
 }
 
 #[allow(
@@ -61,7 +62,7 @@ fn heavy_sgd() {
 )]
 #[test]
 #[ignore = "expensive integration test"]
-fn heavy_adam() {
+fn heavy_adam() -> anyhow::Result<()> {
     let base_id = "Line AP";
     let path = Path::new(COMMON_PATH).join("adam");
 
@@ -82,7 +83,8 @@ fn heavy_adam() {
         learning_rates,
         base_id,
         &path,
-    );
+    )?;
+    Ok(())
 }
 
 #[allow(
@@ -459,7 +461,7 @@ fn create_and_run(
     learning_rates: Vec<f32>,
     base_id: &str,
     path: &Path,
-) {
+) -> anyhow::Result<()> {
     let mut join_handles = Vec::new();
     let mut scenarios = Vec::new();
 
@@ -473,8 +475,7 @@ fn create_and_run(
             println!("Looking for scenario {path:?}");
             let scenario = if path.is_dir() {
                 println!("Found scenario. Loading it!");
-                let scenario = Scenario::load(path.as_path());
-                scenario
+                Scenario::load(path.as_path())
             } else {
                 println!("Didn't find scenario. Building it!");
                 let scenario = build_scenario(
@@ -493,9 +494,9 @@ fn create_and_run(
                     println!("handle {handle:?}");
                     join_handles.push(handle);
                 }
-                scenario
+                Ok(scenario)
             };
-            scenarios.push(scenario);
+            scenarios.push(scenario?);
         }
     }
 
@@ -509,8 +510,7 @@ fn create_and_run(
             println!("Looking for scenario {path:?}");
             let scenario = if path.is_dir() {
                 println!("Found scenario. Loading it!");
-                let scenario = Scenario::load(path.as_path());
-                scenario
+                Scenario::load(path.as_path())
             } else {
                 println!("Didn't find scenario. Building it!");
                 let scenario = build_scenario(
@@ -529,9 +529,9 @@ fn create_and_run(
                     println!("handle {handle:?}");
                     join_handles.push(handle);
                 }
-                scenario
+                Ok(scenario)
             };
-            scenarios.push(scenario);
+            scenarios.push(scenario?);
         }
     }
 
@@ -541,8 +541,9 @@ fn create_and_run(
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
-            *scenario = Scenario::load(path.as_path());
+            *scenario = Scenario::load(path.as_path())?;
         }
     }
     plot_results(path, base_id, &scenarios, number_of_aps, learning_rates);
+    Ok(())
 }

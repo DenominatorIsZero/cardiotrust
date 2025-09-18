@@ -15,16 +15,17 @@ fn building_saves_scenario() {
 }
 
 #[test]
-fn loading_scenarios_works() {
+fn loading_scenarios_works() -> anyhow::Result<()> {
     let path = Path::new("./results/test2");
     if path.is_dir() {
         fs::remove_dir_all(path).unwrap();
     }
     let scenario = Scenario::build(Some("test2".to_string()));
 
-    let loaded = Scenario::load(path);
+    let loaded = Scenario::load(path)?;
 
     assert_eq!(scenario, loaded);
 
     fs::remove_dir_all(path).unwrap();
+    Ok(())
 }

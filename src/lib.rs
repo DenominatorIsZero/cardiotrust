@@ -24,6 +24,7 @@ use std::{
     thread::JoinHandle,
 };
 
+use anyhow::{Context, Result};
 use bevy::prelude::*;
 use tracing::{info, warn};
 
@@ -54,25 +55,28 @@ impl ScenarioList {
             entries: Vec::new(),
         }
     }
-}
 
-impl Default for ScenarioList {
     /// Loads existing scenario results from the `./results` directory into a
     /// [`ScenarioList`], sorting them by scenario ID. Creates the `./results`
     /// directory if it does not exist.
     ///
-    /// This provides the default initialized state for the scenario list resource,
-    /// populated from any existing results.
+    /// # Errors
+    ///
+    /// Returns an error if the results directory cannot be created or read.
     #[tracing::instrument(level = "info")]
-    fn default() -> Self {
+    pub fn load() -> Result<Self> {
         info!("Loading scenarios from ./results");
         let mut scenario_list = Self {
             entries: Vec::<ScenarioBundle>::new(),
         };
         let dir = Path::new("./results");
-        create_dir_all(dir).expect("Permission to cearte directory.");
-        for entry in fs::read_dir(dir).expect("Directory to exist") {
-            let entry = entry.expect("Invalid path found");
+        create_dir_all(dir).context("Failed to create ./results directory")?;
+
+        let dir_entries = fs::read_dir(dir)
+            .context("Failed to read ./results directory")?;
+
+        for entry in dir_entries {
+            let entry = entry.context("Failed to read directory entry")?;
             let path = entry.path();
             if path.is_dir() {
                 match Scenario::load(&path) {
@@ -95,6 +99,25 @@ impl Default for ScenarioList {
                 .entries
                 .sort_by_key(|entry| entry.scenario.get_id().clone());
         }
-        scenario_list
+        Ok(scenario_list)
+    }
+}
+
+impl Default for ScenarioList {
+    /// Loads existing scenario results from the `./results` directory into a
+    /// [`ScenarioList`], sorting them by scenario ID. Creates the `./results`
+    /// directory if it does not exist.
+    ///
+    /// This provides the default initialized state for the scenario list resource,
+    /// populated from any existing results. If loading fails, returns an empty list.
+    #[tracing::instrument(level = "info")]
+    fn default() -> Self {
+        match Self::load() {
+            Ok(scenario_list) => scenario_list,
+            Err(e) => {
+                warn!("Failed to load scenarios from ./results directory: {}", e);
+                Self::empty()
+            }
+        }
     }
 }

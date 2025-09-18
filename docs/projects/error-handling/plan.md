@@ -78,13 +78,13 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 
 ### 5. Scheduler & Application Control
 
-**Status**: [ ] Pending
+**Status**: [x] Complete
 **Dependencies**: Task 4 complete
 
 **Implementation Steps**:
 
-- [ ] `src/scheduler.rs` (3 unwraps + 3 critical panic! calls in thread management)
-- [ ] `src/lib.rs` (3 unwraps in scenario loading)
+- [x] `src/scheduler.rs` (3 unwraps + 3 critical panic! calls in thread management)
+- [x] `src/lib.rs` (3 unwraps in scenario loading)
 
 ### 6. Visualization & UI
 

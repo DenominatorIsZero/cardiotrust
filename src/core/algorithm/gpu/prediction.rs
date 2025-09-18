@@ -1,4 +1,4 @@
-use anyhow::{Context as AnyhowContext, Result};
+use anyhow::{Context, Result};
 use ocl::{Kernel, Program};
 
 use super::GPU;
@@ -30,12 +30,10 @@ impl PredictionKernel {
         let queue = &gpu.queue;
         let device = &gpu.device;
 
-        let atomic_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl")
-                .context("Failed to read atomic kernel source file")?;
-        let innovate_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/innovate.cl")
-                .context("Failed to read innovate kernel source file")?;
+        let atomic_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl")
+            .context("Failed to read atomic kernel source file")?;
+        let innovate_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/innovate.cl")
+            .context("Failed to read innovate kernel source file")?;
         let innovate_program = Program::builder()
             .src(format!("{atomic_src}\n{innovate_src}"))
             .build(context)
@@ -86,7 +84,8 @@ impl PredictionKernel {
             .build()
             .context("Failed to build add control function kernel")?;
 
-        let max_size = device.max_wg_size()
+        let max_size = device
+            .max_wg_size()
             .context("Failed to query GPU device maximum work group size")?;
         let work_group_size = max_size.min(number_of_states as usize).next_power_of_two();
         let states_work_group_size =
@@ -130,11 +129,14 @@ impl PredictionKernel {
         // This would allow better GPU utilization by processing independent beats simultaneously.
         // See prediction.rs for implementation details.
         unsafe {
-            self.innovate_kernel.enq()
+            self.innovate_kernel
+                .enq()
                 .context("Failed to execute innovate system states kernel")?;
-            self.add_control_kernel.enq()
+            self.add_control_kernel
+                .enq()
                 .context("Failed to execute add control function kernel")?;
-            self.predict_measurements_kernel.enq()
+            self.predict_measurements_kernel
+                .enq()
                 .context("Failed to execute predict measurements kernel")?;
         }
         Ok(())
@@ -144,6 +146,7 @@ impl PredictionKernel {
 #[cfg(test)]
 mod tests {
 
+    use anyhow::Context;
     use approx::assert_relative_eq;
 
     use crate::core::{

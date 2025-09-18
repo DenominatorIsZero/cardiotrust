@@ -1,5 +1,7 @@
 use std::{path::Path, sync::mpsc::channel, thread};
 
+use anyhow::Result;
+
 use super::RUN_IN_TESTS;
 use crate::{
     core::{
@@ -34,14 +36,15 @@ enum ScenarioType {
 )]
 #[test]
 #[ignore = "expensive runtime test"]
-fn heavy_runtime_line() {
+fn heavy_runtime_line() -> Result<()> {
     let base_id = "Runtime Line";
     let path = Path::new(COMMON_PATH);
 
     let scenario_type = ScenarioType::Line;
     let voxel_counts = VOXELS_IN_LINE.to_vec();
 
-    create_and_run(scenario_type, &voxel_counts, base_id, path);
+    create_and_run(scenario_type, &voxel_counts, base_id, path)?;
+    Ok(())
 }
 
 #[allow(
@@ -52,14 +55,15 @@ fn heavy_runtime_line() {
 )]
 #[test]
 #[ignore = "expensive runtime test"]
-fn heavy_runtime_sheet() {
+fn heavy_runtime_sheet() -> Result<()> {
     let base_id = "Runtime Sheet";
     let path = Path::new(COMMON_PATH);
 
     let scenario_type = ScenarioType::Sheet;
     let voxel_counts = VOXELS_IN_SHEET.to_vec();
 
-    create_and_run(scenario_type, &voxel_counts, base_id, path);
+    create_and_run(scenario_type, &voxel_counts, base_id, path)?;
+    Ok(())
 }
 
 #[allow(
@@ -70,14 +74,15 @@ fn heavy_runtime_sheet() {
 )]
 #[test]
 #[ignore = "expensive runtime test"]
-fn heavy_runtime_cube() {
+fn heavy_runtime_cube() -> anyhow::Result<()> {
     let base_id = "Runtime Cube";
     let path = Path::new(COMMON_PATH);
 
     let scenario_type = ScenarioType::Cube;
     let voxel_counts = VOXELS_IN_CUBE.to_vec();
 
-    create_and_run(scenario_type, &voxel_counts, base_id, path);
+    create_and_run(scenario_type, &voxel_counts, base_id, path)?;
+    Ok(())
 }
 
 #[tracing::instrument(level = "trace")]
@@ -86,7 +91,7 @@ fn create_and_run(
     voxel_counts: &Vec<i32>,
     base_id: &str,
     path: &Path,
-) {
+) -> Result<()> {
     let mut join_handles = Vec::new();
     let mut scenarios = Vec::new();
 
@@ -100,7 +105,7 @@ fn create_and_run(
             println!("Looking for scenario {path:?}");
             let scenario = if path.is_dir() {
                 println!("Found scenario. Loading it!");
-                let scenario = Scenario::load(path.as_path());
+                let scenario = Scenario::load(path.as_path())?;
                 scenario
             } else {
                 println!("Didn't find scenario. Building it!");
@@ -132,10 +137,11 @@ fn create_and_run(
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
-            *scenario = Scenario::load(path.as_path());
+            *scenario = Scenario::load(path.as_path())?;
         }
     }
     plot_results(path, base_id, &scenarios, voxel_counts, scenario_type);
+    Ok(())
 }
 
 #[allow(
