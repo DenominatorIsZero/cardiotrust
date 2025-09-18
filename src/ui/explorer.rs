@@ -5,6 +5,7 @@ use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
 use egui::ProgressBar;
 use egui_extras::{Column, TableBuilder};
+use tracing::error;
 
 use super::UiState;
 use crate::{
@@ -220,7 +221,9 @@ fn draw_row(
                 )
                 .lost_focus()
             {
-                scenario_list.entries[index].scenario.save().unwrap();
+                if let Err(e) = scenario_list.entries[index].scenario.save() {
+                    error!("Failed to save scenario: {}", e);
+                }
             }
         });
     });

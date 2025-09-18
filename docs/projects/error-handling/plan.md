@@ -67,14 +67,14 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 
 ### 4. Scenario Management
 
-**Status**: [ ] Pending
+**Status**: [x] Complete
 **Dependencies**: Task 3 complete
 
 **Implementation Steps**:
 
-- [ ] `src/core/scenario.rs` (30 unwraps + 2 critical panic! calls in loading)
-- [ ] `src/core/scenario/results.rs` (9 unwraps)
-- [ ] `src/core/scenario/summary.rs`
+- [x] `src/core/scenario.rs` (30 unwraps + 2 critical panic! calls in loading)
+- [x] `src/core/scenario/results.rs` (9 unwraps)
+- [x] `src/core/scenario/summary.rs`
 
 ### 5. Scheduler & Application Control
 

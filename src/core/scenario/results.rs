@@ -399,7 +399,7 @@ mod tests {
         let program = Program::builder()
             .src(kernel_src)
             .build(&gpu.context)
-            .unwrap();
+            .context("Failed to build OpenCL program for results modification kernel")?;
 
         let kernel = Kernel::builder()
             .program(&program)
@@ -411,16 +411,17 @@ mod tests {
             ])
             .arg_named("ap_outputs_now", &results_gpu.estimations.ap_outputs_now)
             .build()
-            .unwrap();
+            .context("Failed to build results modification kernel")?;
 
         unsafe {
-            kernel.enq().unwrap();
+            kernel.enq()
+                .context("Failed to execute results modification kernel")?;
         }
 
         for index_state in 0..results_from_cpu
             .model
             .as_ref()
-            .unwrap()
+            .context("Model not available for results test")?
             .spatial_description
             .voxels
             .count_states()
@@ -439,12 +440,12 @@ mod tests {
                 .estimations
                 .ap_outputs_now
                 .as_slice()
-                .unwrap(),
+                .context("Failed to get AP outputs slice for comparison")?,
             results_from_cpu
                 .estimations
                 .ap_outputs_now
                 .as_slice()
-                .unwrap(),
+                .context("Failed to get AP outputs slice for comparison")?,
             epsilon = 1e-6
         );
         assert_eq!(results_from_cpu, results_from_gpu);

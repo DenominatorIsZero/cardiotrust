@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
 use egui::Separator;
+use tracing::error;
 
 use super::UiState;
 use crate::{
@@ -70,8 +71,12 @@ pub fn draw_ui_topbar(
             {
                 let index = selected_scenario.index.expect("Index to be some.");
                 let scenario = &mut scenario_list.entries[index].scenario;
-                scenario.load_data();
-                scenario.load_results();
+                if let Err(e) = scenario.load_data() {
+                    error!("Failed to load scenario data: {}", e);
+                }
+                if let Err(e) = scenario.load_results() {
+                    error!("Failed to load scenario results: {}", e);
+                }
                 commands.insert_resource(NextState::Pending(UiState::Results));
             }
             if ui
@@ -89,8 +94,12 @@ pub fn draw_ui_topbar(
             {
                 let index = selected_scenario.index.expect("Index to be some.");
                 let scenario = &mut scenario_list.entries[index].scenario;
-                scenario.load_data();
-                scenario.load_results();
+                if let Err(e) = scenario.load_data() {
+                    error!("Failed to load scenario data: {}", e);
+                }
+                if let Err(e) = scenario.load_results() {
+                    error!("Failed to load scenario results: {}", e);
+                }
                 commands.insert_resource(NextState::Pending(UiState::Volumetric));
             }
             ui.add(Separator::default().spacing(200.0));

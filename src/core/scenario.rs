@@ -16,7 +16,7 @@ use chrono::{self, DateTime, Utc};
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
 use toml;
-use tracing::{debug, info, trace};
+use tracing::{debug, info, trace, warn};
 
 use self::{results::Results, summary::Summary};
 use super::{
@@ -121,28 +121,20 @@ impl Scenario {
     /// Reads the contents of the scenario.toml file and parses it into a
     /// Scenario struct.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the scenario.toml file could not be read or parsed.
-    #[must_use]
+    /// Returns an error if the scenario.toml file could not be read or parsed.
     #[tracing::instrument(level = "info", skip_all)]
-    pub fn load(path: &Path) -> Self {
+    pub fn load(path: &Path) -> Result<Self> {
         info!("Loading scenario from {}", path.to_string_lossy());
-        let contents = fs::read_to_string(path.join("scenario.toml")).unwrap_or_else(|_| {
-            panic!(
-                "Could not read scenario.toml file in directory '{}'",
-                path.to_string_lossy()
-            )
-        });
+        let scenario_path = path.join("scenario.toml");
+        let contents = fs::read_to_string(&scenario_path)
+            .with_context(|| format!("Failed to read scenario.toml file: {}", scenario_path.display()))?;
 
-        let scenario: Self = toml::from_str(&contents).unwrap_or_else(|_| {
-            panic!(
-                "Could not parse data found in scenario.toml in directory '{}'",
-                path.to_string_lossy()
-            )
-        });
+        let scenario: Self = toml::from_str(&contents)
+            .with_context(|| format!("Failed to parse scenario.toml in directory: {}", path.display()))?;
 
-        scenario
+        Ok(scenario)
     }
 
     /// Saves the Scenario to a scenario.toml file in the ./results directory.
@@ -158,10 +150,11 @@ impl Scenario {
     ///
     /// This function will return an error if scenario.toml file could not be created.
     #[tracing::instrument(level = "info", skip(self))]
-    pub fn save(&self) -> Result<(), std::io::Error> {
+    pub fn save(&self) -> Result<()> {
         info!("Saving scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
-        let toml = toml::to_string(&self).unwrap();
+        let toml = toml::to_string(&self)
+            .context("Failed to serialize scenario to TOML format")?;
         fs::create_dir_all(&path)?;
         let mut f = File::create(path.join("scenario.toml"))?;
         f.write_all(toml.as_bytes())?;
@@ -311,8 +304,13 @@ impl Scenario {
     pub fn set_done(&mut self) {
         debug!("Setting scenario status to done");
         self.status = Status::Done;
-        self.finished = Some(Utc::now());
-        self.duration_s = Some((self.finished.unwrap() - self.started.unwrap()).num_seconds());
+        let finished_time = Utc::now();
+        self.finished = Some(finished_time);
+        if let Some(started_time) = self.started {
+            self.duration_s = Some((finished_time - started_time).num_seconds());
+        } else {
+            warn!("Scenario finished without a recorded start time - duration calculation skipped");
+        }
     }
 
     /// Deletes the results directory for this scenario.
@@ -358,11 +356,15 @@ impl Scenario {
             Status::Running(0) => "ETC: ???".to_string(),
             Status::Running(_) => {
                 let now = Utc::now();
-                let duration = self.last_update.unwrap() - self.started.unwrap();
+                let (started, last_update) = match (self.started, self.last_update) {
+                    (Some(s), Some(l)) => (s, l),
+                    _ => return "ETC: ???".to_string(),
+                };
+                let duration = last_update - started;
                 let ellapsed_second = duration.num_seconds();
                 let progress = self.get_progress();
                 let remaining = 1.0 - progress;
-                let meanwhile = now - self.last_update.unwrap();
+                let meanwhile = now - last_update;
                 let remaining_seconds_total = (ellapsed_second as f32 / progress * remaining)
                     as i64
                     - meanwhile.num_seconds();
@@ -391,17 +393,19 @@ impl Scenario {
     ///
     /// This function will return an error if the results directory could not be created or the data file could not be written.
     #[tracing::instrument(level = "debug")]
-    fn save_data(&self) -> Result<(), std::io::Error> {
+    fn save_data(&self) -> Result<()> {
         debug!("Saving scenario data for scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
         let mut f = File::create(path.join("data.bin"))?;
+        let data = self.data.as_ref()
+            .context("Data not available for saving")?;
         bincode::serde::encode_into_std_write(
-            self.data.as_ref().unwrap(),
+            data,
             &mut f,
             bincode::config::standard(),
         )
-        .unwrap();
+        .context("Failed to serialize data to binary format")?;
         Ok(())
     }
 
@@ -411,64 +415,72 @@ impl Scenario {
     ///
     /// This function will return an error if the results directory could not be created or the results file could not be written.
     #[tracing::instrument(level = "debug")]
-    fn save_results(&self) -> Result<(), std::io::Error> {
+    fn save_results(&self) -> Result<()> {
         debug!("Saving scenario results for scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
         let mut f = File::create(path.join("results.bin"))?;
+        let results = self.results.as_ref()
+            .context("Results not available for saving")?;
         bincode::serde::encode_into_std_write(
-            self.results.as_ref().unwrap(),
+            results,
             &mut f,
             bincode::config::standard(),
         )
-        .unwrap();
+        .context("Failed to serialize results to binary format")?;
         Ok(())
     }
 
     /// Loads the scenario data from the data.bin file in the results directory if it exists.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the data.bin file can not be parsed into the data struct.
+    /// Returns an error if the data.bin file cannot be read or parsed.
     #[tracing::instrument(level = "debug")]
-    pub fn load_data(&mut self) {
+    pub fn load_data(&mut self) -> Result<()> {
         debug!("Loading scenario data for scenario with id {}", self.id);
         if self.data.is_some() {
-            return;
+            return Ok(());
         }
         let file_path = Path::new("./results").join(&self.id).join("data.bin");
         if file_path.is_file() {
+            let file = File::open(&file_path)
+                .with_context(|| format!("Failed to open data file: {}", file_path.display()))?;
             self.data = Some(
                 bincode::serde::decode_from_std_read(
-                    &mut BufReader::new(File::open(file_path).unwrap()),
+                    &mut BufReader::new(file),
                     bincode::config::standard(),
                 )
-                .unwrap(),
+                .context("Failed to deserialize data from binary format")?,
             );
         }
+        Ok(())
     }
 
     /// Loads the scenario results from the results.bin file in the results directory if it exists.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the results.bin file can not be parsed into the results struct.
+    /// Returns an error if the results.bin file cannot be read or parsed.
     #[tracing::instrument(level = "debug")]
-    pub fn load_results(&mut self) {
+    pub fn load_results(&mut self) -> Result<()> {
         debug!("Loading scenario results for scenario with id {}", self.id);
         if self.results.is_some() {
-            return;
+            return Ok(());
         }
         let file_path = Path::new("./results").join(&self.id).join("results.bin");
         if file_path.is_file() {
+            let file = File::open(&file_path)
+                .with_context(|| format!("Failed to open results file: {}", file_path.display()))?;
             self.results = Some(
                 bincode::serde::decode_from_std_read(
-                    &mut BufReader::new(File::open(file_path).unwrap()),
+                    &mut BufReader::new(file),
                     bincode::config::standard(),
                 )
-                .unwrap(),
+                .context("Failed to deserialize results from binary format")?,
             );
         }
+        Ok(())
     }
 
     /// Saves the scenario data and results as .npy files in the results directory.

@@ -5,6 +5,7 @@ use std::{
 };
 
 use bevy::prelude::*;
+use tracing::error;
 
 use crate::{
     core::scenario::{run, Status},
@@ -159,7 +160,9 @@ pub fn check_scenarios(
                         entry.join_handle = None;
                         entry.epoch_rx = None;
                         entry.summary_rx = None;
-                        entry.scenario.save().expect("Scenarion to be parseable.");
+                        if let Err(e) = entry.scenario.save() {
+                            error!("Failed to save scenario {}: {}", entry.scenario.get_id(), e);
+                        }
                     }
                 }
                 None => panic!("Running scenario does not have a join handle."),

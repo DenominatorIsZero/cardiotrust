@@ -25,6 +25,7 @@ use std::{
 };
 
 use bevy::prelude::*;
+use tracing::{info, warn};
 
 use crate::core::scenario::{summary::Summary, Scenario};
 
@@ -74,12 +75,19 @@ impl Default for ScenarioList {
             let entry = entry.expect("Invalid path found");
             let path = entry.path();
             if path.is_dir() {
-                scenario_list.entries.push(ScenarioBundle {
-                    scenario: Scenario::load(&path),
-                    join_handle: None,
-                    epoch_rx: None,
-                    summary_rx: None,
-                });
+                match Scenario::load(&path) {
+                    Ok(scenario) => {
+                        scenario_list.entries.push(ScenarioBundle {
+                            scenario,
+                            join_handle: None,
+                            epoch_rx: None,
+                            summary_rx: None,
+                        });
+                    }
+                    Err(e) => {
+                        warn!("Failed to load scenario from {}: {}", path.display(), e);
+                    }
+                }
             }
         }
         if !scenario_list.entries.is_empty() {

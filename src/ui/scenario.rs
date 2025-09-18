@@ -6,6 +6,7 @@ use bevy::prelude::*;
 use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
 use bevy_egui::{egui, EguiContexts};
 use egui::Align;
+use tracing::error;
 
 use self::{algorithm::draw_ui_scenario_algoriothm, data::draw_ui_scenario_data};
 use crate::{
@@ -126,7 +127,9 @@ fn draw_ui_scenario_topbar(
                 _ => (),
             }
             if ui.button("Save").clicked() {
-                scenario.save().unwrap();
+                if let Err(e) = scenario.save() {
+                    error!("Failed to save scenario: {}", e);
+                }
             } else if ui.button("Delete").clicked() {
                 scenario.delete().unwrap();
                 scenarios.entries.remove(index);
@@ -150,7 +153,9 @@ fn draw_ui_scenario_topbar(
                 .add(egui::TextEdit::multiline(&mut scenario.comment).desired_width(f32::INFINITY))
                 .lost_focus()
             {
-                scenario.save().unwrap();
+                if let Err(e) = scenario.save() {
+                    error!("Failed to save scenario: {}", e);
+                }
             }
         });
     });
