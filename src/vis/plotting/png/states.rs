@@ -1,4 +1,6 @@
-use std::{error::Error, path::Path};
+use std::path::Path;
+
+use anyhow::Result;
 
 use ndarray::{Array2, Axis};
 use tracing::trace;
@@ -26,7 +28,7 @@ pub(crate) fn states_plot(
     slice: Option<PlotSlice>,
     mode: Option<StatePlotMode>,
     time_step: usize,
-) -> Result<PngBundle, Box<dyn Error>> {
+) -> Result<PngBundle> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let mode = mode.unwrap_or(StatePlotMode::X);
@@ -118,12 +120,12 @@ pub(crate) fn states_spherical_plot(
     mode: Option<StateSphericalPlotMode>,
     time_step: Option<usize>,
     range: Option<(f32, f32)>,
-) -> Result<PngBundle, Box<dyn Error>> {
+) -> Result<PngBundle> {
     trace!("Generating activation time plot");
     let slice = slice.unwrap_or(PlotSlice::Z(0));
     let mode = mode.unwrap_or(StateSphericalPlotMode::ABS);
     if voxel_size_mm <= 0.0 {
-        return Err("Voxel size must be a positive number".into());
+        return Err(anyhow::anyhow!("Voxel size must be a positive number"));
     }
     let step = Some((voxel_size_mm, voxel_size_mm));
 
@@ -262,7 +264,7 @@ mod test {
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_plot_default() {
+    fn test_states_plot_default() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_default.png")];
@@ -270,8 +272,7 @@ mod test {
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_plot(
             &data.simulation.system_states,
@@ -287,15 +288,15 @@ mod test {
             Some(PlotSlice::Z(0)),
             Some(StatePlotMode::X),
             350,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_plot_x_slice() {
+    fn test_states_plot_x_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_x_slice.png")];
@@ -304,7 +305,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         states_plot(
             &data.simulation.system_states,
@@ -320,15 +321,15 @@ mod test {
             Some(PlotSlice::X(10)),
             Some(StatePlotMode::X),
             350,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_plot_y_slice() {
+    fn test_states_plot_y_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_y_slice.png")];
@@ -337,7 +338,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
         states_plot(
             &data.simulation.system_states,
             &data
@@ -352,15 +353,15 @@ mod test {
             Some(PlotSlice::Y(5)),
             Some(StatePlotMode::X),
             350,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_plot_in_y() {
+    fn test_states_plot_in_y() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_in_y.png")];
@@ -369,7 +370,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         states_plot(
             &data.simulation.system_states,
@@ -385,15 +386,15 @@ mod test {
             Some(PlotSlice::Z(0)),
             Some(StatePlotMode::Y),
             350,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_plot_in_z() {
+    fn test_states_plot_in_z() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_in_z.png")];
@@ -402,7 +403,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         states_plot(
             &data.simulation.system_states,
@@ -418,15 +419,15 @@ mod test {
             Some(PlotSlice::Z(0)),
             Some(StatePlotMode::Z),
             350,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_spherical_plot_abs_z_slice() {
+    fn test_states_spherical_plot_abs_z_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_spherical_abs_z_slice.png")];
@@ -435,7 +436,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -453,15 +454,15 @@ mod test {
             Some(StateSphericalPlotMode::ABS),
             Some(350),
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_spherical_plot_abs_y_slice() {
+    fn test_states_spherical_plot_abs_y_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_spherical_abs_y_slice.png")];
@@ -470,7 +471,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -488,15 +489,15 @@ mod test {
             Some(StateSphericalPlotMode::ABS),
             Some(350),
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_spherical_plot_abs_x_slice() {
+    fn test_states_spherical_plot_abs_x_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_spherical_abs_x_slice.png")];
@@ -505,7 +506,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -523,15 +524,15 @@ mod test {
             Some(StateSphericalPlotMode::ABS),
             Some(350),
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_spherical_plot_angle_z_slice() {
+    fn test_states_spherical_plot_angle_z_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_spherical_angle_z_slice.png")];
@@ -540,7 +541,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -558,15 +559,15 @@ mod test {
             Some(StateSphericalPlotMode::ANGLE),
             Some(350),
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_spherical_plot_angle_y_slice() {
+    fn test_states_spherical_plot_angle_y_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_spherical_angle_y_slice.png")];
@@ -575,7 +576,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -593,15 +594,15 @@ mod test {
             Some(StateSphericalPlotMode::ANGLE),
             Some(350),
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_spherical_plot_angle_x_slice() {
+    fn test_states_spherical_plot_angle_x_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_spherical_angle_x_slice.png")];
@@ -610,7 +611,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -628,15 +629,15 @@ mod test {
             Some(StateSphericalPlotMode::ANGLE),
             Some(350),
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_spherical_plot_abs_max() {
+    fn test_states_spherical_plot_abs_max() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_spherical_abs_max.png")];
@@ -645,7 +646,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -663,15 +664,15 @@ mod test {
             Some(StateSphericalPlotMode::ABS),
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_states_spherical_plot_angle_max() {
+    fn test_states_spherical_plot_angle_max() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("states_spherical_angle_max.png")];
@@ -680,7 +681,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -698,9 +699,9 @@ mod test {
             Some(StateSphericalPlotMode::ANGLE),
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 }

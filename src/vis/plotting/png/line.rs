@@ -1,4 +1,6 @@
-use std::{error::Error, io, path::Path};
+use std::{io, path::Path};
+
+use anyhow::Result;
 
 use ndarray::{s, Array1, ArrayBase, Data, Ix1};
 use ndarray_stats::QuantileExt;
@@ -29,7 +31,7 @@ pub fn line_plot<A>(
     x_label: Option<&str>,
     item_labels: Option<&Vec<&str>>,
     resolution: Option<(u32, u32)>,
-) -> Result<PngBundle, Box<dyn Error>>
+) -> Result<PngBundle>
 where
     A: Data<Elem = f32>,
 {
@@ -43,32 +45,36 @@ where
 
     for y in &ys {
         if y.len() != y_len {
-            return Err(Box::new(std::io::Error::new(
+            return Err(std::io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "y data must have same length",
-            )));
+            ).into());
         }
     }
 
     if let Some(item_labels) = item_labels {
         if item_labels.len() != ys.len() {
-            return Err(Box::new(std::io::Error::new(
+            return Err(std::io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "if not None, item_labels must be same length as ys",
-            )));
+            ).into());
         }
     }
 
-    let default_x = x
-        .is_none()
-        .then(|| Array1::linspace(0.0, y_len as f32, y_len));
-    let x = x.unwrap_or_else(|| default_x.as_ref().unwrap());
+    let default_x;
+    let x = match x {
+        Some(x) => x,
+        None => {
+            default_x = Array1::linspace(0.0, y_len as f32, y_len);
+            &default_x
+        }
+    };
 
     if x.len() != y_len {
-        return Err(Box::new(std::io::Error::new(
+        return Err(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "x and y must have same length",
-        )));
+        ).into());
     }
 
     let title = title.unwrap_or("Plot");
@@ -175,7 +181,7 @@ pub fn log_y_plot<A>(
     x_label: Option<&str>,
     item_labels: Option<&Vec<&str>>,
     resolution: Option<(u32, u32)>,
-) -> Result<PngBundle, Box<dyn Error>>
+) -> Result<PngBundle>
 where
     A: Data<Elem = f32>,
 {
@@ -189,32 +195,36 @@ where
 
     for y in &ys {
         if y.len() != y_len {
-            return Err(Box::new(std::io::Error::new(
+            return Err(std::io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "y data must have same length",
-            )));
+            ).into());
         }
     }
 
     if let Some(item_labels) = item_labels {
         if item_labels.len() != ys.len() {
-            return Err(Box::new(std::io::Error::new(
+            return Err(std::io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "if not None, item_labels must be same length as ys",
-            )));
+            ).into());
         }
     }
 
-    let default_x = x
-        .is_none()
-        .then(|| Array1::linspace(0.0, y_len as f32, y_len));
-    let x = x.unwrap_or_else(|| default_x.as_ref().unwrap());
+    let default_x;
+    let x = match x {
+        Some(x) => x,
+        None => {
+            default_x = Array1::linspace(0.0, y_len as f32, y_len);
+            &default_x
+        }
+    };
 
     if x.len() != y_len {
-        return Err(Box::new(std::io::Error::new(
+        return Err(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "x and y must have same length",
-        )));
+        ).into());
     }
 
     let title = title.unwrap_or("Plot");
@@ -324,7 +334,7 @@ pub fn standard_y_plot<A>(
     title: &str,
     y_label: &str,
     x_label: &str,
-) -> Result<PngBundle, Box<dyn Error>>
+) -> Result<PngBundle>
 where
     A: Data<Elem = f32>,
 {
@@ -348,7 +358,7 @@ pub fn standard_log_y_plot<A>(
     title: &str,
     y_label: &str,
     x_label: &str,
-) -> Result<PngBundle, Box<dyn Error>>
+) -> Result<PngBundle>
 where
     A: Data<Elem = f32>,
 {
@@ -381,16 +391,16 @@ pub fn standard_time_plot<A>(
     path: &Path,
     title: &str,
     y_label: &str,
-) -> Result<PngBundle, Box<dyn Error>>
+) -> Result<PngBundle>
 where
     A: Data<Elem = f32>,
 {
     trace!("Generating time plot.");
     if sample_rate_hz <= 0.0 {
-        return Err(Box::new(std::io::Error::new(
+        return Err(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "sample_rate_hz must be greater than zero",
-        )));
+        ).into());
     }
     let x = Array1::linspace(0.0, y.len() as f32 / sample_rate_hz, y.len());
     line_plot(
@@ -428,14 +438,14 @@ pub fn plot_state_xyz(
     sample_rate_hz: f32,
     path: &Path,
     title: &str,
-) -> Result<PngBundle, Box<dyn Error>> {
+) -> Result<PngBundle> {
     trace!("Generating state xyz plot.");
 
     if state_index >= (system_states.num_states() - 2) {
-        return Err(Box::new(std::io::Error::new(
+        return Err(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "state_index out of bounds",
-        )));
+        ).into());
     }
 
     let state_x = system_states.slice(s![.., state_index]);
@@ -465,7 +475,7 @@ mod test {
     const COMMON_PATH: &str = "tests/vis/plotting/png/line";
 
     #[test]
-    fn test_line_plot() {
+    fn test_line_plot() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("line_plot.png")];
@@ -482,10 +492,10 @@ mod test {
             Some("y [a.u.]"),
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]

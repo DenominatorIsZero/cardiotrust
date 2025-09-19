@@ -1,4 +1,6 @@
-use std::{error::Error, f32::consts::PI, io, path::Path};
+use std::{f32::consts::PI, io, path::Path};
+
+use anyhow::Result;
 
 use ndarray::{ArrayBase, Ix2};
 use ndarray_stats::QuantileExt;
@@ -40,7 +42,7 @@ pub fn matrix_plot<A>(
     unit: Option<&str>,
     resolution: Option<(u32, u32)>,
     flip_axis: Option<(bool, bool)>,
-) -> Result<PngBundle, Box<dyn Error>>
+) -> Result<PngBundle>
 where
     A: ndarray::Data<Elem = f32>,
 {
@@ -49,16 +51,16 @@ where
     let (x_step, y_step) = step.map_or((1.0, 1.0), |step| step);
 
     if x_step <= 0.0 {
-        return Err(Box::new(std::io::Error::new(
+        return Err(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "x_step must be greater than zero",
-        )));
+        ).into());
     }
     if y_step <= 0.0 {
-        return Err(Box::new(std::io::Error::new(
+        return Err(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "y_step must be greater than zero",
-        )));
+        ).into());
     }
 
     let dim_x = data.shape()[0];
@@ -276,19 +278,18 @@ pub fn matrix_angle_plot<A>(
     x_label: Option<&str>,
     resolution: Option<(u32, u32)>,
     flip_axis: Option<(bool, bool)>,
-) -> Result<PngBundle, Box<dyn Error>>
+) -> Result<PngBundle>
 where
     A: ndarray::Data<Elem = f32>,
 {
     trace!("Generating matrix angle plot.");
 
     if theta.shape() != phi.shape() {
-        return Err(format!(
+        return Err(anyhow::anyhow!(
             "Theta and phi arrays must have the same shape, but theta is {:?} and phi is {:?}",
             theta.shape(),
             phi.shape()
-        )
-        .into());
+        ));
     }
 
     let dim_x = theta.shape()[0];
@@ -331,16 +332,16 @@ where
     let (x_step, y_step) = step.map_or((1.0, 1.0), |step| step);
 
     if x_step <= 0.0 {
-        return Err(Box::new(std::io::Error::new(
+        return Err(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "x_step must be greater than zero",
-        )));
+        ).into());
     }
     if y_step <= 0.0 {
-        return Err(Box::new(std::io::Error::new(
+        return Err(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "y_step must be greater than zero",
-        )));
+        ).into());
     }
 
     let (x_offset, y_offset) = offset.map_or((0.0, 0.0), |offset| offset);
@@ -562,7 +563,7 @@ mod test {
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_matrix_plot_high() {
+    fn test_matrix_plot_high() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("matrix_plot_high.png")];
@@ -588,15 +589,15 @@ mod test {
             None,
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_matrix_plot_wide() {
+    fn test_matrix_plot_wide() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("matrix_plot_wide.png")];
@@ -622,15 +623,15 @@ mod test {
             None,
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_matrix_plot_single_row() {
+    fn test_matrix_plot_single_row() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("matrix_plot_single_row.png")];
@@ -656,15 +657,15 @@ mod test {
             None,
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_matrix_plot_single_column() {
+    fn test_matrix_plot_single_column() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("matrix_plot_single_column.png")];
@@ -690,15 +691,15 @@ mod test {
             None,
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_matrix_plot_large() {
+    fn test_matrix_plot_large() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("matrix_plot_large.png")];
@@ -724,15 +725,15 @@ mod test {
             None,
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_matrix_plot_custom_labels() {
+    fn test_matrix_plot_custom_labels() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("matrix_plot_custom_lables.png")];
@@ -752,15 +753,15 @@ mod test {
             Some("Custom Unit"),
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_matrix_plot_custom_range() {
+    fn test_matrix_plot_custom_range() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("matrix_plot_custom_range.png")];
@@ -781,15 +782,15 @@ mod test {
             None,
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_matrix_plot_custom_step() {
+    fn test_matrix_plot_custom_step() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("matrix_plot_custom_step.png")];
@@ -810,15 +811,15 @@ mod test {
             None,
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_matrix_plot_custom_offset() {
+    fn test_matrix_plot_custom_offset() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("matrix_plot_custom_offset.png")];
@@ -839,10 +840,10 @@ mod test {
             None,
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]

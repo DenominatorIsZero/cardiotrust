@@ -111,11 +111,11 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 - [x] `src/vis/plotting/gif/matrix.rs` (2 unwraps)
 - [x] `src/vis/plotting/png/delay.rs` (3 unwraps)
 - [x] `src/vis/plotting/png/propagation_speed.rs` (3 unwraps)
-- [ ] `src/vis/plotting/png/states.rs` (26 unwraps)
-- [ ] `src/vis/plotting/png/activation_time.rs` (6 unwraps)
-- [ ] `src/vis/plotting/png/voxel_type.rs` (6 unwraps)
-- [ ] `src/vis/plotting/png/line.rs` (13 unwraps)
-- [ ] `src/vis/plotting/png/matrix.rs` (9 unwraps)
+- [x] `src/vis/plotting/png/states.rs` (26 unwraps)
+- [x] `src/vis/plotting/png/activation_time.rs` (6 unwraps)
+- [x] `src/vis/plotting/png/voxel_type.rs` (6 unwraps)
+- [x] `src/vis/plotting/png/line.rs` (13 unwraps)
+- [x] `src/vis/plotting/png/matrix.rs` (9 unwraps)
 
 ### 7. Application Entry Points
 

@@ -1,4 +1,6 @@
-use std::{error::Error, path::Path};
+use std::path::Path;
+
+use anyhow::Result;
 
 use bevy::color::ColorToPacked;
 use ndarray::Axis;
@@ -35,7 +37,7 @@ pub fn voxel_type_plot(
     voxel_size_mm: f32,
     path: Option<&Path>,
     slice: Option<PlotSlice>,
-) -> Result<PngBundle, Box<dyn Error>> {
+) -> Result<PngBundle> {
     trace!("Generating voxel type plot.");
 
     let slice = slice.unwrap_or(PlotSlice::Z(0));
@@ -248,7 +250,7 @@ mod test {
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_voxel_type_plot_default() {
+    fn test_voxel_type_plot_default() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("types_default.png")];
@@ -257,7 +259,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         voxel_type_plot(
             &data.simulation.model.spatial_description.voxels.types,
@@ -270,15 +272,15 @@ mod test {
             data.simulation.model.spatial_description.voxels.size_mm,
             Some(files[0].as_path()),
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_voxel_type_plot_x_slice() {
+    fn test_voxel_type_plot_x_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("types_x_slice.png")];
@@ -287,7 +289,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         voxel_type_plot(
             &data.simulation.model.spatial_description.voxels.types,
@@ -300,15 +302,15 @@ mod test {
             data.simulation.model.spatial_description.voxels.size_mm,
             Some(files[0].as_path()),
             Some(PlotSlice::X(10)),
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_voxel_type_plot_y_slice() {
+    fn test_voxel_type_plot_y_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("types_y_slice.png")];
@@ -317,7 +319,7 @@ mod test {
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .expect("Model parameters to be valid.");
+?;
 
         voxel_type_plot(
             &data.simulation.model.spatial_description.voxels.types,
@@ -330,9 +332,9 @@ mod test {
             data.simulation.model.spatial_description.voxels.size_mm,
             Some(files[0].as_path()),
             Some(PlotSlice::Y(5)),
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 }
