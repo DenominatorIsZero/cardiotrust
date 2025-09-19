@@ -1,5 +1,6 @@
 use std::process::Command;
 
+use anyhow::{Context, Result};
 use bevy::prelude::*;
 use cardiotrust::core::{
     algorithm::refinement::Optimizer,
@@ -11,42 +12,28 @@ use tracing_subscriber::{fmt, layer::SubscriberExt};
 
 #[tracing::instrument(level = "info")]
 fn main() {
-    let file_appender = tracing_appender::rolling::daily("./logs", "CardioPlanner.log");
-    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    if let Err(e) = run_planner() {
+        eprintln!("Scenario planning failed: {:#}", e);
+        std::process::exit(1);
+    }
+}
 
-    // Combine multiple layers together
-    let subscriber = tracing_subscriber::registry()
-        .with(
-            fmt::Layer::new()
-                .with_writer(std::io::stdout) // Logs to stdout
-                .with_thread_names(true)
-                .with_ansi(true),
-        ) // For colored logs in the console
-        .with(
-            fmt::Layer::new()
-                .with_writer(non_blocking) // Logs to file
-                .with_thread_names(true)
-                .with_line_number(true)
-                .fmt_fields(fmt::format::PrettyFields::new())
-                .with_ansi(false),
-        ); // Typically, file logs don't need ANSI colors
+fn run_planner() -> Result<()> {
+    // Set up logging with graceful fallback
+    setup_logging().context("Failed to set up logging for planner")?;
 
-    // Apply the combined subscriber to the current context
-    tracing::subscriber::set_global_default(subscriber).expect("Setting default subscriber failed");
+    // Get git hash with fallback to "unknown"
+    let git_hash = get_git_hash();
 
-    let output = Command::new("git")
-        .args(["rev-parse", "HEAD"])
-        .output()
-        .unwrap();
-    let git_hash = String::from_utf8(output.stdout).unwrap();
+    info!("Starting CardioTRust planner. Git hash: {}", git_hash);
 
-    info!("Starting CardioTRust application. Git hash: {}", git_hash);
+    plan_scenarios().context("Failed to plan scenarios")?;
 
-    plan_scenarios()
+    Ok(())
 }
 
 #[tracing::instrument(level = "info")]
-fn plan_scenarios() {
+fn plan_scenarios() -> Result<()> {
     let learning_rate = 100.0;
     let steps = 30_000;
     let batch_size = 1;
@@ -78,8 +65,10 @@ fn plan_scenarios() {
     let mut scenario = Scenario::build(Some(format!("{experiment_name} - (I) - Static Array")));
     scenario.config.algorithm = algorithm_config.clone();
     scenario.config.simulation = simulation_config.clone();
-    scenario.schedule().expect("Scheduling to succeed");
-    scenario.save().expect("Scenario to save");
+    scenario.schedule()
+        .with_context(|| format!("Failed to schedule static array scenario for experiment '{}'", experiment_name))?;
+    scenario.save()
+        .with_context(|| format!("Failed to save static array scenario for experiment '{}'", experiment_name))?;
 
     if false {
         for y_step_exp in 1..=10 {
@@ -94,8 +83,10 @@ fn plan_scenarios() {
             )));
             scenario.config.algorithm = algorithm_config.clone();
             scenario.config.simulation = simulation_config.clone();
-            scenario.schedule().expect("Scheduling to succeed");
-            scenario.save().expect("Scenario to save");
+            scenario.schedule()
+                .with_context(|| format!("Failed to schedule Y-motion scenario for experiment '{}', {} steps", experiment_name, y_step))?;
+            scenario.save()
+                .with_context(|| format!("Failed to save Y-motion scenario for experiment '{}', {} steps", experiment_name, y_step))?;
         }
     }
 
@@ -111,8 +102,10 @@ fn plan_scenarios() {
         )));
         scenario.config.algorithm = algorithm_config.clone();
         scenario.config.simulation = simulation_config.clone();
-        scenario.schedule().expect("Scheduling to succeed");
-        scenario.save().expect("Scenario to save");
+        scenario.schedule()
+            .with_context(|| format!("Failed to schedule XYZ-motion scenario for experiment '{}', {} total steps", experiment_name, total_steps))?;
+        scenario.save()
+            .with_context(|| format!("Failed to save XYZ-motion scenario for experiment '{}', {} total steps", experiment_name, total_steps))?;
     }
 
     for lr_exp in -3..=4 {
@@ -130,7 +123,81 @@ fn plan_scenarios() {
         )));
         scenario.config.algorithm = algorithm_config.clone();
         scenario.config.simulation = simulation_config.clone();
-        scenario.schedule().expect("Scheduling to succeed");
-        scenario.save().expect("Scenario to save");
+        scenario.schedule()
+            .with_context(|| format!("Failed to schedule LR sweep scenario for experiment '{}', learning rate {}", experiment_name, lr))?;
+        scenario.save()
+            .with_context(|| format!("Failed to save LR sweep scenario for experiment '{}', learning rate {}", experiment_name, lr))?;
     }
+
+    Ok(())
+}
+
+fn setup_logging() -> Result<()> {
+    // Try to set up file logging, fall back to stdout-only if it fails
+    if let Err(e) = try_setup_file_logging() {
+        eprintln!("Warning: Could not set up file logging ({}), using stdout only", e);
+        setup_stdout_logging()?;
+    }
+
+    Ok(())
+}
+
+fn setup_stdout_logging() -> Result<()> {
+    let subscriber = tracing_subscriber::registry()
+        .with(
+            fmt::Layer::new()
+                .with_writer(std::io::stdout)
+                .with_thread_names(true)
+                .with_ansi(true),
+        );
+
+    tracing::subscriber::set_global_default(subscriber)
+        .map_err(|e| anyhow::anyhow!("Failed to set up stdout logging: {}", e))?;
+
+    Ok(())
+}
+
+fn try_setup_file_logging() -> Result<()> {
+    let file_appender = tracing_appender::rolling::daily("./logs", "CardioPlanner.log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+
+    // Store the guard to prevent it from being dropped
+    std::mem::forget(_guard);
+
+    let subscriber = tracing_subscriber::registry()
+        .with(
+            fmt::Layer::new()
+                .with_writer(std::io::stdout)
+                .with_thread_names(true)
+                .with_ansi(true),
+        )
+        .with(
+            fmt::Layer::new()
+                .with_writer(non_blocking)
+                .with_thread_names(true)
+                .with_line_number(true)
+                .fmt_fields(fmt::format::PrettyFields::new())
+                .with_ansi(false),
+        );
+
+    tracing::subscriber::set_global_default(subscriber)
+        .map_err(|e| anyhow::anyhow!("Failed to set up file logging: {}", e))?;
+
+    Ok(())
+}
+
+fn get_git_hash() -> String {
+    Command::new("git")
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .ok()
+        .and_then(|output| {
+            if output.status.success() {
+                String::from_utf8(output.stdout).ok()
+            } else {
+                None
+            }
+        })
+        .map(|hash| hash.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string())
 }

@@ -211,7 +211,7 @@ impl Scenario {
     /// This function will return an error if scenario is not in plannig
     /// phase.
     #[tracing::instrument(level = "debug")]
-    pub fn schedule(&mut self) -> Result<(), String> {
+    pub fn schedule(&mut self) -> anyhow::Result<()> {
         debug!("Scheduling scenario");
         match self.status {
             Status::Planning => {
@@ -219,7 +219,7 @@ impl Scenario {
                 self.unify_configs();
                 Ok(())
             }
-            _ => Err(format!(
+            _ => Err(anyhow::anyhow!(
                 "Can only schedule scenarios that are in the planning\
              phase but scenario was in phase {:?}",
                 self.get_status_str()

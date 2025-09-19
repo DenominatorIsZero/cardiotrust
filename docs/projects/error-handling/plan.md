@@ -119,13 +119,14 @@ Replace all unwrap/expect calls with anyhow::Result types and eliminate applicat
 
 ### 7. Application Entry Points
 
-**Status**: [ ] Pending
+**Status**: [x] Complete
 **Dependencies**: Task 6 complete
 
 **Implementation Steps**:
 
-- [ ] `src/bin/main.rs` (3 unwraps - git hash retrieval and logging setup)
-- [ ] `src/bin/planner.rs` (11 unwraps)
+- [x] `src/bin/main.rs` (3 unwraps - git hash retrieval and logging setup)
+- [x] `src/bin/planner.rs` (11 unwraps)
+- [x] `src/core/scenario.rs` - Updated `schedule()` method to return `anyhow::Result<()>`
 
 ### 8. Validation & Integration
 
