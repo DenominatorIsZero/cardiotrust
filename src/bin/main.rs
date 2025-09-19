@@ -16,6 +16,7 @@ fn main() {
     }
 }
 
+#[tracing::instrument(level = "info")]
 fn run_app() -> Result<()> {
     // Set up logging with graceful fallback
     setup_logging()?;
@@ -47,6 +48,7 @@ fn run_app() -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(level = "debug")]
 fn setup_logging() -> Result<()> {
     // Try to set up file logging, fall back to stdout-only if it fails
     if let Err(e) = try_setup_file_logging() {
@@ -57,6 +59,7 @@ fn setup_logging() -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(level = "debug")]
 fn setup_stdout_logging() -> Result<()> {
     let subscriber = tracing_subscriber::registry()
         .with(
@@ -72,6 +75,7 @@ fn setup_stdout_logging() -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(level = "debug")]
 fn try_setup_file_logging() -> Result<()> {
     let file_appender = tracing_appender::rolling::daily("./logs", "CardioTRust.log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
@@ -101,6 +105,7 @@ fn try_setup_file_logging() -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(level = "debug")]
 fn get_git_hash() -> String {
     Command::new("git")
         .args(["rev-parse", "HEAD"])

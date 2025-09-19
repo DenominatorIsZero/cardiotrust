@@ -25,7 +25,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
         let (data, mut results, _gpu, results_gpu, prediction_kernel, derivation_kernel) =
-            setup_inputs(&config);
+            setup_inputs(&config).expect("Benchmark setup should succeed");
         let mut results_from_gpu = results.clone();
 
         let number_of_voxels = results
@@ -37,7 +37,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
             .count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         for step in 0..data.simulation.measurements.num_steps() {
-            calculate_system_prediction(
+            let _ = calculate_system_prediction(
                 &mut results.estimations,
                 &results.model.as_ref().unwrap().functional_description,
                 0,
@@ -47,7 +47,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
         group.bench_function(BenchmarkId::new("cpu", voxel_size), |b| {
             b.iter(|| {
                 for step in 0..data.simulation.measurements.num_steps() {
-                    calculate_step_derivatives(
+                    let _ = calculate_step_derivatives(
                         &mut results.derivatives,
                         &results.estimations,
                         &results.model.as_ref().unwrap().functional_description,
@@ -114,23 +114,21 @@ fn setup_config(voxel_size: &f32) -> Config {
 
 fn setup_inputs(
     config: &Config,
-) -> (
+) -> anyhow::Result<(
     Data,
     Results,
     GPU,
     ResultsGPU,
     PredictionKernel,
     DerivationKernel,
-) {
+)> {
     let simulation_config = &config.simulation;
-    let data =
-        Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
+    let data = Data::from_simulation_config(simulation_config)?;
     let model = Model::from_model_config(
         &config.algorithm.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
-    )
-    .unwrap();
+    )?;
     let mut results = Results::new(
         config.algorithm.epochs,
         data.simulation.measurements.num_steps(),
@@ -142,8 +140,8 @@ fn setup_inputs(
         config.algorithm.optimizer,
     );
     results.model = Some(model);
-    let gpu = GPU::new();
-    let results_gpu = results.to_gpu(&gpu.queue);
+    let gpu = GPU::new()?;
+    let results_gpu = results.to_gpu(&gpu.queue)?;
     let prediction_kernel = PredictionKernel::new(
         &gpu,
         &results_gpu.estimations,
@@ -164,7 +162,7 @@ fn setup_inputs(
             .count() as i32,
         results.estimations.measurements.num_steps() as i32,
     );
-    let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue);
+    let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue)?;
     let derivation_kernel = DerivationKernel::new(
         &gpu,
         &results_gpu.estimations,
@@ -187,15 +185,15 @@ fn setup_inputs(
             .count() as i32,
         results.estimations.measurements.num_steps() as i32,
         &config.algorithm,
-    );
-    (
+    )?;
+    Ok((
         data,
         results,
         gpu,
         results_gpu,
-        prediction_kernel,
+        prediction_kernel?,
         derivation_kernel,
-    )
+    ))
 }
 
 criterion_group! {name = gpu_benches;

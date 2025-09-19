@@ -23,7 +23,7 @@ fn run_benches(c: &mut Criterion) {
 fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
-        let (data, mut results, _gpu, results_gpu, prediction_kernel) = setup_inputs(&config);
+        let (data, mut results, _gpu, results_gpu, prediction_kernel) = setup_inputs(&config).expect("Benchmark setup should succeed");
         let mut results_from_gpu = results.clone();
 
         let number_of_voxels = results
@@ -90,16 +90,14 @@ fn setup_config(voxel_size: &f32) -> Config {
     config
 }
 
-fn setup_inputs(config: &Config) -> (Data, Results, GPU, ResultsGPU, PredictionKernel) {
+fn setup_inputs(config: &Config) -> anyhow::Result<(Data, Results, GPU, ResultsGPU, PredictionKernel)> {
     let simulation_config = &config.simulation;
-    let data =
-        Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
+    let data = Data::from_simulation_config(simulation_config)?;
     let model = Model::from_model_config(
         &config.algorithm.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
-    )
-    .unwrap();
+    )?;
     let mut results = Results::new(
         config.algorithm.epochs,
         data.simulation.measurements.num_steps(),
@@ -111,8 +109,8 @@ fn setup_inputs(config: &Config) -> (Data, Results, GPU, ResultsGPU, PredictionK
         config.algorithm.optimizer,
     );
     results.model = Some(model);
-    let gpu = GPU::new();
-    let results_gpu = results.to_gpu(&gpu.queue);
+    let gpu = GPU::new()?;
+    let results_gpu = results.to_gpu(&gpu.queue)?;
     let prediction_kernel = PredictionKernel::new(
         &gpu,
         &results_gpu.estimations,
@@ -132,8 +130,8 @@ fn setup_inputs(config: &Config) -> (Data, Results, GPU, ResultsGPU, PredictionK
             .sensors
             .count() as i32,
         results.estimations.measurements.num_steps() as i32,
-    );
-    (data, results, gpu, results_gpu, prediction_kernel)
+    )?;
+    Ok((data, results, gpu, results_gpu, prediction_kernel))
 }
 
 criterion_group! {name = gpu_benches;

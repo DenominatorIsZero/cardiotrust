@@ -23,7 +23,7 @@ fn run_benches(c: &mut Criterion) {
 fn epoch_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
-        let (data, mut results, gpu, _results_gpu, epoch_kernel) = setup_inputs(&config);
+        let (data, mut results, gpu, _results_gpu, epoch_kernel) = setup_inputs(&config).expect("Benchmark setup should succeed");
 
         let number_of_voxels = results
             .model
@@ -63,16 +63,14 @@ fn setup_config(voxel_size: &f32) -> Config {
     config
 }
 
-fn setup_inputs(config: &Config) -> (Data, Results, GPU, ResultsGPU, EpochKernel) {
+fn setup_inputs(config: &Config) -> anyhow::Result<(Data, Results, GPU, ResultsGPU, EpochKernel)> {
     let simulation_config = &config.simulation;
-    let data =
-        Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
+    let data = Data::from_simulation_config(simulation_config)?;
     let model = Model::from_model_config(
         &config.algorithm.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
-    )
-    .unwrap();
+    )?;
     let mut results = Results::new(
         config.algorithm.epochs,
         data.simulation.measurements.num_steps(),
@@ -84,9 +82,9 @@ fn setup_inputs(config: &Config) -> (Data, Results, GPU, ResultsGPU, EpochKernel
         config.algorithm.optimizer,
     );
     results.model = Some(model);
-    let gpu = GPU::new();
-    let results_gpu = results.to_gpu(&gpu.queue);
-    let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue);
+    let gpu = GPU::new()?;
+    let results_gpu = results.to_gpu(&gpu.queue)?;
+    let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue)?;
     let epoch_kernel = EpochKernel::new(
         &gpu,
         &results_gpu,
@@ -107,9 +105,9 @@ fn setup_inputs(config: &Config) -> (Data, Results, GPU, ResultsGPU, EpochKernel
             .sensors
             .count() as i32,
         results.estimations.measurements.num_steps() as i32,
-    );
+    )?;
 
-    (data, results, gpu, results_gpu, epoch_kernel)
+    Ok((data, results, gpu, results_gpu, epoch_kernel))
 }
 
 criterion_group! {name = gpu_benches;
