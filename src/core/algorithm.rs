@@ -72,9 +72,11 @@ pub fn calculate_pseudo_inverse(
                 .context("Failed to convert actual measurements to slice for pseudo-inverse calculation")?
         );
 
+        // Note: Using map_err instead of context because nalgebra's SVD solve returns Result<_, &str>
+        // and &str doesn't implement std::error::Error, which anyhow's context requires
         let system_states = decomposition
             .solve(&measurements, 1e-5)
-            .map_err(|_| anyhow::anyhow!("Failed to solve SVD system for pseudo-inverse - singular measurement matrix or numerical instability"))?;
+            .map_err(|e| anyhow::anyhow!("Failed to solve SVD system for pseudo-inverse - singular measurement matrix or numerical instability: {}", e))?;
 
         let system_states = Array1::from_iter(system_states.as_slice().iter().copied());
 

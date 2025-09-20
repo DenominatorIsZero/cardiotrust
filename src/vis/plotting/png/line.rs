@@ -499,11 +499,11 @@ mod test {
     }
 
     #[test]
-    fn test_log_y_plot() {
+    fn test_log_y_plot() -> anyhow::Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("log_y_plot.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let x = Array1::linspace(1.0, 10.0, 100);
         let y = x.map(|x| x * x);
@@ -516,10 +516,10 @@ mod test {
             Some("y [a.u.]"),
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]

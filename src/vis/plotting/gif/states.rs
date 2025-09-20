@@ -113,6 +113,8 @@ pub(crate) fn states_spherical_plot_over_time(
 mod test {
     use std::path::Path;
 
+    use anyhow::Context;
+
     use super::*;
     use crate::{
         core::{config::simulation::Simulation as SimulationConfig, data::Data},
@@ -126,14 +128,14 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_abs_default() -> anyhow::Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_abs_default.gif")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .map_err(|e| anyhow::anyhow!("Failed to create simulation data for GIF states test: {}", e))?;
+            .context("Failed to create simulation data for GIF states test")?;
 
         states_spherical_plot_over_time(
             &data.simulation.system_states_spherical,
@@ -153,7 +155,7 @@ mod test {
             Some(0.2),
             Some(10),
         )
-        .map_err(|e| anyhow::anyhow!("Failed to generate spherical states GIF for test: {}", e))?;
+        .context("Failed to generate spherical states GIF for test")?;
 
         assert!(files[0].is_file());
         Ok(())
@@ -164,14 +166,14 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_angle_default() -> anyhow::Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_angle_default.gif")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
         let data = Data::from_simulation_config(&simulation_config)
-            .map_err(|e| anyhow::anyhow!("Failed to create simulation data for GIF states angle test: {}", e))?;
+            .context("Failed to create simulation data for GIF states angle test")?;
 
         states_spherical_plot_over_time(
             &data.simulation.system_states_spherical,
@@ -191,7 +193,7 @@ mod test {
             Some(0.2),
             Some(10),
         )
-        .map_err(|e| anyhow::anyhow!("Failed to generate spherical states angle GIF for test: {}", e))?;
+        .context("Failed to generate spherical states angle GIF for test")?;
 
         assert!(files[0].is_file());
         Ok(())

@@ -43,7 +43,7 @@ impl SpatialDescription {
     pub fn from_model_config(config: &Model) -> Result<Self> {
         debug!("Creating spatial description from model config");
         let voxels = if config.handcrafted.is_some() {
-            Voxels::from_handcrafted_model_config(config)
+            Voxels::from_handcrafted_model_config(config)?
         } else {
             Voxels::from_mri_model_config(config)?
         };

@@ -177,11 +177,11 @@ mod test {
 
     #[test]
     #[allow(clippy::cast_precision_loss)]
-    fn test_matrix_over_slices_plot_with_path() {
+    fn test_matrix_over_slices_plot_with_path() -> anyhow::Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("test_matrix_over_slices_plot_with_path.gif")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut data = Array3::<f32>::zeros((10, 10, 10));
         for x in 0..10 {
@@ -205,7 +205,8 @@ mod test {
             None,
             None,
             None,
-        );
-        assert!(result.is_ok());
+        )?;
+        assert!(!result.data.is_empty());
+        Ok(())
     }
 }

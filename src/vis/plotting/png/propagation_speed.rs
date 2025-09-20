@@ -1,6 +1,7 @@
 use core::f32;
 use std::path::Path;
 
+use anyhow::Context;
 use ndarray::{Array2, Axis};
 use tracing::trace;
 
@@ -103,7 +104,7 @@ pub(crate) fn average_propagation_speed_plot(
         None,
         flip_axis,
     )
-    .map_err(|e| anyhow::anyhow!("Failed to generate propagation speed matrix plot: {}", e))
+    .context("Failed to generate propagation speed matrix plot")
 }
 
 #[cfg(test)]

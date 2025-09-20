@@ -4,7 +4,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use anyhow::Context;
+use anyhow::{Context, Result};
 
 use ndarray::{arr1, s, Array3, Array4, Dim};
 use ndarray_npy::WriteNpyExt;
@@ -41,17 +41,17 @@ impl Voxels {
     /// Creates a Voxels struct from the given Model config.
     #[must_use]
     #[tracing::instrument(level = "debug")]
-    pub fn from_handcrafted_model_config(config: &Model) -> Self {
+    pub fn from_handcrafted_model_config(config: &Model) -> Result<Self> {
         debug!("Creating voxels from handcrafted model config");
-        let types = VoxelTypes::from_handcrafted_model_config(config);
+        let types = VoxelTypes::from_handcrafted_model_config(config)?;
         let numbers = VoxelNumbers::from_voxel_types(&types);
         let positions = VoxelPositions::from_handcrafted_model_config(config, types.raw_dim());
-        Self {
+        Ok(Self {
             size_mm: config.common.voxel_size_mm,
             types,
             numbers,
             positions_mm: positions,
-        }
+        })
     }
 
     #[tracing::instrument(level = "debug", skip_all)]
@@ -201,11 +201,11 @@ impl VoxelTypes {
         clippy::cast_precision_loss,
         clippy::similar_names
     )]
-    #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn from_handcrafted_model_config(config: &Model) -> Self {
+    pub fn from_handcrafted_model_config(config: &Model) -> Result<Self> {
         trace!("Creating voxel types from simulation config");
-        let handcrafted = config.handcrafted.as_ref().unwrap();
+        let handcrafted = config.handcrafted.as_ref()
+            .context("Handcrafted config is required for from_handcrafted_model_config")?;
         // Config Parameters
         let voxel_size_mm = config.common.voxel_size_mm;
         let heart_size_mm = handcrafted.heart_size_mm;
@@ -280,7 +280,7 @@ impl VoxelTypes {
                     *voxel_type = VoxelType::Ventricle;
                 }
             });
-        voxel_types
+        Ok(voxel_types)
     }
 
     #[tracing::instrument(level = "trace")]
@@ -720,7 +720,7 @@ mod tests {
     }
 
     #[test]
-    fn no_pathology_full_states() {
+    fn no_pathology_full_states() -> Result<()> {
         let config = Model {
             handcrafted: Some(Handcrafted {
                 heart_size_mm: [10.0, 10.0, 10.0],
@@ -732,10 +732,11 @@ mod tests {
             },
             ..Default::default()
         };
-        let voxels = Voxels::from_handcrafted_model_config(&config);
+        let voxels = Voxels::from_handcrafted_model_config(&config)?;
 
         assert_eq!(1000, voxels.count());
         assert_eq!(3000, voxels.count_states());
+        Ok(())
     }
 
     #[test]
@@ -759,9 +760,9 @@ mod tests {
     }
 
     #[test]
-    fn some_voxel_types_default() {
+    fn some_voxel_types_default() -> Result<()> {
         let config = Model::default();
-        let types = VoxelTypes::from_handcrafted_model_config(&config);
+        let types = VoxelTypes::from_handcrafted_model_config(&config)?;
 
         let num_sa = types
             .iter()
@@ -804,5 +805,6 @@ mod tests {
             .count();
 
         assert_eq!(num_pathological, 0);
+        Ok(())
     }
 }

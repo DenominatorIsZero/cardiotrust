@@ -249,7 +249,9 @@ impl Scenario {
             simulation.model.common.sensor_array_motion_range_mm;
         model.common.sensor_array_motion_steps = simulation.model.common.sensor_array_motion_steps;
         if let Some(handcrafted) = simulation.model.handcrafted.as_ref() {
-            model.handcrafted.as_mut().unwrap().heart_size_mm = handcrafted.heart_size_mm;
+            if let Some(model_handcrafted) = model.handcrafted.as_mut() {
+                model_handcrafted.heart_size_mm = handcrafted.heart_size_mm;
+            }
         }
         if self.config.algorithm.algorithm_type == AlgorithmType::PseudoInverse {
             self.config.algorithm.epochs = 1;
@@ -508,23 +510,24 @@ impl Scenario {
 /// Updates the results and summary structs with the output. Sends the final epoch
 /// count and summary via the provided channels. Saves the results to the scenario.
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if simulation is none, an unimplemented algorithm is selected or
-/// the parameters do not yield a valid model.
+/// Returns an error if the model parameters are invalid, an unimplemented algorithm
+/// is selected, or any other simulation failure occurs.
 #[tracing::instrument(level = "info", skip_all, fields(id = %scenario.id))]
 pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender<Summary>) -> Result<()> {
     debug!("Running scenario with id {}", scenario.id);
 
     let simulation = &scenario.config.simulation;
 
-    let data = Data::from_simulation_config(simulation).expect("Model parametrs to be valid.");
+    let data = Data::from_simulation_config(simulation)
+        .context("Failed to create simulation data from config - invalid model parameters")?;
     let mut model = Model::from_model_config(
         &scenario.config.algorithm.model,
         simulation.sample_rate_hz,
         simulation.duration_s,
     )
-    .unwrap();
+    .context("Failed to create model from config - invalid model parameters")?;
 
     // synchronice model and simulation sensor parameters
     model.synchronize_parameters(&data);
@@ -590,7 +593,7 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
         &results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be set after algorithm execution")?
             .spatial_description
             .voxels
             .numbers,
@@ -672,7 +675,7 @@ pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) -> R
     results
         .model
         .as_mut()
-        .unwrap()
+        .context("Model should be set after algorithm execution")?
         .update_activation_time(&results.estimations.activation_times);
     Ok(())
 }
@@ -745,15 +748,17 @@ fn run_model_based(
         if scenario.config.algorithm.snapshots_interval != 0
             && epoch_index % scenario.config.algorithm.snapshots_interval == 0
         {
-            results.snapshots.as_mut().unwrap().push(
-                &results.estimations,
-                &results
-                    .model
-                    .as_ref()
-                    .unwrap()
-                    .functional_description
-                    .ap_params,
-            );
+            results.snapshots.as_mut()
+                .context("Snapshots should be initialized for GPU algorithm")?
+                .push(
+                    &results.estimations,
+                    &results
+                        .model
+                        .as_ref()
+                        .context("Model should be set during GPU algorithm execution")?
+                        .functional_description
+                        .ap_params,
+                );
         }
 
         let _ = epoch_tx.send(epoch_index);
@@ -841,19 +846,21 @@ fn run_model_based_gpu(
             results
                 .model
                 .as_mut()
-                .unwrap()
+                .context("Model should be set during GPU algorithm execution")?
                 .functional_description
                 .ap_params
                 .update_from_gpu(&results_gpu.model.functional_description.ap_params);
-            results.snapshots.as_mut().unwrap().push(
-                &results.estimations,
-                &results
-                    .model
-                    .as_ref()
-                    .unwrap()
-                    .functional_description
-                    .ap_params,
-            );
+            results.snapshots.as_mut()
+                .context("Snapshots should be initialized for GPU algorithm")?
+                .push(
+                    &results.estimations,
+                    &results
+                        .model
+                        .as_ref()
+                        .context("Model should be set during GPU algorithm execution")?
+                        .functional_description
+                        .ap_params,
+                );
         }
 
         let _ = epoch_tx.send(epoch_index);
