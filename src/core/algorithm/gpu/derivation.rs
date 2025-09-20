@@ -310,7 +310,7 @@ mod tests {
         let number_of_sensors = results_cpu
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available in GPU derivation test")?
             .spatial_description
             .sensors
             .count();

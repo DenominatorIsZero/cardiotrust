@@ -773,7 +773,7 @@ fn run_model_based(
         &results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be set during algorithm execution")?
             .functional_description
             .ap_params,
     )?;
@@ -799,14 +799,14 @@ fn run_model_based_gpu(
     let number_of_states = results
         .model
         .as_ref()
-        .unwrap()
+        .context("Model should be set during GPU algorithm execution")?
         .spatial_description
         .voxels
         .count_states();
     let number_of_sensors = results
         .model
         .as_ref()
-        .unwrap()
+        .context("Model should be set during GPU algorithm execution")?
         .spatial_description
         .sensors
         .count();
@@ -876,7 +876,7 @@ fn run_model_based_gpu(
         &results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be set during GPU algorithm execution")?
             .functional_description
             .ap_params,
     )?;

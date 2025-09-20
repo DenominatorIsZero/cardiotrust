@@ -150,7 +150,7 @@ mod tests {
         let number_of_sensors = results_cpu
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available in GPU update test")?
             .spatial_description
             .sensors
             .count();
@@ -208,7 +208,7 @@ mod tests {
         for step in 0..results_cpu.estimations.measurements.num_steps() {
             calculate_system_prediction(
                 &mut results_cpu.estimations,
-                &results_cpu.model.as_ref().unwrap().functional_description,
+                &results_cpu.model.as_ref().context("Model should be available for CPU prediction")?.functional_description,
                 0,
                 step,
             );
@@ -219,7 +219,7 @@ mod tests {
                 &results_cpu
                     .model
                     .as_ref()
-                    .unwrap()
+                    .context("Model should be available for measurement matrix access")?
                     .functional_description
                     .measurement_matrix
                     .at_beat(0),
@@ -241,7 +241,7 @@ mod tests {
             calculate_derivatives_coefs_textbook(
                 &mut results_cpu.derivatives,
                 &results_cpu.estimations,
-                &results_cpu.model.as_ref().unwrap().functional_description,
+                &results_cpu.model.as_ref().context("Model should be available for derivation calculation")?.functional_description,
                 step,
                 &config.algorithm,
             );
@@ -259,7 +259,7 @@ mod tests {
             &mut results_cpu
                 .model
                 .as_mut()
-                .unwrap()
+                .context("Model should be available for gains update")?
                 .functional_description
                 .ap_params
                 .gains,
@@ -271,7 +271,7 @@ mod tests {
             &mut results_cpu
                 .model
                 .as_mut()
-                .unwrap()
+                .context("Model should be available for delays update")?
                 .functional_description
                 .ap_params
                 .coefs,
@@ -280,7 +280,7 @@ mod tests {
             batch_size,
             0.0f32,
         );
-        let model = results_cpu.model.as_mut().unwrap();
+        let model = results_cpu.model.as_mut().context("Model should be available for delay rolling")?;
         roll_delays(
             &mut model.functional_description.ap_params.coefs,
             &mut model.functional_description.ap_params.delays,

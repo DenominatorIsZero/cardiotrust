@@ -174,14 +174,14 @@ mod tests {
             results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("Model should be available in GPU prediction test")?
                 .spatial_description
                 .voxels
                 .count_states() as i32,
             results_cpu
                 .model
                 .as_ref()
-                .unwrap()
+                .context("Model should be available in GPU prediction test")?
                 .spatial_description
                 .sensors
                 .count() as i32,
@@ -193,7 +193,7 @@ mod tests {
         for step in 0..results_cpu.estimations.measurements.num_steps() {
             calculate_system_prediction(
                 &mut results_cpu.estimations,
-                &results_cpu.model.as_ref().unwrap().functional_description,
+                &results_cpu.model.as_ref().context("Model should be available for CPU prediction")?.functional_description,
                 0,
                 step,
             );
@@ -207,45 +207,45 @@ mod tests {
             results_from_gpu.update_from_gpu(&results_gpu)?;
             let dif = &*results_cpu.estimations.ap_outputs_now
                 - &*results_from_gpu.estimations.ap_outputs_now;
-            println!("Diference {:?}", dif.as_slice().unwrap());
+            println!("Diference {:?}", dif.as_slice().context("Failed to convert difference array to slice")?);
             assert_relative_eq!(
-                results_cpu.estimations.ap_outputs_now.as_slice().unwrap(),
+                results_cpu.estimations.ap_outputs_now.as_slice().context("Failed to convert CPU ap_outputs to slice")?,
                 results_from_gpu
                     .estimations
                     .ap_outputs_now
                     .as_slice()
-                    .unwrap(),
+                    .context("Failed to convert GPU ap_outputs to slice")?,
                 epsilon = 1e-6
             );
         }
         results_from_gpu.update_from_gpu(&results_gpu)?;
 
         assert_relative_eq!(
-            results_cpu.estimations.ap_outputs_now.as_slice().unwrap(),
+            results_cpu.estimations.ap_outputs_now.as_slice().context("Failed to convert CPU ap_outputs to slice")?,
             results_from_gpu
                 .estimations
                 .ap_outputs_now
                 .as_slice()
-                .unwrap(),
+                .context("Failed to convert GPU ap_outputs to slice")?,
             epsilon = 1e-6
         );
         assert_relative_eq!(
-            results_cpu.estimations.system_states.as_slice().unwrap(),
+            results_cpu.estimations.system_states.as_slice().context("Failed to convert CPU system_states to slice")?,
             results_from_gpu
                 .estimations
                 .system_states
                 .as_slice()
-                .unwrap(),
+                .context("Failed to convert GPU system_states to slice")?,
             epsilon = 1e-6
         );
 
         assert_relative_eq!(
-            results_cpu.estimations.measurements.as_slice().unwrap(),
+            results_cpu.estimations.measurements.as_slice().context("Failed to convert CPU measurements to slice")?,
             results_from_gpu
                 .estimations
                 .measurements
                 .as_slice()
-                .unwrap(),
+                .context("Failed to convert GPU measurements to slice")?,
             epsilon = 1e-4
         );
         Ok(())

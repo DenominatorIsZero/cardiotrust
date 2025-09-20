@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use anyhow::Context;
 use cardiotrust::core::{
     algorithm::{
         refinement::update::{roll_delays, update_delays_sgd, update_gains_sgd},
@@ -17,17 +18,17 @@ const LEARNING_RATE: f32 = 1e-3;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Update");
-    bench_gains(&mut group);
-    bench_delays(&mut group);
+    bench_gains(&mut group).expect("Benchmark execution should succeed");
+    bench_delays(&mut group).expect("Benchmark execution should succeed");
     group.finish();
 }
 
-fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, mut results) = setup_inputs(&config);
+        let (_, mut results) = setup_inputs(&config)?;
 
         // run bench
         let number_of_voxels = results
@@ -55,14 +56,15 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
             })
         });
     }
+    Ok(())
 }
 
-fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, mut results) = setup_inputs(&config);
+        let (_, mut results) = setup_inputs(&config)?;
 
         // run bench
         let number_of_voxels = results
@@ -73,7 +75,7 @@ fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
             .voxels
             .count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        let functional_description = &mut results.model.as_mut().unwrap().functional_description;
+        let functional_description = &mut results.model.as_mut().context("Model should be available for mutation")?.functional_description;
         group.bench_function(BenchmarkId::new("delays", voxel_size), |b| {
             b.iter(|| {
                 update_delays_sgd(
@@ -90,6 +92,7 @@ fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
             })
         });
     }
+    Ok(())
 }
 
 fn setup_config(voxel_size: &f32) -> Config {
@@ -105,16 +108,15 @@ fn setup_config(voxel_size: &f32) -> Config {
     config
 }
 
-fn setup_inputs(config: &Config) -> (Data, Results) {
+fn setup_inputs(config: &Config) -> anyhow::Result<(Data, Results)> {
     let simulation_config = &config.simulation;
     let data =
-        Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
+        Data::from_simulation_config(simulation_config)?;
     let model = Model::from_model_config(
         &config.algorithm.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
-    )
-    .unwrap();
+    )?;
     let mut results = Results::new(
         config.algorithm.epochs,
         data.simulation.measurements.num_steps(),
@@ -128,9 +130,9 @@ fn setup_inputs(config: &Config) -> (Data, Results) {
     results.model = Some(model);
 
     let mut batch_index = 0;
-    run_epoch(&mut results, &mut batch_index, &data, &config.algorithm);
+    run_epoch(&mut results, &mut batch_index, &data, &config.algorithm)?;
 
-    (data, results)
+    Ok((data, results))
 }
 
 criterion_group! {name = benches;

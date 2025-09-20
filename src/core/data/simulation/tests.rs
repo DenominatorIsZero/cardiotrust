@@ -21,26 +21,26 @@ use crate::{
 const COMMON_PATH: &str = "tests/core/data/simulation";
 
 #[test]
-fn create_simulation_no_crash() {
+fn create_simulation_no_crash() -> anyhow::Result<()> {
     let config = &SimulationConfig::default();
-    let simulation = Simulation::from_config(config);
-    assert!(simulation.is_ok());
-    let simulation = simulation.unwrap();
+    let simulation = Simulation::from_config(config)?;
     let max = *simulation.system_states.max_skipnan();
     assert_relative_eq!(max, 0.0);
     let max = *simulation.measurements.max_skipnan();
     assert_relative_eq!(max, 0.0);
+    Ok(())
 }
 
 #[test]
-fn run_simulation_default() {
+fn run_simulation_default() -> anyhow::Result<()> {
     let config = &SimulationConfig::default();
-    let mut simulation = Simulation::from_config(config).unwrap();
-    simulation.run().expect("Failed to run simulation in test");
+    let mut simulation = Simulation::from_config(config)?;
+    simulation.run()?;
     let max = *simulation.system_states.max_skipnan();
     assert!(max.relative_eq(&1.0, 0.001, 0.001));
     let max = *simulation.measurements.max_skipnan();
     assert!(max > 0.0);
+    Ok(())
 }
 
 #[test]
@@ -173,15 +173,16 @@ fn run_simulation_default_and_plot() -> anyhow::Result<()> {
 }
 
 #[test]
-fn run_simulation_pathological() {
+fn run_simulation_pathological() -> anyhow::Result<()> {
     let mut config = SimulationConfig::default();
     config.model.common.pathological = true;
-    let mut simulation = Simulation::from_config(&config).unwrap();
-    simulation.run().expect("Failed to run simulation in test");
+    let mut simulation = Simulation::from_config(&config)?;
+    simulation.run()?;
     let max = *simulation.system_states.max_skipnan();
     assert!(max.relative_eq(&1.0, 0.001, 0.001));
     let max = *simulation.measurements.max_skipnan();
     assert!(max > 0.0);
+    Ok(())
 }
 
 #[test]
@@ -314,12 +315,12 @@ fn run_simulation_pathological_and_plot() -> anyhow::Result<()> {
 }
 
 #[test]
-fn run_simulation_mri() {
+fn run_simulation_mri() -> anyhow::Result<()> {
     let mut config = SimulationConfig::default();
     config.model.handcrafted = None;
     config.model.mri = Some(Mri::default());
-    let mut simulation = Simulation::from_config(&config).unwrap();
-    simulation.run().expect("Failed to run simulation in test");
+    let mut simulation = Simulation::from_config(&config)?;
+    simulation.run()?;
     let max = *simulation.measurements.max_skipnan();
     assert!(max > 0.0);
     // make sure the max in each voxel is one
@@ -340,11 +341,13 @@ fn run_simulation_mri() {
                 if !simulation.model.spatial_description.voxels.types[(x, y, z)].is_connectable() {
                     continue;
                 }
-                let state = simulation.model.spatial_description.voxels.numbers[(x, y, z)].unwrap();
+                let state = simulation.model.spatial_description.voxels.numbers[(x, y, z)]
+                    .context("Expected voxel number to be available")?;
                 crawl_through_states(&simulation, state);
             }
         }
     }
+    Ok(())
 }
 
 #[tracing::instrument(level = "trace", skip_all)]

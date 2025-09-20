@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use anyhow::Context;
 use cardiotrust::core::{
     algorithm::{
         estimation::prediction::calculate_system_prediction,
@@ -22,11 +23,11 @@ const VOXEL_SIZES: [f32; 4] = [1.0, 2.0, 2.5, 5.0];
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("GPU Update");
-    prectiction_benches(&mut group);
+    prectiction_benches(&mut group).expect("Benchmark execution should succeed");
     group.finish();
 }
 
-fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
         let (
@@ -37,12 +38,12 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
             prediction_kernel,
             derivation_kernel,
             update_kernel,
-        ) = setup_inputs(&config).expect("Benchmark setup should succeed");
+        ) = setup_inputs(&config)?;
 
         let number_of_voxels = results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available in benchmark")?
             .spatial_description
             .voxels
             .count();
@@ -50,14 +51,14 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
         for step in 0..data.simulation.measurements.num_steps() {
             calculate_system_prediction(
                 &mut results.estimations,
-                &results.model.as_ref().unwrap().functional_description,
+                &results.model.as_ref().context("Model should be available for prediction")?.functional_description,
                 0,
                 step,
             );
             calculate_step_derivatives(
                 &mut results.derivatives,
                 &results.estimations,
-                &results.model.as_ref().unwrap().functional_description,
+                &results.model.as_ref().context("Model should be available for prediction")?.functional_description,
                 &config.algorithm,
                 step,
                 0,
@@ -71,7 +72,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                     &mut results
                         .model
                         .as_mut()
-                        .unwrap()
+                        .expect("Model should be available for parameter updates")
                         .functional_description
                         .ap_params
                         .gains,
@@ -83,7 +84,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                     &mut results
                         .model
                         .as_mut()
-                        .unwrap()
+                        .expect("Model should be available for parameter updates")
                         .functional_description
                         .ap_params
                         .coefs,
@@ -92,7 +93,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                     batch_size,
                     0.0f32,
                 );
-                let model = results.model.as_mut().unwrap();
+                let model = results.model.as_mut().expect("Model should be available for mutation");
                 roll_delays(
                     &mut model.functional_description.ap_params.coefs,
                     &mut model.functional_description.ap_params.delays,
@@ -115,6 +116,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
             })
         });
     }
+    Ok(())
 }
 
 fn setup_config(voxel_size: &f32) -> Config {

@@ -523,7 +523,7 @@ mod test {
     }
 
     #[test]
-    fn test_line_plot_defaults() {
+    fn test_line_plot_defaults() -> anyhow::Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("line_plot_default.png")];
@@ -540,14 +540,14 @@ mod test {
             None,
             None,
             None,
-        )
-        .unwrap();
+        )?;
 
         assert!(files[0].is_file());
+        Ok(())
     }
 
     #[test]
-    fn test_line_plot_no_path() {
+    fn test_line_plot_no_path() -> anyhow::Result<()> {
         let path = Path::new(COMMON_PATH);
         setup_folder(path.to_path_buf());
         let files = vec![path.join("line_plot_no_path.png")];
@@ -555,22 +555,24 @@ mod test {
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
-        line_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
+        line_plot(None, vec![&y], None, None, None, None, None, None)?;
 
         assert!(!files[0].is_file());
+        Ok(())
     }
 
     #[test]
-    fn test_line_plot_default_resolution() {
+    fn test_line_plot_default_resolution() -> anyhow::Result<()> {
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
 
-        let bundle = line_plot(None, vec![&y], None, None, None, None, None, None).unwrap();
+        let bundle = line_plot(None, vec![&y], None, None, None, None, None, None)?;
 
         assert_eq!(
             bundle.data.len(),
             STANDARD_RESOLUTION.0 as usize * STANDARD_RESOLUTION.1 as usize * 3
         );
+        Ok(())
     }
 
     #[test]

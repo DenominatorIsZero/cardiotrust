@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use anyhow::Context;
 use cardiotrust::core::{
     algorithm::{
         gpu::{epoch::EpochKernel, GPU},
@@ -16,19 +17,19 @@ const VOXEL_SIZES: [f32; 3] = [2.0, 2.5, 5.0];
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("GPU Epoch");
-    epoch_benches(&mut group);
+    epoch_benches(&mut group).expect("Benchmark execution should succeed");
     group.finish();
 }
 
-fn epoch_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn epoch_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
-        let (data, mut results, gpu, _results_gpu, epoch_kernel) = setup_inputs(&config).expect("Benchmark setup should succeed");
+        let (data, mut results, gpu, _results_gpu, epoch_kernel) = setup_inputs(&config)?;
 
         let number_of_voxels = results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available in benchmark")?
             .spatial_description
             .voxels
             .count();
@@ -46,6 +47,7 @@ fn epoch_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::W
             })
         });
     }
+    Ok(())
 }
 
 fn setup_config(voxel_size: &f32) -> Config {
