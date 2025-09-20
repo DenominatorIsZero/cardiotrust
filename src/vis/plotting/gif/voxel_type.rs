@@ -1,4 +1,4 @@
-use std::{error::Error, fs::File, io::BufWriter, path::Path};
+use std::{fs::File, io::BufWriter, path::Path};
 
 use gif::{Encoder, Frame, Repeat};
 use ndarray::Axis;
@@ -25,7 +25,7 @@ pub(crate) fn voxel_types_over_slices_plot(
     axis: Option<Axis>,
     path: Option<&Path>,
     time_per_frame_ms: Option<u32>,
-) -> Result<GifBundle, Box<dyn Error>>
+) -> anyhow::Result<GifBundle>
 where
 {
     trace!("Generating voxel_types over slices plot.");
@@ -35,17 +35,11 @@ where
     let axis = axis.unwrap_or(Axis(2));
 
     if time_per_frame_ms < 1 {
-        return Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "time per frame must be positive",
-        )));
+        return Err(anyhow::anyhow!("Time per frame must be positive"));
     }
 
     if axis.index() > 2 {
-        return Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "axis must be 0, 1 or 2",
-        )));
+        return Err(anyhow::anyhow!("Axis must be 0, 1 or 2"));
     }
 
     let num_slices = types.shape()[axis.index()];

@@ -459,7 +459,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             Some(&path),
             None,
         ),
-        ImageType::AverageDelaySimulation => average_delay_plot(
+        ImageType::AverageDelaySimulation => Ok(average_delay_plot(
             &data.simulation.average_delays,
             &data.simulation.model.spatial_description.voxels.numbers,
             &data
@@ -473,8 +473,8 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             None,
             None,
         )
-        .map_err(|e| e.into()),
-        ImageType::AveragePropagationSpeedSimulation => average_propagation_speed_plot(
+?),
+        ImageType::AveragePropagationSpeedSimulation => Ok(average_propagation_speed_plot(
             &data.simulation.average_delays,
             &data.simulation.model.spatial_description.voxels.numbers,
             &data
@@ -488,8 +488,8 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             &path,
             None,
         )
-        .map_err(|e| e.into()),
-        ImageType::AverageDelayAlgorithm => average_delay_plot(
+?),
+        ImageType::AverageDelayAlgorithm => Ok(average_delay_plot(
             &estimations.average_delays,
             &model.spatial_description.voxels.numbers,
             &model.spatial_description.voxels.positions_mm,
@@ -498,8 +498,8 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             None,
             None,
         )
-        .map_err(|e| e.into()),
-        ImageType::AveragePropagationSpeedAlgorithm => average_propagation_speed_plot(
+?),
+        ImageType::AveragePropagationSpeedAlgorithm => Ok(average_propagation_speed_plot(
             &estimations.average_delays,
             &model.spatial_description.voxels.numbers,
             &model.spatial_description.voxels.positions_mm,
@@ -508,8 +508,8 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             &path,
             None,
         )
-        .map_err(|e| e.into()),
-        ImageType::AverageDelayDelta => average_delay_plot(
+?),
+        ImageType::AverageDelayDelta => Ok(average_delay_plot(
             &(&data.simulation.average_delays - &estimations.average_delays),
             &model.spatial_description.voxels.numbers,
             &model.spatial_description.voxels.positions_mm,
@@ -518,7 +518,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             None,
             None,
         )
-        .map_err(|e| e.into()),
+?),
         ImageType::LossEpoch => standard_log_y_plot(
             &metrics.loss_batch,
             &path,
@@ -657,7 +657,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             "Measurement 0 Delta",
             "z [pT]",
         ),
-    }.map_err(|e| anyhow::anyhow!("Plotting error: {}", e))?;
+    }.with_context(|| format!("Failed to generate plot for image type: {:?}", image_type))?;
     Ok(())
 }
 
@@ -727,6 +727,6 @@ fn generate_gifs(
             Some(playback_speed),
             Some(20),
         ),
-    }.map_err(|e| anyhow::anyhow!("GIF generation error: {}", e))?;
+    }.with_context(|| format!("Failed to generate GIF for type: {:?}", gif_type))?;
     Ok(())
 }

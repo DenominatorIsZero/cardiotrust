@@ -389,7 +389,7 @@ mod test {
             "Control Function",
             "j [A/mm^2]",
         )
-        .map_err(|e| anyhow::anyhow!("{}", e))?;
+        .with_context(|| "Failed to generate control function plot")?;
         Ok(())
     }
 
@@ -419,7 +419,7 @@ mod test {
             "Control Function",
             "j [A/mm^2]",
         )
-        .map_err(|e| anyhow::anyhow!("{}", e))?;
+        .with_context(|| "Failed to generate control function plot")?;
         Ok(())
     }
 
@@ -449,7 +449,7 @@ mod test {
             "Control Function",
             "j [A/mm^2]",
         )
-        .map_err(|e| anyhow::anyhow!("{}", e))?;
+        .with_context(|| "Failed to generate control function plot")?;
         Ok(())
     }
 }

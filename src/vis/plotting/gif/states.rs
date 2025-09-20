@@ -1,4 +1,4 @@
-use std::{error::Error, fs::File, io::BufWriter, path::Path};
+use std::{fs::File, io::BufWriter, path::Path};
 
 use gif::{Encoder, Frame, Repeat};
 use ndarray_stats::QuantileExt;
@@ -36,31 +36,22 @@ pub(crate) fn states_spherical_plot_over_time(
     mode: Option<StateSphericalPlotMode>,
     playback_speed: Option<f32>,
     fps: Option<u32>,
-) -> Result<GifBundle, Box<dyn Error>> {
+) -> anyhow::Result<GifBundle> {
     trace!("Generating spherixal state plot over time");
 
     let playback_speed = playback_speed.unwrap_or(DEFAULT_PLAYBACK_SPEED);
     let fps = fps.unwrap_or(DEFAULT_FPS);
 
     if playback_speed <= 0.0 {
-        return Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "playback speed must be greater than 0",
-        )));
+        return Err(anyhow::anyhow!("Playback speed must be greater than 0"));
     }
 
     if fps == 0 {
-        return Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "fps must be greater than 0",
-        )));
+        return Err(anyhow::anyhow!("FPS must be greater than 0"));
     }
 
     if sample_rate_hz <= 0.0 {
-        return Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "sample rate must be greater than 0",
-        )));
+        return Err(anyhow::anyhow!("Sample rate must be greater than 0"));
     }
 
     let sample_number = states.magnitude.shape()[0];

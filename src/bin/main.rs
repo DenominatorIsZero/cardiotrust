@@ -70,7 +70,7 @@ fn setup_stdout_logging() -> Result<()> {
         );
 
     tracing::subscriber::set_global_default(subscriber)
-        .map_err(|e| anyhow::anyhow!("Failed to set up stdout logging: {}", e))?;
+        .with_context(|| "Failed to set up stdout logging")?;
 
     Ok(())
 }
@@ -100,7 +100,7 @@ fn try_setup_file_logging() -> Result<()> {
         );
 
     tracing::subscriber::set_global_default(subscriber)
-        .map_err(|e| anyhow::anyhow!("Failed to set up file logging: {}", e))?;
+        .with_context(|| "Failed to set up file logging")?;
 
     Ok(())
 }

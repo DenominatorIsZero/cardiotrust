@@ -1,4 +1,4 @@
-use std::{error::Error, fs::File, io::BufWriter, path::Path};
+use std::{fs::File, io::BufWriter, path::Path};
 
 use gif::{Encoder, Frame, Repeat};
 use ndarray::{ArrayBase, Axis, Ix3};
@@ -30,7 +30,7 @@ pub(crate) fn matrix_over_slices_plot<A>(
     resolution: Option<(u32, u32)>,
     flip_axis: Option<(bool, bool)>,
     time_per_frame_ms: Option<u32>,
-) -> Result<GifBundle, Box<dyn Error>>
+) -> anyhow::Result<GifBundle>
 where
     A: ndarray::Data<Elem = f32>,
 {
@@ -44,17 +44,11 @@ where
     let title = title.unwrap_or(default_title.as_str());
 
     if time_per_frame_ms < 1 {
-        return Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "time per frame must be positive",
-        )));
+        return Err(anyhow::anyhow!("Time per frame must be positive"));
     }
 
     if axis.index() > 2 {
-        return Err(Box::new(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "axis must be 0, 1 or 2",
-        )));
+        return Err(anyhow::anyhow!("Axis must be 0, 1 or 2"));
     }
 
     let num_slices = data.shape()[axis.index()];
@@ -65,7 +59,7 @@ where
     let mut height = 0;
 
     let range = range.map_or_else(
-        || -> Result<(f32, f32), Box<dyn Error>> {
+        || -> anyhow::Result<(f32, f32)> {
             let min = data.min()
                 .map_err(|_| anyhow::anyhow!("Cannot find minimum value in data array for matrix GIF range calculation"))?;
             let max = data.max()
