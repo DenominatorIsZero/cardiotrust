@@ -96,24 +96,36 @@ impl Metrics {
         self.loss_maximum_regularization_batch
             .save_npy(path, "loss_maximum_regularization_epoch.npy")?;
 
-        let writer = BufWriter::new(File::create(path.join("dice.npy"))
-            .with_context(|| format!("Failed to create dice.npy file in {}", path.display()))?);
-        self.dice_score_over_threshold.write_npy(writer)
+        let writer =
+            BufWriter::new(File::create(path.join("dice.npy")).with_context(|| {
+                format!("Failed to create dice.npy file in {}", path.display())
+            })?);
+        self.dice_score_over_threshold
+            .write_npy(writer)
             .context("Failed to write dice score data to NPY file")?;
 
-        let writer = BufWriter::new(File::create(path.join("iou.npy"))
-            .with_context(|| format!("Failed to create iou.npy file in {}", path.display()))?);
-        self.iou_over_threshold.write_npy(writer)
+        let writer = BufWriter::new(
+            File::create(path.join("iou.npy"))
+                .with_context(|| format!("Failed to create iou.npy file in {}", path.display()))?,
+        );
+        self.iou_over_threshold
+            .write_npy(writer)
             .context("Failed to write IoU data to NPY file")?;
 
-        let writer = BufWriter::new(File::create(path.join("precision.npy"))
-            .with_context(|| format!("Failed to create precision.npy file in {}", path.display()))?);
-        self.precision_over_threshold.write_npy(writer)
+        let writer =
+            BufWriter::new(File::create(path.join("precision.npy")).with_context(|| {
+                format!("Failed to create precision.npy file in {}", path.display())
+            })?);
+        self.precision_over_threshold
+            .write_npy(writer)
             .context("Failed to write precision data to NPY file")?;
 
-        let writer = BufWriter::new(File::create(path.join("recall.npy"))
-            .with_context(|| format!("Failed to create recall.npy file in {}", path.display()))?);
-        self.recall_over_threshold.write_npy(writer)
+        let writer =
+            BufWriter::new(File::create(path.join("recall.npy")).with_context(|| {
+                format!("Failed to create recall.npy file in {}", path.display())
+            })?);
+        self.recall_over_threshold
+            .write_npy(writer)
             .context("Failed to write recall data to NPY file")?;
 
         Ok(())
@@ -127,7 +139,9 @@ impl Metrics {
             loss_mse: self.loss_mse.to_gpu(queue)?,
             loss_mse_batch: self.loss_mse_batch.to_gpu(queue)?,
             loss_maximum_regularization: self.loss_maximum_regularization.to_gpu(queue)?,
-            loss_maximum_regularization_batch: self.loss_maximum_regularization_batch.to_gpu(queue)?,
+            loss_maximum_regularization_batch: self
+                .loss_maximum_regularization_batch
+                .to_gpu(queue)?,
         })
     }
 
@@ -136,7 +150,8 @@ impl Metrics {
         self.loss.update_from_gpu(&metrics.loss)?;
         self.loss_batch.update_from_gpu(&metrics.loss_batch)?;
         self.loss_mse.update_from_gpu(&metrics.loss_mse)?;
-        self.loss_mse_batch.update_from_gpu(&metrics.loss_mse_batch)?;
+        self.loss_mse_batch
+            .update_from_gpu(&metrics.loss_mse_batch)?;
         self.loss_maximum_regularization
             .update_from_gpu(&metrics.loss_maximum_regularization)?;
         self.loss_maximum_regularization_batch
@@ -188,11 +203,17 @@ pub fn calculate_step(
 #[tracing::instrument(level = "debug")]
 pub fn calculate_batch(metrics: &mut Metrics, epoch_index: usize) -> Result<()> {
     debug!("Calculating metrics for epoch {}", epoch_index);
-    metrics.loss_mse_batch[epoch_index] = metrics.loss_mse.mean()
+    metrics.loss_mse_batch[epoch_index] = metrics
+        .loss_mse
+        .mean()
         .context("Failed to calculate mean MSE loss - metric data may be invalid")?;
-    metrics.loss_maximum_regularization_batch[epoch_index] = metrics.loss_maximum_regularization.mean()
-        .context("Failed to calculate mean maximum regularization loss - metric data may be invalid")?;
-    metrics.loss_batch[epoch_index] = metrics.loss.mean()
+    metrics.loss_maximum_regularization_batch[epoch_index] =
+        metrics.loss_maximum_regularization.mean().context(
+            "Failed to calculate mean maximum regularization loss - metric data may be invalid",
+        )?;
+    metrics.loss_batch[epoch_index] = metrics
+        .loss
+        .mean()
         .context("Failed to calculate mean total loss - metric data may be invalid")?;
     Ok(())
 }
@@ -447,12 +468,18 @@ impl SampleWiseMetric {
     #[tracing::instrument(level = "trace")]
     fn save_npy(&self, path: &std::path::Path, name: &str) -> Result<()> {
         trace!("Saving ArrayMetricsSample");
-        fs::create_dir_all(path)
-            .with_context(|| format!("Failed to create directory for sample-wise metrics: {}", path.display()))?;
-        let writer = BufWriter::new(File::create(path.join(name))
-            .with_context(|| format!("Failed to create sample-wise metric file: {}", name))?);
+        fs::create_dir_all(path).with_context(|| {
+            format!(
+                "Failed to create directory for sample-wise metrics: {}",
+                path.display()
+            )
+        })?;
+        let writer = BufWriter::new(
+            File::create(path.join(name))
+                .with_context(|| format!("Failed to create sample-wise metric file: {name}"))?,
+        );
         self.write_npy(writer)
-            .with_context(|| format!("Failed to write sample-wise metric data to file: {}", name))?;
+            .with_context(|| format!("Failed to write sample-wise metric data to file: {name}"))?;
         Ok(())
     }
 
@@ -520,12 +547,18 @@ impl BatchWiseMetric {
     #[tracing::instrument(level = "trace")]
     fn save_npy(&self, path: &std::path::Path, name: &str) -> Result<()> {
         trace!("Saving ArrayMetricsEpoch to npy");
-        fs::create_dir_all(path)
-            .with_context(|| format!("Failed to create directory for batch-wise metrics: {}", path.display()))?;
-        let writer = BufWriter::new(File::create(path.join(name))
-            .with_context(|| format!("Failed to create batch-wise metric file: {}", name))?);
+        fs::create_dir_all(path).with_context(|| {
+            format!(
+                "Failed to create directory for batch-wise metrics: {}",
+                path.display()
+            )
+        })?;
+        let writer = BufWriter::new(
+            File::create(path.join(name))
+                .with_context(|| format!("Failed to create batch-wise metric file: {name}"))?,
+        );
         self.write_npy(writer)
-            .with_context(|| format!("Failed to write batch-wise metric data to file: {}", name))?;
+            .with_context(|| format!("Failed to write batch-wise metric data to file: {name}"))?;
         Ok(())
     }
 

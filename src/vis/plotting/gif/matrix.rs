@@ -66,7 +66,7 @@ where
                 .map_err(|_| anyhow::anyhow!("Cannot find maximum value in data array for matrix GIF range calculation"))?;
             Ok((*min, *max))
         },
-        |range| Ok(range),
+        Ok,
     )?;
 
     for slice in 0..num_slices {

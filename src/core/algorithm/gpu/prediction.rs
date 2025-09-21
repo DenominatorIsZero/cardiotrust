@@ -193,10 +193,14 @@ mod tests {
         for step in 0..results_cpu.estimations.measurements.num_steps() {
             calculate_system_prediction(
                 &mut results_cpu.estimations,
-                &results_cpu.model.as_ref().context("Model should be available for CPU prediction")?.functional_description,
+                &results_cpu
+                    .model
+                    .as_ref()
+                    .context("Model should be available for CPU prediction")?
+                    .functional_description,
                 0,
                 step,
-            );
+            )?;
             results_gpu
                 .estimations
                 .step
@@ -207,9 +211,17 @@ mod tests {
             results_from_gpu.update_from_gpu(&results_gpu)?;
             let dif = &*results_cpu.estimations.ap_outputs_now
                 - &*results_from_gpu.estimations.ap_outputs_now;
-            println!("Diference {:?}", dif.as_slice().context("Failed to convert difference array to slice")?);
+            println!(
+                "Diference {:?}",
+                dif.as_slice()
+                    .context("Failed to convert difference array to slice")?
+            );
             assert_relative_eq!(
-                results_cpu.estimations.ap_outputs_now.as_slice().context("Failed to convert CPU ap_outputs to slice")?,
+                results_cpu
+                    .estimations
+                    .ap_outputs_now
+                    .as_slice()
+                    .context("Failed to convert CPU ap_outputs to slice")?,
                 results_from_gpu
                     .estimations
                     .ap_outputs_now
@@ -221,7 +233,11 @@ mod tests {
         results_from_gpu.update_from_gpu(&results_gpu)?;
 
         assert_relative_eq!(
-            results_cpu.estimations.ap_outputs_now.as_slice().context("Failed to convert CPU ap_outputs to slice")?,
+            results_cpu
+                .estimations
+                .ap_outputs_now
+                .as_slice()
+                .context("Failed to convert CPU ap_outputs to slice")?,
             results_from_gpu
                 .estimations
                 .ap_outputs_now
@@ -230,7 +246,11 @@ mod tests {
             epsilon = 1e-6
         );
         assert_relative_eq!(
-            results_cpu.estimations.system_states.as_slice().context("Failed to convert CPU system_states to slice")?,
+            results_cpu
+                .estimations
+                .system_states
+                .as_slice()
+                .context("Failed to convert CPU system_states to slice")?,
             results_from_gpu
                 .estimations
                 .system_states
@@ -240,7 +260,11 @@ mod tests {
         );
 
         assert_relative_eq!(
-            results_cpu.estimations.measurements.as_slice().context("Failed to convert CPU measurements to slice")?,
+            results_cpu
+                .estimations
+                .measurements
+                .as_slice()
+                .context("Failed to convert CPU measurements to slice")?,
             results_from_gpu
                 .estimations
                 .measurements

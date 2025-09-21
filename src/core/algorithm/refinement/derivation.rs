@@ -373,13 +373,11 @@ pub fn calculate_derivatives_coefs_simple(
                         .ap_outputs_last
                         .uget((state_index, offset_index))
                 };
-                let output_state = output_state
-                    .context("Output state index not initialized - algorithm parameter corruption")?;
-                let state_val = unsafe {
-                    estimations
-                        .system_states
-                        .uget((step - delay, output_state))
-                };
+                let output_state = output_state.context(
+                    "Output state index not initialized - algorithm parameter corruption",
+                )?;
+                let state_val =
+                    unsafe { estimations.system_states.uget((step - delay, output_state)) };
                 let ap_gain = unsafe {
                     functional_description
                         .ap_params
@@ -434,13 +432,11 @@ pub fn calculate_derivatives_coefs_textbook(
             let coef = unsafe { functional_description.ap_params.coefs.uget(coef_index) };
 
             if step >= *delay {
-                let output_state = output_state
-                    .context("Output state index not initialized - algorithm parameter corruption")?;
-                let state_val = unsafe {
-                    estimations
-                        .system_states
-                        .uget((step - delay, output_state))
-                };
+                let output_state = output_state.context(
+                    "Output state index not initialized - algorithm parameter corruption",
+                )?;
+                let state_val =
+                    unsafe { estimations.system_states.uget((step - delay, output_state)) };
                 let derivative_fir =
                     unsafe { derivatives.coefs_fir.uget_mut((state_index, offset_index)) };
                 *derivative_fir = (-*coef).mul_add(*derivative_fir, *state_val);
@@ -555,7 +551,10 @@ pub fn calculate_mapped_residuals(
 }
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace", skip_all)]
-pub fn calculate_average_delays(average_delays: &mut AverageDelays, ap_params: &APParameters) -> Result<()> {
+pub fn calculate_average_delays(
+    average_delays: &mut AverageDelays,
+    ap_params: &APParameters,
+) -> Result<()> {
     for voxel_index in 0..average_delays.shape()[0] {
         let mut delay_sum = 0.0;
         let mut gain_sum = 0.0;
@@ -826,7 +825,7 @@ mod tests {
     }
 
     #[test]
-    fn calculate_no_crash() {
+    fn calculate_no_crash() -> anyhow::Result<()> {
         let number_of_states = 1500;
         let number_of_sensors = 300;
         let number_of_steps = 2000;
@@ -862,7 +861,8 @@ mod tests {
             step,
             0,
             estimations.measurements.num_sensors(),
-        );
+        )?;
+        Ok(())
     }
 
     #[test]
@@ -879,7 +879,11 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params)?;
-        assert_relative_eq!(average_delays[0].context("Expected average delay at index 0")?, 1.836_931_7, epsilon = 1e-6);
+        assert_relative_eq!(
+            average_delays[0].context("Expected average delay at index 0")?,
+            1.836_931_7,
+            epsilon = 1e-6
+        );
         Ok(())
     }
 
@@ -897,8 +901,16 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params)?;
-        assert_relative_eq!(average_delays[0].context("Expected average delay at index 0")?, 1.763_453_2, epsilon = 1e-4);
-        assert_relative_eq!(average_delays[1].context("Expected average delay at index 1")?, 1.763_453, epsilon = 1e-4);
+        assert_relative_eq!(
+            average_delays[0].context("Expected average delay at index 0")?,
+            1.763_453_2,
+            epsilon = 1e-4
+        );
+        assert_relative_eq!(
+            average_delays[1].context("Expected average delay at index 1")?,
+            1.763_453,
+            epsilon = 1e-4
+        );
         Ok(())
     }
 
@@ -937,7 +949,11 @@ mod tests {
         ap_params.gains.assign(&gains);
 
         calculate_average_delays(&mut average_delays, &ap_params)?;
-        assert_relative_eq!(average_delays[0].context("Expected average delay at index 0")?, 1.504_952_5, epsilon = 1e-6);
+        assert_relative_eq!(
+            average_delays[0].context("Expected average delay at index 0")?,
+            1.504_952_5,
+            epsilon = 1e-6
+        );
         Ok(())
     }
 }

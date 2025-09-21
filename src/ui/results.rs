@@ -659,7 +659,7 @@ fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
             "Measurement 0 Delta",
             "z [pT]",
         ),
-    }.with_context(|| format!("Failed to generate plot for image type: {:?}", image_type))?;
+    }.with_context(|| format!("Failed to generate plot for image type: {image_type:?}"))?;
     Ok(())
 }
 
@@ -729,6 +729,6 @@ fn generate_gifs(
             Some(playback_speed),
             Some(20),
         ),
-    }.with_context(|| format!("Failed to generate GIF for type: {:?}", gif_type))?;
+    }.with_context(|| format!("Failed to generate GIF for type: {gif_type:?}"))?;
     Ok(())
 }

@@ -35,9 +35,8 @@ impl UpdateKernel {
         let queue = &gpu.queue;
         let number_of_voxels = number_of_states / 3;
 
-        let gains_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/update_gains.cl")
-                .context("Failed to read update_gains kernel source file")?;
+        let gains_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/update_gains.cl")
+            .context("Failed to read update_gains kernel source file")?;
         let gains_program = Program::builder()
             .src(gains_src)
             .build(context)
@@ -54,9 +53,8 @@ impl UpdateKernel {
             .build()
             .context("Failed to build update gains kernel")?;
 
-        let coefs_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/update_coefs.cl")
-                .context("Failed to read update_coefs kernel source file")?;
+        let coefs_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/update_coefs.cl")
+            .context("Failed to read update_coefs kernel source file")?;
         let coefs_program = Program::builder()
             .src(coefs_src)
             .build(context)
@@ -90,11 +88,13 @@ impl UpdateKernel {
         // See prediction.rs for implementation details.
         unsafe {
             if !self.freeze_gains {
-                self.gains_kernel.enq()
+                self.gains_kernel
+                    .enq()
                     .context("Failed to execute update gains kernel")?;
             }
             if !self.freeze_delays {
-                self.coefs_kernel.enq()
+                self.coefs_kernel
+                    .enq()
                     .context("Failed to execute update coefficients kernel")?;
             }
         }
@@ -111,8 +111,8 @@ impl UpdateKernel {
 #[cfg(test)]
 mod tests {
 
-    use approx::assert_relative_eq;
     use anyhow::Context;
+    use approx::assert_relative_eq;
 
     use super::UpdateKernel;
     use crate::core::{
@@ -208,10 +208,14 @@ mod tests {
         for step in 0..results_cpu.estimations.measurements.num_steps() {
             calculate_system_prediction(
                 &mut results_cpu.estimations,
-                &results_cpu.model.as_ref().context("Model should be available for CPU prediction")?.functional_description,
+                &results_cpu
+                    .model
+                    .as_ref()
+                    .context("Model should be available for CPU prediction")?
+                    .functional_description,
                 0,
                 step,
-            );
+            )?;
             calculate_residuals(&mut results_cpu.estimations, &data, 0, step);
             calculate_mapped_residuals(
                 &mut results_cpu.derivatives.mapped_residuals,
@@ -241,10 +245,14 @@ mod tests {
             calculate_derivatives_coefs_textbook(
                 &mut results_cpu.derivatives,
                 &results_cpu.estimations,
-                &results_cpu.model.as_ref().context("Model should be available for derivation calculation")?.functional_description,
+                &results_cpu
+                    .model
+                    .as_ref()
+                    .context("Model should be available for derivation calculation")?
+                    .functional_description,
                 step,
                 &config.algorithm,
-            );
+            )?;
             results_gpu
                 .estimations
                 .step
@@ -280,7 +288,10 @@ mod tests {
             batch_size,
             0.0f32,
         );
-        let model = results_cpu.model.as_mut().context("Model should be available for delay rolling")?;
+        let model = results_cpu
+            .model
+            .as_mut()
+            .context("Model should be available for delay rolling")?;
         roll_delays(
             &mut model.functional_description.ap_params.coefs,
             &mut model.functional_description.ap_params.delays,

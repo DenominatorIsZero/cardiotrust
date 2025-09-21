@@ -265,7 +265,7 @@ impl SystemStatesSphericalMax {
                 .magnitude
                 .index_axis(Axis(1), state)
                 .argmax_skipnan()
-                .with_context(|| format!("Failed to find maximum index for state {}", state))?;
+                .with_context(|| format!("Failed to find maximum index for state {state}"))?;
             self.magnitude[state] = spehrical.magnitude[(index, state)];
             self.theta[state] = spehrical.theta[(index, state)];
             self.phi[state] = spehrical.phi[(index, state)];
@@ -343,7 +343,7 @@ impl ActivationTimePerStateMs {
                 .index_axis(Axis(1), state)
                 .argmax_skipnan()
                 .with_context(|| {
-                    format!("Failed to find maximum activation time for state {}", state)
+                    format!("Failed to find maximum activation time for state {state}")
                 })?;
             self[state] = index as f32 / sample_rate_hz * 1000.0;
         }

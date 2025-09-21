@@ -11,7 +11,7 @@ use tracing_subscriber::{fmt, layer::SubscriberExt};
 #[tracing::instrument(level = "info")]
 fn main() {
     if let Err(e) = run_app() {
-        eprintln!("Application failed to start: {}", e);
+        eprintln!("Application failed to start: {e}");
         std::process::exit(1);
     }
 }
@@ -52,7 +52,7 @@ fn run_app() -> Result<()> {
 fn setup_logging() -> Result<()> {
     // Try to set up file logging, fall back to stdout-only if it fails
     if let Err(e) = try_setup_file_logging() {
-        eprintln!("Warning: Could not set up file logging ({}), using stdout only", e);
+        eprintln!("Warning: Could not set up file logging ({e}), using stdout only");
         setup_stdout_logging()?;
     }
 
@@ -61,13 +61,12 @@ fn setup_logging() -> Result<()> {
 
 #[tracing::instrument(level = "debug")]
 fn setup_stdout_logging() -> Result<()> {
-    let subscriber = tracing_subscriber::registry()
-        .with(
-            fmt::Layer::new()
-                .with_writer(std::io::stdout)
-                .with_thread_names(true)
-                .with_ansi(true),
-        );
+    let subscriber = tracing_subscriber::registry().with(
+        fmt::Layer::new()
+            .with_writer(std::io::stdout)
+            .with_thread_names(true)
+            .with_ansi(true),
+    );
 
     tracing::subscriber::set_global_default(subscriber)
         .context("Failed to set up stdout logging")?;
@@ -99,8 +98,7 @@ fn try_setup_file_logging() -> Result<()> {
                 .with_ansi(false),
         );
 
-    tracing::subscriber::set_global_default(subscriber)
-        .context("Failed to set up file logging")?;
+    tracing::subscriber::set_global_default(subscriber).context("Failed to set up file logging")?;
 
     Ok(())
 }

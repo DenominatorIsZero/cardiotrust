@@ -9,11 +9,11 @@ mod loss_decreases;
 mod no_crash;
 
 #[tracing::instrument(level = "info", skip_all)]
-fn run(results: &mut Results, data: &Data, algorithm_config: &Algorithm) {
+fn run(results: &mut Results, data: &Data, algorithm_config: &Algorithm) -> anyhow::Result<()> {
     info!("Running optimization.");
     let mut batch_index = 0;
     for _ in 0..algorithm_config.epochs {
-        run_epoch(results, &mut batch_index, data, algorithm_config);
+        run_epoch(results, &mut batch_index, data, algorithm_config)?;
     }
     results
         .estimations
@@ -22,5 +22,6 @@ fn run(results: &mut Results, data: &Data, algorithm_config: &Algorithm) {
     results
         .estimations
         .system_states_spherical_max
-        .calculate(&results.estimations.system_states_spherical);
+        .calculate(&results.estimations.system_states_spherical)?;
+    Ok(())
 }

@@ -128,11 +128,19 @@ impl Scenario {
     pub fn load(path: &Path) -> Result<Self> {
         info!("Loading scenario from {}", path.to_string_lossy());
         let scenario_path = path.join("scenario.toml");
-        let contents = fs::read_to_string(&scenario_path)
-            .with_context(|| format!("Failed to read scenario.toml file: {}", scenario_path.display()))?;
+        let contents = fs::read_to_string(&scenario_path).with_context(|| {
+            format!(
+                "Failed to read scenario.toml file: {}",
+                scenario_path.display()
+            )
+        })?;
 
-        let scenario: Self = toml::from_str(&contents)
-            .with_context(|| format!("Failed to parse scenario.toml in directory: {}", path.display()))?;
+        let scenario: Self = toml::from_str(&contents).with_context(|| {
+            format!(
+                "Failed to parse scenario.toml in directory: {}",
+                path.display()
+            )
+        })?;
 
         Ok(scenario)
     }
@@ -153,8 +161,7 @@ impl Scenario {
     pub fn save(&self) -> Result<()> {
         info!("Saving scenario with id {}", self.id);
         let path = Path::new("./results").join(&self.id);
-        let toml = toml::to_string(&self)
-            .context("Failed to serialize scenario to TOML format")?;
+        let toml = toml::to_string(&self).context("Failed to serialize scenario to TOML format")?;
         fs::create_dir_all(&path)?;
         let mut f = File::create(path.join("scenario.toml"))?;
         f.write_all(toml.as_bytes())?;
@@ -400,14 +407,12 @@ impl Scenario {
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
         let mut f = File::create(path.join("data.bin"))?;
-        let data = self.data.as_ref()
+        let data = self
+            .data
+            .as_ref()
             .context("Data not available for saving")?;
-        bincode::serde::encode_into_std_write(
-            data,
-            &mut f,
-            bincode::config::standard(),
-        )
-        .context("Failed to serialize data to binary format")?;
+        bincode::serde::encode_into_std_write(data, &mut f, bincode::config::standard())
+            .context("Failed to serialize data to binary format")?;
         Ok(())
     }
 
@@ -422,14 +427,12 @@ impl Scenario {
         let path = Path::new("./results").join(&self.id);
         fs::create_dir_all(&path)?;
         let mut f = File::create(path.join("results.bin"))?;
-        let results = self.results.as_ref()
+        let results = self
+            .results
+            .as_ref()
             .context("Results not available for saving")?;
-        bincode::serde::encode_into_std_write(
-            results,
-            &mut f,
-            bincode::config::standard(),
-        )
-        .context("Failed to serialize results to binary format")?;
+        bincode::serde::encode_into_std_write(results, &mut f, bincode::config::standard())
+            .context("Failed to serialize results to binary format")?;
         Ok(())
     }
 
@@ -494,7 +497,8 @@ impl Scenario {
     pub fn save_npy(&self) -> Result<()> {
         debug!("Saving scenario data and results as npy");
         let path = Path::new("./results").join(&self.id).join("npy");
-        self.data.as_ref()
+        self.data
+            .as_ref()
             .context("Scenario data not available for NPY export")?
             .save_npy(&path.join("data"))?;
         self.results
@@ -515,7 +519,11 @@ impl Scenario {
 /// Returns an error if the model parameters are invalid, an unimplemented algorithm
 /// is selected, or any other simulation failure occurs.
 #[tracing::instrument(level = "info", skip_all, fields(id = %scenario.id))]
-pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender<Summary>) -> Result<()> {
+pub fn run(
+    mut scenario: Scenario,
+    epoch_tx: &Sender<usize>,
+    summary_tx: &Sender<Summary>,
+) -> Result<()> {
     debug!("Running scenario with id {}", scenario.id);
 
     let simulation = &scenario.config.simulation;
@@ -575,7 +583,8 @@ pub fn run(mut scenario: Scenario, epoch_tx: &Sender<usize>, summary_tx: &Sender
                 &mut summary,
                 epoch_tx,
                 summary_tx,
-            ).expect("Failed to run model-based GPU algorithm");
+            )
+            .expect("Failed to run model-based GPU algorithm");
         }
         AlgorithmType::PseudoInverse => {
             run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary)
@@ -748,7 +757,9 @@ fn run_model_based(
         if scenario.config.algorithm.snapshots_interval != 0
             && epoch_index % scenario.config.algorithm.snapshots_interval == 0
         {
-            results.snapshots.as_mut()
+            results
+                .snapshots
+                .as_mut()
                 .context("Snapshots should be initialized for GPU algorithm")?
                 .push(
                     &results.estimations,
@@ -850,7 +861,9 @@ fn run_model_based_gpu(
                 .functional_description
                 .ap_params
                 .update_from_gpu(&results_gpu.model.functional_description.ap_params)?;
-            results.snapshots.as_mut()
+            results
+                .snapshots
+                .as_mut()
                 .context("Snapshots should be initialized for GPU algorithm")?
                 .push(
                     &results.estimations,

@@ -153,10 +153,10 @@ impl Voxels {
             .find(|(this_type, _)| **this_type == v_type);
 
         let (_, number_option) = query
-            .with_context(|| format!("No voxel of type {:?} found in voxels", v_type))?;
+            .with_context(|| format!("No voxel of type {v_type:?} found in voxels"))?;
 
         number_option
-            .with_context(|| format!("Voxel of type {:?} has no assigned number", v_type))
+            .with_context(|| format!("Voxel of type {v_type:?} has no assigned number"))
     }
 
     /// Saves the voxel grid data to .npy files in the given path.

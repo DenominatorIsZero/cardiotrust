@@ -182,16 +182,14 @@ impl ControlFunction {
                         1,
                     )
                     .with_context(|| format!(
-                        "Failed to create resampler for O'Hara control function (from {}Hz to {}Hz)",
-                        from_sample_rate_hz, sample_rate_hz
+                        "Failed to create resampler for O'Hara control function (from {from_sample_rate_hz}Hz to {sample_rate_hz}Hz)"
                     ))?;
 
                     let input_frames: Vec<Vec<f32>> = vec![control_function_raw.to_vec()];
 
                     let output_frames = resampler.process(&input_frames, None)
                         .with_context(|| format!(
-                            "Failed to resample O'Hara control function from {}Hz to {}Hz",
-                            from_sample_rate_hz, sample_rate_hz
+                            "Failed to resample O'Hara control function from {from_sample_rate_hz}Hz to {sample_rate_hz}Hz"
                         ))?;
 
                     control_function_raw = output_frames[0].clone().into();

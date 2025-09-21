@@ -148,7 +148,6 @@ impl Model {
         }
     }
 
-    #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn to_gpu(&self, queue: &ocl::Queue) -> Result<ModelGPU> {
         Ok(ModelGPU {

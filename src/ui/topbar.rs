@@ -68,10 +68,8 @@ pub fn draw_ui_topbar(
                     ui_state.get() != &UiState::Results
                         && selected_scenario.index.is_some()
                         && selected_scenario.index
-                            .map(|index| scenario_list.entries.get(index)
-                                .map(|entry| entry.scenario.get_status() == &Status::Done)
-                                .unwrap_or(false))
-                            .unwrap_or(false),
+                            .is_some_and(|index| scenario_list.entries.get(index)
+                                .is_some_and(|entry| entry.scenario.get_status() == &Status::Done)),
                     egui::Button::new("Results"),
                 )
                 .clicked()
@@ -98,10 +96,8 @@ pub fn draw_ui_topbar(
                     ui_state.get() != &UiState::Volumetric
                         && selected_scenario.index.is_some()
                         && selected_scenario.index
-                            .map(|index| scenario_list.entries.get(index)
-                                .map(|entry| entry.scenario.get_status() == &Status::Done)
-                                .unwrap_or(false))
-                            .unwrap_or(false),
+                            .is_some_and(|index| scenario_list.entries.get(index)
+                                .is_some_and(|entry| entry.scenario.get_status() == &Status::Done)),
                     egui::Button::new("Volumetric"),
                 )
                 .clicked()

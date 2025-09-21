@@ -133,64 +133,55 @@ pub fn check_scenarios(
             let mut summary_poisoned = false;
 
             // Handle epoch receiver
-            match &entry.epoch_rx {
-                Some(epoch_rx) => {
-                    match epoch_rx.lock() {
-                        Ok(receiver) => {
-                            if let Ok(epoch) = receiver.try_recv() {
-                                entry.scenario.set_running(epoch);
-                            }
-                        }
-                        Err(e) => {
-                            error!("Failed to acquire epoch receiver lock for scenario {}: {}", entry.scenario.get_id(), e);
-                            epoch_poisoned = true;
+            if let Some(epoch_rx) = &entry.epoch_rx {
+                match epoch_rx.lock() {
+                    Ok(receiver) => {
+                        if let Ok(epoch) = receiver.try_recv() {
+                            entry.scenario.set_running(epoch);
                         }
                     }
+                    Err(e) => {
+                        error!("Failed to acquire epoch receiver lock for scenario {}: {}", entry.scenario.get_id(), e);
+                        epoch_poisoned = true;
+                    }
                 }
-                None => {
-                    error!("Running scenario {} missing epoch receiver - cleaning up", entry.scenario.get_id());
-                    cleanup_needed = true;
-                }
+            } else {
+                error!("Running scenario {} missing epoch receiver - cleaning up", entry.scenario.get_id());
+                cleanup_needed = true;
             }
 
             // Handle summary receiver
-            match &entry.summary_rx {
-                Some(summary_rx) => {
-                    match summary_rx.lock() {
-                        Ok(receiver) => {
-                            if let Ok(summary) = receiver.try_recv() {
-                                entry.scenario.summary = Some(summary);
-                            }
-                        }
-                        Err(e) => {
-                            error!("Failed to acquire summary receiver lock for scenario {}: {}", entry.scenario.get_id(), e);
-                            summary_poisoned = true;
+            if let Some(summary_rx) = &entry.summary_rx {
+                match summary_rx.lock() {
+                    Ok(receiver) => {
+                        if let Ok(summary) = receiver.try_recv() {
+                            entry.scenario.summary = Some(summary);
                         }
                     }
+                    Err(e) => {
+                        error!("Failed to acquire summary receiver lock for scenario {}: {}", entry.scenario.get_id(), e);
+                        summary_poisoned = true;
+                    }
                 }
-                None => {
-                    error!("Running scenario {} missing summary receiver - cleaning up", entry.scenario.get_id());
-                    cleanup_needed = true;
-                }
+            } else {
+                error!("Running scenario {} missing summary receiver - cleaning up", entry.scenario.get_id());
+                cleanup_needed = true;
             }
 
             // Handle join handle
-            match &entry.join_handle {
-                Some(join_handle) => {
-                    if join_handle.is_finished() {
-                        entry.scenario.set_done();
-                        entry.join_handle = None;
-                        entry.epoch_rx = None;
-                        entry.summary_rx = None;
-                        if let Err(e) = entry.scenario.save() {
-                            error!("Failed to save scenario {}: {}", entry.scenario.get_id(), e);
-                        }
+            if let Some(join_handle) = &entry.join_handle {
+                if join_handle.is_finished() {
+                    entry.scenario.set_done();
+                    entry.join_handle = None;
+                    entry.epoch_rx = None;
+                    entry.summary_rx = None;
+                    if let Err(e) = entry.scenario.save() {
+                        error!("Failed to save scenario {}: {}", entry.scenario.get_id(), e);
                     }
                 }
-                None => {
-                    error!("Running scenario {} missing join handle - cleaning up", entry.scenario.get_id());
-                    cleanup_needed = true;
-                }
+            } else {
+                error!("Running scenario {} missing join handle - cleaning up", entry.scenario.get_id());
+                cleanup_needed = true;
             }
 
             // Clean up corrupted or missing resources

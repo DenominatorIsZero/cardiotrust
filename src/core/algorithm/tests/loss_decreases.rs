@@ -1,6 +1,5 @@
 use std::path::Path;
 
-use anyhow::Context;
 use super::{super::*, run};
 use crate::{
     core::{
@@ -16,6 +15,7 @@ use crate::{
         PlotSlice, StateSphericalPlotMode,
     },
 };
+use anyhow::Context;
 
 const COMMON_PATH: &str = "tests/core/algorithm/loss_decreases";
 
@@ -53,8 +53,7 @@ fn loss_decreases() -> anyhow::Result<()> {
         &algorithm_config.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
-    )
-    .expect("Model parameters to be valid.");
+    )?;
 
     let mut results = Results::new(
         algorithm_config.epochs,
@@ -173,7 +172,12 @@ fn loss_decreases_and_plot() -> anyhow::Result<()> {
         None,
         None,
     )
-    .with_context(|| format!("Failed to create states spherical plot at {}", path.display()))?;
+    .with_context(|| {
+        format!(
+            "Failed to create states spherical plot at {}",
+            path.display()
+        )
+    })?;
 
     let fps = 20;
     let playback_speed = 0.1;
@@ -198,7 +202,12 @@ fn loss_decreases_and_plot() -> anyhow::Result<()> {
         Some(playback_speed),
         Some(fps),
     )
-    .with_context(|| format!("Failed to create states spherical plot over time at {}", path.display()))?;
+    .with_context(|| {
+        format!(
+            "Failed to create states spherical plot over time at {}",
+            path.display()
+        )
+    })?;
 
     Ok(())
 }

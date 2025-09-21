@@ -33,12 +33,15 @@ fn run_benches(c: &mut Criterion) {
     group.finish();
 }
 
-fn bench_average_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn bench_average_delays(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, model, mut results) = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
+        let (_, model, mut results) =
+            setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -62,7 +65,8 @@ fn bench_smoothness_derivatives(
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, model, mut results) = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
+        let (_, model, mut results) =
+            setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -84,12 +88,15 @@ fn bench_smoothness_derivatives(
     Ok(())
 }
 
-fn bench_residual_mapping(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn bench_residual_mapping(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, model, mut results) = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
+        let (_, model, mut results) =
+            setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -117,7 +124,8 @@ fn bench_maximum_regularization(
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, model, mut results) = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
+        let (_, model, mut results) =
+            setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // prepare inputs
         calculate_mapped_residuals(
@@ -149,12 +157,15 @@ fn bench_maximum_regularization(
     Ok(())
 }
 
-fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn bench_gains(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, model, mut results) = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
+        let (_, model, mut results) =
+            setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // prepare inputs
         calculate_mapped_residuals(
@@ -191,12 +202,15 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
     Ok(())
 }
 
-fn bench_coefs(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn bench_coefs(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, model, mut results) = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
+        let (_, model, mut results) =
+            setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // prepare inputs
         calculate_mapped_residuals(
@@ -270,7 +284,7 @@ fn setup_inputs(config: &Config) -> anyhow::Result<(Data, Model, Results)> {
         &model.functional_description,
         BEAT,
         STEP,
-    );
+    )?;
     calculate_residuals(&mut results.estimations, &data, BEAT, STEP);
     Ok((data, model, results))
 }

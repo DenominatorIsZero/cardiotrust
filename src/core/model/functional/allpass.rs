@@ -232,11 +232,11 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Resul
                 continue;
             }
             let x_in_i32 = i32::try_from(x_in)
-                .with_context(|| format!("Voxel x-coordinate {} exceeds i32::MAX", x_in))?;
+                .with_context(|| format!("Voxel x-coordinate {x_in} exceeds i32::MAX"))?;
             let y_in_i32 = i32::try_from(y_in)
-                .with_context(|| format!("Voxel y-coordinate {} exceeds i32::MAX", y_in))?;
+                .with_context(|| format!("Voxel y-coordinate {y_in} exceeds i32::MAX"))?;
             let z_in_i32 = i32::try_from(z_in)
-                .with_context(|| format!("Voxel z-coordinate {} exceeds i32::MAX", z_in))?;
+                .with_context(|| format!("Voxel z-coordinate {z_in} exceeds i32::MAX"))?;
 
             let ouput_voxel_index_candidate = [
                 x_in_i32 + x_offset,
@@ -275,18 +275,16 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Resul
             for input_direction in 0..3 {
                 let input_base_number = v_numbers[input_voxel_index].with_context(|| {
                     format!(
-                        "Input voxel at {:?} has no assigned number",
-                        input_voxel_index
+                        "Input voxel at {input_voxel_index:?} has no assigned number"
                     )
                 })?;
                 let input_state_number = input_base_number + input_direction;
                 for output_dimension in 0..3 {
                     let gain_index = offset_to_gain_index(x_offset, y_offset, z_offset, output_dimension)
-                        .with_context(|| format!("Failed to calculate gain index for offset ({}, {}, {}) and output dimension {}", x_offset, y_offset, z_offset, output_dimension))?;
+                        .with_context(|| format!("Failed to calculate gain index for offset ({x_offset}, {y_offset}, {z_offset}) and output dimension {output_dimension}"))?;
                     let output_base_number = v_numbers[output_voxel_index].with_context(|| {
                         format!(
-                            "Output voxel at {:?} has no assigned number",
-                            output_voxel_index
+                            "Output voxel at {output_voxel_index:?} has no assigned number"
                         )
                     })?;
                     let output_state_index = output_base_number + output_dimension;
@@ -409,11 +407,11 @@ fn try_to_connect(
     }
     let (x_out, y_out, z_out) = output_voxel_index;
     let x_out_i32 = i32::try_from(x_out)
-        .with_context(|| format!("Output voxel x-coordinate {} exceeds i32::MAX", x_out))?;
+        .with_context(|| format!("Output voxel x-coordinate {x_out} exceeds i32::MAX"))?;
     let y_out_i32 = i32::try_from(y_out)
-        .with_context(|| format!("Output voxel y-coordinate {} exceeds i32::MAX", y_out))?;
+        .with_context(|| format!("Output voxel y-coordinate {y_out} exceeds i32::MAX"))?;
     let z_out_i32 = i32::try_from(z_out)
-        .with_context(|| format!("Output voxel z-coordinate {} exceeds i32::MAX", z_out))?;
+        .with_context(|| format!("Output voxel z-coordinate {z_out} exceeds i32::MAX"))?;
 
     let input_voxel_index = [
         x_out_i32 - x_offset,
@@ -463,8 +461,7 @@ fn try_to_connect(
     // Now we finally found something that we want to connect.
     let input_state_number = v_numbers[input_voxel_index].with_context(|| {
         format!(
-            "Input voxel at {:?} has no assigned number",
-            input_voxel_index
+            "Input voxel at {input_voxel_index:?} has no assigned number"
         )
     })?;
     let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
@@ -489,8 +486,7 @@ fn try_to_connect(
     // update activation time of input voxel, marking them as connected
     let output_activation_time = activation_time_s[output_voxel_index].with_context(|| {
         format!(
-            "Output voxel at {:?} has no activation time",
-            output_voxel_index
+            "Output voxel at {output_voxel_index:?} has no activation time"
         )
     })?;
     activation_time_s[input_voxel_index] = Some(output_activation_time + delay_s);

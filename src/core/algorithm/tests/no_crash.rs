@@ -11,7 +11,7 @@ use crate::core::{
 };
 
 #[test]
-fn run_epoch_no_crash() {
+fn run_epoch_no_crash() -> anyhow::Result<()> {
     let number_of_states = 3000;
     let number_of_sensors = 300;
     let number_of_steps = 3;
@@ -49,7 +49,8 @@ fn run_epoch_no_crash() {
     );
 
     let mut batch_index = 0;
-    run_epoch(&mut results, &mut batch_index, &data, &config);
+    run_epoch(&mut results, &mut batch_index, &data, &config)?;
+    Ok(())
 }
 
 #[test]
@@ -95,12 +96,11 @@ fn run_no_crash() {
 }
 
 #[test]
-fn pseudo_inverse_success() {
+fn pseudo_inverse_success() -> anyhow::Result<()> {
     let mut simulation_config = SimulationConfig::default();
     simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
     simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
-    let data =
-        Data::from_simulation_config(&simulation_config).expect("Model parameters to be valid.");
+    let data = Data::from_simulation_config(&simulation_config)?;
 
     let mut algorithm_config = Algorithm::default();
     algorithm_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
@@ -110,8 +110,7 @@ fn pseudo_inverse_success() {
         &algorithm_config.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
-    )
-    .expect("Model parameters to be valid.");
+    )?;
 
     let mut results = Results::new(
         algorithm_config.epochs,
@@ -134,5 +133,6 @@ fn pseudo_inverse_success() {
         &mut results,
         &data,
         &algorithm_config,
-    );
+    )?;
+    Ok(())
 }

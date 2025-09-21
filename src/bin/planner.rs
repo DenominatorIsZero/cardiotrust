@@ -13,7 +13,7 @@ use tracing_subscriber::{fmt, layer::SubscriberExt};
 #[tracing::instrument(level = "info")]
 fn main() {
     if let Err(e) = run_planner() {
-        eprintln!("Scenario planning failed: {:#}", e);
+        eprintln!("Scenario planning failed: {e:#}");
         std::process::exit(1);
     }
 }
@@ -66,10 +66,12 @@ fn plan_scenarios() -> Result<()> {
     let mut scenario = Scenario::build(Some(format!("{experiment_name} - (I) - Static Array")));
     scenario.config.algorithm = algorithm_config.clone();
     scenario.config.simulation = simulation_config.clone();
-    scenario.schedule()
-        .with_context(|| format!("Failed to schedule static array scenario for experiment '{}'", experiment_name))?;
-    scenario.save()
-        .with_context(|| format!("Failed to save static array scenario for experiment '{}'", experiment_name))?;
+    scenario.schedule().with_context(|| {
+        format!("Failed to schedule static array scenario for experiment '{experiment_name}'")
+    })?;
+    scenario.save().with_context(|| {
+        format!("Failed to save static array scenario for experiment '{experiment_name}'")
+    })?;
 
     if false {
         for y_step_exp in 1..=10 {
@@ -85,9 +87,9 @@ fn plan_scenarios() -> Result<()> {
             scenario.config.algorithm = algorithm_config.clone();
             scenario.config.simulation = simulation_config.clone();
             scenario.schedule()
-                .with_context(|| format!("Failed to schedule Y-motion scenario for experiment '{}', {} steps", experiment_name, y_step))?;
+                .with_context(|| format!("Failed to schedule Y-motion scenario for experiment '{experiment_name}', {y_step} steps"))?;
             scenario.save()
-                .with_context(|| format!("Failed to save Y-motion scenario for experiment '{}', {} steps", experiment_name, y_step))?;
+                .with_context(|| format!("Failed to save Y-motion scenario for experiment '{experiment_name}', {y_step} steps"))?;
         }
     }
 
@@ -104,9 +106,9 @@ fn plan_scenarios() -> Result<()> {
         scenario.config.algorithm = algorithm_config.clone();
         scenario.config.simulation = simulation_config.clone();
         scenario.schedule()
-            .with_context(|| format!("Failed to schedule XYZ-motion scenario for experiment '{}', {} total steps", experiment_name, total_steps))?;
+            .with_context(|| format!("Failed to schedule XYZ-motion scenario for experiment '{experiment_name}', {total_steps} total steps"))?;
         scenario.save()
-            .with_context(|| format!("Failed to save XYZ-motion scenario for experiment '{}', {} total steps", experiment_name, total_steps))?;
+            .with_context(|| format!("Failed to save XYZ-motion scenario for experiment '{experiment_name}', {total_steps} total steps"))?;
     }
 
     for lr_exp in -3..=4 {
@@ -125,9 +127,9 @@ fn plan_scenarios() -> Result<()> {
         scenario.config.algorithm = algorithm_config.clone();
         scenario.config.simulation = simulation_config.clone();
         scenario.schedule()
-            .with_context(|| format!("Failed to schedule LR sweep scenario for experiment '{}', learning rate {}", experiment_name, lr))?;
+            .with_context(|| format!("Failed to schedule LR sweep scenario for experiment '{experiment_name}', learning rate {lr}"))?;
         scenario.save()
-            .with_context(|| format!("Failed to save LR sweep scenario for experiment '{}', learning rate {}", experiment_name, lr))?;
+            .with_context(|| format!("Failed to save LR sweep scenario for experiment '{experiment_name}', learning rate {lr}"))?;
     }
 
     Ok(())
@@ -137,7 +139,7 @@ fn plan_scenarios() -> Result<()> {
 fn setup_logging() -> Result<()> {
     // Try to set up file logging, fall back to stdout-only if it fails
     if let Err(e) = try_setup_file_logging() {
-        eprintln!("Warning: Could not set up file logging ({}), using stdout only", e);
+        eprintln!("Warning: Could not set up file logging ({e}), using stdout only");
         setup_stdout_logging()?;
     }
 
@@ -146,13 +148,12 @@ fn setup_logging() -> Result<()> {
 
 #[tracing::instrument(level = "debug")]
 fn setup_stdout_logging() -> Result<()> {
-    let subscriber = tracing_subscriber::registry()
-        .with(
-            fmt::Layer::new()
-                .with_writer(std::io::stdout)
-                .with_thread_names(true)
-                .with_ansi(true),
-        );
+    let subscriber = tracing_subscriber::registry().with(
+        fmt::Layer::new()
+            .with_writer(std::io::stdout)
+            .with_thread_names(true)
+            .with_ansi(true),
+    );
 
     tracing::subscriber::set_global_default(subscriber)
         .context("Failed to set up stdout logging")?;
@@ -184,8 +185,7 @@ fn try_setup_file_logging() -> Result<()> {
                 .with_ansi(false),
         );
 
-    tracing::subscriber::set_global_default(subscriber)
-        .context("Failed to set up file logging")?;
+    tracing::subscriber::set_global_default(subscriber).context("Failed to set up file logging")?;
 
     Ok(())
 }

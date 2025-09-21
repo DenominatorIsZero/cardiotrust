@@ -1,3 +1,4 @@
+use anyhow::Context;
 use std::{path::Path, sync::mpsc::channel, thread};
 
 use ndarray::Array1;
@@ -197,7 +198,9 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) -> anyh
     let files = vec![path.join("loss.png")];
     clean_files(&files);
 
-    let first_scenario = scenarios.first().context("Expected at least one scenario")?;
+    let first_scenario = scenarios
+        .first()
+        .context("Expected at least one scenario")?;
     println!(
         "{:?}",
         first_scenario
@@ -300,7 +303,9 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
+            handle
+                .join()
+                .map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());

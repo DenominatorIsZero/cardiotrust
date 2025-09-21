@@ -94,7 +94,7 @@ impl MeasurementMatrix {
                 }
 
                 let v_num = voxel_numbers[index]
-                    .with_context(|| format!("Voxel number not initialized for connectable voxel at index {:?}", index))?;
+                    .with_context(|| format!("Voxel number not initialized for connectable voxel at index {index:?}"))?;
                 let v_pos_mm = voxel_positions_mm.slice(s![index.0, index.1, index.2, ..]);
 
                 for s_num in 0..spatial_description.sensors.count() {

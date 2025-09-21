@@ -25,12 +25,15 @@ fn run_benches(c: &mut Criterion) {
     group.finish();
 }
 
-fn bench_innovate(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn bench_innovate(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, model, mut results) = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
+        let (_, model, mut results) =
+            setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -51,12 +54,15 @@ fn bench_innovate(group: &mut criterion::BenchmarkGroup<criterion::measurement::
     Ok(())
 }
 
-fn bench_control_function(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn bench_control_function(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, model, mut results) = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
+        let (_, model, mut results) =
+            setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -71,14 +77,18 @@ fn bench_control_function(group: &mut criterion::BenchmarkGroup<criterion::measu
             })
         });
     }
+    Ok(())
 }
 
-fn bench_measurements(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn bench_measurements(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (_, model, mut results) = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
+        let (_, model, mut results) =
+            setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // run bench
         let number_of_voxels = model.spatial_description.voxels.count();
@@ -94,6 +104,7 @@ fn bench_measurements(group: &mut criterion::BenchmarkGroup<criterion::measureme
             });
         });
     }
+    Ok(())
 }
 
 fn setup_config(voxel_size: &f32) -> Config {

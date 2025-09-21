@@ -158,7 +158,7 @@ impl Simulation {
                 self.model.functional_description.measurement_covariance
                     [[sensor_index, sensor_index]],
             )
-            .with_context(|| format!("Failed to create measurement noise distribution for sensor {}", sensor_index))?;
+            .with_context(|| format!("Failed to create measurement noise distribution for sensor {sensor_index}"))?;
             for beat_index in 0..self.measurements.num_beats() {
                 for time_index in 0..self.measurements.num_steps() {
                     self.measurements[[beat_index, time_index, sensor_index]] +=

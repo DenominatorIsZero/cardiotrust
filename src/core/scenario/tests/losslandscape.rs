@@ -6,7 +6,7 @@ use std::{
     thread,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use ndarray::Array1;
 use ndarray_npy::WriteNpyExt;
@@ -228,7 +228,9 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
+            handle
+                .join()
+                .map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
@@ -417,7 +419,12 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) -> anyh
 
     println!("{}", scenarios.len());
     for (i, scenario) in scenarios.iter().enumerate() {
-        losses[i] = scenario.results.as_ref().context("Expected results to be present")?.metrics.loss_mse_batch[0];
+        losses[i] = scenario
+            .results
+            .as_ref()
+            .context("Expected results to be present")?
+            .metrics
+            .loss_mse_batch[0];
         delays[i] = scenario
             .data
             .as_ref()
@@ -427,18 +434,36 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) -> anyh
             .functional_description
             .ap_params
             .initial_delays[(0, 15)];
-        gradients[i] = scenario.results.as_ref().context("Expected results to be present")?.derivatives.coefs[(0, 15)];
+        gradients[i] = scenario
+            .results
+            .as_ref()
+            .context("Expected results to be present")?
+            .derivatives
+            .coefs[(0, 15)];
     }
 
     if SAVE_NPY {
         let path = path.join("npy");
         fs::create_dir_all(&path).context("Failed to create NPY directory")?;
-        let writer = BufWriter::new(File::create(path.join("delays.npy")).context("Failed to create delays.npy file")?);
-        delays.write_npy(writer).context("Failed to write delays.npy")?;
-        let writer = BufWriter::new(File::create(path.join("losses.npy")).context("Failed to create losses.npy file")?);
-        losses.write_npy(writer).context("Failed to write losses.npy")?;
-        let writer = BufWriter::new(File::create(path.join("gradients.npy")).context("Failed to create gradients.npy file")?);
-        gradients.write_npy(writer).context("Failed to write gradients.npy")?;
+        let writer = BufWriter::new(
+            File::create(path.join("delays.npy")).context("Failed to create delays.npy file")?,
+        );
+        delays
+            .write_npy(writer)
+            .context("Failed to write delays.npy")?;
+        let writer = BufWriter::new(
+            File::create(path.join("losses.npy")).context("Failed to create losses.npy file")?,
+        );
+        losses
+            .write_npy(writer)
+            .context("Failed to write losses.npy")?;
+        let writer = BufWriter::new(
+            File::create(path.join("gradients.npy"))
+                .context("Failed to create gradients.npy file")?,
+        );
+        gradients
+            .write_npy(writer)
+            .context("Failed to write gradients.npy")?;
     }
 
     println!("ys length: {}", losses.len());

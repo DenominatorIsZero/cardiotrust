@@ -109,7 +109,8 @@ impl Results {
         trace!("Saving results to.npy files");
         self.metrics.save_npy(&path.join("metrics"))?;
         self.estimations.save_npy(&path.join("estimations"))?;
-        self.model.as_ref()
+        self.model
+            .as_ref()
             .context("Model not available for saving NPY files")?
             .save_npy(&path.join("model"))?;
         Ok(())
@@ -117,7 +118,6 @@ impl Results {
 
     #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
-    #[must_use]
     pub fn to_gpu(&self, queue: &Queue) -> Result<ResultsGPU> {
         Ok(ResultsGPU {
             metrics: self.metrics.to_gpu(queue)?,
@@ -414,7 +414,8 @@ mod tests {
             .context("Failed to build results modification kernel")?;
 
         unsafe {
-            kernel.enq()
+            kernel
+                .enq()
                 .context("Failed to execute results modification kernel")?;
         }
 

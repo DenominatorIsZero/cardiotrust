@@ -41,12 +41,9 @@ pub fn draw_ui_volumetric(
 ) {
     trace!("Running system to draw volumetric UI.");
     let scenario = if let Some(index) = selected_scenario.index {
-        match scenario_list.entries.get(index) {
-            Some(entry) => Some(&entry.scenario),
-            None => {
-                error!("Selected scenario index {} is out of bounds", index);
-                None
-            }
+        if let Some(entry) = scenario_list.entries.get(index) { Some(&entry.scenario) } else {
+            error!("Selected scenario index {} is out of bounds", index);
+            None
         }
     } else {
         None
@@ -170,8 +167,7 @@ pub fn draw_ui_volumetric(
                     0..=scenario
                         .and_then(|s| s.results.as_ref())
                         .and_then(|r| r.model.as_ref())
-                        .map(|m| m.spatial_description.sensors.array_offsets_mm.shape()[0].saturating_sub(1))
-                        .unwrap_or(0),
+                        .map_or(0, |m| m.spatial_description.sensors.array_offsets_mm.shape()[0].saturating_sub(1)),
                 ));
                 if motion_step != sample_tracker.selected_beat {
                     sample_tracker.selected_beat = motion_step;
@@ -183,8 +179,7 @@ pub fn draw_ui_volumetric(
                     &mut selected_sensor,
                     0..=scenario
                         .and_then(|s| s.results.as_ref())
-                        .map(|r| r.estimations.measurements.num_sensors().saturating_sub(1))
-                        .unwrap_or(0),
+                        .map_or(0, |r| r.estimations.measurements.num_sensors().saturating_sub(1)),
                 ));
                 if selected_sensor != sample_tracker.selected_sensor {
                     sample_tracker.selected_sensor = selected_sensor;
@@ -313,12 +308,11 @@ pub fn draw_ui_volumetric(
                             scenario
                                 .results
                                 .as_ref()
-                                .map(|r| f64::from(r.estimations.measurements[(
+                                .map_or(0.0, |r| f64::from(r.estimations.measurements[(
                                     sample_tracker.selected_beat,
                                     i,
                                     sample_tracker.selected_sensor,
-                                )]))
-                                .unwrap_or(0.0),
+                                )])),
                         ]
                     })
                     .collect();

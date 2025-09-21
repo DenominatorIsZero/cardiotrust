@@ -48,7 +48,8 @@ where
             return Err(std::io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "y data must have same length",
-            ).into());
+            )
+            .into());
         }
     }
 
@@ -57,24 +58,20 @@ where
             return Err(std::io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "if not None, item_labels must be same length as ys",
-            ).into());
+            )
+            .into());
         }
     }
 
-    let default_x;
-    let x = match x {
-        Some(x) => x,
-        None => {
-            default_x = Array1::linspace(0.0, y_len as f32, y_len);
-            &default_x
-        }
-    };
+    let default_x = Array1::linspace(0.0, y_len as f32, y_len);
+    let x = x.map_or_else(|| &default_x, |x| x);
 
     if x.len() != y_len {
         return Err(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "x and y must have same length",
-        ).into());
+        )
+        .into());
     }
 
     let title = title.unwrap_or("Plot");
@@ -198,7 +195,8 @@ where
             return Err(std::io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "y data must have same length",
-            ).into());
+            )
+            .into());
         }
     }
 
@@ -207,24 +205,20 @@ where
             return Err(std::io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "if not None, item_labels must be same length as ys",
-            ).into());
+            )
+            .into());
         }
     }
 
-    let default_x;
-    let x = match x {
-        Some(x) => x,
-        None => {
-            default_x = Array1::linspace(0.0, y_len as f32, y_len);
-            &default_x
-        }
-    };
+    let default_x = Array1::linspace(0.0, y_len as f32, y_len);
+    let x = x.map_or(&default_x, |x| x);
 
     if x.len() != y_len {
         return Err(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "x and y must have same length",
-        ).into());
+        )
+        .into());
     }
 
     let title = title.unwrap_or("Plot");
@@ -400,7 +394,8 @@ where
         return Err(std::io::Error::new(
             io::ErrorKind::InvalidInput,
             "sample_rate_hz must be greater than zero",
-        ).into());
+        )
+        .into());
     }
     let x = Array1::linspace(0.0, y.len() as f32 / sample_rate_hz, y.len());
     line_plot(
@@ -442,10 +437,9 @@ pub fn plot_state_xyz(
     trace!("Generating state xyz plot.");
 
     if state_index >= (system_states.num_states() - 2) {
-        return Err(std::io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "state_index out of bounds",
-        ).into());
+        return Err(
+            std::io::Error::new(io::ErrorKind::InvalidInput, "state_index out of bounds").into(),
+        );
     }
 
     let state_x = system_states.slice(s![.., state_index]);
@@ -469,6 +463,7 @@ pub fn plot_state_xyz(
 
 #[cfg(test)]
 mod test {
+    use anyhow::Context;
 
     use super::*;
     use crate::tests::{clean_files, setup_folder};
@@ -480,8 +475,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for line plot test")?;
         let files = vec![path.join("line_plot.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for line plot test")?;
+        clean_files(&files).context("Failed to clean test files for line plot test")?;
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
@@ -506,8 +500,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for log y plot test")?;
         let files = vec![path.join("log_y_plot.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for log y plot test")?;
+        clean_files(&files).context("Failed to clean test files for log y plot test")?;
 
         let x = Array1::linspace(1.0, 10.0, 100);
         let y = x.map(|x| x * x);
@@ -532,8 +525,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for line plot defaults test")?;
         let files = vec![path.join("line_plot_default.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for line plot defaults test")?;
+        clean_files(&files).context("Failed to clean test files for line plot defaults test")?;
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
@@ -558,8 +550,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for line plot no path test")?;
         let files = vec![path.join("line_plot_no_path.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for line plot no path test")?;
+        clean_files(&files).context("Failed to clean test files for line plot no path test")?;
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let y = x.map(|x| x * x);
@@ -624,8 +615,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for multiple y series test")?;
         let files = vec![path.join("line_plot_multiple_y.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for multiple y series test")?;
+        clean_files(&files).context("Failed to clean test files for multiple y series test")?;
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let ys_owned: Vec<Array1<f32>> = (0..10).map(|i| x.map(|x| x * x * i as f32)).collect();
@@ -653,8 +643,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for line plot with labels test")?;
         let files = vec![path.join("line_plot_with_lables.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for line plot with labels test")?;
+        clean_files(&files).context("Failed to clean test files for line plot with labels test")?;
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let ys_owned: Vec<Array1<f32>> = (0..10).map(|i| x.map(|x| x * x * i as f32)).collect();
@@ -688,8 +677,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for invalid labels test")?;
         let files = vec![path.join("line_plot_with_invalid_lables.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for invalid labels test")?;
+        clean_files(&files).context("Failed to clean test files for invalid labels test")?;
 
         let x = Array1::linspace(0.0, 10.0, 100);
         let ys_owned: Vec<Array1<f32>> = (0..10).map(|i| x.map(|x| x * x * i as f32)).collect();
@@ -722,8 +710,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for standard y plot test")?;
         let files = vec![path.join("y_plot_basic.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for standard y plot test")?;
+        clean_files(&files).context("Failed to clean test files for standard y plot test")?;
 
         let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 
@@ -739,8 +726,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for empty y plot test")?;
         let files = vec![path.join("y_plot_empty.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for empty y plot test")?;
+        clean_files(&files).context("Failed to clean test files for empty y plot test")?;
 
         let y = Array1::from_vec(vec![]);
 
@@ -757,8 +743,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for invalid path test")?;
         let files = vec![path.join("invalid/y_plot_invalid.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for invalid path test")?;
+        clean_files(&files).context("Failed to clean test files for invalid path test")?;
 
         let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 
@@ -775,8 +760,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for standard time plot test")?;
         let files = vec![path.join("time_plot_normal.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for standard time plot test")?;
+        clean_files(&files).context("Failed to clean test files for standard time plot test")?;
 
         let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 
@@ -798,8 +782,7 @@ mod test {
         setup_folder(path.to_path_buf())
             .context("Failed to setup test folder for zero sample rate test")?;
         let files = vec![path.join("time_plot_zero_sample_rate.png")];
-        clean_files(&files)
-            .context("Failed to clean test files for zero sample rate test")?;
+        clean_files(&files).context("Failed to clean test files for zero sample rate test")?;
 
         let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 

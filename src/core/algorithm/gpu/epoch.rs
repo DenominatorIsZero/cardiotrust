@@ -127,8 +127,8 @@ impl EpochKernel {
 
 #[cfg(test)]
 mod tests {
-    use approx::assert_relative_eq;
     use anyhow::Context;
+    use approx::assert_relative_eq;
     use ndarray_stats::QuantileExt;
 
     use crate::core::{
@@ -180,7 +180,7 @@ mod tests {
         let mut batch_index = 0;
         for epoch in 0..config.algorithm.epochs {
             println!("Epoch: {epoch}");
-            run_epoch(&mut results_cpu, &mut batch_index, &data, &config.algorithm);
+            run_epoch(&mut results_cpu, &mut batch_index, &data, &config.algorithm)?;
             epoch_kernel.execute()?;
             results_from_gpu.update_from_gpu(&results_gpu)?;
             // Model Parameters
@@ -224,12 +224,14 @@ mod tests {
                     .metrics
                     .loss_maximum_regularization
                     .as_slice()
-                    .context("Failed to convert CPU loss regularization to slice for comparison")?[..100],
+                    .context("Failed to convert CPU loss regularization to slice for comparison")?
+                    [..100],
                 &results_from_gpu
                     .metrics
                     .loss_maximum_regularization
                     .as_slice()
-                    .context("Failed to convert GPU loss regularization to slice for comparison")?[..100],
+                    .context("Failed to convert GPU loss regularization to slice for comparison")?
+                    [..100],
                 epsilon = 1e-5
             );
             let delta_loss = &*results_cpu.metrics.loss - &*results_from_gpu.metrics.loss;
@@ -292,9 +294,11 @@ mod tests {
                     .delays;
             println!(
                 "delays: delta_max {}, delta_min {}",
-                delta_delays.max()
+                delta_delays
+                    .max()
                     .context("Failed to calculate maximum delay difference")?,
-                delta_delays.min()
+                delta_delays
+                    .min()
                     .context("Failed to calculate minimum delay difference")?
             );
         }
@@ -305,9 +309,15 @@ mod tests {
             delta_loss.min_skipnan()
         );
         assert_relative_eq!(
-            results_cpu.metrics.loss_batch.as_slice()
+            results_cpu
+                .metrics
+                .loss_batch
+                .as_slice()
                 .context("Failed to convert CPU loss batch to slice for final comparison")?,
-            results_from_gpu.metrics.loss_batch.as_slice()
+            results_from_gpu
+                .metrics
+                .loss_batch
+                .as_slice()
                 .context("Failed to convert GPU loss batch to slice for final comparison")?,
             epsilon = 1e-5
         );
