@@ -266,9 +266,9 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_plot_default() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_default.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
@@ -298,14 +298,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_plot_x_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_x_slice.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_plot(
             &data.simulation.system_states,
@@ -331,14 +330,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_plot_y_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_y_slice.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
         states_plot(
             &data.simulation.system_states,
             &data
@@ -363,14 +361,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_plot_in_y() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_in_y.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_plot(
             &data.simulation.system_states,
@@ -396,14 +393,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_plot_in_z() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_in_z.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_plot(
             &data.simulation.system_states,
@@ -429,14 +425,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_abs_z_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_spherical_abs_z_slice.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -464,14 +459,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_abs_y_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_spherical_abs_y_slice.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -499,14 +493,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_abs_x_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_spherical_abs_x_slice.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -534,14 +527,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_angle_z_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_spherical_angle_z_slice.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -569,14 +561,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_angle_y_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_spherical_angle_y_slice.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -604,14 +595,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_angle_x_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_spherical_angle_x_slice.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -639,14 +629,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_abs_max() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_spherical_abs_max.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,
@@ -674,14 +663,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_states_spherical_plot_angle_max() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("states_spherical_angle_max.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         states_spherical_plot(
             &data.simulation.system_states_spherical,

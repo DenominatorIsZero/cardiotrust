@@ -801,9 +801,9 @@ mod test {
     #[test]
     fn test_standard_time_plot_negative_sample_rate() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("time_plot_negative_sample_rate.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 
@@ -823,9 +823,9 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_xyz_state_plot_basic() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("xyz_plot_basic.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut system_states = SystemStates::empty(100, 6);
 
@@ -848,9 +848,9 @@ mod test {
     #[test]
     fn test_xyz_state_plot_invalid_index() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("xyz_plot_invalid.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let system_states = SystemStates::empty(100, 6);
         let title = "Test Plot";

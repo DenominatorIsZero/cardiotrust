@@ -105,14 +105,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_activation_time_plot_default() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("test_activation_time_plot_default.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         activation_time_plot(
             &data
@@ -140,14 +139,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_activation_time_plot_x_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("test_activation_time_plot_x_slice.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         activation_time_plot(
             &data
@@ -175,14 +173,13 @@ mod test {
     #[allow(clippy::cast_precision_loss)]
     fn test_activation_time_plot_y_slice() -> Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let files = vec![path.join("test_activation_time_plot_y_slice.png")];
-        clean_files(&files);
+        clean_files(&files)?;
 
         let mut simulation_config = SimulationConfig::default();
         simulation_config.model.common.pathological = true;
-        let data = Data::from_simulation_config(&simulation_config)
-?;
+        let data = Data::from_simulation_config(&simulation_config)?;
 
         activation_time_plot(
             &data
