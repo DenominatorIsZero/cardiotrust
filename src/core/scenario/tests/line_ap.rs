@@ -101,7 +101,7 @@ fn build_scenario(
     learning_rate: f32,
     number_of_aps: i32,
     id: &str,
-) -> Scenario {
+) -> anyhow::Result<Scenario> {
     let mut scenario = Scenario::build(Some(id.to_string()));
 
     let voxel_size_mm = 2.5;
@@ -197,7 +197,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = target_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = target_velocity;
     *scenario
         .config
         .simulation
@@ -205,7 +205,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = target_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = target_velocity;
     *scenario
         .config
         .algorithm
@@ -213,7 +213,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = initial_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = initial_velocity;
     *scenario
         .config
         .algorithm
@@ -221,7 +221,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = initial_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 20_000;
     scenario.config.algorithm.learning_rate = learning_rate;
@@ -234,9 +234,9 @@ fn build_scenario(
     scenario.config.algorithm.snapshots_interval =
         scenario.config.algorithm.epochs / number_of_snapshots;
 
-    scenario.schedule().unwrap();
+    scenario.schedule()?;
     let _ = scenario.save();
-    scenario
+    Ok(scenario)
 }
 
 #[allow(
@@ -252,7 +252,7 @@ fn plot_results(
     scenarios: &Vec<Scenario>,
     number_of_aps: Vec<i32>,
     learning_rates: Vec<f32>,
-) {
+) -> anyhow::Result<()> {
     setup_folder(path);
     for number_of_ap in &number_of_aps {
         let files = vec![
@@ -266,7 +266,8 @@ fn plot_results(
         clean_files(&files);
     }
 
-    let mut first_scenario = scenarios.first().unwrap().clone();
+    let mut first_scenario = scenarios.first()
+        .ok_or_else(|| anyhow::anyhow!("Expected at least one scenario"))?.clone();
     println!("Loading data for first scenario");
     first_scenario.load_data();
     println!("Loading results for first scenario {:?}", first_scenario.id);
@@ -354,10 +355,10 @@ fn plot_results(
                     let snapshots = scenario
                         .results
                         .as_ref()
-                        .unwrap()
+                        .ok_or_else(|| anyhow::anyhow!("Expected test data to be present"))?
                         .snapshots
                         .as_ref()
-                        .unwrap();
+                        .ok_or_else(|| anyhow::anyhow!("Expected snapshots to be present"))?;
                     for i in 0..num_snapshots {
                         delays[i] = from_coef_to_samples(snapshots.ap_coefs[(i, ap, 15)])
                             + snapshots.ap_delays[(i, ap, 15)] as f32;
@@ -394,7 +395,7 @@ fn plot_results(
                     None,
                     None,
                 )
-                .unwrap();
+                ?;
 
                 line_plot(
                     Some(&x_snapshots),
@@ -406,7 +407,7 @@ fn plot_results(
                     None,
                     None,
                 )
-                .unwrap();
+                ?;
                 drop(scenario);
             }
 
@@ -446,10 +447,10 @@ fn plot_results(
                 Some("Epoch"),
                 Some(&labels),
                 None,
-            )
-            .unwrap();
+            )?;
         }
     }
+    Ok(())
 }
 
 #[tracing::instrument(level = "trace")]
@@ -485,7 +486,7 @@ fn create_and_run(
                     *learning_rate,
                     *number_of_ap,
                     &id,
-                );
+                )?;
                 if RUN_IN_TESTS {
                     let send_scenario = scenario.clone();
                     let (epoch_tx, _) = channel();
@@ -520,7 +521,7 @@ fn create_and_run(
                     *learning_rate,
                     *number_of_ap,
                     &id,
-                );
+                )?;
                 if RUN_IN_TESTS {
                     let send_scenario = scenario.clone();
                     let (epoch_tx, _) = channel();
@@ -544,6 +545,6 @@ fn create_and_run(
             *scenario = Scenario::load(path.as_path())?;
         }
     }
-    plot_results(path, base_id, &scenarios, number_of_aps, learning_rates);
+    plot_results(path, base_id, &scenarios, number_of_aps, learning_rates)?;
     Ok(())
 }

@@ -133,7 +133,7 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().context("Worker thread panicked")??;
+            handle.join().map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());

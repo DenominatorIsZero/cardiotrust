@@ -66,7 +66,7 @@ fn build_scenario(
     voxels_per_axis: i32,
     learning_rate: f32,
     id: String,
-) -> Scenario {
+) -> Result<Scenario> {
     let mut scenario = Scenario::build(Some(id));
 
     let voxel_size_mm = 2.5;
@@ -182,7 +182,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = target_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = target_velocity;
     *scenario
         .config
         .simulation
@@ -190,7 +190,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = target_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = target_velocity;
     *scenario
         .config
         .algorithm
@@ -198,7 +198,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = initial_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = initial_velocity;
     *scenario
         .config
         .algorithm
@@ -206,7 +206,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = initial_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 500_000;
     scenario.config.algorithm.learning_rate = learning_rate;
@@ -217,9 +217,9 @@ fn build_scenario(
     scenario.config.algorithm.snapshots_interval =
         scenario.config.algorithm.epochs / number_of_snapshots;
 
-    scenario.schedule().unwrap();
+    scenario.schedule()?;
     let _ = scenario.save();
-    scenario
+    Ok(scenario)
 }
 
 #[allow(
@@ -235,7 +235,7 @@ fn plot_results(
     scenarios: &Vec<Scenario>,
     voxels_per_axis: Vec<i32>,
     learning_rates: Vec<f32>,
-) {
+) -> Result<()> {
     setup_folder(path);
     for voxels_per_axis in &voxels_per_axis {
         let files = vec![
@@ -249,7 +249,8 @@ fn plot_results(
         clean_files(&files);
     }
 
-    let mut first_scenario = scenarios.first().unwrap().clone();
+    let mut first_scenario = scenarios.first()
+        .ok_or_else(|| anyhow::anyhow!("Expected at least one scenario"))?.clone();
     println!("Loading data for first scenario");
     first_scenario.load_data();
     println!("Loading results for first scenario {:?}", first_scenario.id);
@@ -290,21 +291,23 @@ fn plot_results(
 
         for (n, scenario) in scenarios.iter().enumerate() {
             if !scenario.id.contains(&format!("Num {voxels_per_axis},"))
-                || !scenario.summary.as_ref().unwrap().loss.is_finite()
+                || !scenario.summary.as_ref().map_or(false, |s| s.loss.is_finite())
             {
                 continue;
             }
             let mut scenario = (*scenario).clone();
-            if scenario.summary.as_ref().unwrap().loss_mse < min_loss {
-                min_loss = scenario.summary.as_ref().unwrap().loss_mse;
-                min_loss_n = n;
+            if let Some(summary) = scenario.summary.as_ref() {
+                if summary.loss_mse < min_loss {
+                    min_loss = summary.loss_mse;
+                    min_loss_n = n;
+                }
             }
             scenario.load_results();
             losses_owned.push(
                 scenario
                     .results
                     .as_ref()
-                    .unwrap()
+                    .ok_or_else(|| anyhow::anyhow!("Expected test data to be present"))?
                     .metrics
                     .loss_mse_batch
                     .clone(),
@@ -327,19 +330,19 @@ fn plot_results(
 
         if SAVE_NPY {
             let path = path.join("npy");
-            fs::create_dir_all(&path).unwrap();
-            let writer = BufWriter::new(File::create(path.join("x_epochs.npy")).unwrap());
-            x_epochs.write_npy(writer).unwrap();
-            let writer = BufWriter::new(File::create(path.join("x_snapshots.npy")).unwrap());
-            x_snapshots.write_npy(writer).unwrap();
+            fs::create_dir_all(&path)?;
+            let writer = BufWriter::new(File::create(path.join("x_epochs.npy"))?);
+            x_epochs.write_npy(writer)?;
+            let writer = BufWriter::new(File::create(path.join("x_snapshots.npy"))?);
+            x_snapshots.write_npy(writer)?;
             for (label, loss) in labels.iter().zip(losses.iter()) {
                 let writer = BufWriter::new(
                     File::create(
                         path.join(format!("loss - v_per_a {voxels_per_axis} {label}.npy")),
                     )
-                    .unwrap(),
+                    ?,
                 );
-                loss.write_npy(writer).unwrap();
+                loss.write_npy(writer)?;
             }
         }
         println!("len of x_epochs: {}", x_epochs.len());
@@ -354,7 +357,7 @@ fn plot_results(
             Some(&labels),
             None,
         )
-        .unwrap();
+        ?;
 
         let mut scenario = scenarios[min_loss_n].clone();
         scenario.load_data();
@@ -365,19 +368,19 @@ fn plot_results(
                 let voxel_index = scenario
                     .data
                     .as_ref()
-                    .unwrap()
+                    .ok_or_else(|| anyhow::anyhow!("Expected test data to be present"))?
                     .simulation
                     .model
                     .spatial_description
                     .voxels
                     .numbers[(index_x, index_y, 0)]
-                    .unwrap()
+                    .ok_or_else(|| anyhow::anyhow!("Expected test data to be present"))?
                     / 3;
                 // iterate over all allpasses per voxel
                 for offset_index in 0..scenario
                     .data
                     .as_ref()
-                    .unwrap()
+                    .ok_or_else(|| anyhow::anyhow!("Expected test data to be present"))?
                     .simulation
                     .model
                     .functional_description
@@ -392,7 +395,7 @@ fn plot_results(
                             let gain = scenario
                                 .data
                                 .as_ref()
-                                .unwrap()
+                                .ok_or_else(|| anyhow::anyhow!("Expected test data to be present"))?
                                 .simulation
                                 .model
                                 .functional_description
@@ -417,7 +420,7 @@ fn plot_results(
                         scenario
                             .data
                             .as_ref()
-                            .unwrap()
+                            .ok_or_else(|| anyhow::anyhow!("Expected test data to be present"))?
                             .simulation
                             .model
                             .functional_description
@@ -426,7 +429,7 @@ fn plot_results(
                     ) + scenario
                         .data
                         .as_ref()
-                        .unwrap()
+                        .ok_or_else(|| anyhow::anyhow!("Expected test data to be present"))?
                         .simulation
                         .model
                         .functional_description
@@ -437,10 +440,10 @@ fn plot_results(
                     let snapshots = scenario
                         .results
                         .as_ref()
-                        .unwrap()
+                        .ok_or_else(|| anyhow::anyhow!("Expected test data to be present"))?
                         .snapshots
                         .as_ref()
-                        .unwrap();
+                        .ok_or_else(|| anyhow::anyhow!("Expected snapshots to be present"))?;
                     for i in 0..num_snapshots {
                         delays[i] = from_coef_to_samples(
                             snapshots.ap_coefs[(i, voxel_index, offset_index)],
@@ -461,9 +464,9 @@ fn plot_results(
             for (i, delay) in delays.iter().enumerate() {
                 let writer = BufWriter::new(
                     File::create(path.join(format!("v_per_a {voxels_per_axis}, delay {i}.npy",)))
-                        .unwrap(),
+                        ?,
                 );
-                delay.write_npy(writer).unwrap();
+                delay.write_npy(writer)?;
             }
         }
 
@@ -480,9 +483,9 @@ fn plot_results(
                 File::create(
                     path.join(format!("v_per_a {voxels_per_axis}, delay_error_mean.npy",)),
                 )
-                .unwrap(),
+                ?,
             );
-            delay_error_mean.write_npy(writer).unwrap();
+            delay_error_mean.write_npy(writer)?;
 
             let mut delay_error_mae = Array1::<f32>::zeros(delays[0].dim());
             for (i, delay_error_mae) in delay_error_mae.iter_mut().enumerate() {
@@ -494,9 +497,9 @@ fn plot_results(
 
             let writer = BufWriter::new(
                 File::create(path.join(format!("v_per_a {voxels_per_axis}, delay_error_mae.npy",)))
-                    .unwrap(),
+                    ?,
             );
-            delay_error_mae.write_npy(writer).unwrap();
+            delay_error_mae.write_npy(writer)?;
 
             let mut delay_error_std = Array1::<f32>::zeros(delays[0].dim());
             for (i, delay_error_std) in delay_error_std.iter_mut().enumerate() {
@@ -508,9 +511,9 @@ fn plot_results(
 
             let writer = BufWriter::new(
                 File::create(path.join(format!("v_per_a {voxels_per_axis}, delay_error_std.npy",)))
-                    .unwrap(),
+                    ?,
             );
-            delay_error_std.write_npy(writer).unwrap();
+            delay_error_std.write_npy(writer)?;
         }
 
         line_plot(
@@ -523,7 +526,7 @@ fn plot_results(
             None,
             None,
         )
-        .unwrap();
+        ?;
 
         line_plot(
             Some(&x_snapshots),
@@ -534,9 +537,9 @@ fn plot_results(
             Some("Snapshot"),
             None,
             None,
-        )
-        .unwrap();
+        )?;
     }
+    Ok(())
 }
 
 #[tracing::instrument(level = "trace")]
@@ -568,7 +571,7 @@ fn create_and_run(
                     *voxels_per_axis,
                     *learning_rate,
                     id,
-                );
+                )?;
                 if RUN_IN_TESTS {
                     let send_scenario = scenario.clone();
                     let (epoch_tx, _) = channel();
@@ -585,7 +588,7 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().unwrap();
+            handle.join().map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
@@ -599,6 +602,6 @@ fn create_and_run(
         &scenarios,
         voxels_per_axis,
         learning_rates,
-    );
+    )?;
     Ok(())
 }
