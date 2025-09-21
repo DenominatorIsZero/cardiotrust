@@ -213,7 +213,7 @@ fn create_and_run(
                 single_sensor,
                 control_function,
                 &id,
-            );
+            )?;
             if RUN_IN_TESTS {
                 let send_scenario = scenario.clone();
                 let (epoch_tx, _) = channel();
@@ -228,7 +228,7 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().unwrap();
+            handle.join().map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
@@ -238,7 +238,7 @@ fn create_and_run(
         }
     }
 
-    plot_results(path, base_title, scenarios);
+    plot_results(path, base_title, scenarios)?;
     Ok(())
 }
 
@@ -249,7 +249,7 @@ fn build_scenario(
     single_sensor: bool,
     control_function: ControlFunction,
     id: &str,
-) -> Scenario {
+) -> anyhow::Result<Scenario> {
     let mut scenario = Scenario::build(Some(id.to_string()));
 
     // Configure Sensor
@@ -269,7 +269,7 @@ fn build_scenario(
                     .model
                     .handcrafted
                     .as_ref()
-                    .unwrap()
+                    .context("Expected test data to be present")?
                     .heart_size_mm[0]
                     / 2.0,
             scenario.config.simulation.model.common.heart_offset_mm[1]
@@ -279,7 +279,7 @@ fn build_scenario(
                     .model
                     .handcrafted
                     .as_ref()
-                    .unwrap()
+                    .context("Expected test data to be present")?
                     .heart_size_mm[1]
                     / 2.0,
             scenario
@@ -358,7 +358,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = target_velocity;
+        .context("Failed to get velocity for voxel type")? = target_velocity;
     *scenario
         .config
         .simulation
@@ -366,7 +366,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = target_velocity;
+        .context("Failed to get velocity for voxel type")? = target_velocity;
     *scenario
         .config
         .algorithm
@@ -374,7 +374,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = initial_velocity;
+        .context("Failed to get velocity for voxel type")? = initial_velocity;
     *scenario
         .config
         .algorithm
@@ -382,7 +382,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = initial_velocity;
+        .context("Failed to get velocity for voxel type")? = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 1;
     scenario.config.algorithm.learning_rate = 0.0;
@@ -394,9 +394,9 @@ fn build_scenario(
     scenario.config.algorithm.snapshots_interval =
         scenario.config.algorithm.epochs / number_of_snapshots;
 
-    scenario.schedule().unwrap();
+    scenario.schedule()?;
     let _ = scenario.save();
-    scenario
+    Ok(scenario)
 }
 
 #[allow(
@@ -406,7 +406,7 @@ fn build_scenario(
     clippy::cast_precision_loss
 )]
 #[tracing::instrument(level = "trace")]
-fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
+fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) -> anyhow::Result<()> {
     setup_folder(path);
     let files = vec![path.join("loss.png"), path.join("gradients.png")];
     clean_files(&files);
@@ -417,7 +417,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
 
     println!("{}", scenarios.len());
     for (i, scenario) in scenarios.iter().enumerate() {
-        losses[i] = scenario.results.as_ref().unwrap().metrics.loss_mse_batch[0];
+        losses[i] = scenario.results.as_ref().context("Expected results to be present")?.metrics.loss_mse_batch[0];
         delays[i] = scenario
             .data
             .as_ref()
@@ -427,18 +427,18 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
             .functional_description
             .ap_params
             .initial_delays[(0, 15)];
-        gradients[i] = scenario.results.as_ref().unwrap().derivatives.coefs[(0, 15)];
+        gradients[i] = scenario.results.as_ref().context("Expected results to be present")?.derivatives.coefs[(0, 15)];
     }
 
     if SAVE_NPY {
         let path = path.join("npy");
-        fs::create_dir_all(&path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("delays.npy")).unwrap());
-        delays.write_npy(writer).unwrap();
-        let writer = BufWriter::new(File::create(path.join("losses.npy")).unwrap());
-        losses.write_npy(writer).unwrap();
-        let writer = BufWriter::new(File::create(path.join("gradients.npy")).unwrap());
-        gradients.write_npy(writer).unwrap();
+        fs::create_dir_all(&path).context("Failed to create NPY directory")?;
+        let writer = BufWriter::new(File::create(path.join("delays.npy")).context("Failed to create delays.npy file")?);
+        delays.write_npy(writer).context("Failed to write delays.npy")?;
+        let writer = BufWriter::new(File::create(path.join("losses.npy")).context("Failed to create losses.npy file")?);
+        losses.write_npy(writer).context("Failed to write losses.npy")?;
+        let writer = BufWriter::new(File::create(path.join("gradients.npy")).context("Failed to create gradients.npy file")?);
+        gradients.write_npy(writer).context("Failed to write gradients.npy")?;
     }
 
     println!("ys length: {}", losses.len());
@@ -463,6 +463,6 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         Some("GT Delay"),
         None,
         None,
-    )
-    .unwrap();
+    )?;
+    Ok(())
 }

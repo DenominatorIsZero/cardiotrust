@@ -64,7 +64,7 @@ fn build_scenario(
     bulk_velocity: f32,
     smoothness_regularization_stength: f32,
     base_id: &str,
-) -> Scenario {
+) -> anyhow::Result<Scenario> {
     let mut scenario = Scenario::build(Some(format!(
         "{base_id} bulk: {bulk_velocity:.2} [m per s], patch {patch_velocity:.2} [m per s], srs: {smoothness_regularization_stength:.2e}"
     )));
@@ -148,7 +148,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = bulk_velocity;
+        .context("Failed to get velocity for voxel type")? = bulk_velocity;
     *scenario
         .config
         .simulation
@@ -156,7 +156,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Ventricle)
-        .unwrap() = bulk_velocity;
+        .context("Failed to get velocity for voxel type")? = bulk_velocity;
     *scenario
         .config
         .simulation
@@ -164,7 +164,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = patch_velocity;
+        .context("Failed to get velocity for voxel type")? = patch_velocity;
     // Copy settings to algorithm model
     scenario.config.algorithm.model = scenario.config.simulation.model.clone();
     // set optimization parameters
@@ -180,9 +180,9 @@ fn build_scenario(
     scenario.config.algorithm.snapshots_interval =
         scenario.config.algorithm.epochs / number_of_snapshots;
 
-    scenario.schedule().unwrap();
+    scenario.schedule()?;
     let _ = scenario.save();
-    scenario
+    Ok(scenario)
 }
 
 #[allow(
@@ -192,21 +192,21 @@ fn build_scenario(
     clippy::cast_precision_loss
 )]
 #[tracing::instrument(level = "trace")]
-fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
+fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) -> anyhow::Result<()> {
     setup_folder(path);
     let files = vec![path.join("loss.png")];
     clean_files(&files);
 
-    let first_scenario = scenarios.first().unwrap();
+    let first_scenario = scenarios.first().context("Expected at least one scenario")?;
     println!(
         "{:?}",
         first_scenario
             .results
             .as_ref()
-            .unwrap()
+            .context("Expected test data to be present")?
             .model
             .as_ref()
-            .unwrap()
+            .context("Expected test data to be present")?
             .functional_description
             .ap_params
             .coefs
@@ -221,7 +221,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
             scenario
                 .results
                 .as_ref()
-                .unwrap()
+                .context("Expected test data to be present")?
                 .metrics
                 .loss_mse_batch
                 .clone(),
@@ -251,7 +251,8 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         Some(&labels),
         None,
     )
-    .unwrap();
+    .context("Failed to create plot")?;
+    Ok(())
 }
 
 #[tracing::instrument(level = "trace")]
@@ -284,7 +285,7 @@ fn create_and_run(
                 bulk_velocity,
                 smoothness_regularization_strength,
                 base_id,
-            );
+            )?;
             if RUN_IN_TESTS {
                 let send_scenario = scenario.clone();
                 let (epoch_tx, _) = channel();
@@ -299,7 +300,7 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().unwrap();
+            handle.join().map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
@@ -309,6 +310,6 @@ fn create_and_run(
         }
     }
 
-    plot_results(img_path, base_title, scenarios);
+    plot_results(img_path, base_title, scenarios)?;
     Ok(())
 }
