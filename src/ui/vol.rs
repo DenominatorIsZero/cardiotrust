@@ -41,7 +41,9 @@ pub fn draw_ui_volumetric(
 ) {
     trace!("Running system to draw volumetric UI.");
     let scenario = if let Some(index) = selected_scenario.index {
-        if let Some(entry) = scenario_list.entries.get(index) { Some(&entry.scenario) } else {
+        if let Some(entry) = scenario_list.entries.get(index) {
+            Some(&entry.scenario)
+        } else {
             error!("Selected scenario index {} is out of bounds", index);
             None
         }
@@ -167,7 +169,10 @@ pub fn draw_ui_volumetric(
                     0..=scenario
                         .and_then(|s| s.results.as_ref())
                         .and_then(|r| r.model.as_ref())
-                        .map_or(0, |m| m.spatial_description.sensors.array_offsets_mm.shape()[0].saturating_sub(1)),
+                        .map_or(0, |m| {
+                            m.spatial_description.sensors.array_offsets_mm.shape()[0]
+                                .saturating_sub(1)
+                        }),
                 ));
                 if motion_step != sample_tracker.selected_beat {
                     sample_tracker.selected_beat = motion_step;
@@ -177,9 +182,9 @@ pub fn draw_ui_volumetric(
                 #[allow(clippy::range_minus_one)]
                 ui.add(egui::Slider::new(
                     &mut selected_sensor,
-                    0..=scenario
-                        .and_then(|s| s.results.as_ref())
-                        .map_or(0, |r| r.estimations.measurements.num_sensors().saturating_sub(1)),
+                    0..=scenario.and_then(|s| s.results.as_ref()).map_or(0, |r| {
+                        r.estimations.measurements.num_sensors().saturating_sub(1)
+                    }),
                 ));
                 if selected_sensor != sample_tracker.selected_sensor {
                     sample_tracker.selected_sensor = selected_sensor;
@@ -282,7 +287,10 @@ pub fn draw_ui_volumetric(
         let ctx = match contexts.ctx_mut() {
             Ok(ctx) => ctx,
             Err(e) => {
-                error!("EGUI context not available for volumetric bottom panel: {}", e);
+                error!(
+                    "EGUI context not available for volumetric bottom panel: {}",
+                    e
+                );
                 return;
             }
         };
@@ -305,20 +313,24 @@ pub fn draw_ui_volumetric(
                         let x = i as f64 / samplerate_hz;
                         [
                             x,
-                            scenario
-                                .results
-                                .as_ref()
-                                .map_or(0.0, |r| f64::from(r.estimations.measurements[(
-                                    sample_tracker.selected_beat,
-                                    i,
-                                    sample_tracker.selected_sensor,
-                                )])),
+                            scenario.results.as_ref().map_or(0.0, |r| {
+                                f64::from(
+                                    r.estimations.measurements[(
+                                        sample_tracker.selected_beat,
+                                        i,
+                                        sample_tracker.selected_sensor,
+                                    )],
+                                )
+                            }),
                         ]
                     })
                     .collect();
                 let sin_line = Line::new("Signal", signal);
                 #[allow(clippy::cast_precision_loss)]
-                let v_line = VLine::new("Current Time", sample_tracker.current_sample as f64 / samplerate_hz);
+                let v_line = VLine::new(
+                    "Current Time",
+                    sample_tracker.current_sample as f64 / samplerate_hz,
+                );
                 Plot::new("my_plot")
                     .include_x(0)
                     .include_x(1)

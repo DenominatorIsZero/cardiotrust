@@ -194,9 +194,9 @@ fn build_scenario(
 )]
 #[tracing::instrument(level = "trace")]
 fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) -> anyhow::Result<()> {
-    setup_folder(path);
+    setup_folder(path)?;
     let files = vec![path.join("loss.png")];
-    clean_files(&files);
+    clean_files(&files)?;
 
     let first_scenario = scenarios
         .first()
@@ -305,7 +305,7 @@ fn create_and_run(
         for handle in join_handles {
             handle
                 .join()
-                .map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
+                .map_err(|e| anyhow::anyhow!("Thread panicked: {e:?}"))??;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());

@@ -238,7 +238,7 @@ fn plot_results(
     voxels_per_axis: Vec<i32>,
     learning_rates: Vec<f32>,
 ) -> Result<()> {
-    setup_folder(path);
+    setup_folder(path)?;
     for voxels_per_axis in &voxels_per_axis {
         let files = vec![
             path.join(format!("down_{voxels_per_axis:03}_loss.png")),
@@ -248,7 +248,7 @@ fn plot_results(
             path.join(format!("up{voxels_per_axis:03}_delays.png")),
             path.join(format!("up{voxels_per_axis:03}_delays_error.png")),
         ];
-        clean_files(&files);
+        clean_files(&files)?;
     }
 
     let mut first_scenario = scenarios
@@ -256,9 +256,9 @@ fn plot_results(
         .ok_or_else(|| anyhow::anyhow!("Expected at least one scenario"))?
         .clone();
     println!("Loading data for first scenario");
-    first_scenario.load_data();
+    first_scenario.load_data()?;
     println!("Loading results for first scenario {:?}", first_scenario.id);
-    first_scenario.load_results();
+    first_scenario.load_results()?;
 
     println!(
         "{:?}",
@@ -309,7 +309,7 @@ fn plot_results(
                     min_loss_n = n;
                 }
             }
-            scenario.load_results();
+            scenario.load_results()?;
             losses_owned.push(
                 scenario
                     .results
@@ -363,8 +363,8 @@ fn plot_results(
         )?;
 
         let mut scenario = scenarios[min_loss_n].clone();
-        scenario.load_data();
-        scenario.load_results();
+        scenario.load_data()?;
+        scenario.load_results()?;
 
         for index_x in 0..voxels_per_axis as usize {
             for index_y in 0..voxels_per_axis as usize {
@@ -586,7 +586,7 @@ fn create_and_run(
         for handle in join_handles {
             handle
                 .join()
-                .map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
+                .map_err(|e| anyhow::anyhow!("Thread panicked: {e:?}"))??;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());

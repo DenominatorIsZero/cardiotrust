@@ -258,7 +258,8 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .context("Pathological voxel type should exist in propagation velocities")? = target_velocity;
+        .context("Pathological voxel type should exist in propagation velocities")? =
+        target_velocity;
     *scenario
         .config
         .algorithm
@@ -266,7 +267,8 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .context("Sinoatrial voxel type should exist in algorithm propagation velocities")? = initial_velocity;
+        .context("Sinoatrial voxel type should exist in algorithm propagation velocities")? =
+        initial_velocity;
     *scenario
         .config
         .algorithm
@@ -274,7 +276,8 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .context("Pathological voxel type should exist in algorithm propagation velocities")? = initial_velocity;
+        .context("Pathological voxel type should exist in algorithm propagation velocities")? =
+        initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = match scenario_type {
         ScenarioType::Line => NUMBER_OF_EPOCHS_LINE,
@@ -314,7 +317,7 @@ fn plot_results(
     trials: usize,
     scenario_type: ScenarioType,
 ) -> Result<()> {
-    setup_folder(path);
+    setup_folder(path)?;
     for number_of_sensors in &number_of_sensors {
         for trial in 0..trials {
             let files = vec![
@@ -326,15 +329,18 @@ fn plot_results(
                     "num{number_of_sensors:03}_trial{trial}_delays_error.png"
                 )),
             ];
-            clean_files(&files);
+            clean_files(&files)?;
         }
     }
 
-    let mut first_scenario = scenarios.first().context("Expected at least one scenario to plot")?.clone();
+    let mut first_scenario = scenarios
+        .first()
+        .context("Expected at least one scenario to plot")?
+        .clone();
     println!("Loading data for first scenario");
-    first_scenario.load_data();
+    first_scenario.load_data()?;
     println!("Loading results for first scenario {:?}", first_scenario.id);
-    first_scenario.load_results();
+    first_scenario.load_results()?;
 
     println!(
         "{:?}",
@@ -375,15 +381,20 @@ fn plot_results(
                         || !scenario
                             .id
                             .contains(&format!("Noise: {measurement_covariance:.3e}"))
-                        || !scenario.summary.as_ref().context("Scenario summary should be available")?.loss.is_finite()
+                        || !scenario
+                            .summary
+                            .as_ref()
+                            .context("Scenario summary should be available")?
+                            .loss
+                            .is_finite()
                     {
                         continue;
                     }
                     let mut delays_owned: Vec<Array1<f32>> = Vec::new();
                     let mut delays_error_owned: Vec<Array1<f32>> = Vec::new();
                     let mut scenario = (*scenario).clone();
-                    scenario.load_results();
-                    scenario.load_data();
+                    scenario.load_results()?;
+                    scenario.load_data()?;
                     losses_owned.push(
                         scenario
                             .results
@@ -408,17 +419,20 @@ fn plot_results(
                         .context("Data should be available for model validation")?;
                     assert_eq!(
                         results_model.functional_description.measurement_matrix,
-                        data_model.simulation.model.functional_description.measurement_matrix
+                        data_model
+                            .simulation
+                            .model
+                            .functional_description
+                            .measurement_matrix
                     );
                     match scenario_type {
                         ScenarioType::Line => {
                             for ap in 0..NUMBER_OF_AP as usize {
                                 let mut delays = Array1::<f32>::zeros(num_snapshots);
                                 let mut delays_error = Array1::<f32>::zeros(num_snapshots);
-                                let scenario_data = scenario
-                                    .data
-                                    .as_ref()
-                                    .context("Scenario data should be available for delay calculation")?;
+                                let scenario_data = scenario.data.as_ref().context(
+                                    "Scenario data should be available for delay calculation",
+                                )?;
                                 let target_delay = from_coef_to_samples(
                                     scenario_data
                                         .simulation
@@ -439,7 +453,9 @@ fn plot_results(
                                     .context("Results should be available for snapshot access")?
                                     .snapshots
                                     .as_ref()
-                                    .context("Snapshots should be available for delay extraction")?;
+                                    .context(
+                                        "Snapshots should be available for delay extraction",
+                                    )?;
                                 for i in 0..num_snapshots {
                                     delays[i] =
                                         from_coef_to_samples(snapshots.ap_coefs[(i, ap, 15)])
@@ -468,7 +484,9 @@ fn plot_results(
                                 )))
                                 .context("Failed to create NPY file for delay data")?,
                             );
-                            delay.write_npy(writer).context("Failed to write delay data to NPY file")?;
+                            delay
+                                .write_npy(writer)
+                                .context("Failed to write delay data to NPY file")?;
                         }
                     }
 
@@ -516,13 +534,19 @@ fn plot_results(
                 let path = path.join("npy");
                 fs::create_dir_all(&path).context("Failed to create NPY directory for results")?;
                 let writer = BufWriter::new(
-                    File::create(path.join(format!("x_epochs_{scenario_type:?}.npy"))).context("Failed to create x_epochs NPY file")?,
+                    File::create(path.join(format!("x_epochs_{scenario_type:?}.npy")))
+                        .context("Failed to create x_epochs NPY file")?,
                 );
-                x_epochs.write_npy(writer).context("Failed to write x_epochs NPY data")?;
+                x_epochs
+                    .write_npy(writer)
+                    .context("Failed to write x_epochs NPY data")?;
                 let writer = BufWriter::new(
-                    File::create(path.join(format!("x_snapshots_{scenario_type:?}.npy"))).context("Failed to create x_snapshots NPY file")?,
+                    File::create(path.join(format!("x_snapshots_{scenario_type:?}.npy")))
+                        .context("Failed to create x_snapshots NPY file")?,
                 );
-                x_snapshots.write_npy(writer).context("Failed to write x_snapshots NPY data")?;
+                x_snapshots
+                    .write_npy(writer)
+                    .context("Failed to write x_snapshots NPY data")?;
                 for (label, loss) in labels.iter().zip(losses.iter()) {
                     let writer = BufWriter::new(
                         File::create(path.join(format!(
@@ -530,7 +554,8 @@ fn plot_results(
                         )))
                         .context("Failed to create loss NPY file")?,
                     );
-                    loss.write_npy(writer).context("Failed to write loss NPY data")?;
+                    loss.write_npy(writer)
+                        .context("Failed to write loss NPY data")?;
                 }
             }
 
@@ -605,7 +630,9 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().map_err(|_| anyhow::anyhow!("Failed to join worker thread"))??;
+            handle
+                .join()
+                .map_err(|_| anyhow::anyhow!("Failed to join worker thread"))??;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());

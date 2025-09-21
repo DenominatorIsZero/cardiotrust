@@ -381,6 +381,6 @@ fn plot_results(
     voxel_counts: &Vec<i32>,
     scenario_type: ScenarioType,
 ) -> Result<()> {
-    setup_folder(path);
+    setup_folder(path)?;
     Ok(())
 }
