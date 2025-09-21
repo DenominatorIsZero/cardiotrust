@@ -144,7 +144,7 @@ impl Simulation {
                     &self.model.functional_description,
                     beat,
                     step,
-                );
+                )?;
             }
         }
 
@@ -175,9 +175,9 @@ impl Simulation {
         let system_states = &mut self.system_states;
         self.system_states_spherical.calculate(system_states);
         self.system_states_spherical_max
-            .calculate(&self.system_states_spherical);
+            .calculate(&self.system_states_spherical)?;
         self.activation_times
-            .calculate(&self.system_states_spherical, self.sample_rate_hz);
+            .calculate(&self.system_states_spherical, self.sample_rate_hz)?;
         calculate_average_delays(
             &mut self.average_delays,
             &self.model.functional_description.ap_params,

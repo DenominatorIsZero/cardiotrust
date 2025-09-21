@@ -633,7 +633,7 @@ pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) -> R
     results
         .estimations
         .system_states_spherical_max
-        .calculate(&results.estimations.system_states_spherical);
+        .calculate(&results.estimations.system_states_spherical)?;
 
     results
         .estimations
@@ -665,7 +665,7 @@ pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) -> R
     results.estimations.activation_times.calculate(
         &results.estimations.system_states_spherical,
         data.simulation.sample_rate_hz,
-    );
+    )?;
 
     results
         .estimations
@@ -830,7 +830,7 @@ fn run_model_based_gpu(
             epoch_kernel.set_freeze_gains(scenario.config.algorithm.freeze_gains);
         }
         epoch_kernel.execute()?;
-        results.metrics.update_from_gpu(&results_gpu.metrics);
+        results.metrics.update_from_gpu(&results_gpu.metrics)?;
 
         summary.loss = results.metrics.loss_batch[epoch_index];
         summary.loss_mse = results.metrics.loss_mse_batch[epoch_index];
@@ -842,14 +842,14 @@ fn run_model_based_gpu(
         {
             results
                 .estimations
-                .update_from_gpu(&results_gpu.estimations);
+                .update_from_gpu(&results_gpu.estimations)?;
             results
                 .model
                 .as_mut()
                 .context("Model should be set during GPU algorithm execution")?
                 .functional_description
                 .ap_params
-                .update_from_gpu(&results_gpu.model.functional_description.ap_params);
+                .update_from_gpu(&results_gpu.model.functional_description.ap_params)?;
             results.snapshots.as_mut()
                 .context("Snapshots should be initialized for GPU algorithm")?
                 .push(

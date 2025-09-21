@@ -125,7 +125,7 @@ impl Model {
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving model to npy");
-        self.functional_description.save_npy(path);
+        self.functional_description.save_npy(path)?;
         self.spatial_description.save_npy(path)?;
         Ok(())
     }

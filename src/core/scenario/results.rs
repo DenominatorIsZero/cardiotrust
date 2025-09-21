@@ -108,7 +108,7 @@ impl Results {
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving results to.npy files");
         self.metrics.save_npy(&path.join("metrics"))?;
-        self.estimations.save_npy(&path.join("estimations"));
+        self.estimations.save_npy(&path.join("estimations"))?;
         self.model.as_ref()
             .context("Model not available for saving NPY files")?
             .save_npy(&path.join("model"))?;

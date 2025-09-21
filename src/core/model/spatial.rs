@@ -61,7 +61,7 @@ impl SpatialDescription {
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving spatial description to npy");
         let path = &path.join("spatial_description");
-        self.voxels.save_npy(path);
+        self.voxels.save_npy(path)?;
         self.sensors.save_npy(path)?;
         Ok(())
     }

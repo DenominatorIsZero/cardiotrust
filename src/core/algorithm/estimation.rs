@@ -88,10 +88,11 @@ impl Estimations {
     /// Saves the system states and measurements to .npy files at the given path.
     /// The filenames will be automatically generated based on the struct field names.
     #[tracing::instrument(level = "trace")]
-    pub(crate) fn save_npy(&self, path: &std::path::Path) {
+    pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving estimations to npy files");
-        self.system_states.save_npy(path);
-        self.measurements.save_npy(path);
+        self.system_states.save_npy(path)?;
+        self.measurements.save_npy(path)?;
+        Ok(())
     }
 
     #[tracing::instrument(level = "trace", skip_all)]

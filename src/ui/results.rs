@@ -247,7 +247,9 @@ pub fn draw_ui_results(
                     let scenario = &scenario_list.entries[index].scenario;
                     let send_scenario = scenario.clone();
                     thread::spawn(move || {
-                        send_scenario.save_npy();
+                        if let Err(e) = send_scenario.save_npy() {
+                            error!("Failed to export scenario to NPY: {}", e);
+                        }
                     });
                 } else {
                     error!("No scenario selected for NPY export");

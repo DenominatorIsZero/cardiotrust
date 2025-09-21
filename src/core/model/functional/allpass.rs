@@ -137,7 +137,8 @@ impl APParameters {
                 .queue(queue.clone())
                 .len(self.gains.len())
                 .copy_host_slice(
-                    self.gains.as_slice()
+                    self.gains
+                        .as_slice()
                         .context("Failed to get gains slice for GPU copy")?,
                 )
                 .build()
@@ -157,7 +158,8 @@ impl APParameters {
                 .queue(queue.clone())
                 .len(self.coefs.len())
                 .copy_host_slice(
-                    self.coefs.as_slice()
+                    self.coefs
+                        .as_slice()
                         .context("Failed to get coefs slice for GPU copy")?,
                 )
                 .build()
@@ -177,7 +179,8 @@ impl APParameters {
         ap_params
             .gains
             .read(
-                self.gains.as_slice_mut()
+                self.gains
+                    .as_slice_mut()
                     .context("Failed to get mutable gains slice for GPU read")?,
             )
             .enq()
@@ -185,13 +188,17 @@ impl APParameters {
         ap_params
             .coefs
             .read(
-                self.coefs.as_slice_mut()
+                self.coefs
+                    .as_slice_mut()
                     .context("Failed to get mutable coefs slice for GPU read")?,
             )
             .enq()
             .context("Failed to read coefs from GPU buffer")?;
         let mut temp_i32 = vec![0i32; self.delays.len()];
-        ap_params.delays.read(&mut temp_i32).enq()
+        ap_params
+            .delays
+            .read(&mut temp_i32)
+            .enq()
             .context("Failed to read delays from GPU buffer")?;
         self.delays
             .iter_mut()
@@ -242,23 +249,46 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Resul
             {
                 continue;
             }
-            let x_out_usize = usize::try_from(ouput_voxel_index_candidate[0])
-                .with_context(|| format!("Output voxel x-coordinate {} cannot be converted to usize", ouput_voxel_index_candidate[0]))?;
-            let y_out_usize = usize::try_from(ouput_voxel_index_candidate[1])
-                .with_context(|| format!("Output voxel y-coordinate {} cannot be converted to usize", ouput_voxel_index_candidate[1]))?;
-            let z_out_usize = usize::try_from(ouput_voxel_index_candidate[2])
-                .with_context(|| format!("Output voxel z-coordinate {} cannot be converted to usize", ouput_voxel_index_candidate[2]))?;
+            let x_out_usize =
+                usize::try_from(ouput_voxel_index_candidate[0]).with_context(|| {
+                    format!(
+                        "Output voxel x-coordinate {} cannot be converted to usize",
+                        ouput_voxel_index_candidate[0]
+                    )
+                })?;
+            let y_out_usize =
+                usize::try_from(ouput_voxel_index_candidate[1]).with_context(|| {
+                    format!(
+                        "Output voxel y-coordinate {} cannot be converted to usize",
+                        ouput_voxel_index_candidate[1]
+                    )
+                })?;
+            let z_out_usize =
+                usize::try_from(ouput_voxel_index_candidate[2]).with_context(|| {
+                    format!(
+                        "Output voxel z-coordinate {} cannot be converted to usize",
+                        ouput_voxel_index_candidate[2]
+                    )
+                })?;
 
             let output_voxel_index = [x_out_usize, y_out_usize, z_out_usize];
             for input_direction in 0..3 {
-                let input_base_number = v_numbers[input_voxel_index]
-                    .with_context(|| format!("Input voxel at {:?} has no assigned number", input_voxel_index))?;
+                let input_base_number = v_numbers[input_voxel_index].with_context(|| {
+                    format!(
+                        "Input voxel at {:?} has no assigned number",
+                        input_voxel_index
+                    )
+                })?;
                 let input_state_number = input_base_number + input_direction;
                 for output_dimension in 0..3 {
                     let gain_index = offset_to_gain_index(x_offset, y_offset, z_offset, output_dimension)
                         .with_context(|| format!("Failed to calculate gain index for offset ({}, {}, {}) and output dimension {}", x_offset, y_offset, z_offset, output_dimension))?;
-                    let output_base_number = v_numbers[output_voxel_index]
-                        .with_context(|| format!("Output voxel at {:?} has no assigned number", output_voxel_index))?;
+                    let output_base_number = v_numbers[output_voxel_index].with_context(|| {
+                        format!(
+                            "Output voxel at {:?} has no assigned number",
+                            output_voxel_index
+                        )
+                    })?;
                     let output_state_index = output_base_number + output_dimension;
                     output_state_indices[(input_state_number, gain_index)] =
                         Some(output_state_index);
@@ -326,7 +356,11 @@ fn connect_voxels(
                             config,
                             &mut current_directions,
                             ap_params,
-                        ).unwrap_or_else(|e| { tracing::error!("Connection failed: {}", e); false });
+                        )
+                        .unwrap_or_else(|e| {
+                            tracing::error!("Connection failed: {}", e);
+                            false
+                        });
                     }
                 }
             }
@@ -390,12 +424,24 @@ fn try_to_connect(
     if !spatial_description.voxels.is_valid_index(input_voxel_index) {
         return Ok(false);
     }
-    let x_in_usize = usize::try_from(x_out_i32 - x_offset)
-        .with_context(|| format!("Input voxel x-coordinate {} cannot be converted to usize", x_out_i32 - x_offset))?;
-    let y_in_usize = usize::try_from(y_out_i32 - y_offset)
-        .with_context(|| format!("Input voxel y-coordinate {} cannot be converted to usize", y_out_i32 - y_offset))?;
-    let z_in_usize = usize::try_from(z_out_i32 - z_offset)
-        .with_context(|| format!("Input voxel z-coordinate {} cannot be converted to usize", z_out_i32 - z_offset))?;
+    let x_in_usize = usize::try_from(x_out_i32 - x_offset).with_context(|| {
+        format!(
+            "Input voxel x-coordinate {} cannot be converted to usize",
+            x_out_i32 - x_offset
+        )
+    })?;
+    let y_in_usize = usize::try_from(y_out_i32 - y_offset).with_context(|| {
+        format!(
+            "Input voxel y-coordinate {} cannot be converted to usize",
+            y_out_i32 - y_offset
+        )
+    })?;
+    let z_in_usize = usize::try_from(z_out_i32 - z_offset).with_context(|| {
+        format!(
+            "Input voxel z-coordinate {} cannot be converted to usize",
+            z_out_i32 - z_offset
+        )
+    })?;
 
     let input_voxel_index = [x_in_usize, y_in_usize, z_in_usize];
     // SKip if the input voxel is already connected
@@ -415,8 +461,12 @@ fn try_to_connect(
         return Ok(false);
     }
     // Now we finally found something that we want to connect.
-    let input_state_number = v_numbers[input_voxel_index]
-        .with_context(|| format!("Input voxel at {:?} has no assigned number", input_voxel_index))?;
+    let input_state_number = v_numbers[input_voxel_index].with_context(|| {
+        format!(
+            "Input voxel at {:?} has no assigned number",
+            input_voxel_index
+        )
+    })?;
     let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
     let [x_in, y_in, z_in] = input_voxel_index;
     let input_position_mm = &v_position_mm.slice(s![x_in, y_in, z_in, ..]);
@@ -425,7 +475,10 @@ fn try_to_connect(
         .propagation_velocities_m_per_s
         .get(input_voxel_type)
     else {
-        tracing::warn!("No propagation velocity found for voxel type {:?}", input_voxel_type);
+        tracing::warn!(
+            "No propagation velocity found for voxel type {:?}",
+            input_voxel_type
+        );
         return Ok(false);
     };
     let delay_s = delay::calculate_delay_s(
@@ -434,8 +487,12 @@ fn try_to_connect(
         *propagation_velocity_m_per_s,
     );
     // update activation time of input voxel, marking them as connected
-    let output_activation_time = activation_time_s[output_voxel_index]
-        .with_context(|| format!("Output voxel at {:?} has no activation time", output_voxel_index))?;
+    let output_activation_time = activation_time_s[output_voxel_index].with_context(|| {
+        format!(
+            "Output voxel at {:?} has no activation time",
+            output_voxel_index
+        )
+    })?;
     activation_time_s[input_voxel_index] = Some(output_activation_time + delay_s);
     let direction = direction::calculate(input_position_mm, output_position_mm);
     current_directions
@@ -601,7 +658,9 @@ fn find_candidate_voxels(
     let output_voxel_indices: Vec<(usize, usize, usize)> = activation_time_s
         .indexed_iter()
         .filter_map(|(index, &time_s)| {
-            time_s.filter(|&t| relative_eq!(t, current_time_s)).map(|_| index)
+            time_s
+                .filter(|&t| relative_eq!(t, current_time_s))
+                .map(|_| index)
         })
         .collect();
     output_voxel_indices

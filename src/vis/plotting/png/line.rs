@@ -1,6 +1,6 @@
 use std::{io, path::Path};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use ndarray::{s, Array1, ArrayBase, Data, Ix1};
 use ndarray_stats::QuantileExt;
