@@ -378,7 +378,7 @@ mod tests {
             None,
             None,
         )
-        .with_context(|| "Failed to generate measurement covariance plot")?;
+        .context("Failed to generate measurement covariance plot")?;
         Ok(())
     }
 
@@ -416,7 +416,7 @@ mod tests {
             None,
             None,
         )
-        .with_context(|| "Failed to generate measurement covariance plot")?;
+        .context("Failed to generate measurement covariance plot")?;
         Ok(())
     }
 

@@ -155,7 +155,7 @@ fn setup_stdout_logging() -> Result<()> {
         );
 
     tracing::subscriber::set_global_default(subscriber)
-        .with_context(|| "Failed to set up stdout logging")?;
+        .context("Failed to set up stdout logging")?;
 
     Ok(())
 }
@@ -185,7 +185,7 @@ fn try_setup_file_logging() -> Result<()> {
         );
 
     tracing::subscriber::set_global_default(subscriber)
-        .with_context(|| "Failed to set up file logging")?;
+        .context("Failed to set up file logging")?;
 
     Ok(())
 }

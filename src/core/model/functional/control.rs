@@ -389,7 +389,7 @@ mod test {
             "Control Function",
             "j [A/mm^2]",
         )
-        .with_context(|| "Failed to generate control function plot")?;
+        .context("Failed to generate control function plot")?;
         Ok(())
     }
 
@@ -419,7 +419,7 @@ mod test {
             "Control Function",
             "j [A/mm^2]",
         )
-        .with_context(|| "Failed to generate control function plot")?;
+        .context("Failed to generate control function plot")?;
         Ok(())
     }
 
@@ -449,7 +449,7 @@ mod test {
             "Control Function",
             "j [A/mm^2]",
         )
-        .with_context(|| "Failed to generate control function plot")?;
+        .context("Failed to generate control function plot")?;
         Ok(())
     }
 }
