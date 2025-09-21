@@ -141,12 +141,19 @@ pub fn check_scenarios(
                         }
                     }
                     Err(e) => {
-                        error!("Failed to acquire epoch receiver lock for scenario {}: {}", entry.scenario.get_id(), e);
+                        error!(
+                            "Failed to acquire epoch receiver lock for scenario {}: {}",
+                            entry.scenario.get_id(),
+                            e
+                        );
                         epoch_poisoned = true;
                     }
                 }
             } else {
-                error!("Running scenario {} missing epoch receiver - cleaning up", entry.scenario.get_id());
+                error!(
+                    "Running scenario {} missing epoch receiver - cleaning up",
+                    entry.scenario.get_id()
+                );
                 cleanup_needed = true;
             }
 
@@ -159,12 +166,19 @@ pub fn check_scenarios(
                         }
                     }
                     Err(e) => {
-                        error!("Failed to acquire summary receiver lock for scenario {}: {}", entry.scenario.get_id(), e);
+                        error!(
+                            "Failed to acquire summary receiver lock for scenario {}: {}",
+                            entry.scenario.get_id(),
+                            e
+                        );
                         summary_poisoned = true;
                     }
                 }
             } else {
-                error!("Running scenario {} missing summary receiver - cleaning up", entry.scenario.get_id());
+                error!(
+                    "Running scenario {} missing summary receiver - cleaning up",
+                    entry.scenario.get_id()
+                );
                 cleanup_needed = true;
             }
 
@@ -180,7 +194,10 @@ pub fn check_scenarios(
                     }
                 }
             } else {
-                error!("Running scenario {} missing join handle - cleaning up", entry.scenario.get_id());
+                error!(
+                    "Running scenario {} missing join handle - cleaning up",
+                    entry.scenario.get_id()
+                );
                 cleanup_needed = true;
             }
 

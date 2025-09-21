@@ -756,7 +756,9 @@ fn draw_mri_settings(ui: &mut egui::Ui, mri: &mut Mri, _patholoical: bool) {
                         ui.label("Path");
                     });
                     row.col(|ui| {
-                        let mut path = mri.path.to_str()
+                        let mut path = mri
+                            .path
+                            .to_str()
                             .unwrap_or_else(|| {
                                 error!("MRI path contains invalid UTF-8: {:?}", mri.path);
                                 "<invalid path>"

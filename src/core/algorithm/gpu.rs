@@ -37,7 +37,9 @@ impl GPU {
             .info(ocl::core::DeviceInfo::Type)
             .context("Failed to query GPU device type information")?;
 
-        if device_type.to_string() != ocl::core::DeviceInfoResult::Type(ocl::core::DeviceType::GPU).to_string() {
+        if device_type.to_string()
+            != ocl::core::DeviceInfoResult::Type(ocl::core::DeviceType::GPU).to_string()
+        {
             return Err(anyhow::anyhow!(
                 "Device is not a GPU - found device type: {}",
                 device_type.to_string()
@@ -50,8 +52,8 @@ impl GPU {
             .build()
             .context("Failed to create OpenCL context for GPU device")?;
 
-        let queue = Queue::new(&context, device, None)
-            .context("Failed to create OpenCL command queue")?;
+        let queue =
+            Queue::new(&context, device, None).context("Failed to create OpenCL command queue")?;
 
         Ok(Self {
             queue,
@@ -61,11 +63,10 @@ impl GPU {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use approx::assert_relative_eq;
     use anyhow::Context as AnyhowContext;
+    use approx::assert_relative_eq;
     use ocl::{Buffer, Context, Device, Kernel, Platform, Program, Queue};
 
     use crate::core::algorithm::gpu::GPU;
@@ -74,8 +75,8 @@ mod tests {
     fn test_atomic_add_float() -> anyhow::Result<()> {
         // Setup OpenCL
         let platform = Platform::default();
-        let device = Device::first(platform)
-            .context("Failed to find OpenCL device for atomic test")?;
+        let device =
+            Device::first(platform).context("Failed to find OpenCL device for atomic test")?;
         let context = Context::builder()
             .platform(platform)
             .devices(device)
@@ -119,12 +120,15 @@ mod tests {
 
         // Run kernel
         unsafe {
-            kernel.enq()
+            kernel
+                .enq()
                 .context("Failed to execute atomic test kernel")?;
         }
         // Verify result
         let mut result = vec![0.0f32];
-        buffer.read(&mut result).enq()
+        buffer
+            .read(&mut result)
+            .enq()
             .context("Failed to read atomic test results from GPU buffer")?;
 
         assert_relative_eq!(result[0], 101.0, epsilon = 1e-6); // Initial 1.0 + 100 additions of 1.0

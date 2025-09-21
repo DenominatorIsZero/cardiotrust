@@ -61,11 +61,14 @@ pub fn calculate_delay_samples_array(
             }
             let ouput_voxel_index = [
                 i32::try_from(x_in)
-                    .with_context(|| format!("Voxel x-coordinate {x_in} exceeds i32::MAX"))? + x_offset,
+                    .with_context(|| format!("Voxel x-coordinate {x_in} exceeds i32::MAX"))?
+                    + x_offset,
                 i32::try_from(y_in)
-                    .with_context(|| format!("Voxel y-coordinate {y_in} exceeds i32::MAX"))? + y_offset,
+                    .with_context(|| format!("Voxel y-coordinate {y_in} exceeds i32::MAX"))?
+                    + y_offset,
                 i32::try_from(z_in)
-                    .with_context(|| format!("Voxel z-coordinate {z_in} exceeds i32::MAX"))? + z_offset,
+                    .with_context(|| format!("Voxel z-coordinate {z_in} exceeds i32::MAX"))?
+                    + z_offset,
             ];
             if !spatial_description.voxels.is_valid_index(ouput_voxel_index) {
                 continue;
@@ -86,8 +89,11 @@ pub fn calculate_delay_samples_array(
             let delay_s = calculate_delay_s(
                 input_position_mm,
                 output_position_mm,
-                *propagation_velocities_m_per_s.get(v_type)
-                    .with_context(|| format!("No propagation velocity configured for voxel type: {v_type:?}"))?,
+                *propagation_velocities_m_per_s
+                    .get(v_type)
+                    .with_context(|| {
+                        format!("No propagation velocity configured for voxel type: {v_type:?}")
+                    })?,
             );
             let delay_samples = delay_s * sample_rate_hz;
 
@@ -112,10 +118,10 @@ pub fn calculate_delay_samples_array(
 
 #[cfg(test)]
 mod test {
+    use anyhow::Context;
     use approx::assert_relative_eq;
     use ndarray::{arr1, Array1};
     use ndarray_stats::QuantileExt;
-    use anyhow::Context;
 
     use super::{calculate_delay_s, calculate_delay_samples_array};
     use crate::core::{

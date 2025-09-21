@@ -72,8 +72,7 @@ impl ScenarioList {
         let dir = Path::new("./results");
         create_dir_all(dir).context("Failed to create ./results directory")?;
 
-        let dir_entries = fs::read_dir(dir)
-            .context("Failed to read ./results directory")?;
+        let dir_entries = fs::read_dir(dir).context("Failed to read ./results directory")?;
 
         for entry in dir_entries {
             let entry = entry.context("Failed to read directory entry")?;

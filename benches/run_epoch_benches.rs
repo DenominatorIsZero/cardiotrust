@@ -15,12 +15,15 @@ fn run_benches(c: &mut Criterion) {
     group.finish();
 }
 
-fn epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn epoch(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (data, mut results) = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
+        let (data, mut results) =
+            setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // run bench
         let number_of_voxels = results

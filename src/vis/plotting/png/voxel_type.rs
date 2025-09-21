@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use anyhow::Result;
-
 use bevy::color::ColorToPacked;
 use ndarray::Axis;
 use plotters::prelude::*;

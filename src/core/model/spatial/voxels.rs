@@ -5,7 +5,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-
 use ndarray::{arr1, s, Array3, Array4, Dim};
 use ndarray_npy::WriteNpyExt;
 use num_derive::FromPrimitive;

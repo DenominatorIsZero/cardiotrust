@@ -46,7 +46,8 @@ pub fn calculate_pseudo_inverse(
     let measurement_matrix = DMatrix::from_row_slice(
         rows,
         columns,
-        measurement_matrix.as_slice()
+        measurement_matrix
+            .as_slice()
             .context("Failed to convert measurement matrix to slice for SVD computation")?,
     );
 
@@ -68,8 +69,9 @@ pub fn calculate_pseudo_inverse(
         let measurements = DMatrix::from_row_slice(
             rows,
             1,
-            actual_measurements.as_slice()
-                .context("Failed to convert actual measurements to slice for pseudo-inverse calculation")?
+            actual_measurements.as_slice().context(
+                "Failed to convert actual measurements to slice for pseudo-inverse calculation",
+            )?,
         );
 
         // Note: Using map_err instead of context because nalgebra's SVD solve returns Result<_, &str>
@@ -119,7 +121,12 @@ pub fn calculate_pseudo_inverse(
 ///
 /// Returns an error if the model is not properly initialized or algorithm computations fail.
 #[tracing::instrument(skip_all, level = "debug")]
-pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, config: &Algorithm) -> Result<()> {
+pub fn run_epoch(
+    results: &mut Results,
+    batch_index: &mut usize,
+    data: &Data,
+    config: &Algorithm,
+) -> Result<()> {
     results.derivatives.reset();
     let num_steps = results.estimations.system_states.num_steps();
     let num_beats = data.simulation.measurements.num_beats();
@@ -148,12 +155,7 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
                 .context("Model not properly initialized before algorithm execution")?
                 .functional_description;
 
-            calculate_system_prediction(
-                estimations,
-                functional_description,
-                beat,
-                step,
-            )?;
+            calculate_system_prediction(estimations, functional_description, beat, step)?;
 
             calculate_residuals(estimations, data, beat, step);
 
@@ -199,10 +201,12 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
                     .as_mut()
                     .context("Model not available for parameter update")?;
 
-                model_mut
-                    .functional_description
-                    .ap_params
-                    .update(derivatives, config, num_steps, *n)?;
+                model_mut.functional_description.ap_params.update(
+                    derivatives,
+                    config,
+                    num_steps,
+                    *n,
+                )?;
                 derivatives.reset();
                 *n = 0;
                 metrics::calculate_batch(&mut results.metrics, *batch_index)?;
@@ -233,10 +237,12 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
                 .as_mut()
                 .context("Model not available for final parameter update")?;
 
-            model_mut
-                .functional_description
-                .ap_params
-                .update(&mut results.derivatives, config, num_steps, n)?;
+            model_mut.functional_description.ap_params.update(
+                &mut results.derivatives,
+                config,
+                num_steps,
+                n,
+            )?;
             metrics::calculate_batch(&mut results.metrics, *batch_index)?;
             *batch_index += 1;
         }
@@ -262,10 +268,12 @@ pub fn run_epoch(results: &mut Results, batch_index: &mut usize, data: &Data, co
             .as_mut()
             .context("Model not available for epoch parameter update")?;
 
-        model_mut
-            .functional_description
-            .ap_params
-            .update(&mut results.derivatives, config, num_steps, num_beats)?;
+        model_mut.functional_description.ap_params.update(
+            &mut results.derivatives,
+            config,
+            num_steps,
+            num_beats,
+        )?;
         metrics::calculate_batch(&mut results.metrics, *batch_index)?;
         *batch_index += 1;
     }

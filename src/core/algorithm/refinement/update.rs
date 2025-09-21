@@ -88,7 +88,7 @@ impl APParameters {
                         config.learning_rate,
                         batch_size,
                     );
-                },
+                }
             }
             roll_delays(&mut self.coefs, &mut self.delays);
         }

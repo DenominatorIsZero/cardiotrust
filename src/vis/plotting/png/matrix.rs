@@ -1,7 +1,6 @@
 use std::{f32::consts::PI, io, path::Path};
 
 use anyhow::Result;
-
 use ndarray::{ArrayBase, Ix2};
 use ndarray_stats::QuantileExt;
 use plotters::prelude::*;

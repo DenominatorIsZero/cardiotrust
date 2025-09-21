@@ -11,8 +11,8 @@ use bevy::{
     color::palettes::css::{BLUE, GREEN, RED},
     prelude::*,
 };
-use bevy_egui::EguiStartupSet;
 use bevy_editor_cam::controller::component::{EditorCam, OrbitConstraint};
+use bevy_egui::EguiStartupSet;
 use bevy_obj::ObjPlugin;
 use cutting_plane::update_cutting_plane_visibility;
 use heart::VoxelData;

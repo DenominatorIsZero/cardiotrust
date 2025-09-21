@@ -149,25 +149,35 @@ impl ResetKernel {
         // This would allow better GPU utilization by processing independent beats simultaneously.
         // See prediction.rs for implementation details.
         unsafe {
-            self.system_states_kernel.enq()
+            self.system_states_kernel
+                .enq()
                 .context("Failed to execute system states reset kernel")?;
-            self.measurements_kernel.enq()
+            self.measurements_kernel
+                .enq()
                 .context("Failed to execute measurements reset kernel")?;
-            self.mse_kernel.enq()
+            self.mse_kernel
+                .enq()
                 .context("Failed to execute MSE reset kernel")?;
-            self.ap_outputs_kernel.enq()
+            self.ap_outputs_kernel
+                .enq()
                 .context("Failed to execute AP outputs reset kernel")?;
-            self.gains_kernel.enq()
+            self.gains_kernel
+                .enq()
                 .context("Failed to execute gains reset kernel")?;
-            self.coefs_kernel.enq()
+            self.coefs_kernel
+                .enq()
                 .context("Failed to execute coefficients reset kernel")?;
-            self.iir_kernel.enq()
+            self.iir_kernel
+                .enq()
                 .context("Failed to execute IIR coefficients reset kernel")?;
-            self.fir_kernel.enq()
+            self.fir_kernel
+                .enq()
                 .context("Failed to execute FIR coefficients reset kernel")?;
-            self.maximum_regularization_sum_kernel.enq()
+            self.maximum_regularization_sum_kernel
+                .enq()
                 .context("Failed to execute maximum regularization sum reset kernel")?;
-            self.step_kernel.enq()
+            self.step_kernel
+                .enq()
                 .context("Failed to execute step reset kernel")?;
         }
         Ok(())

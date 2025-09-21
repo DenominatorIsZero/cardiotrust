@@ -4,7 +4,6 @@ use std::{
 };
 
 use anyhow::Context;
-
 use ndarray::{arr1, s, Array1, Array2};
 use ndarray_npy::WriteNpyExt;
 use rand::seq::SliceRandom;
@@ -250,20 +249,37 @@ impl Sensors {
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving sensors to npy files");
-        fs::create_dir_all(path)
-            .with_context(|| format!("Failed to create directory for sensors: {}", path.display()))?;
+        fs::create_dir_all(path).with_context(|| {
+            format!("Failed to create directory for sensors: {}", path.display())
+        })?;
 
         let positions_path = path.join("sensor_positions_mm.npy");
-        let writer = BufWriter::new(File::create(&positions_path)
-            .with_context(|| format!("Failed to create sensor positions file: {}", positions_path.display()))?);
-        self.positions_mm.write_npy(writer)
-            .with_context(|| format!("Failed to write sensor positions to: {}", positions_path.display()))?;
+        let writer = BufWriter::new(File::create(&positions_path).with_context(|| {
+            format!(
+                "Failed to create sensor positions file: {}",
+                positions_path.display()
+            )
+        })?);
+        self.positions_mm.write_npy(writer).with_context(|| {
+            format!(
+                "Failed to write sensor positions to: {}",
+                positions_path.display()
+            )
+        })?;
 
         let orientations_path = path.join("sensor_orientations_xyz.npy");
-        let writer = BufWriter::new(File::create(&orientations_path)
-            .with_context(|| format!("Failed to create sensor orientations file: {}", orientations_path.display()))?);
-        self.orientations_xyz.write_npy(writer)
-            .with_context(|| format!("Failed to write sensor orientations to: {}", orientations_path.display()))?;
+        let writer = BufWriter::new(File::create(&orientations_path).with_context(|| {
+            format!(
+                "Failed to create sensor orientations file: {}",
+                orientations_path.display()
+            )
+        })?);
+        self.orientations_xyz.write_npy(writer).with_context(|| {
+            format!(
+                "Failed to write sensor orientations to: {}",
+                orientations_path.display()
+            )
+        })?;
 
         Ok(())
     }

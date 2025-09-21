@@ -96,7 +96,10 @@ fn draw_ui_scenario_topbar(
                 return;
             };
             let Some(entry) = scenarios.entries.get_mut(index) else {
-                error!("Selected scenario index {} is out of bounds in topbar", index);
+                error!(
+                    "Selected scenario index {} is out of bounds in topbar",
+                    index
+                );
                 return;
             };
             let scenario = &mut entry.scenario;
@@ -179,7 +182,10 @@ fn draw_ui_scenario_topbar(
                 return;
             };
             let Some(entry) = scenarios.entries.get_mut(index) else {
-                error!("Selected scenario index {} is out of bounds for comment editing", index);
+                error!(
+                    "Selected scenario index {} is out of bounds for comment editing",
+                    index
+                );
                 return;
             };
             let scenario = &mut entry.scenario;

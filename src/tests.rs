@@ -25,7 +25,8 @@ where
 pub fn clean_files(files: &Vec<PathBuf>) -> Result<()> {
     for file in files {
         if file.is_file() {
-            std::fs::remove_file(file).with_context(|| format!("Failed to remove test file: {}", file.display()))?;
+            std::fs::remove_file(file)
+                .with_context(|| format!("Failed to remove test file: {}", file.display()))?;
         }
     }
     Ok(())

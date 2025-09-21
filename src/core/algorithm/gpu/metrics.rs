@@ -39,18 +39,17 @@ impl MetricsKernel {
         let queue = &gpu.queue;
         let device = &gpu.device;
 
-        let metrics_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/metrics.cl")
-                .context("Failed to read metrics kernel source file")?;
-        let atomic_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl")
-                .context("Failed to read atomic kernel source file")?;
+        let metrics_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/metrics.cl")
+            .context("Failed to read metrics kernel source file")?;
+        let atomic_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/atomic.cl")
+            .context("Failed to read atomic kernel source file")?;
         let metrics_program = Program::builder()
             .src(format!("{atomic_src}\n{metrics_src}"))
             .build(context)
             .context("Failed to build OpenCL program for metrics kernels")?;
 
-        let max_size = device.max_wg_size()
+        let max_size = device
+            .max_wg_size()
             .context("Failed to query GPU device maximum work group size")?;
         let work_group_size = max_size.min(number_of_sensors as usize).next_power_of_two();
         let sensors_work_group_size =
@@ -93,7 +92,8 @@ impl MetricsKernel {
             .build()
             .context("Failed to build final loss calculation kernel")?;
 
-        let max_size = device.max_wg_size()
+        let max_size = device
+            .max_wg_size()
             .context("Failed to query GPU device maximum work group size for batch processing")?;
         let work_group_size = max_size.min(number_of_steps as usize).next_power_of_two();
         let steps_work_group_size =
@@ -132,11 +132,14 @@ impl MetricsKernel {
         // This would allow better GPU utilization by processing independent beats simultaneously.
         // See prediction.rs for implementation details.
         unsafe {
-            self.mse_step_kernel.enq()
+            self.mse_step_kernel
+                .enq()
                 .context("Failed to execute MSE step calculation kernel")?;
-            self.max_reg_step_kernel.enq()
+            self.max_reg_step_kernel
+                .enq()
                 .context("Failed to execute maximum regularization storage kernel")?;
-            self.loss_step_kernel.enq()
+            self.loss_step_kernel
+                .enq()
                 .context("Failed to execute final loss calculation kernel")?;
         }
         Ok(())
@@ -147,7 +150,8 @@ impl MetricsKernel {
         // This would allow better GPU utilization by processing independent beats simultaneously.
         // See prediction.rs for implementation details.
         unsafe {
-            self.batch_kernel.enq()
+            self.batch_kernel
+                .enq()
                 .context("Failed to execute batch metrics calculation kernel")?;
         }
         Ok(())

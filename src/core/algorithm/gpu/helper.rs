@@ -22,10 +22,11 @@ impl HelperKernel {
         let context = &gpu.context;
         let queue = &gpu.queue;
 
-        let helper_src =
-            std::fs::read_to_string("src/core/algorithm/gpu/kernels/helper.cl")
-                .context("Failed to read helper kernel source file")?;
-        let helper_program = Program::builder().src(helper_src).build(context)
+        let helper_src = std::fs::read_to_string("src/core/algorithm/gpu/kernels/helper.cl")
+            .context("Failed to read helper kernel source file")?;
+        let helper_program = Program::builder()
+            .src(helper_src)
+            .build(context)
             .context("Failed to build OpenCL program for helper kernels")?;
         let step_kernel = Kernel::builder()
             .program(&helper_program)
@@ -53,7 +54,8 @@ impl HelperKernel {
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn increase_step(&self) -> Result<()> {
         unsafe {
-            self.step_kernel.enq()
+            self.step_kernel
+                .enq()
                 .context("Failed to execute step increment kernel")?;
         }
         Ok(())
@@ -61,7 +63,8 @@ impl HelperKernel {
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn increase_epoch(&self) -> Result<()> {
         unsafe {
-            self.epoch_kernel.enq()
+            self.epoch_kernel
+                .enq()
                 .context("Failed to execute epoch increment kernel")?;
         }
         Ok(())

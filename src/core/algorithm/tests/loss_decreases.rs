@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use anyhow::Context;
+
 use super::{super::*, run};
 use crate::{
     core::{
@@ -15,7 +17,6 @@ use crate::{
         PlotSlice, StateSphericalPlotMode,
     },
 };
-use anyhow::Context;
 
 const COMMON_PATH: &str = "tests/core/algorithm/loss_decreases";
 

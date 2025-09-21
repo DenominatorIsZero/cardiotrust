@@ -7,7 +7,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-
 use nalgebra::ComplexField;
 use ndarray::{s, Array1};
 use ndarray_npy::WriteNpyExt;

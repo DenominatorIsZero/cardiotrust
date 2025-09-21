@@ -23,7 +23,9 @@ fn run_benches(c: &mut Criterion) {
     group.finish();
 }
 
-fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn bench_gains(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
@@ -34,7 +36,7 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         let number_of_voxels = results
             .model
             .as_ref()
-.context("Model should be available in benchmark setup")?
+            .context("Model should be available in benchmark setup")?
             .spatial_description
             .voxels
             .count();
@@ -45,7 +47,7 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
                     &mut results
                         .model
                         .as_mut()
-            .expect("Model should be available in benchmark")
+                        .expect("Model should be available in benchmark")
                         .functional_description
                         .ap_params
                         .gains,
@@ -59,7 +61,9 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
     Ok(())
 }
 
-fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn bench_delays(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
@@ -70,12 +74,16 @@ fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
         let number_of_voxels = results
             .model
             .as_ref()
-.context("Model should be available in benchmark setup")?
+            .context("Model should be available in benchmark setup")?
             .spatial_description
             .voxels
             .count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
-        let functional_description = &mut results.model.as_mut().context("Model should be available for mutation")?.functional_description;
+        let functional_description = &mut results
+            .model
+            .as_mut()
+            .context("Model should be available for mutation")?
+            .functional_description;
         group.bench_function(BenchmarkId::new("delays", voxel_size), |b| {
             b.iter(|| {
                 update_delays_sgd(
@@ -110,8 +118,7 @@ fn setup_config(voxel_size: &f32) -> Config {
 
 fn setup_inputs(config: &Config) -> anyhow::Result<(Data, Results)> {
     let simulation_config = &config.simulation;
-    let data =
-        Data::from_simulation_config(simulation_config)?;
+    let data = Data::from_simulation_config(simulation_config)?;
     let model = Model::from_model_config(
         &config.algorithm.model,
         simulation_config.sample_rate_hz,

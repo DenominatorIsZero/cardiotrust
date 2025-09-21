@@ -40,11 +40,19 @@ impl ControlMatrix {
     ///
     /// Returns an error if the sinoatrial node voxel number is not available.
     #[tracing::instrument(level = "debug")]
-    pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Result<Self> {
+    pub fn from_model_config(
+        config: &Model,
+        spatial_description: &SpatialDescription,
+    ) -> Result<Self> {
         debug!("Creating control matrix from model config");
         let mut control_matrix = Self::empty(spatial_description.voxels.count_states());
 
-        for (v_type, v_number) in spatial_description.voxels.types.iter().zip(spatial_description.voxels.numbers.iter()) {
+        for (v_type, v_number) in spatial_description
+            .voxels
+            .types
+            .iter()
+            .zip(spatial_description.voxels.numbers.iter())
+        {
             if *v_type == VoxelType::Sinoatrial {
                 let voxel_number = v_number
                     .context("Sinoatrial node voxel must have a valid voxel number for control matrix initialization")?;
@@ -64,15 +72,24 @@ impl ControlMatrix {
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving control matrix to npy");
-        fs::create_dir_all(path)
-            .with_context(|| format!("Failed to create directory for control matrix: {}", path.display()))?;
+        fs::create_dir_all(path).with_context(|| {
+            format!(
+                "Failed to create directory for control matrix: {}",
+                path.display()
+            )
+        })?;
 
         let file_path = path.join("control_matrix.npy");
-        let writer = BufWriter::new(File::create(&file_path)
-            .with_context(|| format!("Failed to create control matrix file: {}", file_path.display()))?);
+        let writer = BufWriter::new(File::create(&file_path).with_context(|| {
+            format!(
+                "Failed to create control matrix file: {}",
+                file_path.display()
+            )
+        })?);
 
-        self.write_npy(writer)
-            .with_context(|| format!("Failed to write control matrix to: {}", file_path.display()))?;
+        self.write_npy(writer).with_context(|| {
+            format!("Failed to write control matrix to: {}", file_path.display())
+        })?;
 
         Ok(())
     }
@@ -160,9 +177,12 @@ impl ControlFunction {
 
         match config.common.control_function {
             config::model::ControlFunction::Ohara => {
-                let mut control_function_raw: Array1<f32> =
-                    read_npy("assets/control_function_ohara.npy")
-                        .context("Failed to load O'Hara control function from assets/control_function_ohara.npy")?;
+                let mut control_function_raw: Array1<f32> = read_npy(
+                    "assets/control_function_ohara.npy",
+                )
+                .context(
+                    "Failed to load O'Hara control function from assets/control_function_ohara.npy",
+                )?;
 
                 let from_sample_rate_hz = 2000.0;
 
@@ -251,15 +271,27 @@ impl ControlFunction {
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving control function values to npy");
-        fs::create_dir_all(path)
-            .with_context(|| format!("Failed to create directory for control function: {}", path.display()))?;
+        fs::create_dir_all(path).with_context(|| {
+            format!(
+                "Failed to create directory for control function: {}",
+                path.display()
+            )
+        })?;
 
         let file_path = path.join("control_function_values.npy");
-        let writer = BufWriter::new(File::create(&file_path)
-            .with_context(|| format!("Failed to create control function file: {}", file_path.display()))?);
+        let writer = BufWriter::new(File::create(&file_path).with_context(|| {
+            format!(
+                "Failed to create control function file: {}",
+                file_path.display()
+            )
+        })?);
 
-        self.write_npy(writer)
-            .with_context(|| format!("Failed to write control function to: {}", file_path.display()))?;
+        self.write_npy(writer).with_context(|| {
+            format!(
+                "Failed to write control function to: {}",
+                file_path.display()
+            )
+        })?;
 
         Ok(())
     }

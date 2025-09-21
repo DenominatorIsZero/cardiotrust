@@ -7,7 +7,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-
 use ndarray::Array1;
 use ndarray_npy::WriteNpyExt;
 

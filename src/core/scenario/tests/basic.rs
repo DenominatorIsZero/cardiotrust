@@ -1,6 +1,7 @@
 use std::{fs, path::Path};
 
 use anyhow::Context;
+
 use crate::core::scenario::Scenario;
 
 #[test]

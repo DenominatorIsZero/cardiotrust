@@ -5,7 +5,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-
 use approx::assert_relative_eq;
 use ndarray::{Array2, Array3, Dim};
 use ndarray_npy::WriteNpyExt;
@@ -40,16 +39,29 @@ impl ActivationTimeMs {
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving activation time to npy");
-        fs::create_dir_all(path)
-            .with_context(|| format!("Failed to create directory for activation time: {}", path.display()))?;
+        fs::create_dir_all(path).with_context(|| {
+            format!(
+                "Failed to create directory for activation time: {}",
+                path.display()
+            )
+        })?;
 
         let file_path = path.join("activation_time.npy");
-        let writer = BufWriter::new(File::create(&file_path)
-            .with_context(|| format!("Failed to create activation time file: {}", file_path.display()))?);
+        let writer = BufWriter::new(File::create(&file_path).with_context(|| {
+            format!(
+                "Failed to create activation time file: {}",
+                file_path.display()
+            )
+        })?);
 
         self.map(|v| v.as_ref().map_or_else(|| -1.0, |index| *index))
             .write_npy(writer)
-            .with_context(|| format!("Failed to write activation time to: {}", file_path.display()))?;
+            .with_context(|| {
+                format!(
+                    "Failed to write activation time to: {}",
+                    file_path.display()
+                )
+            })?;
 
         Ok(())
     }
@@ -99,8 +111,10 @@ impl Gains {
             .with_context(|| format!("Failed to create directory for gains: {}", path.display()))?;
 
         let file_path = path.join(name);
-        let writer = BufWriter::new(File::create(&file_path)
-            .with_context(|| format!("Failed to create gains file: {}", file_path.display()))?);
+        let writer =
+            BufWriter::new(File::create(&file_path).with_context(|| {
+                format!("Failed to create gains file: {}", file_path.display())
+            })?);
 
         self.write_npy(writer)
             .with_context(|| format!("Failed to write gains to: {}", file_path.display()))?;
@@ -175,24 +189,27 @@ impl Indices {
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving indices gains to npy");
-        fs::create_dir_all(path)
-            .with_context(|| format!("Failed to create directory for indices: {}", path.display()))?;
+        fs::create_dir_all(path).with_context(|| {
+            format!("Failed to create directory for indices: {}", path.display())
+        })?;
 
         let file_path = path.join("output_state_indices.npy");
-        let writer = BufWriter::new(File::create(&file_path)
-            .with_context(|| format!("Failed to create indices file: {}", file_path.display()))?);
+        let writer =
+            BufWriter::new(File::create(&file_path).with_context(|| {
+                format!("Failed to create indices file: {}", file_path.display())
+            })?);
 
         let converted_indices = self.map(|v| {
             v.as_ref().map_or(-1, |index| {
-                i32::try_from(*index)
-                    .unwrap_or_else(|_| {
-                        tracing::warn!("Index {} exceeds i32::MAX, using -1", index);
-                        -1
-                    })
+                i32::try_from(*index).unwrap_or_else(|_| {
+                    tracing::warn!("Index {} exceeds i32::MAX, using -1", index);
+                    -1
+                })
             })
         });
 
-        converted_indices.write_npy(writer)
+        converted_indices
+            .write_npy(writer)
             .with_context(|| format!("Failed to write indices to: {}", file_path.display()))?;
 
         Ok(())
@@ -249,8 +266,10 @@ impl Coefs {
             .with_context(|| format!("Failed to create directory for coefs: {}", path.display()))?;
 
         let file_path = path.join("coefs.npy");
-        let writer = BufWriter::new(File::create(&file_path)
-            .with_context(|| format!("Failed to create coefs file: {}", file_path.display()))?);
+        let writer =
+            BufWriter::new(File::create(&file_path).with_context(|| {
+                format!("Failed to create coefs file: {}", file_path.display())
+            })?);
 
         self.write_npy(writer)
             .with_context(|| format!("Failed to write coefs to: {}", file_path.display()))?;
@@ -323,22 +342,25 @@ impl UnitDelays {
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving delays to npy");
-        fs::create_dir_all(path)
-            .with_context(|| format!("Failed to create directory for delays: {}", path.display()))?;
+        fs::create_dir_all(path).with_context(|| {
+            format!("Failed to create directory for delays: {}", path.display())
+        })?;
 
         let file_path = path.join("delays.npy");
-        let writer = BufWriter::new(File::create(&file_path)
-            .with_context(|| format!("Failed to create delays file: {}", file_path.display()))?);
+        let writer =
+            BufWriter::new(File::create(&file_path).with_context(|| {
+                format!("Failed to create delays file: {}", file_path.display())
+            })?);
 
         let converted_delays = self.map(|v| {
-            u32::try_from(*v)
-                .unwrap_or_else(|_| {
-                    tracing::warn!("Delay value {} exceeds u32::MAX, using u32::MAX", v);
-                    u32::MAX
-                })
+            u32::try_from(*v).unwrap_or_else(|_| {
+                tracing::warn!("Delay value {} exceeds u32::MAX, using u32::MAX", v);
+                u32::MAX
+            })
         });
 
-        converted_delays.write_npy(writer)
+        converted_delays
+            .write_npy(writer)
             .with_context(|| format!("Failed to write delays to: {}", file_path.display()))?;
 
         Ok(())

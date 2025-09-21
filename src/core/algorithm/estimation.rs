@@ -188,8 +188,8 @@ pub fn calculate_delays_delta(
 
 #[cfg(test)]
 mod tests {
-    use ndarray::Dim;
     use anyhow::Result;
+    use ndarray::Dim;
 
     use super::{calculate_residuals, prediction::calculate_system_prediction, Estimations};
     use crate::core::{data::Data, model::functional::FunctionalDescription};

@@ -60,10 +60,16 @@ where
 
     let range = range.map_or_else(
         || -> anyhow::Result<(f32, f32)> {
-            let min = data.min()
-                .map_err(|_| anyhow::anyhow!("Cannot find minimum value in data array for matrix GIF range calculation"))?;
-            let max = data.max()
-                .map_err(|_| anyhow::anyhow!("Cannot find maximum value in data array for matrix GIF range calculation"))?;
+            let min = data.min().map_err(|_| {
+                anyhow::anyhow!(
+                    "Cannot find minimum value in data array for matrix GIF range calculation"
+                )
+            })?;
+            let max = data.max().map_err(|_| {
+                anyhow::anyhow!(
+                    "Cannot find maximum value in data array for matrix GIF range calculation"
+                )
+            })?;
             Ok((*min, *max))
         },
         Ok,

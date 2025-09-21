@@ -1,6 +1,6 @@
-use anyhow::Context;
 use std::{path::Path, sync::mpsc::channel, thread};
 
+use anyhow::Context;
 use ndarray::Array1;
 
 use super::RUN_IN_TESTS;
