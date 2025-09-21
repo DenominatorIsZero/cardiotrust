@@ -6,7 +6,7 @@ use std::{
     thread,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use ndarray::Array1;
 use ndarray_npy::WriteNpyExt;
 
@@ -107,7 +107,7 @@ fn build_scenario(
     measurement_covarince: f32,
     scenario_type: ScenarioType,
     id: &str,
-) -> Scenario {
+) -> Result<Scenario> {
     let mut scenario = Scenario::build(Some(id.to_string()));
 
     let voxel_size_mm = 2.5;
@@ -143,7 +143,7 @@ fn build_scenario(
                 .model
                 .handcrafted
                 .as_mut()
-                .unwrap()
+                .context("Handcrafted model should be available for configuration")?
                 .heart_size_mm = [
                 voxel_size_mm,
                 voxel_size_mm * (NUMBER_OF_AP + 1) as f32,
@@ -162,7 +162,7 @@ fn build_scenario(
                 .model
                 .handcrafted
                 .as_mut()
-                .unwrap()
+                .context("Handcrafted model should be available for configuration")?
                 .heart_size_mm = [
                 voxel_size_mm * (VOXELS_PER_AXIS) as f32,
                 voxel_size_mm * (VOXELS_PER_AXIS) as f32,
@@ -179,7 +179,7 @@ fn build_scenario(
                 .model
                 .handcrafted
                 .as_mut()
-                .unwrap()
+                .context("Handcrafted model should be available for configuration")?
                 .sa_x_center_percentage = 0.5;
             scenario
                 .config
@@ -187,7 +187,7 @@ fn build_scenario(
                 .model
                 .handcrafted
                 .as_mut()
-                .unwrap()
+                .context("Handcrafted model should be available for configuration")?
                 .sa_y_center_percentage = 1.0;
         }
     }
@@ -198,7 +198,7 @@ fn build_scenario(
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model should be available for pathology configuration")?
         .pathology_x_start_percentage = 0.0;
     scenario
         .config
@@ -206,7 +206,7 @@ fn build_scenario(
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model should be available for pathology configuration")?
         .pathology_x_stop_percentage = 1.0;
     scenario
         .config
@@ -214,7 +214,7 @@ fn build_scenario(
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model should be available for pathology configuration")?
         .pathology_y_start_percentage = 0.0;
     scenario
         .config
@@ -222,7 +222,7 @@ fn build_scenario(
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model should be available for pathology configuration")?
         .pathology_y_stop_percentage = 1.0;
     scenario
         .config
@@ -230,7 +230,7 @@ fn build_scenario(
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model should be available for sensor configuration")?
         .sa_y_center_percentage = 1.0;
     scenario
         .config
@@ -250,7 +250,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = target_velocity;
+        .context("Sinoatrial voxel type should exist in propagation velocities")? = target_velocity;
     *scenario
         .config
         .simulation
@@ -258,7 +258,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = target_velocity;
+        .context("Pathological voxel type should exist in propagation velocities")? = target_velocity;
     *scenario
         .config
         .algorithm
@@ -266,7 +266,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = initial_velocity;
+        .context("Sinoatrial voxel type should exist in algorithm propagation velocities")? = initial_velocity;
     *scenario
         .config
         .algorithm
@@ -274,7 +274,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = initial_velocity;
+        .context("Pathological voxel type should exist in algorithm propagation velocities")? = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = match scenario_type {
         ScenarioType::Line => NUMBER_OF_EPOCHS_LINE,
@@ -293,9 +293,9 @@ fn build_scenario(
     scenario.config.algorithm.snapshots_interval =
         scenario.config.algorithm.epochs / number_of_snapshots;
 
-    scenario.schedule().unwrap();
+    scenario.schedule().context("Failed to schedule scenario")?;
     let _ = scenario.save();
-    scenario
+    Ok(scenario)
 }
 
 #[allow(
@@ -313,7 +313,7 @@ fn plot_results(
     measurement_covariances: Array1<f32>,
     trials: usize,
     scenario_type: ScenarioType,
-) {
+) -> Result<()> {
     setup_folder(path);
     for number_of_sensors in &number_of_sensors {
         for trial in 0..trials {
@@ -330,7 +330,7 @@ fn plot_results(
         }
     }
 
-    let mut first_scenario = scenarios.first().unwrap().clone();
+    let mut first_scenario = scenarios.first().context("Expected at least one scenario to plot")?.clone();
     println!("Loading data for first scenario");
     first_scenario.load_data();
     println!("Loading results for first scenario {:?}", first_scenario.id);
@@ -341,10 +341,10 @@ fn plot_results(
         first_scenario
             .results
             .as_ref()
-            .unwrap()
+            .context("Results should be available for plotting")?
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available in results for plotting")?
             .functional_description
             .ap_params
             .coefs
@@ -353,10 +353,10 @@ fn plot_results(
     let num_snapshots = first_scenario
         .results
         .as_ref()
-        .unwrap()
+        .context("Results should be available for snapshot plotting")?
         .snapshots
         .as_ref()
-        .unwrap()
+        .context("Snapshots should be available for plotting")?
         .number_of_snapshots;
     let x_snapshots = Array1::range(0.0, num_snapshots as f32, 1.0);
 
@@ -375,7 +375,7 @@ fn plot_results(
                         || !scenario
                             .id
                             .contains(&format!("Noise: {measurement_covariance:.3e}"))
-                        || !scenario.summary.as_ref().unwrap().loss.is_finite()
+                        || !scenario.summary.as_ref().context("Scenario summary should be available")?.loss.is_finite()
                     {
                         continue;
                     }
@@ -388,51 +388,45 @@ fn plot_results(
                         scenario
                             .results
                             .as_ref()
-                            .unwrap()
+                            .context("Results should be available for loss extraction")?
                             .metrics
                             .loss_mse_batch
                             .clone(),
                     );
                     labels_owned.push(format!("trial {trial:03}"));
 
-                    assert!(
-                        scenario
-                            .results
-                            .as_ref()
-                            .unwrap()
-                            .model
-                            .as_ref()
-                            .unwrap()
-                            .functional_description
-                            .measurement_matrix
-                            == scenario
-                                .data
-                                .as_ref()
-                                .unwrap()
-                                .simulation
-                                .model
-                                .functional_description
-                                .measurement_matrix
+                    let results_model = scenario
+                        .results
+                        .as_ref()
+                        .context("Results should be available for model validation")?
+                        .model
+                        .as_ref()
+                        .context("Model should be available in results for validation")?;
+                    let data_model = scenario
+                        .data
+                        .as_ref()
+                        .context("Data should be available for model validation")?;
+                    assert_eq!(
+                        results_model.functional_description.measurement_matrix,
+                        data_model.simulation.model.functional_description.measurement_matrix
                     );
                     match scenario_type {
                         ScenarioType::Line => {
                             for ap in 0..NUMBER_OF_AP as usize {
                                 let mut delays = Array1::<f32>::zeros(num_snapshots);
                                 let mut delays_error = Array1::<f32>::zeros(num_snapshots);
+                                let scenario_data = scenario
+                                    .data
+                                    .as_ref()
+                                    .context("Scenario data should be available for delay calculation")?;
                                 let target_delay = from_coef_to_samples(
-                                    scenario
-                                        .data
-                                        .as_ref()
-                                        .unwrap()
+                                    scenario_data
                                         .simulation
                                         .model
                                         .functional_description
                                         .ap_params
                                         .coefs[(ap, 15)],
-                                ) + scenario
-                                    .data
-                                    .as_ref()
-                                    .unwrap()
+                                ) + scenario_data
                                     .simulation
                                     .model
                                     .functional_description
@@ -442,10 +436,10 @@ fn plot_results(
                                 let snapshots = scenario
                                     .results
                                     .as_ref()
-                                    .unwrap()
+                                    .context("Results should be available for snapshot access")?
                                     .snapshots
                                     .as_ref()
-                                    .unwrap();
+                                    .context("Snapshots should be available for delay extraction")?;
                                 for i in 0..num_snapshots {
                                     delays[i] =
                                         from_coef_to_samples(snapshots.ap_coefs[(i, ap, 15)])
@@ -466,15 +460,15 @@ fn plot_results(
 
                     if SAVE_NPY {
                         let path = path.join("npy");
-                        fs::create_dir_all(&path).unwrap();
+                        fs::create_dir_all(&path).context("Failed to create NPY directory")?;
                         for (i, delay) in delays.iter().enumerate() {
                             let writer = BufWriter::new(
                                 File::create(path.join(format!(
                                     "{scenario_type:?} num: {number_of_sensors:03}, noise: {measurement_covariance:.3e} trial {trial:03} delay: {i:03}.npy",
                                 )))
-                                .unwrap(),
+                                .context("Failed to create NPY file for delay data")?,
                             );
-                            delay.write_npy(writer).unwrap();
+                            delay.write_npy(writer).context("Failed to write delay data to NPY file")?;
                         }
                     }
 
@@ -490,7 +484,7 @@ fn plot_results(
                         None,
                         None,
                     )
-                    .unwrap();
+                    .context("Failed to create delays plot")?;
 
                     line_plot(
                         Some(&x_snapshots),
@@ -504,7 +498,7 @@ fn plot_results(
                         None,
                         None,
                     )
-                    .unwrap();
+                    .context("Failed to create delays error plot")?;
                     drop(scenario);
                 }
             }
@@ -520,23 +514,23 @@ fn plot_results(
 
             if SAVE_NPY {
                 let path = path.join("npy");
-                fs::create_dir_all(&path).unwrap();
+                fs::create_dir_all(&path).context("Failed to create NPY directory for results")?;
                 let writer = BufWriter::new(
-                    File::create(path.join(format!("x_epochs_{scenario_type:?}.npy"))).unwrap(),
+                    File::create(path.join(format!("x_epochs_{scenario_type:?}.npy"))).context("Failed to create x_epochs NPY file")?,
                 );
-                x_epochs.write_npy(writer).unwrap();
+                x_epochs.write_npy(writer).context("Failed to write x_epochs NPY data")?;
                 let writer = BufWriter::new(
-                    File::create(path.join(format!("x_snapshots_{scenario_type:?}.npy"))).unwrap(),
+                    File::create(path.join(format!("x_snapshots_{scenario_type:?}.npy"))).context("Failed to create x_snapshots NPY file")?,
                 );
-                x_snapshots.write_npy(writer).unwrap();
+                x_snapshots.write_npy(writer).context("Failed to write x_snapshots NPY data")?;
                 for (label, loss) in labels.iter().zip(losses.iter()) {
                     let writer = BufWriter::new(
                         File::create(path.join(format!(
                             "loss - {scenario_type:?} - num: {number_of_sensors:03} - noise: {measurement_covariance:.3e} {label}.npy"
                         )))
-                        .unwrap(),
+                        .context("Failed to create loss NPY file")?,
                     );
-                    loss.write_npy(writer).unwrap();
+                    loss.write_npy(writer).context("Failed to write loss NPY data")?;
                 }
             }
 
@@ -552,9 +546,10 @@ fn plot_results(
                 Some(&labels),
                 None,
             )
-            .unwrap();
+            .context("Failed to create loss plot")?;
         }
     }
+    Ok(())
 }
 
 #[tracing::instrument(level = "trace")]
@@ -591,7 +586,7 @@ fn create_and_run(
                         *measurement_covariance,
                         scenario_type,
                         &id,
-                    );
+                    )?;
                     if RUN_IN_TESTS {
                         let send_scenario = scenario.clone();
                         let (epoch_tx, _) = channel();
@@ -610,7 +605,7 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().unwrap();
+            handle.join().map_err(|_| anyhow::anyhow!("Failed to join worker thread"))??;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
@@ -625,6 +620,6 @@ fn create_and_run(
         measurement_covariances,
         trials,
         scenario_type,
-    );
+    )?;
     Ok(())
 }

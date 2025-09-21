@@ -1,15 +1,17 @@
 use ndarray::s;
+use anyhow::Context;
 
 use super::Model;
 use crate::core::config;
 
 #[test]
-fn test_ap_gain_init_sum_default() {
+fn test_ap_gain_init_sum_default() -> anyhow::Result<()> {
     let config = &config::model::Model::default();
     let sample_rate_hz = 2000.0;
     let duration_s = 1.0;
 
-    let model = Model::from_model_config(config, sample_rate_hz, duration_s).unwrap();
+    let model = Model::from_model_config(config, sample_rate_hz, duration_s)
+        .context("Failed to create model from default config")?;
 
     let x_y_z = model.spatial_description.voxels.count_xyz();
 
@@ -19,7 +21,8 @@ fn test_ap_gain_init_sum_default() {
                 if !model.spatial_description.voxels.types[(x, y, z)].is_connectable() {
                     continue;
                 }
-                let state = model.spatial_description.voxels.numbers[(x, y, z)].unwrap();
+                let state = model.spatial_description.voxels.numbers[(x, y, z)]
+                    .with_context(|| format!("Failed to get voxel state number at position ({}, {}, {})", x, y, z))?;
 
                 let row_x = model
                     .functional_description
@@ -52,10 +55,11 @@ fn test_ap_gain_init_sum_default() {
             }
         }
     }
+    Ok(())
 }
 
 #[test]
-fn test_ap_gain_init_sum_mri() {
+fn test_ap_gain_init_sum_mri() -> anyhow::Result<()> {
     let mut config = config::model::Model::default();
     config.handcrafted = None;
     config.mri = Some(config::model::Mri::default());
@@ -63,7 +67,8 @@ fn test_ap_gain_init_sum_mri() {
     let sample_rate_hz = 2000.0;
     let duration_s = 1.0;
 
-    let model = Model::from_model_config(&config, sample_rate_hz, duration_s).unwrap();
+    let model = Model::from_model_config(&config, sample_rate_hz, duration_s)
+        .context("Failed to create model from MRI config")?;
 
     let x_y_z = model.spatial_description.voxels.count_xyz();
 
@@ -73,7 +78,8 @@ fn test_ap_gain_init_sum_mri() {
                 if !model.spatial_description.voxels.types[(x, y, z)].is_connectable() {
                     continue;
                 }
-                let state = model.spatial_description.voxels.numbers[(x, y, z)].unwrap();
+                let state = model.spatial_description.voxels.numbers[(x, y, z)]
+                    .with_context(|| format!("Failed to get voxel state number at position ({}, {}, {}) for MRI model", x, y, z))?;
 
                 let row_x = model
                     .functional_description
@@ -106,4 +112,5 @@ fn test_ap_gain_init_sum_mri() {
             }
         }
     }
+    Ok(())
 }

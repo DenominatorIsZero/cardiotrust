@@ -1,6 +1,6 @@
 use std::{path::Path, sync::mpsc::channel, thread};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use super::RUN_IN_TESTS;
 use crate::{
@@ -116,7 +116,7 @@ fn create_and_run(
                     algorithm_type,
                     scenario_type,
                     &id,
-                );
+                )?;
                 if RUN_IN_TESTS {
                     let send_scenario = scenario.clone();
                     let (epoch_tx, _) = channel();
@@ -133,14 +133,14 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().unwrap();
+            handle.join().context("Worker thread panicked")??;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
             *scenario = Scenario::load(path.as_path())?;
         }
     }
-    plot_results(path, base_id, &scenarios, voxel_counts, scenario_type);
+    plot_results(path, base_id, &scenarios, voxel_counts, scenario_type)?;
     Ok(())
 }
 
@@ -158,7 +158,7 @@ fn build_scenario(
     algorithm_type: AlgorithmType,
     scenario_type: ScenarioType,
     id: &str,
-) -> Scenario {
+) -> Result<Scenario> {
     let mut scenario = Scenario::build(Some(id.to_string()));
 
     let voxel_size_mm = 2.5;
@@ -188,7 +188,7 @@ fn build_scenario(
                 .model
                 .handcrafted
                 .as_mut()
-                .unwrap()
+                .context("Handcrafted model should be available for line configuration")?
                 .heart_size_mm = [
                 voxel_size_mm,
                 voxel_size_mm * (voxel_count) as f32,
@@ -207,7 +207,7 @@ fn build_scenario(
                 .model
                 .handcrafted
                 .as_mut()
-                .unwrap()
+                .context("Handcrafted model should be available for sheet configuration")?
                 .heart_size_mm = [
                 voxel_size_mm * (voxel_count) as f32,
                 voxel_size_mm * (voxel_count) as f32,
@@ -224,7 +224,7 @@ fn build_scenario(
                 .model
                 .handcrafted
                 .as_mut()
-                .unwrap()
+                .context("Handcrafted model should be available for SA configuration")?
                 .sa_x_center_percentage = 0.5;
             scenario
                 .config
@@ -232,7 +232,7 @@ fn build_scenario(
                 .model
                 .handcrafted
                 .as_mut()
-                .unwrap()
+                .context("Handcrafted model should be available for SA configuration")?
                 .sa_y_center_percentage = 1.0;
         }
         ScenarioType::Cube => {
@@ -242,7 +242,7 @@ fn build_scenario(
                 .model
                 .handcrafted
                 .as_mut()
-                .unwrap()
+                .context("Handcrafted model should be available for cube configuration")?
                 .heart_size_mm = [
                 voxel_size_mm * (voxel_count) as f32,
                 voxel_size_mm * (voxel_count) as f32,
@@ -259,7 +259,7 @@ fn build_scenario(
                 .model
                 .handcrafted
                 .as_mut()
-                .unwrap()
+                .context("Handcrafted model should be available for SA configuration")?
                 .sa_x_center_percentage = 0.5;
             scenario
                 .config
@@ -267,7 +267,7 @@ fn build_scenario(
                 .model
                 .handcrafted
                 .as_mut()
-                .unwrap()
+                .context("Handcrafted model should be available for SA configuration")?
                 .sa_y_center_percentage = 1.0;
         }
     }
@@ -278,7 +278,7 @@ fn build_scenario(
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model should be available for pathology configuration")?
         .pathology_x_start_percentage = 0.0;
     scenario
         .config
@@ -286,7 +286,7 @@ fn build_scenario(
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model should be available for pathology configuration")?
         .pathology_x_stop_percentage = 1.0;
     scenario
         .config
@@ -294,7 +294,7 @@ fn build_scenario(
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model should be available for pathology configuration")?
         .pathology_y_start_percentage = 0.0;
     scenario
         .config
@@ -302,7 +302,7 @@ fn build_scenario(
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model should be available for pathology configuration")?
         .pathology_y_stop_percentage = 1.0;
     scenario
         .config
@@ -310,7 +310,7 @@ fn build_scenario(
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model should be available for sensor configuration")?
         .sa_y_center_percentage = 1.0;
     // Copy settings to algorithm model
     scenario.config.algorithm.model = scenario.config.simulation.model.clone();
@@ -322,7 +322,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = target_velocity;
+        .context("Sinoatrial voxel type should exist in propagation velocities")? = target_velocity;
     *scenario
         .config
         .simulation
@@ -330,7 +330,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = target_velocity;
+        .context("Pathological voxel type should exist in propagation velocities")? = target_velocity;
     *scenario
         .config
         .algorithm
@@ -338,7 +338,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = initial_velocity;
+        .context("Sinoatrial voxel type should exist in algorithm propagation velocities")? = initial_velocity;
     *scenario
         .config
         .algorithm
@@ -346,7 +346,7 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = initial_velocity;
+        .context("Pathological voxel type should exist in algorithm propagation velocities")? = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = NUMBER_OF_EPOCHS;
     scenario.config.algorithm.learning_rate = LEARNING_RATE;
@@ -357,9 +357,9 @@ fn build_scenario(
     scenario.config.algorithm.difference_regularization_strength = 0.0;
     scenario.config.algorithm.slow_down_stregth = 0.0;
 
-    scenario.schedule().unwrap();
+    scenario.schedule().context("Failed to schedule scenario")?;
     let _ = scenario.save();
-    scenario
+    Ok(scenario)
 }
 
 #[allow(
@@ -375,6 +375,7 @@ fn plot_results(
     scenarios: &Vec<Scenario>,
     voxel_counts: &Vec<i32>,
     scenario_type: ScenarioType,
-) {
+) -> Result<()> {
     setup_folder(path);
+    Ok(())
 }

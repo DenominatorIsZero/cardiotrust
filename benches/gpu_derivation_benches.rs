@@ -66,7 +66,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                 .step
                 .write([step as i32].as_slice())
                 .enq()
-                .unwrap();
+                .context("Failed to enqueue GPU operation in benchmark setup")?;
             prediction_kernel.execute();
         }
         group.bench_function(BenchmarkId::new("gpu", voxel_size), |b| {
@@ -77,7 +77,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                         .step
                         .write([step as i32].as_slice())
                         .enq()
-                        .unwrap();
+                        .expect("GPU queue operations should succeed in benchmark");
                     derivation_kernel.execute();
                 }
             })
@@ -90,7 +90,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                         .step
                         .write([step as i32].as_slice())
                         .enq()
-                        .unwrap();
+                        .expect("GPU queue operations should succeed in benchmark");
                     derivation_kernel.execute();
                 }
                 results_from_gpu.update_from_gpu(&results_gpu);
@@ -151,14 +151,14 @@ fn setup_inputs(
         results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available for prediction kernel creation")?
             .spatial_description
             .voxels
             .count_states() as i32,
         results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available for prediction kernel creation")?
             .spatial_description
             .sensors
             .count() as i32,
@@ -174,14 +174,14 @@ fn setup_inputs(
         results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available for derivation kernel creation")?
             .spatial_description
             .voxels
             .count_states() as i32,
         results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available for derivation kernel creation")?
             .spatial_description
             .sensors
             .count() as i32,

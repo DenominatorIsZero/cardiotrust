@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use anyhow::Context;
 use cardiotrust::core::{
     algorithm::{metrics, run_epoch},
     config::Config,
@@ -15,23 +16,23 @@ const STEP: usize = 42;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Metrics");
-    bench_step(&mut group);
-    bench_epoch(&mut group);
+    bench_step(&mut group).expect("Benchmark should succeed");
+    bench_epoch(&mut group).expect("Benchmark should succeed");
     group.finish();
 }
 
-fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let mut results = setup_inputs(&config);
+        let mut results = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // run bench
         let number_of_voxels = results
             .model
             .as_ref()
-            .unwrap()
+.context("Model should be available in benchmark setup")?
             .spatial_description
             .voxels
             .count();
@@ -48,20 +49,21 @@ fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wall
             })
         });
     }
+    Ok(())
 }
 
-fn bench_epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn bench_epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let mut results = setup_inputs(&config);
+        let mut results = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // run bench
         let number_of_voxels = results
             .model
             .as_ref()
-            .unwrap()
+.context("Model should be available in benchmark setup")?
             .spatial_description
             .voxels
             .count();
@@ -72,6 +74,7 @@ fn bench_epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
             })
         });
     }
+    Ok(())
 }
 
 fn setup_config(voxel_size: &f32) -> Config {
@@ -87,16 +90,16 @@ fn setup_config(voxel_size: &f32) -> Config {
     config
 }
 
-fn setup_inputs(config: &Config) -> Results {
+fn setup_inputs(config: &Config) -> anyhow::Result<Results> {
     let simulation_config = &config.simulation;
-    let data =
-        Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
+    let data = Data::from_simulation_config(simulation_config)
+        .context("Failed to create simulation data from config")?;
     let model = Model::from_model_config(
         &config.algorithm.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
     )
-    .unwrap();
+    .context("Failed to create model from config")?;
     let mut results = Results::new(
         config.algorithm.epochs,
         data.simulation.measurements.num_steps(),
@@ -112,7 +115,7 @@ fn setup_inputs(config: &Config) -> Results {
     let mut batch_index = 0;
     run_epoch(&mut results, &mut batch_index, &data, &config.algorithm);
 
-    results
+    Ok(results)
 }
 
 criterion_group! {name = benches;

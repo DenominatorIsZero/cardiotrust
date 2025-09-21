@@ -6,7 +6,7 @@ use std::{
     thread,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 use nalgebra::ComplexField;
 use ndarray::{s, Array1};
@@ -145,7 +145,7 @@ fn heavy_yes_roll_down() -> Result<()> {
 }
 
 #[tracing::instrument(level = "trace")]
-fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scenario {
+fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Result<Scenario> {
     let mut scenario = Scenario::build(Some(id.to_string()));
     // configure control function
     scenario.config.simulation.model.common.control_function = ControlFunction::Ohara;
@@ -163,7 +163,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
                 .model
                 .handcrafted
                 .as_ref()
-                .unwrap()
+                .context("Handcrafted model configuration should be available for sensor positioning")?
                 .heart_size_mm[0]
                 / 2.0,
         scenario.config.simulation.model.common.heart_offset_mm[1]
@@ -173,7 +173,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
                 .model
                 .handcrafted
                 .as_ref()
-                .unwrap()
+                .context("Handcrafted model configuration should be available for sensor positioning")?
                 .heart_size_mm[1]
                 / 2.0,
         scenario
@@ -205,7 +205,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model configuration should be available for heart size adjustment")?
         .heart_size_mm = [2.5, 5.0, 2.5];
     // Adjust pathology
     scenario
@@ -214,7 +214,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model configuration should be available for pathology x start adjustment")?
         .pathology_x_start_percentage = 0.0;
     scenario
         .config
@@ -222,7 +222,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model configuration should be available for pathology x stop adjustment")?
         .pathology_x_stop_percentage = 1.0;
     scenario
         .config
@@ -230,7 +230,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model configuration should be available for pathology y start adjustment")?
         .pathology_y_start_percentage = 0.0;
     scenario
         .config
@@ -238,7 +238,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
         .model
         .handcrafted
         .as_mut()
-        .unwrap()
+        .context("Handcrafted model configuration should be available for pathology y stop adjustment")?
         .pathology_y_stop_percentage = 0.4;
     // Copy settings to algorithm model
     scenario.config.algorithm.model = scenario.config.simulation.model.clone();
@@ -250,7 +250,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = target_velocity;
+        .context("Sinoatrial voxel type should exist in simulation propagation velocities")? = target_velocity;
     *scenario
         .config
         .simulation
@@ -258,7 +258,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = target_velocity;
+        .context("Pathological voxel type should exist in simulation propagation velocities")? = target_velocity;
     *scenario
         .config
         .algorithm
@@ -266,7 +266,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .unwrap() = initial_velocity;
+        .context("Sinoatrial voxel type should exist in algorithm propagation velocities")? = initial_velocity;
     *scenario
         .config
         .algorithm
@@ -274,7 +274,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .unwrap() = initial_velocity;
+        .context("Pathological voxel type should exist in algorithm propagation velocities")? = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 10_000;
     scenario.config.algorithm.learning_rate = 1e5;
@@ -285,9 +285,9 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
     scenario.config.algorithm.snapshots_interval =
         scenario.config.algorithm.epochs / number_of_snapshots;
 
-    scenario.schedule().unwrap();
+    scenario.schedule().context("Failed to schedule scenario for single AP test")?;
     let _ = scenario.save();
-    scenario
+    Ok(scenario)
 }
 
 #[allow(
@@ -297,7 +297,7 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Scen
     clippy::cast_precision_loss
 )]
 #[tracing::instrument(level = "trace")]
-fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
+fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) -> Result<()> {
     setup_folder(path);
     let files = vec![
         path.join("loss.png"),
@@ -310,16 +310,16 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     ];
     clean_files(&files);
 
-    let first_scenario = scenarios.first().unwrap();
+    let first_scenario = scenarios.first().context("At least one scenario should be provided for plotting")?;
     println!(
         "{:?}",
         first_scenario
             .results
             .as_ref()
-            .unwrap()
+            .context("First scenario should have results available for plotting")?
             .model
             .as_ref()
-            .unwrap()
+            .context("First scenario should have model results available for plotting")?
             .functional_description
             .ap_params
             .coefs
@@ -329,10 +329,10 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
     let num_snapshots = first_scenario
         .results
         .as_ref()
-        .unwrap()
+        .context("First scenario should have results available for snapshot count")?
         .snapshots
         .as_ref()
-        .unwrap()
+        .context("First scenario should have snapshots available for plotting")?
         .number_of_snapshots;
     let x_snapshots = Array1::range(0.0, num_snapshots as f32, 1.0);
     let mut losses_owned: Vec<BatchWiseMetric> = Vec::new();
@@ -346,21 +346,19 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
 
     let initial_states = scenarios
         .first()
-        .as_ref()
-        .unwrap()
+        .context("At least one scenario should be provided for initial states")?
         .results
         .as_ref()
-        .unwrap()
+        .context("First scenario should have results available for initial states")?
         .estimations
         .system_states
         .clone();
     let initial_measurements = scenarios
         .first()
-        .as_ref()
-        .unwrap()
+        .context("At least one scenario should be provided for initial measurements")?
         .results
         .as_ref()
-        .unwrap()
+        .context("First scenario should have results available for initial measurements")?
         .estimations
         .measurements
         .clone();
@@ -371,7 +369,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
             scenario
                 .results
                 .as_ref()
-                .unwrap()
+                .context("Scenario should have results available for loss plotting")?
                 .metrics
                 .loss_mse_batch
                 .clone(),
@@ -385,7 +383,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
             scenario
                 .data
                 .as_ref()
-                .unwrap()
+                .context("Scenario should have data available for ground truth states")?
                 .simulation
                 .system_states
                 .clone(),
@@ -394,7 +392,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
             scenario
                 .data
                 .as_ref()
-                .unwrap()
+                .context("Scenario should have data available for ground truth measurements")?
                 .simulation
                 .measurements
                 .clone(),
@@ -403,7 +401,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         let target_param = scenario
             .data
             .as_ref()
-            .unwrap()
+            .context("Scenario should have data available for target parameter calculation")?
             .simulation
             .model
             .functional_description
@@ -413,7 +411,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
             scenario
                 .data
                 .as_ref()
-                .unwrap()
+                .context("Scenario should have data available for target delay calculation")?
                 .simulation
                 .model
                 .functional_description
@@ -422,7 +420,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         ) + scenario
             .data
             .as_ref()
-            .unwrap()
+            .context("Scenario should have data available for target delay offset calculation")?
             .simulation
             .model
             .functional_description
@@ -432,10 +430,10 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         let snapshots = scenario
             .results
             .as_ref()
-            .unwrap()
+            .context("Scenario should have results available for snapshots processing")?
             .snapshots
             .as_ref()
-            .unwrap();
+            .context("Scenario should have snapshots available for parameter analysis")?;
         for i in 0..num_snapshots {
             delays[i] = from_coef_to_samples(snapshots.ap_coefs[(i, 0, 15)])
                 + snapshots.ap_delays[(i, 0, 15)] as f32;
@@ -452,7 +450,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
             scenario
                 .data
                 .as_ref()
-                .unwrap()
+                .context("Scenario should have data available for label generation")?
                 .simulation
                 .model
                 .functional_description
@@ -475,41 +473,41 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         .collect();
 
     if SAVE_NPY {
-        let path = path.join("npy");
-        fs::create_dir_all(&path).unwrap();
-        let writer = BufWriter::new(File::create(path.join("x_epochs.npy")).unwrap());
-        x_epochs.write_npy(writer).unwrap();
-        let writer = BufWriter::new(File::create(path.join("x_snapshots.npy")).unwrap());
-        x_snapshots.write_npy(writer).unwrap();
-        let writer = BufWriter::new(File::create(path.join("initial_states.npy")).unwrap());
-        initial_states.write_npy(writer).unwrap();
-        let writer = BufWriter::new(File::create(path.join("initial_measurements.npy")).unwrap());
-        initial_measurements.write_npy(writer).unwrap();
+        let npy_path = path.join("npy");
+        fs::create_dir_all(&npy_path).context("Failed to create npy directory")?;
+        let writer = BufWriter::new(File::create(npy_path.join("x_epochs.npy")).context("Failed to create x_epochs.npy file")?);
+        x_epochs.write_npy(writer).context("Failed to write x_epochs.npy file")?;
+        let writer = BufWriter::new(File::create(npy_path.join("x_snapshots.npy")).context("Failed to create x_snapshots.npy file")?);
+        x_snapshots.write_npy(writer).context("Failed to write x_snapshots.npy file")?;
+        let writer = BufWriter::new(File::create(npy_path.join("initial_states.npy")).context("Failed to create initial_states.npy file")?);
+        initial_states.write_npy(writer).context("Failed to write initial_states.npy file")?;
+        let writer = BufWriter::new(File::create(npy_path.join("initial_measurements.npy")).context("Failed to create initial_measurements.npy file")?);
+        initial_measurements.write_npy(writer).context("Failed to write initial_measurements.npy file")?;
         for (n, label) in labels.iter().enumerate() {
             let writer =
-                BufWriter::new(File::create(path.join(format!("loss_{label}.npy"))).unwrap());
-            losses[n].write_npy(writer).unwrap();
+                BufWriter::new(File::create(npy_path.join(format!("loss_{label}.npy"))).context("Failed to create loss npy file")?);
+            losses[n].write_npy(writer).context("Failed to write loss npy file")?;
             let writer =
-                BufWriter::new(File::create(path.join(format!("param_{label}.npy"))).unwrap());
-            params[n].write_npy(writer).unwrap();
+                BufWriter::new(File::create(npy_path.join(format!("param_{label}.npy"))).context("Failed to create param npy file")?);
+            params[n].write_npy(writer).context("Failed to write param npy file")?;
             let writer = BufWriter::new(
-                File::create(path.join(format!("param_error_{label}.npy"))).unwrap(),
+                File::create(npy_path.join(format!("param_error_{label}.npy"))).context("Failed to create param_error npy file")?,
             );
-            params_error[n].write_npy(writer).unwrap();
+            params_error[n].write_npy(writer).context("Failed to write param_error npy file")?;
             let writer =
-                BufWriter::new(File::create(path.join(format!("delay_{label}.npy"))).unwrap());
-            delays[n].write_npy(writer).unwrap();
+                BufWriter::new(File::create(npy_path.join(format!("delay_{label}.npy"))).context("Failed to create delay npy file")?);
+            delays[n].write_npy(writer).context("Failed to write delay npy file")?;
             let writer = BufWriter::new(
-                File::create(path.join(format!("delay_error_{label}.npy"))).unwrap(),
+                File::create(npy_path.join(format!("delay_error_{label}.npy"))).context("Failed to create delay_error npy file")?,
             );
-            delays_error[n].write_npy(writer).unwrap();
+            delays_error[n].write_npy(writer).context("Failed to write delay_error npy file")?;
             let writer =
-                BufWriter::new(File::create(path.join(format!("gt_states_{label}.npy"))).unwrap());
-            gt_states[n].write_npy(writer).unwrap();
+                BufWriter::new(File::create(npy_path.join(format!("gt_states_{label}.npy"))).context("Failed to create gt_states npy file")?);
+            gt_states[n].write_npy(writer).context("Failed to write gt_states npy file")?;
             let writer = BufWriter::new(
-                File::create(path.join(format!("gt_measurements_{label}.npy"))).unwrap(),
+                File::create(npy_path.join(format!("gt_measurements_{label}.npy"))).context("Failed to create gt_measurements npy file")?,
             );
-            gt_measurements[n].write_npy(writer).unwrap();
+            gt_measurements[n].write_npy(writer).context("Failed to write gt_measurements npy file")?;
         }
     }
 
@@ -525,7 +523,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         Some(&labels),
         None,
     )
-    .unwrap();
+    .context("Failed to create loss plot")?;
 
     let x_epochs_close_up = x_epochs.slice(s![..10]).to_owned();
     let losses_owned_close_up = losses_owned
@@ -544,7 +542,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         Some(&labels),
         None,
     )
-    .unwrap();
+    .context("Failed to create loss close-up plot")?;
 
     line_plot(
         Some(&x_snapshots),
@@ -556,7 +554,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         Some(&labels),
         None,
     )
-    .unwrap();
+    .context("Failed to create AP coefficient plot")?;
 
     line_plot(
         Some(&x_snapshots),
@@ -568,7 +566,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         Some(&labels),
         None,
     )
-    .unwrap();
+    .context("Failed to create AP coefficient error plot")?;
 
     line_plot(
         Some(&x_snapshots),
@@ -580,7 +578,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         Some(&labels),
         None,
     )
-    .unwrap();
+    .context("Failed to create AP delay plot")?;
 
     let x_snapshots_close_up = x_snapshots.slice(s![..10]).to_owned();
     let delays_owned_close_up = delays_owned
@@ -599,7 +597,7 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         Some(&labels),
         None,
     )
-    .unwrap();
+    .context("Failed to create AP delay close-up plot")?;
 
     line_plot(
         Some(&x_snapshots),
@@ -611,7 +609,9 @@ fn plot_results(path: &Path, base_title: &str, scenarios: Vec<Scenario>) {
         Some(&labels),
         None,
     )
-    .unwrap();
+    .context("Failed to create AP delay error plot")?;
+
+    Ok(())
 }
 
 #[tracing::instrument(level = "trace")]
@@ -638,7 +638,7 @@ fn create_and_run(target_delays: Vec<f32>, initial_delay: f32, base_id: &str, pa
             scenarios.push(scenario);
         } else {
             println!("Didn't find scenario. Building it!");
-            let scenario = build_scenario(target_velocity, initial_velocity, &id);
+            let scenario = build_scenario(target_velocity, initial_velocity, &id)?;
             if RUN_IN_TESTS {
                 let send_scenario = scenario.clone();
                 let (epoch_tx, _) = channel();
@@ -653,7 +653,7 @@ fn create_and_run(target_delays: Vec<f32>, initial_delay: f32, base_id: &str, pa
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().unwrap();
+            handle.join().map_err(|_| anyhow::anyhow!("Failed to join thread for scenario execution"))??;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
@@ -663,6 +663,6 @@ fn create_and_run(target_delays: Vec<f32>, initial_delay: f32, base_id: &str, pa
         }
     }
 
-    plot_results(path, base_id, scenarios);
+    plot_results(path, base_id, scenarios)?;
     Ok(())
 }

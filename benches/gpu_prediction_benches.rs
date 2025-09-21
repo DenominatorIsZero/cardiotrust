@@ -55,7 +55,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                         .step
                         .write([step as i32].as_slice())
                         .enq()
-                        .unwrap();
+                        .expect("GPU queue operations should succeed in benchmark");
                     prediction_kernel.execute();
                 }
             })
@@ -68,7 +68,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                         .step
                         .write([step as i32].as_slice())
                         .enq()
-                        .unwrap();
+                        .expect("GPU queue operations should succeed in benchmark");
                     prediction_kernel.execute();
                 }
                 results_from_gpu.update_from_gpu(&results_gpu);
@@ -120,14 +120,14 @@ fn setup_inputs(config: &Config) -> anyhow::Result<(Data, Results, GPU, ResultsG
         results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available for prediction kernel creation")?
             .spatial_description
             .voxels
             .count_states() as i32,
         results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available for prediction kernel creation")?
             .spatial_description
             .sensors
             .count() as i32,

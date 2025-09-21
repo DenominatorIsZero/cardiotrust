@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use anyhow::Context;
 use cardiotrust::core::{
     algorithm::run_epoch, config::Config, data::Data, model::Model, scenario::results::Results,
 };
@@ -10,22 +11,22 @@ const LEARNING_RATE: f32 = 1e-3;
 
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("Run Epoch");
-    epoch(&mut group);
+    epoch(&mut group).expect("Benchmark should succeed");
     group.finish();
 }
 
-fn epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) {
+fn epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
         // setup inputs
-        let (data, mut results) = setup_inputs(&config);
+        let (data, mut results) = setup_inputs(&config).context("Failed to setup benchmark inputs")?;
 
         // run bench
         let number_of_voxels = results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available in benchmark setup")?
             .spatial_description
             .voxels
             .count();
@@ -35,6 +36,7 @@ fn epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>
             b.iter(|| run_epoch(&mut results, &mut batch_index, &data, &config.algorithm))
         });
     }
+    Ok(())
 }
 
 fn setup_config(voxel_size: &f32) -> Config {
@@ -50,16 +52,16 @@ fn setup_config(voxel_size: &f32) -> Config {
     config
 }
 
-fn setup_inputs(config: &Config) -> (Data, Results) {
+fn setup_inputs(config: &Config) -> anyhow::Result<(Data, Results)> {
     let simulation_config = &config.simulation;
-    let data =
-        Data::from_simulation_config(simulation_config).expect("Model parameters to be valid.");
+    let data = Data::from_simulation_config(simulation_config)
+        .context("Failed to create simulation data from config")?;
     let model = Model::from_model_config(
         &config.algorithm.model,
         simulation_config.sample_rate_hz,
         simulation_config.duration_s,
     )
-    .unwrap();
+    .context("Failed to create model from config")?;
     let mut results = Results::new(
         config.algorithm.epochs,
         data.simulation.measurements.num_steps(),
@@ -71,7 +73,7 @@ fn setup_inputs(config: &Config) -> (Data, Results) {
         config.algorithm.optimizer,
     );
     results.model = Some(model);
-    (data, results)
+    Ok((data, results))
 }
 
 criterion_group! {name = epoch_benches;

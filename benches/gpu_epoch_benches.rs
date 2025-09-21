@@ -43,7 +43,7 @@ fn epoch_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::W
         group.bench_function(BenchmarkId::new("gpu", voxel_size), |b| {
             b.iter(|| {
                 epoch_kernel.execute();
-                gpu.queue.finish().unwrap();
+                gpu.queue.finish().expect("GPU queue operations should succeed in benchmark");
             })
         });
     }
@@ -95,14 +95,14 @@ fn setup_inputs(config: &Config) -> anyhow::Result<(Data, Results, GPU, ResultsG
         results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available for epoch kernel creation")?
             .spatial_description
             .voxels
             .count_states() as i32,
         results
             .model
             .as_ref()
-            .unwrap()
+            .context("Model should be available for epoch kernel creation")?
             .spatial_description
             .sensors
             .count() as i32,

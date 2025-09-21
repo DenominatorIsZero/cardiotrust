@@ -34,7 +34,7 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         let number_of_voxels = results
             .model
             .as_ref()
-            .unwrap()
+.context("Model should be available in benchmark setup")?
             .spatial_description
             .voxels
             .count();
@@ -45,7 +45,7 @@ fn bench_gains(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
                     &mut results
                         .model
                         .as_mut()
-                        .unwrap()
+            .expect("Model should be available in benchmark")
                         .functional_description
                         .ap_params
                         .gains,
@@ -70,7 +70,7 @@ fn bench_delays(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wa
         let number_of_voxels = results
             .model
             .as_ref()
-            .unwrap()
+.context("Model should be available in benchmark setup")?
             .spatial_description
             .voxels
             .count();

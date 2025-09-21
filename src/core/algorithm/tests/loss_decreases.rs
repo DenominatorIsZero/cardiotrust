@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use anyhow::Context;
 use super::{super::*, run};
 use crate::{
     core::{
@@ -19,18 +20,20 @@ use crate::{
 const COMMON_PATH: &str = "tests/core/algorithm/loss_decreases";
 
 #[tracing::instrument(level = "trace")]
-fn setup(folder: Option<&str>) {
+fn setup(folder: Option<&str>) -> anyhow::Result<()> {
     let path = folder.map_or_else(
         || Path::new(COMMON_PATH).to_path_buf(),
         |folder| Path::new(COMMON_PATH).join(folder),
     );
 
     if !path.exists() {
-        std::fs::create_dir_all(path).unwrap();
+        std::fs::create_dir_all(&path)
+            .with_context(|| format!("Failed to create test directory: {}", path.display()))?;
     }
+    Ok(())
 }
 #[test]
-fn loss_decreases() {
+fn loss_decreases() -> anyhow::Result<()> {
     let mut simulation_config = SimulationConfig::default();
     simulation_config.model.common.pathological = true;
     simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
@@ -80,13 +83,15 @@ fn loss_decreases() {
         );
         assert!(results.metrics.loss_batch[i] > results.metrics.loss_batch[i + 1]);
     });
+
+    Ok(())
 }
 
 #[test]
 #[ignore = "expensive integration test"]
 #[allow(clippy::too_many_lines)]
-fn loss_decreases_and_plot() {
-    setup(Some("default"));
+fn loss_decreases_and_plot() -> anyhow::Result<()> {
+    setup(Some("default"))?;
     let mut simulation_config = SimulationConfig::default();
     simulation_config.model.common.pathological = true;
     simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;
@@ -133,7 +138,7 @@ fn loss_decreases_and_plot() {
         "Loss",
         "Step",
     )
-    .unwrap();
+    .with_context(|| format!("Failed to create loss plot at {}", path.display()))?;
 
     let path = Path::new(COMMON_PATH)
         .join("default")
@@ -145,77 +150,55 @@ fn loss_decreases_and_plot() {
         "Loss",
         "Epoch",
     )
-    .unwrap();
+    .with_context(|| format!("Failed to create loss epoch plot at {}", path.display()))?;
 
     let path = Path::new(COMMON_PATH)
         .join("default")
         .join("states_max.png");
+
+    let model = results
+        .model
+        .as_ref()
+        .context("Model not available for states spherical plot")?;
+
     states_spherical_plot(
         &results.estimations.system_states_spherical,
         &results.estimations.system_states_spherical_max,
-        &results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .voxels
-            .positions_mm,
-        results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .voxels
-            .size_mm,
-        &results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .voxels
-            .numbers,
+        &model.spatial_description.voxels.positions_mm,
+        model.spatial_description.voxels.size_mm,
+        &model.spatial_description.voxels.numbers,
         Some(path.as_path()),
         None,
         Some(StateSphericalPlotMode::ABS),
         None,
         None,
     )
-    .unwrap();
+    .with_context(|| format!("Failed to create states spherical plot at {}", path.display()))?;
 
     let fps = 20;
     let playback_speed = 0.1;
 
     let path = Path::new(COMMON_PATH).join("default").join("states.gif");
+
+    let model = results
+        .model
+        .as_ref()
+        .context("Model not available for states spherical plot over time")?;
+
     states_spherical_plot_over_time(
         &results.estimations.system_states_spherical,
         &results.estimations.system_states_spherical_max,
-        &results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .voxels
-            .positions_mm,
-        results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .voxels
-            .size_mm,
+        &model.spatial_description.voxels.positions_mm,
+        model.spatial_description.voxels.size_mm,
         simulation_config.sample_rate_hz,
-        &results
-            .model
-            .as_ref()
-            .unwrap()
-            .spatial_description
-            .voxels
-            .numbers,
+        &model.spatial_description.voxels.numbers,
         Some(path.as_path()),
         Some(PlotSlice::Z(0)),
         Some(StateSphericalPlotMode::ABS),
         Some(playback_speed),
         Some(fps),
     )
-    .unwrap();
+    .with_context(|| format!("Failed to create states spherical plot over time at {}", path.display()))?;
+
+    Ok(())
 }
