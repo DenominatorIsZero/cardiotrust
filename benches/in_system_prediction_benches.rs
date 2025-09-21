@@ -46,7 +46,8 @@ fn bench_innovate(
                         &mut results.estimations,
                         &model.functional_description,
                         STEP,
-                    );
+                    )
+                    .expect("Calculation to succeed");
                 })
             },
         );

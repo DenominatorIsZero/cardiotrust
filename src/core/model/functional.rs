@@ -121,9 +121,7 @@ impl FunctionalDescription {
         Ok(())
     }
 
-    #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
-    #[must_use]
     pub fn to_gpu(&self, queue: &Queue) -> Result<FunctionalDescriptionGPU> {
         Ok(FunctionalDescriptionGPU {
             ap_params: self.ap_params.to_gpu(queue)?,

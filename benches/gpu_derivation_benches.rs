@@ -22,7 +22,9 @@ fn run_benches(c: &mut Criterion) {
     group.finish();
 }
 
-fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn prectiction_benches(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
         let (data, mut results, _gpu, results_gpu, prediction_kernel, derivation_kernel) =
@@ -40,7 +42,11 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
         for step in 0..data.simulation.measurements.num_steps() {
             let _ = calculate_system_prediction(
                 &mut results.estimations,
-                &results.model.as_ref().context("Model should be available in benchmark")?.functional_description,
+                &results
+                    .model
+                    .as_ref()
+                    .context("Model should be available in benchmark")?
+                    .functional_description,
                 0,
                 step,
             );
@@ -51,7 +57,11 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                     let _ = calculate_step_derivatives(
                         &mut results.derivatives,
                         &results.estimations,
-                        &results.model.as_ref().expect("Model should be available in benchmark").functional_description,
+                        &results
+                            .model
+                            .as_ref()
+                            .expect("Model should be available in benchmark")
+                            .functional_description,
                         &config.algorithm,
                         step,
                         0,
@@ -67,7 +77,7 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                 .write([step as i32].as_slice())
                 .enq()
                 .context("Failed to enqueue GPU operation in benchmark setup")?;
-            prediction_kernel.execute();
+            prediction_kernel.execute()?;
         }
         group.bench_function(BenchmarkId::new("gpu", voxel_size), |b| {
             b.iter(|| {
@@ -78,7 +88,9 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                         .write([step as i32].as_slice())
                         .enq()
                         .expect("GPU queue operations should succeed in benchmark");
-                    derivation_kernel.execute();
+                    derivation_kernel
+                        .execute()
+                        .expect("Derivation kernel to execute successfully.");
                 }
             })
         });
@@ -91,9 +103,13 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                         .write([step as i32].as_slice())
                         .enq()
                         .expect("GPU queue operations should succeed in benchmark");
-                    derivation_kernel.execute();
+                    derivation_kernel
+                        .execute()
+                        .expect("Kernel to run successfully.");
                 }
-                results_from_gpu.update_from_gpu(&results_gpu);
+                results_from_gpu
+                    .update_from_gpu(&results_gpu)
+                    .expect("Results to be read successfully.");
             })
         });
     }

@@ -27,12 +27,12 @@ where
     let header = object.header();
     debug!("Nifti header: {header:?}");
     let volume = object.volume();
-    let data = volume
-        .into_ndarray::<f32>()
-        .with_context(|| format!("Failed to convert NIFTI volume to f32 array for file: {path:?}"))?;
-    let mut segmentation = data
-        .into_dimensionality::<Ix3>()
-        .with_context(|| format!("Failed to convert array to 3D dimensionality for file: {path:?}"))?;
+    let data = volume.into_ndarray::<f32>().with_context(|| {
+        format!("Failed to convert NIFTI volume to f32 array for file: {path:?}")
+    })?;
+    let mut segmentation = data.into_dimensionality::<Ix3>().with_context(|| {
+        format!("Failed to convert array to 3D dimensionality for file: {path:?}")
+    })?;
     segmentation.swap_axes(1, 2);
     let segmentation = segmentation.slice(s![.., .., ..;-1]).to_owned();
     let voxel_size_mm = [header.pixdim[1], header.pixdim[3], header.pixdim[2]];
@@ -93,8 +93,9 @@ pub(crate) fn determine_voxel_type(
         .enumerate()
         .max_by_key(|&(_, &value)| value)
         .ok_or_else(|| anyhow!("No voxel types found in count array - this should not happen"))?;
-    let mut voxel_type = num_traits::FromPrimitive::from_usize(index)
-        .ok_or_else(|| anyhow!("Failed to convert index {index} to VoxelType - invalid enum value"))?;
+    let mut voxel_type = num_traits::FromPrimitive::from_usize(index).ok_or_else(|| {
+        anyhow!("Failed to convert index {index} to VoxelType - invalid enum value")
+    })?;
     if voxel_type == VoxelType::Sinoatrial {
         count[VoxelType::Sinoatrial as usize] = 0;
         let (index, _) = count
@@ -102,8 +103,9 @@ pub(crate) fn determine_voxel_type(
             .enumerate()
             .max_by_key(|&(_, &value)| value)
             .ok_or_else(|| anyhow!("No non-sinoatrial voxel types found in count array"))?;
-        voxel_type = num_traits::FromPrimitive::from_usize(index)
-            .ok_or_else(|| anyhow!("Failed to convert fallback index {index} to VoxelType - invalid enum value"))?;
+        voxel_type = num_traits::FromPrimitive::from_usize(index).ok_or_else(|| {
+            anyhow!("Failed to convert fallback index {index} to VoxelType - invalid enum value")
+        })?;
     }
     trace!("Placing Voxel type: {index:?} ({voxel_type:?}), count: {count:?}");
     Ok(voxel_type)
@@ -133,7 +135,7 @@ mod tests {
     #[ignore = "expensive integration test"]
     fn from_mri_scan() -> anyhow::Result<()> {
         let path = Path::new(COMMON_PATH);
-        setup_folder(path.to_path_buf());
+        setup_folder(path.to_path_buf())?;
         let mri_data = load_from_nii("assets/Segmentation.nii")?;
         let data = &mri_data.segmentation;
         let sizes = &mri_data.voxel_size_mm;
@@ -154,7 +156,8 @@ mod tests {
             None,
             None,
             Some(time_per_frame_ms),
-        ).expect("Failed to create matrix plot");
+        )
+        .expect("Failed to create matrix plot");
         let path = Path::new(COMMON_PATH).join("slice_y.gif");
         let time_per_frame_ms = duration_ms / data.shape()[1] as u32;
         matrix_over_slices_plot(
@@ -171,7 +174,8 @@ mod tests {
             None,
             None,
             Some(time_per_frame_ms),
-        ).expect("Failed to create matrix plot");
+        )
+        .expect("Failed to create matrix plot");
         let path = Path::new(COMMON_PATH).join("slice_z.gif");
         let time_per_frame_ms = duration_ms / data.shape()[2] as u32;
         matrix_over_slices_plot(
@@ -188,7 +192,8 @@ mod tests {
             None,
             None,
             Some(time_per_frame_ms),
-        ).expect("Failed to create matrix plot");
+        )
+        .expect("Failed to create matrix plot");
         Ok(())
     }
 }

@@ -48,7 +48,7 @@ fn run_simulation_default() -> anyhow::Result<()> {
 #[allow(clippy::too_many_lines)]
 fn run_simulation_default_and_plot() -> anyhow::Result<()> {
     let folder = Path::new(COMMON_PATH).join("healthy");
-    setup_folder(&folder);
+    setup_folder(&folder)?;
     let config = &SimulationConfig::default();
     let mut simulation = Simulation::from_config(config)?;
     simulation.run()?;
@@ -182,7 +182,7 @@ fn run_simulation_pathological() -> anyhow::Result<()> {
 #[allow(clippy::too_many_lines)]
 fn run_simulation_pathological_and_plot() -> anyhow::Result<()> {
     let folder = Path::new(COMMON_PATH).join("pathological");
-    setup_folder(&folder);
+    setup_folder(&folder)?;
     let mut config = SimulationConfig::default();
     config.model.common.pathological = true;
     let mut simulation = Simulation::from_config(&config)?;
@@ -370,7 +370,7 @@ fn crawl_through_states(simulation: &Simulation, state: usize) -> anyhow::Result
 #[allow(clippy::too_many_lines)]
 fn run_simulation_mri_and_plot() -> anyhow::Result<()> {
     let folder = Path::new(COMMON_PATH).join("mri");
-    setup_folder(&folder);
+    setup_folder(&folder)?;
     let mut config = SimulationConfig::default();
     config.model.handcrafted = None;
     config.model.mri = Some(Mri::default());

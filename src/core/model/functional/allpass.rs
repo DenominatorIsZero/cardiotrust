@@ -124,12 +124,7 @@ impl APParameters {
     }
 
     #[tracing::instrument(level = "trace", skip_all)]
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_possible_wrap,
-        clippy::missing_panics_doc
-    )]
-    #[must_use]
+    #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
     pub fn to_gpu(&self, queue: &Queue) -> Result<APParametersGPU> {
         let delays_i32: Vec<i32> = self.delays.iter().map(|&x| x as i32).collect();
         Ok(APParametersGPU {
@@ -274,18 +269,14 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Resul
             let output_voxel_index = [x_out_usize, y_out_usize, z_out_usize];
             for input_direction in 0..3 {
                 let input_base_number = v_numbers[input_voxel_index].with_context(|| {
-                    format!(
-                        "Input voxel at {input_voxel_index:?} has no assigned number"
-                    )
+                    format!("Input voxel at {input_voxel_index:?} has no assigned number")
                 })?;
                 let input_state_number = input_base_number + input_direction;
                 for output_dimension in 0..3 {
                     let gain_index = offset_to_gain_index(x_offset, y_offset, z_offset, output_dimension)
                         .with_context(|| format!("Failed to calculate gain index for offset ({x_offset}, {y_offset}, {z_offset}) and output dimension {output_dimension}"))?;
                     let output_base_number = v_numbers[output_voxel_index].with_context(|| {
-                        format!(
-                            "Output voxel at {output_voxel_index:?} has no assigned number"
-                        )
+                        format!("Output voxel at {output_voxel_index:?} has no assigned number")
                     })?;
                     let output_state_index = output_base_number + output_dimension;
                     output_state_indices[(input_state_number, gain_index)] =
@@ -459,11 +450,8 @@ fn try_to_connect(
         return Ok(false);
     }
     // Now we finally found something that we want to connect.
-    let input_state_number = v_numbers[input_voxel_index].with_context(|| {
-        format!(
-            "Input voxel at {input_voxel_index:?} has no assigned number"
-        )
-    })?;
+    let input_state_number = v_numbers[input_voxel_index]
+        .with_context(|| format!("Input voxel at {input_voxel_index:?} has no assigned number"))?;
     let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
     let [x_in, y_in, z_in] = input_voxel_index;
     let input_position_mm = &v_position_mm.slice(s![x_in, y_in, z_in, ..]);
@@ -485,9 +473,7 @@ fn try_to_connect(
     );
     // update activation time of input voxel, marking them as connected
     let output_activation_time = activation_time_s[output_voxel_index].with_context(|| {
-        format!(
-            "Output voxel at {output_voxel_index:?} has no activation time"
-        )
+        format!("Output voxel at {output_voxel_index:?} has no activation time")
     })?;
     activation_time_s[input_voxel_index] = Some(output_activation_time + delay_s);
     let direction = direction::calculate(input_position_mm, output_position_mm);

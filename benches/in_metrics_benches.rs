@@ -21,7 +21,9 @@ fn run_benches(c: &mut Criterion) {
     group.finish();
 }
 
-fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn bench_step(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
@@ -32,7 +34,7 @@ fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wall
         let number_of_voxels = results
             .model
             .as_ref()
-.context("Model should be available in benchmark setup")?
+            .context("Model should be available in benchmark setup")?
             .spatial_description
             .voxels
             .count();
@@ -52,7 +54,9 @@ fn bench_step(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wall
     Ok(())
 }
 
-fn bench_epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn bench_epoch(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
 
@@ -63,14 +67,14 @@ fn bench_epoch(group: &mut criterion::BenchmarkGroup<criterion::measurement::Wal
         let number_of_voxels = results
             .model
             .as_ref()
-.context("Model should be available in benchmark setup")?
+            .context("Model should be available in benchmark setup")?
             .spatial_description
             .voxels
             .count();
         group.throughput(criterion::Throughput::Elements(number_of_voxels as u64));
         group.bench_function(BenchmarkId::new("epoch", voxel_size), |b| {
             b.iter(|| {
-                metrics::calculate_batch(&mut results.metrics, 0);
+                metrics::calculate_batch(&mut results.metrics, 0).expect("Calculation to succeed.");
             })
         });
     }
@@ -113,7 +117,7 @@ fn setup_inputs(config: &Config) -> anyhow::Result<Results> {
     results.model = Some(model);
 
     let mut batch_index = 0;
-    run_epoch(&mut results, &mut batch_index, &data, &config.algorithm);
+    run_epoch(&mut results, &mut batch_index, &data, &config.algorithm)?;
 
     Ok(results)
 }

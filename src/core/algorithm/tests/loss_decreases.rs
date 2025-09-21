@@ -72,7 +72,7 @@ fn loss_decreases() -> anyhow::Result<()> {
     );
     results.model = Some(model);
 
-    run(&mut results, &data, &algorithm_config);
+    run(&mut results, &data, &algorithm_config)?;
 
     (0..algorithm_config.epochs - 1).for_each(|i| {
         println!(
@@ -127,7 +127,7 @@ fn loss_decreases_and_plot() -> anyhow::Result<()> {
     );
     results.model = Some(model);
 
-    run(&mut results, &data, &algorithm_config);
+    run(&mut results, &data, &algorithm_config)?;
 
     let path = Path::new(COMMON_PATH).join("default").join("loss.png");
     standard_y_plot(

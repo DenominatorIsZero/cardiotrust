@@ -21,7 +21,9 @@ fn run_benches(c: &mut Criterion) {
     group.finish();
 }
 
-fn epoch_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn epoch_benches(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
         let (data, mut results, gpu, _results_gpu, epoch_kernel) = setup_inputs(&config)?;
@@ -37,13 +39,16 @@ fn epoch_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::W
         let mut batch_index = 0;
         group.bench_function(BenchmarkId::new("cpu", voxel_size), |b| {
             b.iter(|| {
-                run_epoch(&mut results, &mut batch_index, &data, &config.algorithm);
+                run_epoch(&mut results, &mut batch_index, &data, &config.algorithm)
+                    .expect("Epoch run to succeed.");
             })
         });
         group.bench_function(BenchmarkId::new("gpu", voxel_size), |b| {
             b.iter(|| {
-                epoch_kernel.execute();
-                gpu.queue.finish().expect("GPU queue operations should succeed in benchmark");
+                epoch_kernel.execute().expect("Epoch kernel to succeed.");
+                gpu.queue
+                    .finish()
+                    .expect("GPU queue operations should succeed in benchmark");
             })
         });
     }

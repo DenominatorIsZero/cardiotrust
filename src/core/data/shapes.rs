@@ -448,8 +448,6 @@ impl Measurements {
         MeasurementsAtBeatMut(self.slice_mut(s![beat, .., ..]))
     }
 
-    #[allow(clippy::missing_panics_doc)]
-    #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn to_gpu(&self, queue: &ocl::Queue) -> Result<ocl::Buffer<f32>> {
         let buffer = ocl::Buffer::builder()

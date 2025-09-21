@@ -133,7 +133,9 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
+            handle
+                .join()
+                .map_err(|e| anyhow::anyhow!("Thread panicked: {e:?}"))??;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());
@@ -330,7 +332,8 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .context("Pathological voxel type should exist in propagation velocities")? = target_velocity;
+        .context("Pathological voxel type should exist in propagation velocities")? =
+        target_velocity;
     *scenario
         .config
         .algorithm
@@ -338,7 +341,8 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .context("Sinoatrial voxel type should exist in algorithm propagation velocities")? = initial_velocity;
+        .context("Sinoatrial voxel type should exist in algorithm propagation velocities")? =
+        initial_velocity;
     *scenario
         .config
         .algorithm
@@ -346,7 +350,8 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .context("Pathological voxel type should exist in algorithm propagation velocities")? = initial_velocity;
+        .context("Pathological voxel type should exist in algorithm propagation velocities")? =
+        initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = NUMBER_OF_EPOCHS;
     scenario.config.algorithm.learning_rate = LEARNING_RATE;

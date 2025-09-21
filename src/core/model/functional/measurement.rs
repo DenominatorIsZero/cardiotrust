@@ -39,9 +39,7 @@ impl MeasurementMatrix {
         )))
     }
 
-    #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
-    #[must_use]
     pub fn to_gpu(&self, queue: &Queue) -> Result<Buffer<f32>> {
         let buffer = Buffer::builder()
             .queue(queue.clone())
@@ -65,7 +63,9 @@ impl MeasurementMatrix {
     ///
     /// Returns an error if voxel numbers are not initialized correctly.
     #[tracing::instrument(level = "debug", skip_all)]
-    pub fn from_model_spatial_description(spatial_description: &SpatialDescription) -> Result<Self> {
+    pub fn from_model_spatial_description(
+        spatial_description: &SpatialDescription,
+    ) -> Result<Self> {
         debug!("Creating measurement matrix from model config");
         let mut measurement_matrix = Self::empty(
             spatial_description.sensors.count_beats(),
@@ -93,8 +93,9 @@ impl MeasurementMatrix {
                     continue;
                 }
 
-                let v_num = voxel_numbers[index]
-                    .with_context(|| format!("Voxel number not initialized for connectable voxel at index {index:?}"))?;
+                let v_num = voxel_numbers[index].with_context(|| {
+                    format!("Voxel number not initialized for connectable voxel at index {index:?}")
+                })?;
                 let v_pos_mm = voxel_positions_mm.slice(s![index.0, index.1, index.2, ..]);
 
                 for s_num in 0..spatial_description.sensors.count() {
@@ -130,15 +131,27 @@ impl MeasurementMatrix {
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving measurement matrix to npy file");
-        fs::create_dir_all(path)
-            .with_context(|| format!("Failed to create directory for measurement matrix: {}", path.display()))?;
+        fs::create_dir_all(path).with_context(|| {
+            format!(
+                "Failed to create directory for measurement matrix: {}",
+                path.display()
+            )
+        })?;
 
         let file_path = path.join("measurement_matrix.npy");
-        let writer = BufWriter::new(File::create(&file_path)
-            .with_context(|| format!("Failed to create measurement matrix file: {}", file_path.display()))?);
+        let writer = BufWriter::new(File::create(&file_path).with_context(|| {
+            format!(
+                "Failed to create measurement matrix file: {}",
+                file_path.display()
+            )
+        })?);
 
-        self.write_npy(writer)
-            .with_context(|| format!("Failed to write measurement matrix to: {}", file_path.display()))?;
+        self.write_npy(writer).with_context(|| {
+            format!(
+                "Failed to write measurement matrix to: {}",
+                file_path.display()
+            )
+        })?;
 
         Ok(())
     }
@@ -212,7 +225,10 @@ impl MeasurementCovariance {
     ///
     /// Returns an error if the measurement covariance parameters are invalid for creating a normal distribution.
     #[tracing::instrument(level = "debug")]
-    pub fn from_model_config(config: &Model, spatial_description: &SpatialDescription) -> Result<Self> {
+    pub fn from_model_config(
+        config: &Model,
+        spatial_description: &SpatialDescription,
+    ) -> Result<Self> {
         debug!("Creating measurement covariance from model config");
         let mut measurement_covariance = Self::empty(spatial_description.sensors.count());
 
@@ -246,15 +262,27 @@ impl MeasurementCovariance {
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving measurement covariance matrix to npy file");
-        fs::create_dir_all(path)
-            .with_context(|| format!("Failed to create directory for measurement covariance: {}", path.display()))?;
+        fs::create_dir_all(path).with_context(|| {
+            format!(
+                "Failed to create directory for measurement covariance: {}",
+                path.display()
+            )
+        })?;
 
         let file_path = path.join("measurement_covariance.npy");
-        let writer = BufWriter::new(File::create(&file_path)
-            .with_context(|| format!("Failed to create measurement covariance file: {}", file_path.display()))?);
+        let writer = BufWriter::new(File::create(&file_path).with_context(|| {
+            format!(
+                "Failed to create measurement covariance file: {}",
+                file_path.display()
+            )
+        })?);
 
-        self.write_npy(writer)
-            .with_context(|| format!("Failed to write measurement covariance to: {}", file_path.display()))?;
+        self.write_npy(writer).with_context(|| {
+            format!(
+                "Failed to write measurement covariance to: {}",
+                file_path.display()
+            )
+        })?;
 
         Ok(())
     }

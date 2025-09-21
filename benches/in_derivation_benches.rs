@@ -25,7 +25,7 @@ const BEAT: usize = 0;
 fn run_benches(c: &mut Criterion) {
     let mut group = c.benchmark_group("In Derivation");
     bench_residual_mapping(&mut group).expect("Benchmark should succeed");
-    bench_maximum_regularization(&mut group);
+    bench_maximum_regularization(&mut group).expect("Benchmark should succeed");
     bench_smoothness_derivatives(&mut group).expect("Benchmark should succeed");
     bench_average_delays(&mut group).expect("Benchmark should succeed");
     bench_gains(&mut group).expect("Benchmark should succeed");
@@ -51,7 +51,8 @@ fn bench_average_delays(
                 calculate_average_delays(
                     &mut results.estimations.average_delays,
                     &model.functional_description.ap_params,
-                );
+                )
+                .expect("Calculation to succeed.");
             })
         });
     }
@@ -80,7 +81,8 @@ fn bench_smoothness_derivatives(
                         &results.estimations,
                         &model.functional_description,
                         &config.algorithm,
-                    );
+                    )
+                    .expect("Calculation to succeed.");
                 })
             },
         );
@@ -239,7 +241,8 @@ fn bench_coefs(
                     &model.functional_description,
                     STEP,
                     &config.algorithm,
-                );
+                )
+                .expect("Calculation to succeed.");
             })
         });
     }

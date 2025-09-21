@@ -21,7 +21,9 @@ fn run_benches(c: &mut Criterion) {
     group.finish();
 }
 
-fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>) -> anyhow::Result<()> {
+fn prectiction_benches(
+    group: &mut criterion::BenchmarkGroup<criterion::measurement::WallTime>,
+) -> anyhow::Result<()> {
     for voxel_size in VOXEL_SIZES.iter() {
         let config = setup_config(voxel_size);
         let (data, mut results, _gpu, results_gpu, prediction_kernel) = setup_inputs(&config)?;
@@ -40,10 +42,15 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                 for step in 0..data.simulation.measurements.num_steps() {
                     calculate_system_prediction(
                         &mut results.estimations,
-                        &results.model.as_ref().expect("Model should be available in benchmark").functional_description,
+                        &results
+                            .model
+                            .as_ref()
+                            .expect("Model should be available in benchmark")
+                            .functional_description,
                         0,
                         step,
-                    );
+                    )
+                    .expect("Calculation to succeed.");
                 }
             })
         });
@@ -56,7 +63,9 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                         .write([step as i32].as_slice())
                         .enq()
                         .expect("GPU queue operations should succeed in benchmark");
-                    prediction_kernel.execute();
+                    prediction_kernel
+                        .execute()
+                        .expect("Prediction kernel to execute.");
                 }
             })
         });
@@ -69,9 +78,13 @@ fn prectiction_benches(group: &mut criterion::BenchmarkGroup<criterion::measurem
                         .write([step as i32].as_slice())
                         .enq()
                         .expect("GPU queue operations should succeed in benchmark");
-                    prediction_kernel.execute();
+                    prediction_kernel
+                        .execute()
+                        .expect("Prediction kernel to execute.");
                 }
-                results_from_gpu.update_from_gpu(&results_gpu);
+                results_from_gpu
+                    .update_from_gpu(&results_gpu)
+                    .expect("Results to be read.");
             })
         });
     }
@@ -92,7 +105,9 @@ fn setup_config(voxel_size: &f32) -> Config {
     config
 }
 
-fn setup_inputs(config: &Config) -> anyhow::Result<(Data, Results, GPU, ResultsGPU, PredictionKernel)> {
+fn setup_inputs(
+    config: &Config,
+) -> anyhow::Result<(Data, Results, GPU, ResultsGPU, PredictionKernel)> {
     let simulation_config = &config.simulation;
     let data = Data::from_simulation_config(simulation_config)?;
     let model = Model::from_model_config(

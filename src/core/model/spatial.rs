@@ -125,7 +125,7 @@ mod tests {
     #[allow(clippy::cast_possible_truncation)]
     fn from_handcrafted_model_config_and_plot() -> anyhow::Result<()> {
         let directory = Path::new(COMMON_PATH).join("handcrafted");
-        setup_folder(&directory);
+        setup_folder(&directory)?;
         let config = Model {
             common: Common::default(),
             handcrafted: Some(Handcrafted::default()),
@@ -176,7 +176,7 @@ mod tests {
     #[allow(clippy::cast_possible_truncation)]
     fn from_mri_model_config_and_plot() -> anyhow::Result<()> {
         let directory = Path::new(COMMON_PATH).join("mri");
-        setup_folder(&directory);
+        setup_folder(&directory)?;
         let config = Model {
             common: Common::default(),
             handcrafted: None,
@@ -227,7 +227,7 @@ mod tests {
     #[allow(clippy::cast_possible_truncation)]
     fn from_mri_model_config_and_plot_coarse() -> anyhow::Result<()> {
         let directory = Path::new(COMMON_PATH).join("mri");
-        setup_folder(&directory);
+        setup_folder(&directory)?;
         let mut config = Model {
             common: Common::default(),
             handcrafted: None,

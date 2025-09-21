@@ -746,7 +746,7 @@ fn run_model_based(
                 scenario.config.algorithm.learning_rate_reduction_factor;
         }
         algorithm::run_epoch(results, &mut batch_index, data, &scenario.config.algorithm)
-            .with_context(|| format!("Failed to run algorithm epoch {}", epoch_index))?;
+            .with_context(|| format!("Failed to run algorithm epoch {epoch_index}"))?;
         scenario.status = Status::Running(epoch_index);
 
         summary.loss = results.metrics.loss_batch[batch_index - 1];

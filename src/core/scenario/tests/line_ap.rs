@@ -213,7 +213,8 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = initial_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? =
+        initial_velocity;
     *scenario
         .config
         .algorithm
@@ -221,7 +222,8 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = initial_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? =
+        initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 20_000;
     scenario.config.algorithm.learning_rate = learning_rate;
@@ -253,7 +255,7 @@ fn plot_results(
     number_of_aps: Vec<i32>,
     learning_rates: Vec<f32>,
 ) -> anyhow::Result<()> {
-    setup_folder(path);
+    setup_folder(path)?;
     for number_of_ap in &number_of_aps {
         let files = vec![
             path.join(format!("down_{number_of_ap:03}_loss.png")),
@@ -263,15 +265,17 @@ fn plot_results(
             path.join(format!("up{number_of_ap:03}_delays.png")),
             path.join(format!("up{number_of_ap:03}_delays_error.png")),
         ];
-        clean_files(&files);
+        clean_files(&files)?;
     }
 
-    let mut first_scenario = scenarios.first()
-        .ok_or_else(|| anyhow::anyhow!("Expected at least one scenario"))?.clone();
+    let mut first_scenario = scenarios
+        .first()
+        .ok_or_else(|| anyhow::anyhow!("Expected at least one scenario"))?
+        .clone();
     println!("Loading data for first scenario");
-    first_scenario.load_data();
+    first_scenario.load_data()?;
     println!("Loading results for first scenario {:?}", first_scenario.id);
-    first_scenario.load_results();
+    first_scenario.load_results()?;
 
     println!(
         "{:?}",
@@ -312,8 +316,8 @@ fn plot_results(
                 let mut delays_owned: Vec<Array1<f32>> = Vec::new();
                 let mut delays_error_owned: Vec<Array1<f32>> = Vec::new();
                 let mut scenario = (*scenario).clone();
-                scenario.load_results();
-                scenario.load_data();
+                scenario.load_results()?;
+                scenario.load_data()?;
                 losses_owned.push(
                     scenario
                         .results
@@ -394,8 +398,7 @@ fn plot_results(
                     Some("Snapshot"),
                     None,
                     None,
-                )
-                ?;
+                )?;
 
                 line_plot(
                     Some(&x_snapshots),
@@ -406,8 +409,7 @@ fn plot_results(
                     Some("Snapshot"),
                     None,
                     None,
-                )
-                ?;
+                )?;
                 drop(scenario);
             }
 
@@ -538,7 +540,7 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().unwrap();
+            handle.join().unwrap()?;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());

@@ -54,7 +54,7 @@ fn run_epoch_no_crash() -> anyhow::Result<()> {
 }
 
 #[test]
-fn run_no_crash() {
+fn run_no_crash() -> anyhow::Result<()> {
     let number_of_states = 3000;
     let number_of_sensors = 300;
     let number_of_steps = 3;
@@ -92,7 +92,8 @@ fn run_no_crash() {
         number_of_beats,
     );
 
-    run(&mut results, &data, &algorithm_config);
+    run(&mut results, &data, &algorithm_config)?;
+    Ok(())
 }
 
 #[test]

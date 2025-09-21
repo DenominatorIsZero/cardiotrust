@@ -198,7 +198,8 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Sinoatrial)
-        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = initial_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? =
+        initial_velocity;
     *scenario
         .config
         .algorithm
@@ -206,7 +207,8 @@ fn build_scenario(
         .common
         .propagation_velocities_m_per_s
         .get_mut(&VoxelType::Pathological)
-        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? = initial_velocity;
+        .ok_or_else(|| anyhow::anyhow!("Failed to get velocity for voxel type"))? =
+        initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 500_000;
     scenario.config.algorithm.learning_rate = learning_rate;
@@ -249,8 +251,10 @@ fn plot_results(
         clean_files(&files);
     }
 
-    let mut first_scenario = scenarios.first()
-        .ok_or_else(|| anyhow::anyhow!("Expected at least one scenario"))?.clone();
+    let mut first_scenario = scenarios
+        .first()
+        .ok_or_else(|| anyhow::anyhow!("Expected at least one scenario"))?
+        .clone();
     println!("Loading data for first scenario");
     first_scenario.load_data();
     println!("Loading results for first scenario {:?}", first_scenario.id);
@@ -291,7 +295,10 @@ fn plot_results(
 
         for (n, scenario) in scenarios.iter().enumerate() {
             if !scenario.id.contains(&format!("Num {voxels_per_axis},"))
-                || !scenario.summary.as_ref().map_or(false, |s| s.loss.is_finite())
+                || !scenario
+                    .summary
+                    .as_ref()
+                    .map_or(false, |s| s.loss.is_finite())
             {
                 continue;
             }
@@ -336,12 +343,9 @@ fn plot_results(
             let writer = BufWriter::new(File::create(path.join("x_snapshots.npy"))?);
             x_snapshots.write_npy(writer)?;
             for (label, loss) in labels.iter().zip(losses.iter()) {
-                let writer = BufWriter::new(
-                    File::create(
-                        path.join(format!("loss - v_per_a {voxels_per_axis} {label}.npy")),
-                    )
-                    ?,
-                );
+                let writer = BufWriter::new(File::create(
+                    path.join(format!("loss - v_per_a {voxels_per_axis} {label}.npy")),
+                )?);
                 loss.write_npy(writer)?;
             }
         }
@@ -356,8 +360,7 @@ fn plot_results(
             Some("Epoch"),
             Some(&labels),
             None,
-        )
-        ?;
+        )?;
 
         let mut scenario = scenarios[min_loss_n].clone();
         scenario.load_data();
@@ -462,10 +465,9 @@ fn plot_results(
         if SAVE_NPY {
             let path = path.join("npy");
             for (i, delay) in delays.iter().enumerate() {
-                let writer = BufWriter::new(
-                    File::create(path.join(format!("v_per_a {voxels_per_axis}, delay {i}.npy",)))
-                        ?,
-                );
+                let writer = BufWriter::new(File::create(
+                    path.join(format!("v_per_a {voxels_per_axis}, delay {i}.npy",)),
+                )?);
                 delay.write_npy(writer)?;
             }
         }
@@ -479,12 +481,9 @@ fn plot_results(
                 *delay_error_mean /= delays_error.len() as f32;
             }
             let path = path.join("npy");
-            let writer = BufWriter::new(
-                File::create(
-                    path.join(format!("v_per_a {voxels_per_axis}, delay_error_mean.npy",)),
-                )
-                ?,
-            );
+            let writer = BufWriter::new(File::create(
+                path.join(format!("v_per_a {voxels_per_axis}, delay_error_mean.npy",)),
+            )?);
             delay_error_mean.write_npy(writer)?;
 
             let mut delay_error_mae = Array1::<f32>::zeros(delays[0].dim());
@@ -495,10 +494,9 @@ fn plot_results(
                 *delay_error_mae /= delays_error.len() as f32;
             }
 
-            let writer = BufWriter::new(
-                File::create(path.join(format!("v_per_a {voxels_per_axis}, delay_error_mae.npy",)))
-                    ?,
-            );
+            let writer = BufWriter::new(File::create(
+                path.join(format!("v_per_a {voxels_per_axis}, delay_error_mae.npy",)),
+            )?);
             delay_error_mae.write_npy(writer)?;
 
             let mut delay_error_std = Array1::<f32>::zeros(delays[0].dim());
@@ -509,10 +507,9 @@ fn plot_results(
                 *delay_error_std = (*delay_error_std / delays_error.len() as f32).sqrt();
             }
 
-            let writer = BufWriter::new(
-                File::create(path.join(format!("v_per_a {voxels_per_axis}, delay_error_std.npy",)))
-                    ?,
-            );
+            let writer = BufWriter::new(File::create(
+                path.join(format!("v_per_a {voxels_per_axis}, delay_error_std.npy",)),
+            )?);
             delay_error_std.write_npy(writer)?;
         }
 
@@ -525,8 +522,7 @@ fn plot_results(
             Some("Snapshot"),
             None,
             None,
-        )
-        ?;
+        )?;
 
         line_plot(
             Some(&x_snapshots),
@@ -588,7 +584,9 @@ fn create_and_run(
 
     if RUN_IN_TESTS {
         for handle in join_handles {
-            handle.join().map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
+            handle
+                .join()
+                .map_err(|e| anyhow::anyhow!("Thread panicked: {:?}", e))?;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());

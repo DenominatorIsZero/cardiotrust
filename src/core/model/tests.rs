@@ -1,5 +1,5 @@
-use ndarray::s;
 use anyhow::Context;
+use ndarray::s;
 
 use super::Model;
 use crate::core::config;
@@ -21,8 +21,10 @@ fn test_ap_gain_init_sum_default() -> anyhow::Result<()> {
                 if !model.spatial_description.voxels.types[(x, y, z)].is_connectable() {
                     continue;
                 }
-                let state = model.spatial_description.voxels.numbers[(x, y, z)]
-                    .with_context(|| format!("Failed to get voxel state number at position ({}, {}, {})", x, y, z))?;
+                let state =
+                    model.spatial_description.voxels.numbers[(x, y, z)].with_context(|| {
+                        format!("Failed to get voxel state number at position ({x}, {y}, {z})")
+                    })?;
 
                 let row_x = model
                     .functional_description
@@ -79,7 +81,7 @@ fn test_ap_gain_init_sum_mri() -> anyhow::Result<()> {
                     continue;
                 }
                 let state = model.spatial_description.voxels.numbers[(x, y, z)]
-                    .with_context(|| format!("Failed to get voxel state number at position ({}, {}, {}) for MRI model", x, y, z))?;
+                    .with_context(|| format!("Failed to get voxel state number at position ({x}, {y}, {z}) for MRI model"))?;
 
                 let row_x = model
                     .functional_description
