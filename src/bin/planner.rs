@@ -63,7 +63,7 @@ fn plan_scenarios() -> Result<()> {
     simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
     simulation_config.model.common.measurement_covariance_mean = 1e-20;
 
-    let mut scenario = Scenario::build(Some(format!("{experiment_name} - (I) - Static Array")));
+    let mut scenario = Scenario::build(Some(format!("{experiment_name} - (I) - Static Array")))?;
     scenario.config.algorithm = algorithm_config.clone();
     scenario.config.simulation = simulation_config.clone();
     scenario.schedule().with_context(|| {
@@ -83,7 +83,7 @@ fn plan_scenarios() -> Result<()> {
             simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Grid;
             let mut scenario = Scenario::build(Some(format!(
                 "{experiment_name} - (II) - Move Along Y - {y_step:0>4} Steps"
-            )));
+            )))?;
             scenario.config.algorithm = algorithm_config.clone();
             scenario.config.simulation = simulation_config.clone();
             scenario.schedule()
@@ -102,7 +102,7 @@ fn plan_scenarios() -> Result<()> {
         simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Grid;
         let mut scenario = Scenario::build(Some(format!(
             "{experiment_name} - (II) - Move Along XYZ - {total_steps:0>4} Steps"
-        )));
+        )))?;
         scenario.config.algorithm = algorithm_config.clone();
         scenario.config.simulation = simulation_config.clone();
         scenario.schedule()
@@ -123,7 +123,7 @@ fn plan_scenarios() -> Result<()> {
         simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Grid;
         let mut scenario = Scenario::build(Some(format!(
             "{experiment_name} - (III) - Move Along XYZ (LR Sweep)- {lr} LR"
-        )));
+        )))?;
         scenario.config.algorithm = algorithm_config.clone();
         scenario.config.simulation = simulation_config.clone();
         scenario.schedule()

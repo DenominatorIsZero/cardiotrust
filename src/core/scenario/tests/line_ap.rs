@@ -102,7 +102,7 @@ fn build_scenario(
     number_of_aps: i32,
     id: &str,
 ) -> anyhow::Result<Scenario> {
-    let mut scenario = Scenario::build(Some(id.to_string()));
+    let mut scenario = Scenario::build(Some(id.to_string()))?;
 
     let voxel_size_mm = 2.5;
     let sample_rate_hz = 2000.0;

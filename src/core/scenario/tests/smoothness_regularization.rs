@@ -68,7 +68,7 @@ fn build_scenario(
 ) -> anyhow::Result<Scenario> {
     let mut scenario = Scenario::build(Some(format!(
         "{base_id} bulk: {bulk_velocity:.2} [m per s], patch {patch_velocity:.2} [m per s], srs: {smoothness_regularization_stength:.2e}"
-    )));
+    )))?;
 
     // Set tissue types
     scenario.config.simulation.model.common.pathological = true;

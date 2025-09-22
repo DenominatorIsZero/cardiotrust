@@ -145,7 +145,7 @@ fn heavy_yes_roll_down() -> Result<()> {
 
 #[tracing::instrument(level = "trace")]
 fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Result<Scenario> {
-    let mut scenario = Scenario::build(Some(id.to_string()));
+    let mut scenario = Scenario::build(Some(id.to_string()))?;
     // configure control function
     scenario.config.simulation.model.common.control_function = ControlFunction::Ohara;
     // configure sensors

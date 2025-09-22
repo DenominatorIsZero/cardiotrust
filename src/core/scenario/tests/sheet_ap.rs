@@ -67,7 +67,7 @@ fn build_scenario(
     learning_rate: f32,
     id: String,
 ) -> Result<Scenario> {
-    let mut scenario = Scenario::build(Some(id));
+    let mut scenario = Scenario::build(Some(id))?;
 
     let voxel_size_mm = 2.5;
     let sample_rate_hz = 2000.0;

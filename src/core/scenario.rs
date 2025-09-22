@@ -87,12 +87,11 @@ impl Scenario {
     /// Planning, the config to default, data and results to None, summary to
     /// None, and comment to empty string.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the new scenario could not be saved.
-    #[must_use]
+    /// Returns an error if the new scenario could not be saved to the filesystem.
     #[tracing::instrument(level = "debug")]
-    pub fn build(id: Option<String>) -> Self {
+    pub fn build(id: Option<String>) -> Result<Self> {
         debug!("Building new scenario");
         let scenario = Self {
             id: id.map_or_else(
@@ -110,10 +109,8 @@ impl Scenario {
             finished: None,
             duration_s: None,
         };
-        scenario
-            .save()
-            .expect("Could not save newly created scenario.");
-        scenario
+        scenario.save().context("Failed to save newly created scenario")?;
+        Ok(scenario)
     }
 
     /// Loads a Scenario from the scenario.toml file in the given path.
@@ -583,7 +580,7 @@ pub fn run(
                 epoch_tx,
                 summary_tx,
             )
-            .expect("Failed to run model-based GPU algorithm");
+            .context("Failed to execute model-based GPU algorithm")?;
         }
         AlgorithmType::PseudoInverse => {
             run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary)
@@ -626,7 +623,7 @@ pub fn run(
     scenario.data = Some(data);
     scenario.summary = Some(summary.clone());
     scenario.status = Status::Done;
-    scenario.save().expect("Could not save scenario");
+    scenario.save().context("Failed to save completed scenario results")?;
     let _ = epoch_tx.send(scenario.config.algorithm.epochs - 1);
     let _ = summary_tx.send(summary);
     Ok(())

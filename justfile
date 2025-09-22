@@ -1,3 +1,7 @@
+# Help - show available commands
+help:
+  @just --list
+
 # Development
 run:
   cargo run --bin main
@@ -18,7 +22,7 @@ test-all:
 # Code Quality
 lint:
     clippy-tracing --action check --exclude target --exclude benches
-    cargo clippy
+    cargo clippy --all-targets
 
 fmt:
   cargo +nightly fmt
@@ -56,12 +60,16 @@ clean:
   rm -rf results/*
   rm -rf logs/*
 
+# Comprehensive check - everything including tests, benches, examples
 check:
-  cargo check --all-targets
+  @echo "🔍 Running comprehensive cargo check..."
+  cargo check --workspace --all-targets --all-features
+  @echo "🔍 Running comprehensive clippy..."
+  cargo clippy --workspace --all-targets --all-features -- -D warnings
 
 # Combined workflows
-work: lint test bench
+work: check test bench
 
-ci: fmt-check lint test
+ci: fmt-check check test
 
 dev: build test

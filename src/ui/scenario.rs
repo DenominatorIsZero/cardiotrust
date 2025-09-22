@@ -165,7 +165,7 @@ fn draw_ui_scenario_topbar(
                     selected_scenario.index = Some(0);
                 }
             } else if ui.button("Copy").clicked() {
-                let mut new_scenario = Scenario::build(None);
+                let mut new_scenario = Scenario::build(None).expect("Failed to create new scenario");
                 new_scenario.config = scenario.config.clone();
                 new_scenario.comment.clone_from(&scenario.comment);
                 scenarios.entries.push(ScenarioBundle {

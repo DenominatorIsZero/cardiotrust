@@ -251,7 +251,7 @@ fn build_scenario(
     control_function: ControlFunction,
     id: &str,
 ) -> anyhow::Result<Scenario> {
-    let mut scenario = Scenario::build(Some(id.to_string()));
+    let mut scenario = Scenario::build(Some(id.to_string()))?;
 
     // Configure Sensor
     if single_sensor {

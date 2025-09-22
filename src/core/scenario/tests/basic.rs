@@ -10,7 +10,7 @@ fn building_saves_scenario() -> anyhow::Result<()> {
     if path.is_dir() {
         fs::remove_dir_all(path)?;
     }
-    let _scenario = Scenario::build(Some("test".to_string()));
+    let _scenario = Scenario::build(Some("test".to_string()))?;
     assert!(path.is_dir());
     assert!(path.join("scenario.toml").is_file());
     fs::remove_dir_all(path)?;
@@ -23,7 +23,7 @@ fn loading_scenarios_works() -> anyhow::Result<()> {
     if path.is_dir() {
         fs::remove_dir_all(path).context("Failed to remove test directory during setup")?;
     }
-    let scenario = Scenario::build(Some("test2".to_string()));
+    let scenario = Scenario::build(Some("test2".to_string()))?;
 
     let loaded = Scenario::load(path)?;
 

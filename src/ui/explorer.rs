@@ -109,7 +109,7 @@ pub fn draw_ui_explorer(
                     row.col(|ui| {
                         if ui.button("New").clicked() {
                             scenario_list.entries.push(ScenarioBundle {
-                                scenario: Scenario::build(None),
+                                scenario: Scenario::build(None).expect("Failed to create new scenario"),
                                 join_handle: None,
                                 epoch_rx: None,
                                 summary_rx: None,
