@@ -472,6 +472,90 @@ struct Model<S: ModelState> {
 
 ## Code Quality Projects (Nice-to-have)
 
+### 22. Array Newtype Macro Refactoring
+
+**Work Load**: 1 point
+**Prerequisites**: None
+**Priority**: Nice-to-have
+**Expected Outcome**: Eliminate Deref implementation boilerplate across array wrapper types while maintaining type safety
+
+**Context**: The codebase extensively uses type-safe array wrappers (e.g., `Gains(Array2<f32>)`, `VoxelTypes(Array3<VoxelType>)`, `SystemStates(Array2<f32>)`) to prevent passing wrong array types to functions. Each wrapper currently requires manual Deref/DerefMut implementations, creating significant code duplication.
+
+**Identified Wrapper Types**:
+- `Gains(Array2<f32>)` - allpass filter gains
+- `Coefs(Array2<f32>)` - filter coefficients
+- `Indices(Array2<Option<usize>>)` - state indices
+- `UnitDelays(Array2<usize>)` - delay values
+- `VoxelTypes(Array3<VoxelType>)` - voxel type classifications
+- `VoxelNumbers(Array3<Option<usize>>)` - voxel numbering
+- `SystemStates(Array2<f32>)` - system state values
+- `Measurements(Array3<f32>)` - measurement data
+- `MeasurementMatrix(Array3<f32>)` - measurement matrices
+- `GainsSnapshots(Array3<f32>)` - temporal gain data
+- `CoefsSnapshots(Array3<f32>)` - temporal coefficient data
+- Plus 5+ more across results and data modules
+
+**Technical Scope**:
+
+- **Macro Design**: Create `array_newtype!` macro to generate Deref/DerefMut implementations
+- **Transparent Representation**: Use `#[repr(transparent)]` for zero-cost abstraction
+- **Convenience Methods**: Generate consistent `into_inner()`, `as_inner()` access methods
+- **Custom Method Preservation**: Maintain existing domain-specific methods (e.g., `empty()`, `to_gpu()`, `save_npy()`)
+- **Tracing Integration**: Include tracing instrumentation in generated implementations
+- **Systematic Conversion**: Update all array wrapper types across the codebase
+
+**Implementation Plan**:
+
+1. **Create Array Macro**: Design and implement `array_newtype!` macro in core utils
+2. **Convert Core Types**: Start with allpass shapes (Gains, Coefs, Indices, UnitDelays)
+3. **Update Spatial Types**: Convert VoxelTypes, VoxelNumbers in spatial module
+4. **Convert Data Types**: Update SystemStates, Measurements in data module
+5. **Update Results Types**: Convert snapshot types in results module
+6. **Remove Boilerplate**: Delete manual Deref implementations replaced by macro
+
+**Example Transformation**:
+```rust
+// Current: Manual Deref implementation (repeated 15+ times)
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct Gains(Array2<f32>);
+
+impl Deref for Gains {
+    type Target = Array2<f32>;
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl DerefMut for Gains {
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+}
+
+// Target: Macro-generated implementation
+array_newtype! {
+    #[allow(clippy::module_name_repetitions)]
+    pub struct Gains(Array2<f32>);
+}
+
+// Custom methods preserved:
+impl Gains {
+    pub fn empty(number_of_states: usize) -> Self { /* existing code */ }
+    pub fn to_gpu(&self, queue: &Queue) -> Result<Buffer<f32>> { /* existing code */ }
+}
+```
+
+**Benefits**:
+- Eliminate 15+ identical Deref/DerefMut implementations
+- Consistent API across all array wrapper types
+- Maintain type safety preventing wrong array usage
+- Zero performance overhead with transparent representation
+- Easier to add new array wrapper types in future
+- Reduced maintenance burden for boilerplate code
+
+**Potential Roadblocks**:
+- Macro complexity for handling various attribute combinations
+- Ensuring tracing instrumentation works correctly in generated code
+- Testing macro expansion across different array types and dimensions
+
+---
+
 ### 15. Clippy Allow Decorator Review & Code Quality Polish
 
 **Work Load**: 2 points  
