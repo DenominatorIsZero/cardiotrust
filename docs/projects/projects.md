@@ -389,34 +389,75 @@ Transform CardioTrust from research-quality code into professional software whil
 **Work Load**: 4 points
 **Prerequisites**: Error Handling Standardization
 **Priority**: Nice-to-have
-**Expected Outcome**: Eliminate runtime Option checks and unwraps through compile-time state guarantees using phantom types
+**Expected Outcome**: Eliminate runtime Option checks and unwraps through compile-time state guarantees using phantom types and struct simplification
 
-**Context**: The codebase extensively uses Option types for managing initialization state (e.g., `model: Option<Model>`, `functional_description: Option<FunctionalDescription>`), requiring runtime validation throughout algorithm chains. The typestate pattern can eliminate these runtime checks entirely through compile-time guarantees.
+**Context**: The codebase extensively uses Option types and HashMap patterns requiring runtime validation throughout algorithm chains. Multiple areas suffer from complex Option unwrapping, invalid state combinations, and inefficient memory layouts. Both simple struct-based solutions and advanced typestate patterns can eliminate these issues.
+
+**Identified Problem Areas**:
+
+1. **Array3<Option<T>> Pattern** (High Impact):
+   - `VoxelNumbers(Array3<Option<usize>>)` - constant Option checking in algorithm core
+   - `ActivationTimeMs { values: Array3<Option<f32>> }` - visualization inefficiencies
+   - Solution: Split into separate `Array3<T>` + `Array3<bool>` for values/validity
+
+2. **Model Configuration Options** (High Impact):
+   - `Model { handcrafted: Option<Handcrafted>, mri: Option<Mri> }` - runtime checking
+   - Solution: `enum ModelSource { Handcrafted(Handcrafted), Mri(Mri) }`
+
+3. **Scenario State Management** (Medium Impact):
+   - Multiple `Option<T>` fields allowing invalid state combinations
+   - Solution: Explicit state machine with valid transitions
+
+4. **HashMap for Fixed Enums** (Low Impact):
+   - `ResultImages { image_bundles: HashMap<ImageType, ImageBundle> }`
+   - Solution: Struct with explicit fields per enum variant
+
+5. **Advanced Typestate Patterns** (Future):
+   - GPU context management, algorithm chain safety
+   - Full phantom type conversion for compile-time state guarantees
 
 **Technical Scope**:
 
-- **Typestate model design**: Transform `Model`, `Scenario`, and other core structs to use phantom types for state management
-- **State transition API**: Design safe state transition methods (e.g., `UninitializedScenario::initialize() -> InitializedScenario`)
-- **Algorithm chain safety**: Ensure algorithms can only be called on properly initialized states
-- **GPU context management**: Apply typestate pattern to GPU/CPU initialization and resource management
-- **Performance optimization**: Eliminate all runtime state validation overhead in hot paths
+- **Phase 1 - Array Simplification**: Split `Array3<Option<T>>` into dual arrays for performance and clarity
+- **Phase 2 - Configuration Enums**: Replace model Option pattern with type-safe enums
+- **Phase 3 - State Machines**: Convert Scenario to explicit state transitions
+- **Phase 4 - HashMap Elimination**: Replace remaining HashMap patterns with structs
+- **Phase 5 - Typestate Design**: Advanced phantom type patterns for full compile-time safety
+- **Performance optimization**: Eliminate runtime validation overhead in hot algorithm paths
 - **Backward compatibility**: Maintain existing serialization and configuration file formats
-- **Comprehensive conversion**: Apply pattern to scenario lifecycle, model initialization, and GPU resource management
 
-**Example Transformation**:
+**Example Transformations**:
 ```rust
+// Phase 1: Array splitting
+// Current: Array3<Option<usize>> with Option overhead
+struct VoxelNumbers(Array3<Option<usize>>);
+// Target: Efficient dual arrays
+struct VoxelNumbers {
+    values: Array3<usize>,     // Only valid voxels
+    is_valid: Array3<bool>,    // Which positions have voxels
+}
+
+// Phase 2: Configuration enums
+// Current: Runtime validation required
+struct Model {
+    handcrafted: Option<Handcrafted>,
+    mri: Option<Mri>,
+}
+// Target: Type-safe model sources
+enum ModelSource {
+    Handcrafted(Handcrafted),
+    Mri(Mri),
+}
+
+// Phase 5: Advanced typestate (future)
 // Current: Runtime validation required
 struct Model {
     functional_description: Option<FunctionalDescription>,
 }
-
 // Target: Compile-time state guarantees
 struct Model<S: ModelState> {
     _state: PhantomData<S>,
 }
-struct Uninitialized;
-struct Initialized { functional_description: FunctionalDescription }
-type InitializedModel = Model<Initialized>;
 ```
 
 **Potential Roadblocks**:
