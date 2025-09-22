@@ -365,9 +365,8 @@ impl Scenario {
             Status::Running(0) => "ETC: ???".to_string(),
             Status::Running(_) => {
                 let now = Utc::now();
-                let (started, last_update) = match (self.started, self.last_update) {
-                    (Some(s), Some(l)) => (s, l),
-                    _ => return "ETC: ???".to_string(),
+                let (Some(started), Some(last_update)) = (self.started, self.last_update) else {
+                    return "ETC: ???".to_string();
                 };
                 let duration = last_update - started;
                 let ellapsed_second = duration.num_seconds();

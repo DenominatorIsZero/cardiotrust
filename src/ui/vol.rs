@@ -41,12 +41,10 @@ pub fn draw_ui_volumetric(
 ) {
     trace!("Running system to draw volumetric UI.");
     let scenario = if let Some(index) = selected_scenario.index {
-        if let Some(entry) = scenario_list.entries.get(index) {
-            Some(&entry.scenario)
-        } else {
+        scenario_list.entries.get(index).map_or_else(|| {
             error!("Selected scenario index {} is out of bounds", index);
             None
-        }
+        }, |entry| Some(&entry.scenario))
     } else {
         None
     };

@@ -298,7 +298,7 @@ fn plot_results(
                 || !scenario
                     .summary
                     .as_ref()
-                    .map_or(false, |s| s.loss.is_finite())
+                    .is_some_and(|s| s.loss.is_finite())
             {
                 continue;
             }
