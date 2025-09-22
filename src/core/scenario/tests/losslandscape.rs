@@ -15,7 +15,6 @@ use crate::{
     core::{
         algorithm::refinement::Optimizer,
         config::{algorithm::APDerivative, model::ControlFunction},
-        model::spatial::voxels::VoxelType,
         scenario::{run, Scenario},
     },
     tests::{clean_files, setup_folder},
@@ -352,38 +351,34 @@ fn build_scenario(
     // Copy settings to algorithm model
     scenario.config.algorithm.model = scenario.config.simulation.model.clone();
     // Adjust propagation velocities
-    *scenario
+    scenario
         .config
         .simulation
         .model
         .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Sinoatrial)
-        .context("Failed to get velocity for voxel type")? = target_velocity;
-    *scenario
+        .propagation_velocities
+        .sinoatrial = target_velocity;
+    scenario
         .config
         .simulation
         .model
         .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Pathological)
-        .context("Failed to get velocity for voxel type")? = target_velocity;
-    *scenario
+        .propagation_velocities
+        .pathological = target_velocity;
+    scenario
         .config
         .algorithm
         .model
         .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Sinoatrial)
-        .context("Failed to get velocity for voxel type")? = initial_velocity;
-    *scenario
+        .propagation_velocities
+        .sinoatrial = initial_velocity;
+    scenario
         .config
         .algorithm
         .model
         .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Pathological)
-        .context("Failed to get velocity for voxel type")? = initial_velocity;
+        .propagation_velocities
+        .pathological = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 1;
     scenario.config.algorithm.learning_rate = 0.0;

@@ -4,10 +4,7 @@ use egui_extras::{Column, TableBuilder};
 use tracing::{error, trace};
 
 use super::{FIRST_COLUMN_WIDTH, PADDING, ROW_HEIGHT, SECOND_COLUMN_WIDTH};
-use crate::core::{
-    config::model::{ControlFunction, Handcrafted, Model, Mri},
-    model::spatial::voxels::VoxelType,
-};
+use crate::core::config::model::{ControlFunction, Handcrafted, Model, Mri};
 
 /// Draws ui for settings common to data generation and optimization.
 #[allow(clippy::too_many_lines, clippy::module_name_repetitions)]
@@ -234,12 +231,12 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                         ui.label("Sinoatrial Node");
                     });
                     row.col(|ui| {
-                        let velocity = model.common.propagation_velocities_m_per_s.entry(VoxelType::Sinoatrial).or_insert_with(|| {
-                            error!("No propagation velocity configured for Sinoatrial voxel type, using default");
-                            1.0
-                        });
                         ui.add(
-                            egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
+                            egui::Slider::new(
+                                &mut model.common.propagation_velocities.sinoatrial,
+                                0.01..=10.0,
+                            )
+                            .suffix(" m/s"),
                         );
                     });
                     row.col(|ui| {
@@ -260,12 +257,12 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                         ui.label("Atrium");
                     });
                     row.col(|ui| {
-                        let velocity = model.common.propagation_velocities_m_per_s.entry(VoxelType::Atrium).or_insert_with(|| {
-                            error!("No propagation velocity configured for Atrium voxel type, using default");
-                            0.5
-                        });
                         ui.add(
-                            egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
+                            egui::Slider::new(
+                                &mut model.common.propagation_velocities.atrium,
+                                0.01..=10.0,
+                            )
+                            .suffix(" m/s"),
                         );
                     });
                     row.col(|ui| {
@@ -286,12 +283,12 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                         ui.label("Atrioventricular node");
                     });
                     row.col(|ui| {
-                        let velocity = model.common.propagation_velocities_m_per_s.entry(VoxelType::Atrioventricular).or_insert_with(|| {
-                            error!("No propagation velocity configured for Atrioventricular voxel type, using default");
-                            0.2
-                        });
                         ui.add(
-                            egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
+                            egui::Slider::new(
+                                &mut model.common.propagation_velocities.atrioventricular,
+                                0.01..=10.0,
+                            )
+                            .suffix(" m/s"),
                         );
                     });
                     row.col(|ui| {
@@ -312,12 +309,12 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                         ui.label("His-Purkinje S.");
                     });
                     row.col(|ui| {
-                        let velocity = model.common.propagation_velocities_m_per_s.entry(VoxelType::HPS).or_insert_with(|| {
-                            error!("No propagation velocity configured for HPS voxel type, using default");
-                            4.0
-                        });
                         ui.add(
-                            egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
+                            egui::Slider::new(
+                                &mut model.common.propagation_velocities.hps,
+                                0.01..=10.0,
+                            )
+                            .suffix(" m/s"),
                         );
                     });
                     row.col(|ui| {
@@ -338,12 +335,12 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                         ui.label("Ventricle");
                     });
                     row.col(|ui| {
-                        let velocity = model.common.propagation_velocities_m_per_s.entry(VoxelType::Ventricle).or_insert_with(|| {
-                            error!("No propagation velocity configured for Ventricle voxel type, using default");
-                            0.8
-                        });
                         ui.add(
-                            egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
+                            egui::Slider::new(
+                                &mut model.common.propagation_velocities.ventricle,
+                                0.01..=10.0,
+                            )
+                            .suffix(" m/s"),
                         );
                     });
                     row.col(|ui| {
@@ -365,12 +362,12 @@ fn draw_velocity_settings(ui: &mut egui::Ui, model: &mut Model) {
                             ui.label("Pathological");
                         });
                         row.col(|ui| {
-                            let velocity = model.common.propagation_velocities_m_per_s.entry(VoxelType::Pathological).or_insert_with(|| {
-                                error!("No propagation velocity configured for Pathological voxel type, using default");
-                                0.1
-                            });
                             ui.add(
-                                egui::Slider::new(velocity, 0.01..=10.0).suffix(" m/s"),
+                                egui::Slider::new(
+                                    &mut model.common.propagation_velocities.pathological,
+                                    0.01..=10.0,
+                                )
+                                .suffix(" m/s"),
                             );
                         });
                         row.col(|ui| {

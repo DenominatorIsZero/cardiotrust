@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use tracing::debug;
@@ -129,6 +126,46 @@ pub enum SensorArrayMotion {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub struct PropagationVelocitiesMPerS {
+    pub sinoatrial: f32,
+    pub atrium: f32,
+    pub atrioventricular: f32,
+    pub hps: f32,
+    pub ventricle: f32,
+    pub pathological: f32,
+}
+
+impl PropagationVelocitiesMPerS {
+    #[tracing::instrument(level = "trace")]
+    pub fn get(&self, voxel_type: VoxelType) -> f32 {
+        match voxel_type {
+            VoxelType::Sinoatrial => self.sinoatrial,
+            VoxelType::Atrium => self.atrium,
+            VoxelType::Atrioventricular => self.atrioventricular,
+            VoxelType::HPS => self.hps,
+            VoxelType::Ventricle => self.ventricle,
+            VoxelType::Pathological => self.pathological,
+            VoxelType::None | VoxelType::Vessel | VoxelType::Torso | VoxelType::Chamber => 0.0,
+        }
+    }
+}
+
+impl Default for PropagationVelocitiesMPerS {
+    #[tracing::instrument(level = "debug")]
+    fn default() -> Self {
+        debug!("Creating default propagation velocities");
+        Self {
+            sinoatrial: 1.1,
+            atrium: 1.1,
+            atrioventricular: 0.012,
+            hps: 4.5,
+            ventricle: 1.1,
+            pathological: 0.1,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Common {
     pub control_function: ControlFunction,
     pub pathological: bool,
@@ -150,7 +187,7 @@ pub struct Common {
     // otherwise the elements along the main diagonal will be drawn from a
     // normal distribution
     pub measurement_covariance_std: f32,
-    pub propagation_velocities_m_per_s: HashMap<VoxelType, f32>,
+    pub propagation_velocities: PropagationVelocitiesMPerS,
     pub current_factor_in_pathology: f32,
 }
 
@@ -163,14 +200,6 @@ impl Default for Common {
     #[tracing::instrument(level = "debug")]
     fn default() -> Self {
         debug!("Creating default model");
-        let mut propagation_velocities_m_per_s = HashMap::new();
-        propagation_velocities_m_per_s.insert(VoxelType::Sinoatrial, 1.1);
-        propagation_velocities_m_per_s.insert(VoxelType::Atrium, 1.1);
-        propagation_velocities_m_per_s.insert(VoxelType::Atrioventricular, 0.012);
-        propagation_velocities_m_per_s.insert(VoxelType::HPS, 4.5);
-        propagation_velocities_m_per_s.insert(VoxelType::Ventricle, 1.1);
-        propagation_velocities_m_per_s.insert(VoxelType::Pathological, 0.1);
-
         let mut config = Self {
             control_function: ControlFunction::Ohara,
             pathological: false,
@@ -188,7 +217,7 @@ impl Default for Common {
             heart_offset_mm: [25.0, -250.0, 150.0],
             measurement_covariance_mean: 1e-3,
             measurement_covariance_std: 0.0,
-            propagation_velocities_m_per_s,
+            propagation_velocities: PropagationVelocitiesMPerS::default(),
             current_factor_in_pathology: 0.00,
         };
         match config.sensor_array_geometry {

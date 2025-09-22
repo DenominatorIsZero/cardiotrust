@@ -1,12 +1,10 @@
-use std::collections::HashMap;
-
 use anyhow::{Context, Result};
 use itertools::Itertools;
 use ndarray::{s, ArrayBase, Dim, ViewRepr};
 use tracing::trace;
 
 use super::{offset_to_delay_index, shapes::Coefs};
-use crate::core::model::spatial::{voxels::VoxelType, SpatialDescription};
+use crate::core::{config::model::PropagationVelocitiesMPerS, model::spatial::SpatialDescription};
 
 /// Calculates the delay in seconds for a given input and output position,
 /// based on the propagation velocity. Takes the Euclidean distance between
@@ -36,7 +34,7 @@ pub fn calculate_delay_s(
 #[tracing::instrument(level = "trace")]
 pub fn calculate_delay_samples_array(
     spatial_description: &SpatialDescription,
-    propagation_velocities_m_per_s: &HashMap<VoxelType, f32>,
+    propagation_velocities: &PropagationVelocitiesMPerS,
     sample_rate_hz: f32,
 ) -> Result<Coefs> {
     trace!("Calculating delay samples array");
@@ -89,11 +87,7 @@ pub fn calculate_delay_samples_array(
             let delay_s = calculate_delay_s(
                 input_position_mm,
                 output_position_mm,
-                *propagation_velocities_m_per_s
-                    .get(v_type)
-                    .with_context(|| {
-                        format!("No propagation velocity configured for voxel type: {v_type:?}")
-                    })?,
+                propagation_velocities.get(*v_type),
             );
             let delay_samples = delay_s * sample_rate_hz;
 
@@ -118,7 +112,6 @@ pub fn calculate_delay_samples_array(
 
 #[cfg(test)]
 mod test {
-    use anyhow::Context;
     use approx::assert_relative_eq;
     use ndarray::{arr1, Array1};
     use ndarray_stats::QuantileExt;
@@ -167,7 +160,7 @@ mod test {
 
         let delay_samples = calculate_delay_samples_array(
             spatial_description,
-            &config.common.propagation_velocities_m_per_s,
+            &config.common.propagation_velocities,
             sample_rate_hz,
         )?;
 
@@ -175,9 +168,8 @@ mod test {
         let expected = (spatial_description.voxels.size_mm / 1000.0)
             / config
                 .common
-                .propagation_velocities_m_per_s
-                .get(&VoxelType::Atrioventricular)
-                .context("Missing atrioventricular propagation velocity in config")?
+                .propagation_velocities
+                .get(VoxelType::Atrioventricular)
             * sample_rate_hz
             * 2.0_f32.sqrt();
 

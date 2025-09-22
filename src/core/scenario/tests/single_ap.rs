@@ -16,7 +16,7 @@ use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
         config::model::ControlFunction,
-        model::{functional::allpass::from_coef_to_samples, spatial::voxels::VoxelType},
+        model::functional::allpass::from_coef_to_samples,
         scenario::{run, Scenario},
     },
     tests::{clean_files, setup_folder},
@@ -254,42 +254,34 @@ fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Resu
     // Copy settings to algorithm model
     scenario.config.algorithm.model = scenario.config.simulation.model.clone();
     // Adjust propagation velocities
-    *scenario
+    scenario
         .config
         .simulation
         .model
         .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Sinoatrial)
-        .context("Sinoatrial voxel type should exist in simulation propagation velocities")? =
-        target_velocity;
-    *scenario
+        .propagation_velocities
+        .sinoatrial = target_velocity;
+    scenario
         .config
         .simulation
         .model
         .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Pathological)
-        .context("Pathological voxel type should exist in simulation propagation velocities")? =
-        target_velocity;
-    *scenario
+        .propagation_velocities
+        .pathological = target_velocity;
+    scenario
         .config
         .algorithm
         .model
         .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Sinoatrial)
-        .context("Sinoatrial voxel type should exist in algorithm propagation velocities")? =
-        initial_velocity;
-    *scenario
+        .propagation_velocities
+        .sinoatrial = initial_velocity;
+    scenario
         .config
         .algorithm
         .model
         .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Pathological)
-        .context("Pathological voxel type should exist in algorithm propagation velocities")? =
-        initial_velocity;
+        .propagation_velocities
+        .pathological = initial_velocity;
     // set optimization parameters
     scenario.config.algorithm.epochs = 10_000;
     scenario.config.algorithm.learning_rate = 1e5;

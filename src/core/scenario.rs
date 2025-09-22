@@ -109,7 +109,9 @@ impl Scenario {
             finished: None,
             duration_s: None,
         };
-        scenario.save().context("Failed to save newly created scenario")?;
+        scenario
+            .save()
+            .context("Failed to save newly created scenario")?;
         Ok(scenario)
     }
 
@@ -623,7 +625,9 @@ pub fn run(
     scenario.data = Some(data);
     scenario.summary = Some(summary.clone());
     scenario.status = Status::Done;
-    scenario.save().context("Failed to save completed scenario results")?;
+    scenario
+        .save()
+        .context("Failed to save completed scenario results")?;
     let _ = epoch_tx.send(scenario.config.algorithm.epochs - 1);
     let _ = summary_tx.send(summary);
     Ok(())

@@ -7,7 +7,6 @@ use super::RUN_IN_TESTS;
 use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
-        model::spatial::voxels::VoxelType,
         scenario::{run, Scenario},
     },
     tests::{clean_files, setup_folder},
@@ -142,30 +141,27 @@ fn build_scenario(
         .unwrap()
         .pathology_y_stop_percentage = 0.6;
     // Adjust propagation velocities
-    *scenario
+    scenario
         .config
         .simulation
         .model
         .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Sinoatrial)
-        .context("Failed to get velocity for voxel type")? = bulk_velocity;
-    *scenario
+        .propagation_velocities
+        .sinoatrial = bulk_velocity;
+    scenario
         .config
         .simulation
         .model
         .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Ventricle)
-        .context("Failed to get velocity for voxel type")? = bulk_velocity;
-    *scenario
+        .propagation_velocities
+        .ventricle = bulk_velocity;
+    scenario
         .config
         .simulation
         .model
         .common
-        .propagation_velocities_m_per_s
-        .get_mut(&VoxelType::Pathological)
-        .context("Failed to get velocity for voxel type")? = patch_velocity;
+        .propagation_velocities
+        .pathological = patch_velocity;
     // Copy settings to algorithm model
     scenario.config.algorithm.model = scenario.config.simulation.model.clone();
     // set optimization parameters

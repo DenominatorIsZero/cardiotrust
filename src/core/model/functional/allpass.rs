@@ -83,7 +83,7 @@ impl APParameters {
 
         let delays_samples = calculate_delay_samples_array(
             spatial_description,
-            &config.common.propagation_velocities_m_per_s,
+            &config.common.propagation_velocities,
             sample_rate_hz,
         )?;
 
@@ -455,21 +455,11 @@ fn try_to_connect(
     let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
     let [x_in, y_in, z_in] = input_voxel_index;
     let input_position_mm = &v_position_mm.slice(s![x_in, y_in, z_in, ..]);
-    let Some(propagation_velocity_m_per_s) = config
-        .common
-        .propagation_velocities_m_per_s
-        .get(input_voxel_type)
-    else {
-        tracing::warn!(
-            "No propagation velocity found for voxel type {:?}",
-            input_voxel_type
-        );
-        return Ok(false);
-    };
+    let propagation_velocity_m_per_s = config.common.propagation_velocities.get(*input_voxel_type);
     let delay_s = delay::calculate_delay_s(
         input_position_mm,
         output_position_mm,
-        *propagation_velocity_m_per_s,
+        propagation_velocity_m_per_s,
     );
     // update activation time of input voxel, marking them as connected
     let output_activation_time = activation_time_s[output_voxel_index].with_context(|| {
