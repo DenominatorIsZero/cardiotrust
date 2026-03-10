@@ -1,0 +1,25 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+# Add your tech stack, conventions, style guides, domain knowledge, etc.
+# Example:
+#   context: |
+#     Tech stack: TypeScript, React, Node.js
+#     We use conventional commits
+#     Domain: e-commerce platform
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+rules:
+  specs:
+    - Specs define BEHAVIOR and INVARIANTS, not implementation. Never reference file paths, class names, encoding details, CLI commands, internal schema fields, or specific technologies. Write from the perspective of what the system guarantees, not how it achieves it.
+
