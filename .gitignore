@@ -11,6 +11,7 @@
 /tmp
 /wasm-client/client.js
 /wasm-client/client_bg.wasm
+/references
 
 # IDE and Editors
 .vscode/

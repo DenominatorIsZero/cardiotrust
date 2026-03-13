@@ -427,6 +427,7 @@ Transform CardioTrust from research-quality code into professional software whil
 - **Backward compatibility**: Maintain existing serialization and configuration file formats
 
 **Example Transformations**:
+
 ```rust
 // Phase 1: Array splitting
 // Current: Array3<Option<usize>> with Option overhead
