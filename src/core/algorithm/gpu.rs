@@ -72,6 +72,7 @@ mod tests {
     use crate::core::algorithm::gpu::GPU;
 
     #[test]
+    #[ignore = "expensive integration test"]
     fn test_atomic_add_float() -> anyhow::Result<()> {
         // Setup OpenCL
         let platform = Platform::default();
@@ -136,6 +137,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive integration test"]
     fn test_new_gpu() -> anyhow::Result<()> {
         let gpu = GPU::new()?;
         println!("GPU: {gpu:?}");

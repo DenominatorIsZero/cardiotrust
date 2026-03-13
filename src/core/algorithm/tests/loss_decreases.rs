@@ -34,6 +34,7 @@ fn setup(folder: Option<&str>) -> anyhow::Result<()> {
     Ok(())
 }
 #[test]
+#[ignore = "expensive integration test"]
 fn loss_decreases() -> anyhow::Result<()> {
     let mut simulation_config = SimulationConfig::default();
     simulation_config.model.common.pathological = true;

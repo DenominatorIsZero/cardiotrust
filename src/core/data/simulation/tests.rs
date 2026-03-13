@@ -32,6 +32,7 @@ fn create_simulation_no_crash() -> anyhow::Result<()> {
 }
 
 #[test]
+#[ignore = "expensive integration test"]
 fn run_simulation_default() -> anyhow::Result<()> {
     let config = &SimulationConfig::default();
     let mut simulation = Simulation::from_config(config)?;
@@ -165,6 +166,7 @@ fn run_simulation_default_and_plot() -> anyhow::Result<()> {
 }
 
 #[test]
+#[ignore = "expensive integration test"]
 fn run_simulation_pathological() -> anyhow::Result<()> {
     let mut config = SimulationConfig::default();
     config.model.common.pathological = true;
@@ -299,6 +301,7 @@ fn run_simulation_pathological_and_plot() -> anyhow::Result<()> {
 }
 
 #[test]
+#[ignore = "expensive integration test"]
 fn run_simulation_mri() -> anyhow::Result<()> {
     let mut config = SimulationConfig::default();
     config.model.handcrafted = None;

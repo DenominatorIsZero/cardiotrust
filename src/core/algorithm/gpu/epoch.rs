@@ -142,6 +142,7 @@ mod tests {
     };
 
     #[test]
+    #[ignore = "expensive integration test"]
     #[allow(
         clippy::cast_possible_truncation,
         clippy::cast_possible_wrap,

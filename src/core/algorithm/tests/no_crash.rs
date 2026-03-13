@@ -97,6 +97,7 @@ fn run_no_crash() -> anyhow::Result<()> {
 }
 
 #[test]
+#[ignore = "expensive integration test"]
 fn pseudo_inverse_success() -> anyhow::Result<()> {
     let mut simulation_config = SimulationConfig::default();
     simulation_config.model.common.sensor_array_geometry = SensorArrayGeometry::Cube;

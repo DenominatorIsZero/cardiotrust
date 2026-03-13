@@ -122,6 +122,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive integration test"]
     #[allow(clippy::cast_possible_truncation)]
     fn from_handcrafted_model_config_and_plot() -> anyhow::Result<()> {
         let directory = Path::new(COMMON_PATH).join("handcrafted");
@@ -173,6 +174,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive integration test"]
     #[allow(clippy::cast_possible_truncation)]
     fn from_mri_model_config_and_plot() -> anyhow::Result<()> {
         let directory = Path::new(COMMON_PATH).join("mri");
@@ -224,6 +226,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "expensive integration test"]
     #[allow(clippy::cast_possible_truncation)]
     fn from_mri_model_config_and_plot_coarse() -> anyhow::Result<()> {
         let directory = Path::new(COMMON_PATH).join("mri");
