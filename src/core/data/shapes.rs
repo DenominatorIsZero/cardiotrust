@@ -66,13 +66,13 @@ impl SystemStates {
 
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn at_step(&self, step: usize) -> SystemStatesAtStep {
+    pub fn at_step(&self, step: usize) -> SystemStatesAtStep<'_> {
         SystemStatesAtStep(self.slice(s![step, ..]))
     }
 
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn at_step_mut(&mut self, step: usize) -> SystemStatesAtStepMut {
+    pub fn at_step_mut(&mut self, step: usize) -> SystemStatesAtStepMut<'_> {
         SystemStatesAtStepMut(self.slice_mut(s![step, ..]))
     }
 
@@ -438,13 +438,13 @@ impl Measurements {
 
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn at_beat(&self, beat: usize) -> MeasurementsAtBeat {
+    pub fn at_beat(&self, beat: usize) -> MeasurementsAtBeat<'_> {
         MeasurementsAtBeat(self.slice(s![beat, .., ..]))
     }
 
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn at_beat_mut(&mut self, beat: usize) -> MeasurementsAtBeatMut {
+    pub fn at_beat_mut(&mut self, beat: usize) -> MeasurementsAtBeatMut<'_> {
         MeasurementsAtBeatMut(self.slice_mut(s![beat, .., ..]))
     }
 
@@ -497,7 +497,7 @@ pub struct MeasurementsAtBeat<'a>(ArrayView2<'a, f32>);
 impl MeasurementsAtBeat<'_> {
     #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn at_step(&self, step: usize) -> MeasurementsAtStep {
+    pub fn at_step(&self, step: usize) -> MeasurementsAtStep<'_> {
         MeasurementsAtStep(self.slice(s![step, ..]))
     }
 }
@@ -515,7 +515,7 @@ pub struct MeasurementsAtBeatMut<'a>(ArrayViewMut2<'a, f32>);
 impl MeasurementsAtBeatMut<'_> {
     #[must_use]
     #[tracing::instrument(level = "trace", skip_all)]
-    pub fn at_step_mut(&mut self, step: usize) -> MeasurementsAtStepMut {
+    pub fn at_step_mut(&mut self, step: usize) -> MeasurementsAtStepMut<'_> {
         MeasurementsAtStepMut(self.slice_mut(s![step, ..]))
     }
 }

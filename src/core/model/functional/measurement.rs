@@ -158,7 +158,7 @@ impl MeasurementMatrix {
 
     #[must_use]
     #[tracing::instrument(level = "trace")]
-    pub fn at_beat(&self, beat: usize) -> MeasurementMatrixAtBeat {
+    pub fn at_beat(&self, beat: usize) -> MeasurementMatrixAtBeat<'_> {
         MeasurementMatrixAtBeat(self.slice(s![beat, .., ..]))
     }
 
