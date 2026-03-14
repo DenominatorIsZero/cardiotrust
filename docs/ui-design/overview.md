@@ -131,6 +131,7 @@ See [scheduler-view.md](./scheduler-view.md).
 The new UI will be built under the `UiType::Bevy` path, using Bevy's native UI system (not egui). The existing egui UI remains functional under `UiType::EGui` and can be toggled with F2 during development. This allows incremental migration without breaking the working app.
 
 Key phases:
+
 1. **Navigation shell** -- Sidebar + view routing
 2. **Home view** -- Project selection
 3. **Explorer view** -- Card grid

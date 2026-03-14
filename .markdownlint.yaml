@@ -1,3 +1,1 @@
-default: true
-MD013: false  # line-length
-MD041: false  # first-line-h1
+default: false
