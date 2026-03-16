@@ -1,3 +1,4 @@
+pub mod bevy_shell;
 pub mod colors;
 mod explorer;
 mod results;
@@ -10,6 +11,7 @@ use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
 use bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
 
 use self::{
+    bevy_shell::BevyShellPlugin,
     explorer::draw_ui_explorer,
     results::{
         draw_ui_results, reset_result_images, PlaybackSpeed, ResultImages, SelectedResultImage,
@@ -32,7 +34,9 @@ impl Plugin for UiPlugin {
             .init_resource::<ResultImages>()
             .init_resource::<SelectedResultImage>()
             .init_resource::<PlaybackSpeed>()
+            .init_resource::<SidebarState>()
             .add_plugins(EguiPlugin::default())
+            .add_plugins(BevyShellPlugin)
             .add_systems(Update, enable_camera_motion)
             .add_systems(Update, toggle_ui_type_on_f2)
             .add_systems(
@@ -67,20 +71,23 @@ impl Plugin for UiPlugin {
     }
 }
 
-/// An enum representing the different UI states of the application.
+/// An enum representing the different UI states (views) of the application.
 ///
-/// The default state is `Explorer`. The other states are `Scenario`,
-/// `Results`, and `Volumetric`.
+/// The default state is `Explorer`. Under the Bevy backend all six views are
+/// reachable; under EGui only `Explorer`, `Scenario`, `Results`, and
+/// `Volumetric` are used.
 ///
 /// This allows conditional rendering of different UI components
 /// depending on the current state.
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash)]
 #[allow(clippy::module_name_repetitions)]
 pub enum UiState {
+    Home,
     Explorer,
     Scenario,
     Results,
     Volumetric,
+    Scheduler,
 }
 
 impl Default for UiState {
@@ -106,6 +113,30 @@ impl Default for UiType {
     #[tracing::instrument(level = "trace")]
     fn default() -> Self {
         Self::EGui
+    }
+}
+
+/// Tracks the sidebar expanded/collapsed state and current width.
+///
+/// When expanded the sidebar is 200 px wide (icon + label). When collapsed it
+/// is 56 px wide (icon only). The `user_expanded` field remembers the user's
+/// preference so auto-collapse can restore it when the viewport widens.
+#[derive(Resource, Debug)]
+pub struct SidebarState {
+    pub expanded: bool,
+    pub width: f32,
+    /// The user's explicit preference (before auto-collapse overrides it).
+    pub user_expanded: bool,
+}
+
+impl Default for SidebarState {
+    #[tracing::instrument(level = "trace")]
+    fn default() -> Self {
+        Self {
+            expanded: true,
+            width: 200.0,
+            user_expanded: true,
+        }
     }
 }
 
