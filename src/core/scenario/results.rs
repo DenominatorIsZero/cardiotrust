@@ -381,6 +381,7 @@ mod tests {
     use super::*;
     use crate::core::algorithm::gpu::GPU;
     #[test]
+    #[ignore = "requires a GPU device; fails in CPU-only environments"]
     #[allow(clippy::cast_precision_loss, clippy::similar_names)]
     fn test_results_gpu_transfer() -> anyhow::Result<()> {
         let mut results_from_cpu = Results::get_default();

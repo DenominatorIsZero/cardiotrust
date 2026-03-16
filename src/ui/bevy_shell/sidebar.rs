@@ -6,7 +6,7 @@ use super::content_area::ShellRoot;
 use crate::{
     core::scenario::Status,
     ui::{colors, SidebarState, UiState},
-    ScenarioList, SelectedSenario,
+    ProjectState, ScenarioList, SelectedSenario,
 };
 
 // ── Viewport threshold for auto-collapse ─────────────────────────────────────
@@ -204,10 +204,13 @@ fn spawn_nav_button(parent: &mut ChildSpawnerCommands, icon: &str, label: &str, 
 // ── Visual-state system ───────────────────────────────────────────────────────
 
 /// Updates nav item background and text colours to match interaction/active/disabled state.
+/// Also applies `NavItemDisabled` to project-dependent items when no project is loaded.
 #[allow(clippy::type_complexity)]
 #[tracing::instrument(skip_all)]
 pub fn update_nav_item_visual_states(
+    mut commands: Commands,
     ui_state: Res<State<UiState>>,
+    project_state: Res<ProjectState>,
     mut nav_items: Query<
         (
             Entity,
@@ -220,7 +223,35 @@ pub fn update_nav_item_visual_states(
     >,
     mut text_query: Query<(&ChildOf, &mut TextColor)>,
 ) {
+    // Gate project-dependent nav items when no project is loaded.
+    let no_project = project_state.current_path.is_none();
+    let project_dependent = [
+        UiState::Explorer,
+        UiState::Scenario,
+        UiState::Results,
+        UiState::Volumetric,
+        UiState::Scheduler,
+    ];
+    if project_state.is_changed() || project_state.is_added() {
+        for (entity, nav_item, _, _, _) in &nav_items {
+            if project_dependent.contains(&nav_item.target) {
+                if no_project {
+                    commands.entity(entity).insert(NavItemDisabled);
+                } else {
+                    // Only remove the project-gate flag; precondition system manages the rest.
+                    // We insert a temporary removal — precondition system will re-add if needed.
+                    commands.entity(entity).remove::<NavItemDisabled>();
+                }
+            }
+        }
+    }
+
     for (entity, nav_item, interaction, mut bg, disabled) in &mut nav_items {
+        // Re-apply project gate each frame (in case Changed didn't fire).
+        if no_project && project_dependent.contains(&nav_item.target) {
+            commands.entity(entity).insert(NavItemDisabled);
+        }
+
         let is_active = nav_item.target == *ui_state.get() && disabled.is_none();
         let is_disabled = disabled.is_some();
 

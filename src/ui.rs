@@ -93,7 +93,7 @@ pub enum UiState {
 impl Default for UiState {
     #[tracing::instrument(level = "trace")]
     fn default() -> Self {
-        Self::Explorer
+        Self::Home
     }
 }
 
@@ -112,7 +112,7 @@ pub enum UiType {
 impl Default for UiType {
     #[tracing::instrument(level = "trace")]
     fn default() -> Self {
-        Self::EGui
+        Self::Bevy
     }
 }
 

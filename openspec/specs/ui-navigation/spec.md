@@ -8,14 +8,14 @@ This spec is distinct from `visualization` (which governs the 3-D rendering that
 
 ### Requirement: Exactly one content view is active at all times
 
-The application SHALL have exactly one active content view at any time, selected from: Home, Explorer, Scenario, Results, Volumetric, and Scheduler. When the EGUI backend is active, only the four original views (Explorer, Scenario, Results, Volumetric) are reachable; the top navigation bar is always visible. When the Bevy backend is active, all six views are reachable via the sidebar rail. Switching views is instantaneous — the outgoing view is fully replaced by the incoming view.
+The application SHALL have exactly one active content view at any time, selected from: Home, Explorer, Scenario, Results, Volumetric, and Scheduler. When the Bevy backend is active, the Home view is the initial view. When the EGui backend is active, the initial view remains Explorer. Switching views is instantaneous. These behaviors apply only when the respective backend is active.
 
-#### Scenario: Only one content panel renders per frame under EGui
+#### Scenario: Only one content panel renders per frame
 
 - **WHEN** the application is in any active view state and the EGUI backend is selected
 - **THEN** exactly one content panel occupies the central area of the screen
 
-#### Scenario: Navigation bar is always visible under EGui
+#### Scenario: Navigation bar is always visible
 
 - **WHEN** the application is in any view state and the EGUI backend is selected
 - **THEN** the top navigation bar is rendered
@@ -25,10 +25,29 @@ The application SHALL have exactly one active content view at any time, selected
 - **WHEN** the UI backend selector is set to `Bevy`
 - **THEN** no EGUI draw systems execute and no EGUI panels appear on screen
 
-#### Scenario: Only one view is active at any time under Bevy backend
+#### Scenario: Bevy backend starts on Home view
 
-- **WHEN** the UI backend selector is set to `Bevy`
-- **THEN** exactly one of the six views (Home, Explorer, Scenario, Results, Volumetric, Scheduler) is the active view
+- **WHEN** the application is launched with the Bevy backend active
+- **THEN** the initial view is Home
+
+### Requirement: Navigation to project-dependent views is disabled when no project is loaded
+
+When the Bevy backend is active and no project has been opened, the Explorer, Scenario, Results, Volumetric, and Scheduler navigation items SHALL be disabled and non-interactive. The Home navigation item SHALL always be enabled.
+
+#### Scenario: Project-dependent sidebar items are disabled with no project
+
+- **WHEN** the Bevy backend is active and no project folder is open
+- **THEN** Explorer, Scenario, Results, Volumetric, and Scheduler nav items are disabled and cannot be activated
+
+#### Scenario: Home nav item is always enabled
+
+- **WHEN** the Bevy backend is active, regardless of whether a project is loaded
+- **THEN** the Home nav item is enabled and activatable
+
+#### Scenario: Project-dependent items become enabled after a project is opened
+
+- **WHEN** a project folder is opened from the Home view
+- **THEN** the Explorer nav item becomes enabled and activatable
 
 ### Requirement: Navigation to a view is disabled when preconditions are not met
 

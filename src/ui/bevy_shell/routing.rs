@@ -5,7 +5,7 @@
 
 use bevy::prelude::*;
 
-use crate::{core::scenario::Status, ui::UiState, ScenarioList, SelectedSenario};
+use crate::{core::scenario::Status, ui::UiState, ProjectState, ScenarioList, SelectedSenario};
 
 /// Handles keyboard shortcuts for navigation.
 ///
@@ -22,8 +22,10 @@ pub fn handle_keyboard_shortcuts(
     ui_state: Res<State<UiState>>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
+    project_state: Res<ProjectState>,
     mut next_state: ResMut<NextState<UiState>>,
 ) {
+    let has_project = project_state.current_path.is_some();
     let has_selection = selected_scenario.index.is_some();
     let scenario_done = selected_scenario.index.is_some_and(|i| {
         scenario_list
@@ -43,7 +45,9 @@ pub fn handle_keyboard_shortcuts(
     ];
     for (key, target) in digit_map {
         if keys.just_pressed(key) {
-            if can_navigate_to(target, has_selection, scenario_done) {
+            // Shortcuts 2–6 require a project to be loaded.
+            let project_ok = matches!(target, UiState::Home) || has_project;
+            if project_ok && can_navigate_to(target, has_selection, scenario_done) {
                 next_state.set(target);
             }
             return;
@@ -53,7 +57,8 @@ pub fn handle_keyboard_shortcuts(
     // Escape → parent
     if keys.just_pressed(KeyCode::Escape) {
         let parent = parent_of(*ui_state.get());
-        if can_navigate_to(parent, has_selection, scenario_done) {
+        let project_ok = matches!(parent, UiState::Home) || has_project;
+        if project_ok && can_navigate_to(parent, has_selection, scenario_done) {
             next_state.set(parent);
         }
     }

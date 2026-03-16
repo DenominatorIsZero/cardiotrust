@@ -3,7 +3,8 @@ use std::process::Command;
 use anyhow::{Context, Result};
 use bevy::{log::LogPlugin, prelude::*};
 use cardiotrust::{
-    scheduler::SchedulerPlugin, ui::UiPlugin, vis::VisPlugin, ScenarioList, SelectedSenario,
+    scheduler::SchedulerPlugin, ui::UiPlugin, vis::VisPlugin, ProjectState, ScenarioList,
+    SelectedSenario,
 };
 use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt};
@@ -27,8 +28,12 @@ fn run_app() -> Result<()> {
     info!("Starting CardioTRust application. Git hash: {}", git_hash);
 
     App::new()
-        .init_resource::<ScenarioList>()
+        .insert_resource(ScenarioList::empty())
         .init_resource::<SelectedSenario>()
+        .insert_resource(ProjectState {
+            recent: ProjectState::load_recent(),
+            ..Default::default()
+        })
         .add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
