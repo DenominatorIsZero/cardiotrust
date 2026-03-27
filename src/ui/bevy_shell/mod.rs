@@ -5,6 +5,7 @@
 
 pub mod breadcrumb;
 pub mod content_area;
+pub mod explorer;
 pub mod home;
 pub mod project;
 pub mod routing;
@@ -15,6 +16,7 @@ use bevy::prelude::*;
 use self::{
     breadcrumb::update_breadcrumb,
     content_area::{despawn_root_layout, spawn_root_layout},
+    explorer::ExplorerViewPlugin,
     home::{despawn_home_view, spawn_home_view, FolderDialogReceiver},
     project::load_project_on_path_change,
     routing::handle_keyboard_shortcuts,
@@ -33,6 +35,9 @@ impl Plugin for BevyShellPlugin {
     #[tracing::instrument(level = "info", skip(app))]
     fn build(&self, app: &mut App) {
         app.init_resource::<FolderDialogReceiver>();
+
+        // Explorer view — Bevy-native card grid (UiType::Bevy only).
+        app.add_plugins(ExplorerViewPlugin);
 
         // Spawn / despawn the root layout when entering / exiting Bevy mode.
         app.add_systems(

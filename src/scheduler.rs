@@ -71,34 +71,44 @@ pub fn start_scenarios(
     number_of_jobs: Res<NumberOfJobs>,
 ) {
     trace!("Running start_scenarios system.");
-    if scenario_list
+
+    // Read-only check via bypass so we don't mark ScenarioList changed every frame.
+    let list_read = scenario_list.bypass_change_detection();
+    let running_count = list_read
         .entries
         .iter()
         .filter(|entry| {
             discriminant(entry.scenario.get_status()) == discriminant(&Status::Running(1))
                 || entry.scenario.get_status() == &Status::Simulating
         })
-        .count()
-        >= number_of_jobs.value
-    {
-        commands.insert_resource(NextState::Pending(SchedulerState::Unavailale));
-    } else if let Some(entry) = scenario_list
+        .count();
+    let has_scheduled = list_read
         .entries
-        .iter_mut()
-        .find(|entry| *entry.scenario.get_status() == Status::Scheduled)
-    {
-        let send_scenario = entry.scenario.clone();
-        let (epoch_tx, epoch_rx) = channel();
-        let (summary_tx, summary_rx) = channel();
-        let handle = thread::spawn(move || {
-            if let Err(e) = run(send_scenario, &epoch_tx, &summary_tx) {
-                tracing::error!("Scenario failed: {:?}", e);
-            }
-        });
-        entry.scenario.set_simulating();
-        entry.join_handle = Some(handle);
-        entry.epoch_rx = Some(Mutex::new(epoch_rx));
-        entry.summary_rx = Some(Mutex::new(summary_rx));
+        .iter()
+        .any(|entry| *entry.scenario.get_status() == Status::Scheduled);
+
+    if running_count >= number_of_jobs.value {
+        commands.insert_resource(NextState::Pending(SchedulerState::Unavailale));
+    } else if has_scheduled {
+        // Now actually mutate — this correctly marks ScenarioList changed.
+        if let Some(entry) = scenario_list
+            .entries
+            .iter_mut()
+            .find(|entry| *entry.scenario.get_status() == Status::Scheduled)
+        {
+            let send_scenario = entry.scenario.clone();
+            let (epoch_tx, epoch_rx) = channel();
+            let (summary_tx, summary_rx) = channel();
+            let handle = thread::spawn(move || {
+                if let Err(e) = run(send_scenario, &epoch_tx, &summary_tx) {
+                    tracing::error!("Scenario failed: {:?}", e);
+                }
+            });
+            entry.scenario.set_simulating();
+            entry.join_handle = Some(handle);
+            entry.epoch_rx = Some(Mutex::new(epoch_rx));
+            entry.summary_rx = Some(Mutex::new(summary_rx));
+        }
     }
 }
 
@@ -120,6 +130,27 @@ pub fn check_scenarios(
     scheduler_state: Res<State<SchedulerState>>,
 ) {
     trace!("Running check_scenarios system.");
+
+    // Early-return without touching ResMut when nothing is running.
+    let has_active = scenario_list
+        .bypass_change_detection()
+        .entries
+        .iter()
+        .any(|entry| {
+            discriminant(entry.scenario.get_status()) == discriminant(&Status::Running(1))
+                || entry.scenario.get_status() == &Status::Simulating
+        });
+    if !has_active {
+        // Still check whether we should transition to Available.
+        let running_count = 0;
+        if running_count < number_of_jobs.value
+            && scheduler_state.get() == &SchedulerState::Unavailale
+        {
+            commands.insert_resource(NextState::Pending(SchedulerState::Available));
+        }
+        return;
+    }
+
     scenario_list
         .entries
         .iter_mut()

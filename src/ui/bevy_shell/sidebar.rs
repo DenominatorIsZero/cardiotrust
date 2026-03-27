@@ -204,13 +204,10 @@ fn spawn_nav_button(parent: &mut ChildSpawnerCommands, icon: &str, label: &str, 
 // ── Visual-state system ───────────────────────────────────────────────────────
 
 /// Updates nav item background and text colours to match interaction/active/disabled state.
-/// Also applies `NavItemDisabled` to project-dependent items when no project is loaded.
 #[allow(clippy::type_complexity)]
 #[tracing::instrument(skip_all)]
 pub fn update_nav_item_visual_states(
-    mut commands: Commands,
     ui_state: Res<State<UiState>>,
-    project_state: Res<ProjectState>,
     mut nav_items: Query<
         (
             Entity,
@@ -223,35 +220,7 @@ pub fn update_nav_item_visual_states(
     >,
     mut text_query: Query<(&ChildOf, &mut TextColor)>,
 ) {
-    // Gate project-dependent nav items when no project is loaded.
-    let no_project = project_state.current_path.is_none();
-    let project_dependent = [
-        UiState::Explorer,
-        UiState::Scenario,
-        UiState::Results,
-        UiState::Volumetric,
-        UiState::Scheduler,
-    ];
-    if project_state.is_changed() || project_state.is_added() {
-        for (entity, nav_item, _, _, _) in &nav_items {
-            if project_dependent.contains(&nav_item.target) {
-                if no_project {
-                    commands.entity(entity).insert(NavItemDisabled);
-                } else {
-                    // Only remove the project-gate flag; precondition system manages the rest.
-                    // We insert a temporary removal — precondition system will re-add if needed.
-                    commands.entity(entity).remove::<NavItemDisabled>();
-                }
-            }
-        }
-    }
-
     for (entity, nav_item, interaction, mut bg, disabled) in &mut nav_items {
-        // Re-apply project gate each frame (in case Changed didn't fire).
-        if no_project && project_dependent.contains(&nav_item.target) {
-            commands.entity(entity).insert(NavItemDisabled);
-        }
-
         let is_active = nav_item.target == *ui_state.get() && disabled.is_none();
         let is_disabled = disabled.is_some();
 
@@ -286,23 +255,45 @@ pub fn update_nav_item_visual_states(
 }
 
 /// Adds/removes `NavItemDisabled` based on precondition guards.
+///
+/// This is the single authority over `NavItemDisabled`. It runs only when one
+/// of the relevant resources changes, eliminating per-frame command churn that
+/// was causing visual flickering.
 #[tracing::instrument(skip_all)]
 pub fn apply_nav_item_preconditions(
     mut commands: Commands,
     nav_items: Query<(Entity, &NavItem), With<Button>>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
+    project_state: Res<ProjectState>,
 ) {
+    // Only re-evaluate when something relevant actually changed.
+    if !selected_scenario.is_changed()
+        && !scenario_list.is_changed()
+        && !project_state.is_changed()
+    {
+        return;
+    }
+
+    let no_project = project_state.current_path.is_none();
+
     for (entity, nav_item) in &nav_items {
-        let disabled = match nav_item.target {
-            UiState::Scenario => selected_scenario.index.is_none(),
-            UiState::Results | UiState::Volumetric => !selected_scenario.index.is_some_and(|i| {
-                scenario_list
-                    .entries
-                    .get(i)
-                    .is_some_and(|e| e.scenario.get_status() == &Status::Done)
-            }),
-            _ => false,
+        let disabled = if no_project {
+            // Without a project, everything except Home is disabled.
+            !matches!(nav_item.target, UiState::Home)
+        } else {
+            match nav_item.target {
+                UiState::Scenario => selected_scenario.index.is_none(),
+                UiState::Results | UiState::Volumetric => {
+                    !selected_scenario.index.is_some_and(|i| {
+                        scenario_list
+                            .entries
+                            .get(i)
+                            .is_some_and(|e| e.scenario.get_status() == &Status::Done)
+                    })
+                }
+                _ => false,
+            }
         };
         if disabled {
             commands.entity(entity).insert(NavItemDisabled);
@@ -313,6 +304,7 @@ pub fn apply_nav_item_preconditions(
 }
 
 /// Navigates to a nav item's target when it is pressed and not disabled.
+#[allow(clippy::type_complexity)]
 #[tracing::instrument(skip_all)]
 pub fn handle_nav_item_click(
     nav_items: Query<
