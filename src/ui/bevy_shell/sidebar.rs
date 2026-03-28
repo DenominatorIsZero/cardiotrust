@@ -268,9 +268,7 @@ pub fn apply_nav_item_preconditions(
     project_state: Res<ProjectState>,
 ) {
     // Only re-evaluate when something relevant actually changed.
-    if !selected_scenario.is_changed()
-        && !scenario_list.is_changed()
-        && !project_state.is_changed()
+    if !selected_scenario.is_changed() && !scenario_list.is_changed() && !project_state.is_changed()
     {
         return;
     }

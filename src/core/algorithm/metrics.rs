@@ -218,9 +218,10 @@ pub fn calculate_batch(metrics: &mut Metrics, epoch_index: usize) -> Result<()> 
     Ok(())
 }
 
-/// Calculates metrics over the full range of thresholds from 0 to 1 by incrementing
-/// in steps of 0.01. Stores the dice score, `IoU`, precision, and recall for each
-/// threshold value in the given metric arrays.
+/// Calculates metrics over the full range of thresholds from 0 to 1.
+///
+/// Increments in steps of 0.01. Stores dice, `IoU`, precision, and recall for
+/// each threshold value in the given metric arrays.
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "debug", skip_all)]
 pub fn calculate_final(
@@ -396,10 +397,11 @@ fn calculate_dice(predictions: &VoxelTypes, ground_truth: &VoxelTypes) -> f32 {
     }
 }
 
-/// Predicts the voxel type (pathological or ventricle) for each voxel, based on the
-/// provided estimations and ground truth data. Voxels are predicted as pathological if
-/// the maximum absolute value of the system state estimations for that voxel is below
-/// the provided threshold. Otherwise they are predicted as ventricle.
+/// Predicts the voxel type (pathological or ventricle) for each voxel.
+///
+/// Based on the provided estimations and ground truth data. Voxels are
+/// predicted as pathological if the max absolute system state is below the
+/// threshold; otherwise they are predicted as ventricle.
 ///
 /// # Panics
 ///

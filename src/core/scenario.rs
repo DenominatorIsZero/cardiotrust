@@ -94,10 +94,9 @@ impl Scenario {
     pub fn build(id: Option<String>) -> Result<Self> {
         debug!("Building new scenario");
         let scenario = Self {
-            id: id.map_or_else(
-                || format!("{}", chrono::Utc::now().format("%Y-%m-%d-%H-%M-%S-%f")),
-                |id| id,
-            ),
+            id: id.unwrap_or_else(|| {
+                format!("{}", chrono::Utc::now().format("%Y-%m-%d-%H-%M-%S-%f"))
+            }),
             status: Status::Planning,
             config: Config::default(),
             data: None,

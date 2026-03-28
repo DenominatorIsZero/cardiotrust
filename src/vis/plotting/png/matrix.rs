@@ -67,37 +67,34 @@ where
     let dim_x = data.shape()[0];
     let dim_y = data.shape()[1];
 
-    let (width, height) = resolution.map_or_else(
-        || {
-            let ratio = ((dim_x as f32 * x_step) / (dim_y as f32 * y_step)).clamp(0.1, 10.0);
+    let (width, height) = resolution.unwrap_or_else(|| {
+        let ratio = ((dim_x as f32 * x_step) / (dim_y as f32 * y_step)).clamp(0.1, 10.0);
 
-            if ratio > 1.0 {
-                (
-                    STANDARD_RESOLUTION.0
-                        + AXIS_LABEL_AREA
-                        + CHART_MARGIN
-                        + COLORBAR_WIDTH
-                        + LABEL_AREA_WIDTH
-                        + LABEL_AREA_RIGHT_MARGIN,
-                    (STANDARD_RESOLUTION.0 as f32 / ratio) as u32
-                        + AXIS_LABEL_AREA
-                        + CHART_MARGIN
-                        + CAPTION_STYLE.1 as u32,
-                )
-            } else {
-                (
-                    (STANDARD_RESOLUTION.0 as f32 * ratio) as u32
-                        + AXIS_LABEL_AREA
-                        + CHART_MARGIN
-                        + COLORBAR_WIDTH
-                        + LABEL_AREA_WIDTH
-                        + LABEL_AREA_RIGHT_MARGIN,
-                    STANDARD_RESOLUTION.0 + AXIS_LABEL_AREA + CHART_MARGIN + CAPTION_STYLE.1 as u32,
-                )
-            }
-        },
-        |resolution| resolution,
-    );
+        if ratio > 1.0 {
+            (
+                STANDARD_RESOLUTION.0
+                    + AXIS_LABEL_AREA
+                    + CHART_MARGIN
+                    + COLORBAR_WIDTH
+                    + LABEL_AREA_WIDTH
+                    + LABEL_AREA_RIGHT_MARGIN,
+                (STANDARD_RESOLUTION.0 as f32 / ratio) as u32
+                    + AXIS_LABEL_AREA
+                    + CHART_MARGIN
+                    + CAPTION_STYLE.1 as u32,
+            )
+        } else {
+            (
+                (STANDARD_RESOLUTION.0 as f32 * ratio) as u32
+                    + AXIS_LABEL_AREA
+                    + CHART_MARGIN
+                    + COLORBAR_WIDTH
+                    + LABEL_AREA_WIDTH
+                    + LABEL_AREA_RIGHT_MARGIN,
+                STANDARD_RESOLUTION.0 + AXIS_LABEL_AREA + CHART_MARGIN + CAPTION_STYLE.1 as u32,
+            )
+        }
+    });
 
     let mut buffer = allocate_buffer(width, height);
 
@@ -296,37 +293,34 @@ where
     let dim_x = theta.shape()[0];
     let dim_y = theta.shape()[1];
 
-    let (width, height) = resolution.map_or_else(
-        || {
-            let ratio = (dim_x as f32 / dim_y as f32).clamp(0.1, 10.0);
+    let (width, height) = resolution.unwrap_or_else(|| {
+        let ratio = (dim_x as f32 / dim_y as f32).clamp(0.1, 10.0);
 
-            if ratio > 1.0 {
-                (
-                    STANDARD_RESOLUTION.0
-                        + AXIS_LABEL_AREA
-                        + CHART_MARGIN
-                        + 2 * COLORBAR_WIDTH
-                        + 2 * LABEL_AREA_WIDTH
-                        + 2 * LABEL_AREA_RIGHT_MARGIN,
-                    (STANDARD_RESOLUTION.0 as f32 / ratio) as u32
-                        + AXIS_LABEL_AREA
-                        + CHART_MARGIN
-                        + CAPTION_STYLE.1 as u32,
-                )
-            } else {
-                (
-                    (STANDARD_RESOLUTION.0 as f32 * ratio) as u32
-                        + AXIS_LABEL_AREA
-                        + CHART_MARGIN
-                        + 2 * COLORBAR_WIDTH
-                        + 2 * LABEL_AREA_WIDTH
-                        + 2 * LABEL_AREA_RIGHT_MARGIN,
-                    STANDARD_RESOLUTION.0 + AXIS_LABEL_AREA + CHART_MARGIN + CAPTION_STYLE.1 as u32,
-                )
-            }
-        },
-        |resolution| resolution,
-    );
+        if ratio > 1.0 {
+            (
+                STANDARD_RESOLUTION.0
+                    + AXIS_LABEL_AREA
+                    + CHART_MARGIN
+                    + 2 * COLORBAR_WIDTH
+                    + 2 * LABEL_AREA_WIDTH
+                    + 2 * LABEL_AREA_RIGHT_MARGIN,
+                (STANDARD_RESOLUTION.0 as f32 / ratio) as u32
+                    + AXIS_LABEL_AREA
+                    + CHART_MARGIN
+                    + CAPTION_STYLE.1 as u32,
+            )
+        } else {
+            (
+                (STANDARD_RESOLUTION.0 as f32 * ratio) as u32
+                    + AXIS_LABEL_AREA
+                    + CHART_MARGIN
+                    + 2 * COLORBAR_WIDTH
+                    + 2 * LABEL_AREA_WIDTH
+                    + 2 * LABEL_AREA_RIGHT_MARGIN,
+                STANDARD_RESOLUTION.0 + AXIS_LABEL_AREA + CHART_MARGIN + CAPTION_STYLE.1 as u32,
+            )
+        }
+    });
 
     let mut buffer = allocate_buffer(width, height);
 

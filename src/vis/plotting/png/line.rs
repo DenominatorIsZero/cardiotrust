@@ -63,7 +63,7 @@ where
     }
 
     let default_x = Array1::linspace(0.0, y_len as f32, y_len);
-    let x = x.map_or_else(|| &default_x, |x| x);
+    let x = x.unwrap_or(&default_x);
 
     if x.len() != y_len {
         return Err(std::io::Error::new(

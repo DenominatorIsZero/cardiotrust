@@ -239,9 +239,9 @@ impl VoxelTypes {
             .zip(heart_size_mm.iter())
             .for_each(|(number, size)| *number = (size / voxel_size_mm) as usize);
 
-        voxels_in_dims
-            .iter_mut()
-            .for_each(|v| *v = if *v == 0 { 1 } else { *v });
+        for v in &mut voxels_in_dims {
+            *v = if *v == 0 { 1 } else { *v };
+        }
 
         // Derived Parameters
         let sa_x_center_index = ((voxels_in_dims[0] as f32 * handcrafted.sa_x_center_percentage)

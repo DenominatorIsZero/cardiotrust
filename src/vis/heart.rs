@@ -117,10 +117,10 @@ pub(crate) fn setup_mesh_atlas(mut commands: Commands, mut meshes: ResMut<Assets
     commands.insert_resource(atlas);
 }
 
-/// Initializes voxel components by iterating through the voxel grid
-/// data and spawning a `PbrBundle` for each voxel. Sets up voxel data
-/// component with index, colors, and position. Also positions the
-/// camera based on voxel grid bounds.
+/// Initializes voxel components by iterating through the voxel grid data.
+///
+/// Spawns a `PbrBundle` for each voxel with index, colors, and position.
+/// Also positions the camera based on voxel grid bounds.
 ///
 /// # Panics
 ///
@@ -241,10 +241,10 @@ fn voxel_is_visible(position: Vec3, cutting_plane: &CuttingPlaneSettings) -> boo
     !cutting_plane.enabled || ((position - cutting_plane.position).dot(cutting_plane.normal) < 0.0)
 }
 
-/// Updates the voxel colors in the heart model based on the current
-/// visualization mode and scenario selection. Retrieves the scenario
-/// data and uses it to set the voxel colors according to the selected
-/// visualization mode.
+/// Updates voxel colors in the heart model based on visualization mode.
+///
+/// Retrieves scenario data and sets voxel colors according to the selected
+/// visualization mode and scenario selection.
 ///
 /// # Panics
 ///

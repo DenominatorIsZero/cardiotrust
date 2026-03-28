@@ -26,15 +26,21 @@ use self::{
     card::{
         handle_card_click, handle_card_inline_edit, handle_card_quick_actions,
         handle_new_scenario_card_click, sync_cards_to_scenarios, update_active_card_border,
-        update_card_hover, update_card_labels, CardEditMode, LastCardClick,
+        update_card_hover, update_card_label_highlights, update_card_labels, CardEditMode,
+        LastCardClick,
     },
     context_menu::{dismiss_context_menu, handle_context_menu_actions, spawn_context_menu},
-    empty_state::{handle_empty_new_scenario_click, spawn_empty_state, toggle_empty_state},
+    empty_state::{
+        handle_empty_clear_search_click, handle_empty_new_scenario_click, spawn_empty_state,
+        toggle_empty_state,
+    },
     thumbnail::{poll_thumbnail_tasks, queue_thumbnail_generation, ThumbnailCache},
     toolbar::{
-        apply_filter_and_sort, handle_new_scenario_toolbar_button, handle_sort_click,
+        apply_filter_and_sort, handle_new_scenario_toolbar_button, handle_search_clear_click,
+        handle_search_field_click, handle_search_outside_click, handle_sort_click,
         handle_status_filter_click, handle_text_search_input, spawn_toolbar,
-        update_toolbar_button_visuals,
+        update_search_display_text, update_search_field_visuals, update_toolbar_button_visuals,
+        SearchFocused,
     },
 };
 use crate::ui::{bevy_shell::content_area::ContentSlot, UiState, UiType};
@@ -63,6 +69,7 @@ impl Plugin for ExplorerViewPlugin {
         app.init_resource::<ThumbnailCache>();
         app.init_resource::<CardEditMode>();
         app.init_resource::<LastCardClick>();
+        app.init_resource::<SearchFocused>();
 
         // Spawn / despawn the Explorer view when entering / exiting Explorer state
         // (only while the Bevy UI backend is active).
@@ -80,6 +87,10 @@ impl Plugin for ExplorerViewPlugin {
 
         // Per-frame systems — only run while Bevy UI + Explorer are active.
         // Nested sub-tuples work around the 20-element tuple limit.
+        //
+        // Ordering:
+        //   handle_text_search_input → apply_filter_and_sort → update_card_label_highlights
+        //   update_card_labels → update_card_label_highlights
         let explorer_condition = in_state(UiType::Bevy).and(in_state(UiState::Explorer));
         app.add_systems(
             Update,
@@ -90,7 +101,9 @@ impl Plugin for ExplorerViewPlugin {
                     update_card_hover,
                     update_active_card_border,
                     toggle_empty_state,
-                    apply_filter_and_sort,
+                    // Search input must run before filter so query is already updated.
+                    handle_text_search_input,
+                    apply_filter_and_sort.after(handle_text_search_input),
                     queue_thumbnail_generation,
                     poll_thumbnail_tasks,
                     handle_card_click,
@@ -98,17 +111,27 @@ impl Plugin for ExplorerViewPlugin {
                 ),
                 (
                     handle_card_quick_actions,
+                    // update_card_labels must run before update_card_label_highlights
                     update_card_labels,
+                    update_card_label_highlights
+                        .after(update_card_labels)
+                        .after(apply_filter_and_sort),
                     handle_new_scenario_card_click,
                     handle_new_scenario_toolbar_button,
                     handle_status_filter_click,
                     handle_sort_click,
-                    handle_text_search_input,
+                    // Search-field UI systems
+                    handle_search_field_click,
+                    handle_search_outside_click,
+                    handle_search_clear_click,
+                    update_search_field_visuals,
+                    update_search_display_text,
                     update_toolbar_button_visuals,
                     spawn_context_menu,
                     dismiss_context_menu,
                     handle_context_menu_actions,
                     handle_empty_new_scenario_click,
+                    handle_empty_clear_search_click,
                 ),
             )
                 .run_if(explorer_condition),
@@ -120,10 +143,7 @@ impl Plugin for ExplorerViewPlugin {
 
 /// Spawns the Explorer grid root node as a child of [`ContentSlot`].
 #[tracing::instrument(skip_all)]
-fn spawn_explorer_view(
-    mut commands: Commands,
-    content_slots: Query<Entity, With<ContentSlot>>,
-) {
+fn spawn_explorer_view(mut commands: Commands, content_slots: Query<Entity, With<ContentSlot>>) {
     let Ok(slot) = content_slots.single() else {
         return;
     };
@@ -162,10 +182,7 @@ fn spawn_explorer_view(
 
 /// Despawns all [`ExplorerViewRoot`] entities.
 #[tracing::instrument(skip_all)]
-fn despawn_explorer_view(
-    mut commands: Commands,
-    roots: Query<Entity, With<ExplorerViewRoot>>,
-) {
+fn despawn_explorer_view(mut commands: Commands, roots: Query<Entity, With<ExplorerViewRoot>>) {
     for entity in &roots {
         commands.entity(entity).despawn();
     }

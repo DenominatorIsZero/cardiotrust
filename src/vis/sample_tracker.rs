@@ -32,8 +32,9 @@ impl Default for SampleTracker {
 }
 
 /// Initializes the sample tracker resource with values from the scenario.
-/// Sets the current sample to 0, the max sample to the number of rows in the
-/// scenario data, and the sample rate to the rate in the scenario config.
+///
+/// Sets the current sample to 0, max sample to the number of rows in the
+/// scenario data, and sample rate to the rate in the scenario config.
 ///
 /// # Panics
 ///

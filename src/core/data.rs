@@ -55,7 +55,7 @@ impl Data {
 
     /// # Panics
     ///
-    /// Saves the data to NumPy files at the given path.
+    /// Saves the data to `NumPy` files at the given path.
     ///
     /// # Errors
     ///

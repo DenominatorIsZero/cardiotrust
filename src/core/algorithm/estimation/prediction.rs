@@ -105,8 +105,9 @@ pub fn add_control_function(
 }
 
 /// Predicts the measurements by multiplying the measurement matrix with the
-/// system states for the given time index. This computes the model predicted
-/// measurements to compare against the actual measurements.
+/// system states for the given time index.
+///
+/// Computes the model predicted measurements to compare against actual ones.
 #[inline]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn predict_measurements(

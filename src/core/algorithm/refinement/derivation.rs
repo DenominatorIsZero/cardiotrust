@@ -501,9 +501,9 @@ pub fn calculate_derivatives_coefs_textbook(
 }
 
 /// Calculates the maximum regularization for the given system states.
+///
 /// Iterates through the states, calculates the sum of the absolute values,
-/// compares to the threshold, and calculates & assigns maximum regularization
-/// accordingly.
+/// compares to the threshold, and assigns maximum regularization accordingly.
 #[inline]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_maximum_regularization(

@@ -32,7 +32,7 @@ pub struct ContentSlot;
 ///
 /// The sidebar entity is spawned as a *sibling* of the content column inside
 /// the root row. `sidebar::spawn_sidebar` adds it as a child of the same root
-/// via a `ChildOf` insert, so order is: Sidebar then ContentColumn.
+/// via a `ChildOf` insert, so order is: Sidebar then `ContentColumn`.
 #[tracing::instrument(skip_all)]
 pub fn spawn_root_layout(mut commands: Commands) {
     commands

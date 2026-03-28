@@ -71,7 +71,7 @@ pub fn update_breadcrumb(
         if let Some(entered) = event.entered {
             let crumb = build_breadcrumb(entered, &selected_scenario, &scenario_list);
             for (mut text, mut color) in &mut texts {
-                text.0 = crumb.clone();
+                text.0.clone_from(&crumb);
                 color.0 = colors::GREY1;
             }
         }

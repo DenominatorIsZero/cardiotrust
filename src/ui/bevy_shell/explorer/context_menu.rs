@@ -202,10 +202,7 @@ pub fn dismiss_context_menu(
 #[tracing::instrument(skip_all)]
 pub fn handle_context_menu_actions(
     mut commands: Commands,
-    items: Query<
-        (&ContextMenuAction, &Interaction),
-        (With<Button>, Changed<Interaction>),
-    >,
+    items: Query<(&ContextMenuAction, &Interaction), (With<Button>, Changed<Interaction>)>,
     menus: Query<(Entity, &ContextMenuNode)>,
     mut scenario_list: ResMut<ScenarioList>,
     mut selected: ResMut<SelectedSenario>,
@@ -234,8 +231,13 @@ pub fn handle_context_menu_actions(
                                 new_scenario.config = entry.scenario.config.clone();
                                 new_scenario.comment = format!(
                                     "Copy of {}",
-                                    entry.scenario.comment.as_str().trim()
-                                        .trim_start_matches("Copy of ").trim()
+                                    entry
+                                        .scenario
+                                        .comment
+                                        .as_str()
+                                        .trim()
+                                        .trim_start_matches("Copy of ")
+                                        .trim()
                                 );
                                 if let Err(e) = new_scenario.save() {
                                     tracing::warn!("Failed to save copied scenario: {e}");

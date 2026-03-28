@@ -13,11 +13,7 @@
 use bevy::{input::keyboard::KeyboardInput, prelude::*};
 
 use super::thumbnail::{ThumbnailCache, ThumbnailState};
-use crate::{
-    core::scenario::Status,
-    ui::colors,
-    ScenarioList, SelectedSenario,
-};
+use crate::{core::scenario::Status, ui::colors, ScenarioList, SelectedSenario};
 
 // ── Resources ─────────────────────────────────────────────────────────────────
 
@@ -99,6 +95,26 @@ pub enum CardQuickActionKind {
     Copy,
     Schedule,
 }
+
+/// Stores fuzzy-match highlight ranges for a card's name and ID labels.
+/// Both fields are byte-offset ranges `(start, end)` into the relevant string.
+#[derive(Component, Debug, Clone, Default)]
+pub struct CardMatchHighlight {
+    pub name_range: Option<(usize, usize)>,
+    pub id_range: Option<(usize, usize)>,
+}
+
+/// Marker for the prefix `TextSpan` child of a `CardNameLabel` or `CardIdLabel`.
+#[derive(Component, Debug)]
+pub struct LabelSpanPrefix;
+
+/// Marker for the highlight `TextSpan` child of a `CardNameLabel` or `CardIdLabel`.
+#[derive(Component, Debug)]
+pub struct LabelSpanHighlight;
+
+/// Marker for the suffix `TextSpan` child of a `CardNameLabel` or `CardIdLabel`.
+#[derive(Component, Debug)]
+pub struct LabelSpanSuffix;
 
 // ── Spawn helpers ─────────────────────────────────────────────────────────────
 
@@ -204,24 +220,87 @@ pub fn spawn_card(
             let display_name = if comment.is_empty() { title } else { comment };
             card.spawn((
                 CardNameLabel { index },
-                Text::new(truncate_str(display_name, 36)),
+                CardMatchHighlight::default(),
+                Text::default(),
                 TextFont {
                     font_size: 13.0,
                     ..default()
                 },
                 TextColor(colors::FG0),
-            ));
+            ))
+            .with_children(|label| {
+                // prefix span
+                label.spawn((
+                    LabelSpanPrefix,
+                    TextSpan::new(truncate_str(display_name, 36)),
+                    TextFont {
+                        font_size: 13.0,
+                        ..default()
+                    },
+                    TextColor(colors::FG0),
+                ));
+                // highlight span (empty initially)
+                label.spawn((
+                    LabelSpanHighlight,
+                    TextSpan::new(String::new()),
+                    TextFont {
+                        font_size: 13.0,
+                        ..default()
+                    },
+                    TextColor(colors::YELLOW),
+                ));
+                // suffix span (empty initially)
+                label.spawn((
+                    LabelSpanSuffix,
+                    TextSpan::new(String::new()),
+                    TextFont {
+                        font_size: 13.0,
+                        ..default()
+                    },
+                    TextColor(colors::FG0),
+                ));
+            });
 
             // ── Secondary ID (smaller, dimmed) ────────────────────────────────
             card.spawn((
                 CardIdLabel { index },
-                Text::new(truncate_str(title, 32)),
+                CardMatchHighlight::default(),
+                Text::default(),
                 TextFont {
                     font_size: 10.0,
                     ..default()
                 },
                 TextColor(colors::GREY1),
-            ));
+            ))
+            .with_children(|label| {
+                label.spawn((
+                    LabelSpanPrefix,
+                    TextSpan::new(truncate_str(title, 32)),
+                    TextFont {
+                        font_size: 10.0,
+                        ..default()
+                    },
+                    TextColor(colors::GREY1),
+                ));
+                label.spawn((
+                    LabelSpanHighlight,
+                    TextSpan::new(String::new()),
+                    TextFont {
+                        font_size: 10.0,
+                        ..default()
+                    },
+                    TextColor(colors::YELLOW),
+                ));
+                label.spawn((
+                    LabelSpanSuffix,
+                    TextSpan::new(String::new()),
+                    TextFont {
+                        font_size: 10.0,
+                        ..default()
+                    },
+                    TextColor(colors::GREY1),
+                ));
+            });
 
             // ── Timestamp ─────────────────────────────────────────────────────
             if let Some(ts) = timestamp {
@@ -275,99 +354,94 @@ fn spawn_thumbnail_area(
             BorderRadius::all(Val::Px(4.0)),
             BackgroundColor(colors::BG3),
         ))
-        .with_children(|area| {
-            match (status, thumbnail) {
-                (Status::Done, Some(ThumbnailState::Ready(handle))) => {
-                    area.spawn((
-                        ImageNode::new(handle.clone()),
-                        Node {
-                            width: Val::Percent(100.0),
-                            height: Val::Percent(100.0),
-                            ..default()
-                        },
-                    ));
-                }
-                (
-                    Status::Done,
-                    None | Some(ThumbnailState::Generating | ThumbnailState::Pending),
-                ) => {
-                    area.spawn((
-                        Text::new("Loading..."),
-                        TextFont {
-                            font_size: 12.0,
-                            ..default()
-                        },
-                        TextColor(colors::GREY1),
-                    ));
-                }
-                (Status::Done, Some(ThumbnailState::Failed(msg))) => {
-                    area.spawn((
-                        Text::new(format!("! {}", truncate_str(msg, 24))),
-                        TextFont {
-                            font_size: 12.0,
-                            ..default()
-                        },
-                        TextColor(colors::RED),
-                    ));
-                }
-                (Status::Running(_), _) => {
-                    let pct = progress.unwrap_or(0.0) * 100.0;
-                    let etc_text = etc.unwrap_or("ETC: ???");
-                    area.spawn(Node {
-                        flex_direction: FlexDirection::Column,
-                        align_items: AlignItems::Center,
-                        row_gap: Val::Px(4.0),
+        .with_children(|area| match (status, thumbnail) {
+            (Status::Done, Some(ThumbnailState::Ready(handle))) => {
+                area.spawn((
+                    ImageNode::new(handle.clone()),
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
                         ..default()
-                    })
-                    .with_children(|col| {
-                        col.spawn((
-                            Text::new(format!("{pct:.0}%")),
-                            TextFont {
-                                font_size: 18.0,
-                                ..default()
-                            },
-                            TextColor(colors::YELLOW),
-                        ));
-                        col.spawn((
-                            Text::new(etc_text.to_string()),
-                            TextFont {
-                                font_size: 11.0,
-                                ..default()
-                            },
-                            TextColor(colors::GREY1),
-                        ));
-                    });
-                }
-                (Status::Planning | Status::Scheduled, _) => {
-                    area.spawn((
-                        Text::new("[?]"),
+                    },
+                ));
+            }
+            (Status::Done, None | Some(ThumbnailState::Generating | ThumbnailState::Pending)) => {
+                area.spawn((
+                    Text::new("Loading..."),
+                    TextFont {
+                        font_size: 12.0,
+                        ..default()
+                    },
+                    TextColor(colors::GREY1),
+                ));
+            }
+            (Status::Done, Some(ThumbnailState::Failed(msg))) => {
+                area.spawn((
+                    Text::new(format!("! {}", truncate_str(msg, 24))),
+                    TextFont {
+                        font_size: 12.0,
+                        ..default()
+                    },
+                    TextColor(colors::RED),
+                ));
+            }
+            (Status::Running(_), _) => {
+                let pct = progress.unwrap_or(0.0) * 100.0;
+                let etc_text = etc.unwrap_or("ETC: ???");
+                area.spawn(Node {
+                    flex_direction: FlexDirection::Column,
+                    align_items: AlignItems::Center,
+                    row_gap: Val::Px(4.0),
+                    ..default()
+                })
+                .with_children(|col| {
+                    col.spawn((
+                        Text::new(format!("{pct:.0}%")),
                         TextFont {
-                            font_size: 24.0,
+                            font_size: 18.0,
+                            ..default()
+                        },
+                        TextColor(colors::YELLOW),
+                    ));
+                    col.spawn((
+                        Text::new(etc_text.to_string()),
+                        TextFont {
+                            font_size: 11.0,
                             ..default()
                         },
                         TextColor(colors::GREY1),
                     ));
-                }
-                (Status::Aborted, _) => {
-                    area.spawn((
-                        Text::new("[X]"),
-                        TextFont {
-                            font_size: 24.0,
-                            ..default()
-                        },
-                        TextColor(colors::RED),
-                    ));
-                }
-                (Status::Simulating, _) => {
-                    area.spawn((
-                        Text::new("Simulating..."),
-                        TextFont {
-                            font_size: 12.0,
-                            ..default()
-                        },
-                        TextColor(colors::BLUE),
-                    ));
-                }
+                });
+            }
+            (Status::Planning | Status::Scheduled, _) => {
+                area.spawn((
+                    Text::new("[?]"),
+                    TextFont {
+                        font_size: 24.0,
+                        ..default()
+                    },
+                    TextColor(colors::GREY1),
+                ));
+            }
+            (Status::Aborted, _) => {
+                area.spawn((
+                    Text::new("[X]"),
+                    TextFont {
+                        font_size: 24.0,
+                        ..default()
+                    },
+                    TextColor(colors::RED),
+                ));
+            }
+            (Status::Simulating, _) => {
+                area.spawn((
+                    Text::new("Simulating..."),
+                    TextFont {
+                        font_size: 12.0,
+                        ..default()
+                    },
+                    TextColor(colors::BLUE),
+                ));
             }
         });
 }
@@ -389,7 +463,13 @@ fn spawn_quick_actions(parent: &mut ChildSpawnerCommands, index: usize, status: 
             spawn_quick_button(row, "[D]", CardQuickActionKind::Delete, colors::RED, index);
             spawn_quick_button(row, "[C]", CardQuickActionKind::Copy, colors::GREY1, index);
             if show_schedule {
-                spawn_quick_button(row, "[S]", CardQuickActionKind::Schedule, colors::BLUE, index);
+                spawn_quick_button(
+                    row,
+                    "[S]",
+                    CardQuickActionKind::Schedule,
+                    colors::BLUE,
+                    index,
+                );
             }
         });
 }
@@ -525,13 +605,21 @@ pub fn sync_cards_to_scenarios(
             None
         };
         let etc_str = scenario.get_etc();
-        let etc = if etc_str.is_empty() { None } else { Some(etc_str.as_str()) };
+        let etc = if etc_str.is_empty() {
+            None
+        } else {
+            Some(etc_str.as_str())
+        };
 
         let ts = scenario
             .started
             .map(|dt| dt.format("%Y-%m-%d").to_string())
             .unwrap_or_default();
-        let ts_opt = if ts.is_empty() { None } else { Some(ts.as_str()) };
+        let ts_opt = if ts.is_empty() {
+            None
+        } else {
+            Some(ts.as_str())
+        };
 
         let card_entity = spawn_card(
             &mut commands,
@@ -630,8 +718,8 @@ pub fn handle_card_click(
         }
 
         let now = time.elapsed_secs_f64();
-        let is_double_click = last_click.index == Some(card.index)
-            && (now - last_click.time) < DOUBLE_CLICK_SECS;
+        let is_double_click =
+            last_click.index == Some(card.index) && (now - last_click.time) < DOUBLE_CLICK_SECS;
 
         // Update last-click tracking.
         last_click.time = now;
@@ -700,8 +788,17 @@ pub fn handle_card_quick_actions(
                     match crate::core::scenario::Scenario::build(None) {
                         Ok(mut new_scenario) => {
                             new_scenario.config = entry.scenario.config.clone();
-                            new_scenario.comment =
-                                format!("Copy of {}", entry.scenario.comment.as_str().trim().to_string().trim_start_matches("Copy of ").trim());
+                            new_scenario.comment = format!(
+                                "Copy of {}",
+                                entry
+                                    .scenario
+                                    .comment
+                                    .as_str()
+                                    .trim()
+                                    .to_string()
+                                    .trim_start_matches("Copy of ")
+                                    .trim()
+                            );
                             if let Err(e) = new_scenario.save() {
                                 tracing::warn!("Failed to save copied scenario: {e}");
                             }
@@ -732,7 +829,14 @@ pub fn handle_card_inline_edit(
     mut edit_mode: ResMut<CardEditMode>,
     mut scenario_list: ResMut<ScenarioList>,
     mut keyboard: EventReader<KeyboardInput>,
+    search_focused: Res<super::toolbar::SearchFocused>,
 ) {
+    // Don't consume keyboard events when search field is focused.
+    if search_focused.0 {
+        keyboard.clear();
+        return;
+    }
+
     let Some(editing_index) = edit_mode.editing_index else {
         keyboard.clear();
         return;
@@ -776,35 +880,49 @@ pub fn handle_card_inline_edit(
     }
 }
 
-/// Updates `CardNameLabel` and `CardIdLabel` text nodes to reflect current scenario
-/// data, shows the edit-mode draft when applicable, and gives a rename hint on the
-/// selected card.
+/// Updates `CardNameLabel` and `CardIdLabel` prefix spans to reflect current scenario
+/// data, shows the edit-mode draft when applicable, and gives a rename hint.
+///
+/// Highlight splitting is handled separately by `update_card_label_highlights`.
+#[allow(clippy::type_complexity)]
 #[tracing::instrument(skip_all)]
 pub fn update_card_labels(
     edit_mode: Res<CardEditMode>,
     selected: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
-    mut name_labels: Query<(&CardNameLabel, &mut Text, &mut TextColor), Without<CardIdLabel>>,
-    mut id_labels: Query<(&CardIdLabel, &mut Text), Without<CardNameLabel>>,
+    search: Res<super::toolbar::SearchQuery>,
+    name_labels: Query<(&CardNameLabel, &Children), Without<CardIdLabel>>,
+    id_labels: Query<(&CardIdLabel, &Children), Without<CardNameLabel>>,
+    mut prefix_spans: Query<&mut TextSpan, With<LabelSpanPrefix>>,
+    mut prefix_colors: Query<&mut TextColor, With<LabelSpanPrefix>>,
+    mut highlight_spans: Query<&mut TextSpan, (With<LabelSpanHighlight>, Without<LabelSpanPrefix>)>,
+    mut suffix_spans: Query<
+        &mut TextSpan,
+        (
+            With<LabelSpanSuffix>,
+            Without<LabelSpanPrefix>,
+            Without<LabelSpanHighlight>,
+        ),
+    >,
 ) {
-    if !edit_mode.is_changed() && !scenario_list.is_changed() && !selected.is_changed() {
+    if !edit_mode.is_changed()
+        && !scenario_list.is_changed()
+        && !selected.is_changed()
+        && !search.is_changed()
+    {
         return;
     }
 
-    for (label, mut text, mut color) in &mut name_labels {
+    for (label, children) in &name_labels {
         let Some(entry) = scenario_list.entries.get(label.index) else {
             continue;
         };
         let is_editing = edit_mode.editing_index == Some(label.index);
         let is_selected = selected.index == Some(label.index);
 
-        let display = if is_editing {
-            // Show draft with a blinking-cursor indicator.
-            color.0 = colors::ORANGE;
-            format!("{}|", edit_mode.draft)
+        let (display, color) = if is_editing {
+            (format!("{}|", edit_mode.draft), colors::ORANGE)
         } else if is_selected {
-            // Selected but not editing: show rename hint.
-            color.0 = colors::FG0;
             let comment = &entry.scenario.comment;
             let id = entry.scenario.get_id();
             let base = if comment.is_empty() {
@@ -812,25 +930,176 @@ pub fn update_card_labels(
             } else {
                 truncate_str(comment, 28)
             };
-            format!("{base}  [rename]")
+            (format!("{base}  [rename]"), colors::FG0)
         } else {
-            color.0 = colors::FG0;
             let comment = &entry.scenario.comment;
             let id = entry.scenario.get_id();
-            if comment.is_empty() {
+            let text = if comment.is_empty() {
                 truncate_str(id, 36)
             } else {
                 truncate_str(comment, 36)
-            }
+            };
+            (text, colors::FG0)
         };
-        text.0 = display;
+
+        // Write to prefix span and clear highlight/suffix so update_card_label_highlights
+        // can take over when a query is active.
+        for &child in children {
+            if let Ok(mut span) = prefix_spans.get_mut(child) {
+                span.0.clone_from(&display);
+            }
+            if let Ok(mut col) = prefix_colors.get_mut(child) {
+                col.0 = color;
+            }
+            if let Ok(mut span) = highlight_spans.get_mut(child) {
+                span.0.clear();
+            }
+            if let Ok(mut span) = suffix_spans.get_mut(child) {
+                span.0.clear();
+            }
+        }
     }
 
-    for (label, mut text) in &mut id_labels {
+    for (label, children) in &id_labels {
         let Some(entry) = scenario_list.entries.get(label.index) else {
             continue;
         };
-        text.0 = truncate_str(entry.scenario.get_id(), 32);
+        let text = truncate_str(entry.scenario.get_id(), 32);
+
+        for &child in children {
+            if let Ok(mut span) = prefix_spans.get_mut(child) {
+                span.0.clone_from(&text);
+            }
+            if let Ok(mut span) = highlight_spans.get_mut(child) {
+                span.0.clear();
+            }
+            if let Ok(mut span) = suffix_spans.get_mut(child) {
+                span.0.clear();
+            }
+        }
+    }
+}
+
+/// Applies fuzzy-match highlight coloring to card label spans.
+///
+/// Runs after `update_card_labels`. When `CardMatchHighlight` has a range,
+/// splits the prefix text at byte offsets and distributes across spans.
+#[allow(clippy::type_complexity)]
+#[tracing::instrument(skip_all)]
+pub fn update_card_label_highlights(
+    search: Res<super::toolbar::SearchQuery>,
+    name_labels: Query<(&CardNameLabel, &CardMatchHighlight, &Children), Without<CardIdLabel>>,
+    id_labels: Query<(&CardIdLabel, &CardMatchHighlight, &Children), Without<CardNameLabel>>,
+    scenario_list: Res<ScenarioList>,
+    edit_mode: Res<CardEditMode>,
+    selected: Res<SelectedSenario>,
+    mut prefix_spans: Query<&mut TextSpan, With<LabelSpanPrefix>>,
+    mut highlight_spans: Query<&mut TextSpan, (With<LabelSpanHighlight>, Without<LabelSpanPrefix>)>,
+    mut suffix_spans: Query<
+        &mut TextSpan,
+        (
+            With<LabelSpanSuffix>,
+            Without<LabelSpanPrefix>,
+            Without<LabelSpanHighlight>,
+        ),
+    >,
+) {
+    if search.0.is_empty() {
+        // No query — spans already written correctly by update_card_labels
+        return;
+    }
+
+    for (label, highlight, children) in &name_labels {
+        // Don't interfere with inline-edit display
+        if edit_mode.editing_index == Some(label.index) {
+            continue;
+        }
+
+        let Some(entry) = scenario_list.entries.get(label.index) else {
+            continue;
+        };
+
+        let comment = &entry.scenario.comment;
+        let id = entry.scenario.get_id();
+        let is_selected = selected.index == Some(label.index);
+        let max_chars = if is_selected { 28 } else { 36 };
+        let full_text = if comment.is_empty() {
+            truncate_str(id, max_chars)
+        } else {
+            truncate_str(comment, max_chars)
+        };
+
+        apply_highlight_to_spans(
+            &full_text,
+            highlight.name_range,
+            children,
+            &mut prefix_spans,
+            &mut highlight_spans,
+            &mut suffix_spans,
+        );
+    }
+
+    for (label, highlight, children) in &id_labels {
+        let Some(entry) = scenario_list.entries.get(label.index) else {
+            continue;
+        };
+        let full_text = truncate_str(entry.scenario.get_id(), 32);
+
+        apply_highlight_to_spans(
+            &full_text,
+            highlight.id_range,
+            children,
+            &mut prefix_spans,
+            &mut highlight_spans,
+            &mut suffix_spans,
+        );
+    }
+}
+
+/// Splits `text` at `range` and writes prefix/highlight/suffix spans accordingly.
+#[allow(clippy::type_complexity)]
+#[tracing::instrument(level = "trace", skip_all)]
+fn apply_highlight_to_spans(
+    text: &str,
+    range: Option<(usize, usize)>,
+    children: &Children,
+    prefix_spans: &mut Query<&mut TextSpan, With<LabelSpanPrefix>>,
+    highlight_spans: &mut Query<
+        &mut TextSpan,
+        (With<LabelSpanHighlight>, Without<LabelSpanPrefix>),
+    >,
+    suffix_spans: &mut Query<
+        &mut TextSpan,
+        (
+            With<LabelSpanSuffix>,
+            Without<LabelSpanPrefix>,
+            Without<LabelSpanHighlight>,
+        ),
+    >,
+) {
+    let Some((start, end)) = range else {
+        // No match — full text in prefix, clear others (already done by update_card_labels)
+        return;
+    };
+
+    // Clamp to valid byte boundaries within text
+    let start = start.min(text.len());
+    let end = end.min(text.len());
+
+    let prefix_text = &text[..start];
+    let highlight_text = &text[start..end];
+    let suffix_text = &text[end..];
+
+    for &child in children {
+        if let Ok(mut span) = prefix_spans.get_mut(child) {
+            span.0 = prefix_text.to_string();
+        }
+        if let Ok(mut span) = highlight_spans.get_mut(child) {
+            span.0 = highlight_text.to_string();
+        }
+        if let Ok(mut span) = suffix_spans.get_mut(child) {
+            span.0 = suffix_text.to_string();
+        }
     }
 }
 
@@ -839,7 +1108,14 @@ pub fn update_card_labels(
 /// sets it as active, and syncs the card list (grid stays visible).
 #[tracing::instrument(skip_all)]
 pub fn handle_new_scenario_card_click(
-    action_cards: Query<&Interaction, (With<NewScenarioActionCard>, With<Button>, Changed<Interaction>)>,
+    action_cards: Query<
+        &Interaction,
+        (
+            With<NewScenarioActionCard>,
+            With<Button>,
+            Changed<Interaction>,
+        ),
+    >,
     mut scenario_list: ResMut<ScenarioList>,
     mut selected: ResMut<SelectedSenario>,
     project_state: Res<crate::ProjectState>,

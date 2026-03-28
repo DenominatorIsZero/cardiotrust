@@ -60,9 +60,10 @@ impl Default for NumberOfJobs {
     }
 }
 
-/// Starts scenarios from the scenario list that are scheduled, spawning threads
-/// to run them and tracking their status. Limits number of concurrent scenarios
-/// based on provided resource. Updates state if max concurrent reached.
+/// Starts scenarios from the scenario list that are scheduled.
+///
+/// Spawns threads to run them and tracks their status. Limits concurrent
+/// scenarios based on the provided resource; updates state when limit is reached.
 #[allow(clippy::needless_pass_by_value)]
 #[tracing::instrument(level = "trace", skip(commands))]
 pub fn start_scenarios(
@@ -112,10 +113,10 @@ pub fn start_scenarios(
     }
 }
 
-/// Checks the status of running scenarios, updating their epoch and summary if
-/// available. Removes finished scenarios from tracking. Checks if the scheduler
-/// should be marked as available based on running scenario count and current
-/// scheduler state.
+/// Checks the status of running scenarios, updating epoch and summary.
+///
+/// Removes finished scenarios from tracking. Marks the scheduler as available
+/// based on running scenario count and current scheduler state.
 ///
 /// # Panics
 ///

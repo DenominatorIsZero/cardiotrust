@@ -41,8 +41,7 @@ impl GPU {
             != ocl::core::DeviceInfoResult::Type(ocl::core::DeviceType::GPU).to_string()
         {
             return Err(anyhow::anyhow!(
-                "Device is not a GPU - found device type: {}",
-                device_type.to_string()
+                "Device is not a GPU - found device type: {device_type}"
             ));
         }
 

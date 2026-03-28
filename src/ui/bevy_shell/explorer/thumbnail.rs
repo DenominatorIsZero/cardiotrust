@@ -111,7 +111,6 @@ pub fn queue_thumbnail_generation(
     let width = 280_u32;
     let height = 160_u32;
     {
-
         // Derive a deterministic accent colour from the scenario ID.
         let hash: u64 = id.bytes().fold(0u64, |acc, b| {
             acc.wrapping_mul(31).wrapping_add(u64::from(b))
@@ -122,9 +121,9 @@ pub fn queue_thumbnail_generation(
         let accent_b = 100u8 + (hash & 0x77) as u8;
 
         // Colour constants (Gruvebox-dark-ish).
-        let bg = [0x28u8, 0x28, 0x28, 0xFF];       // BG0
-        let axis = [0x66u8, 0x5c, 0x54, 0xFF];     // GREY
-        let grid_c = [0x3cu8, 0x38, 0x36, 0xFF];  // BG1
+        let bg = [0x28u8, 0x28, 0x28, 0xFF]; // BG0
+        let axis = [0x66u8, 0x5c, 0x54, 0xFF]; // GREY
+        let grid_c = [0x3cu8, 0x38, 0x36, 0xFF]; // BG1
 
         // Margins (pixels): leave room for axes.
         let left = 24_u32;
@@ -205,7 +204,12 @@ pub fn queue_thumbnail_generation(
                 let max_y = py.max(ppy);
                 for y in min_y..=max_y {
                     for dx in 0..2u32 {
-                        set_pixel(&mut pixels, ppx + dx, y, [accent_r, accent_g, accent_b, 255]);
+                        set_pixel(
+                            &mut pixels,
+                            ppx + dx,
+                            y,
+                            [accent_r, accent_g, accent_b, 255],
+                        );
                     }
                 }
             }
@@ -278,7 +282,9 @@ mod tests {
         assert!(!cache.states.contains_key("s1"));
 
         // Insert Pending.
-        cache.states.insert("s1".to_string(), ThumbnailState::Pending);
+        cache
+            .states
+            .insert("s1".to_string(), ThumbnailState::Pending);
         assert!(matches!(
             cache.states.get("s1"),
             Some(ThumbnailState::Pending)

@@ -74,7 +74,7 @@ impl Plugin for UiPlugin {
 /// An enum representing the different UI states (views) of the application.
 ///
 /// The default state is `Explorer`. Under the Bevy backend all six views are
-/// reachable; under EGui only `Explorer`, `Scenario`, `Results`, and
+/// reachable; under `EGui` only `Explorer`, `Scenario`, `Results`, and
 /// `Volumetric` are used.
 ///
 /// This allows conditional rendering of different UI components
