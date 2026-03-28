@@ -3,8 +3,8 @@
 use bevy::{input::keyboard::KeyboardInput, prelude::*};
 
 use super::{
-    card::{create_new_scenario, CardEditMode},
-    ExplorerViewRoot,
+    card::{create_new_scenario, CardEditMode, CardScenarioId, NewScenarioActionCard},
+    ExplorerGridNode, ExplorerViewRoot,
 };
 use crate::{ui::colors, ProjectState, ScenarioList, SelectedSenario};
 
@@ -582,17 +582,25 @@ pub fn fuzzy_match(query: &str, target: &str) -> Option<(usize, usize)> {
     }
 }
 
-/// Shows/hides cards based on active filter + search query.
+/// Shows/hides cards based on active filter + search query, then reorders
+/// visible cards according to `SortOrder`.
 ///
 /// Toggles `Display` on the card's `Node` (not `Visibility`), so hidden cards
 /// do not occupy grid space. Also updates `CardMatchHighlight` on label entities.
+/// After filtering, sorts the visible entity list and calls
+/// `replace_children` on the grid parent to apply the new order.
+#[allow(clippy::too_many_arguments)]
 #[tracing::instrument(skip_all)]
 pub fn apply_filter_and_sort(
+    mut commands: Commands,
     filter: Res<StatusFilter>,
     order: Res<SortOrder>,
     search: Res<SearchQuery>,
     scenario_list: Res<ScenarioList>,
-    mut cards: Query<(&super::card::ScenarioCard, &mut Node)>,
+    grids: Query<Entity, With<ExplorerGridNode>>,
+    action_cards: Query<Entity, With<NewScenarioActionCard>>,
+    mut cards: Query<(Entity, &super::card::ScenarioCard, &mut Node)>,
+    card_ids: Query<(Entity, &CardScenarioId)>,
     mut name_labels: Query<
         (
             &super::card::CardNameLabel,
@@ -618,7 +626,16 @@ pub fn apply_filter_and_sort(
 
     let query_lower = search.0.to_lowercase();
 
-    for (card, mut node) in &mut cards {
+    // Build entity → scenario-id map from the stable CardScenarioId component.
+    let entity_to_sid: std::collections::HashMap<Entity, String> = card_ids
+        .iter()
+        .map(|(e, cid)| (e, cid.0.clone()))
+        .collect();
+
+    // Track which entities are visible after filtering.
+    let mut visible_entities: Vec<Entity> = Vec::new();
+
+    for (entity, card, mut node) in &mut cards {
         let Some(entry) = scenario_list.entries.get(card.index) else {
             continue;
         };
@@ -666,6 +683,10 @@ pub fn apply_filter_and_sort(
             Display::None
         };
 
+        if status_ok && search_ok {
+            visible_entities.push(entity);
+        }
+
         // Update CardMatchHighlight on the label entities (matched by scenario index).
         for (label, mut highlight) in &mut name_labels {
             if label.index == card.index {
@@ -681,9 +702,109 @@ pub fn apply_filter_and_sort(
         }
     }
 
-    // TODO: re-order card nodes by `order` (requires mutable access to parent children).
-    // For now the sort resource is wired; reordering would need ChildOf manipulation.
-    let _ = order; // suppress unused warning
+    // ── Sort visible entities by the active SortOrder ─────────────────────────
+    //
+    // For each entity we look up its scenario via CardScenarioId → ScenarioList.
+    // Scenarios missing the sort key (e.g. no summary) are sorted to the end.
+    // A stable tiebreaker on scenario ID ensures a deterministic order.
+
+    /// Look up the scenario for a card entity by ID, returning `None` if not found.
+    #[tracing::instrument(skip_all)]
+    fn find_scenario<'a>(
+        entity: Entity,
+        entity_to_sid: &std::collections::HashMap<Entity, String>,
+        scenario_list: &'a ScenarioList,
+    ) -> Option<&'a crate::core::scenario::Scenario> {
+        let sid = entity_to_sid.get(&entity)?;
+        scenario_list
+            .entries
+            .iter()
+            .find(|e| e.scenario.get_id() == sid)
+            .map(|e| &e.scenario)
+    }
+
+    visible_entities.sort_by(|&a, &b| {
+        let sa = find_scenario(a, &entity_to_sid, &scenario_list);
+        let sb = find_scenario(b, &entity_to_sid, &scenario_list);
+
+        match *order {
+            SortOrder::DateNewest => {
+                // Most-recent first; None timestamps sort last.
+                let ta = sa.and_then(|s| s.started);
+                let tb = sb.and_then(|s| s.started);
+                match (ta, tb) {
+                    (Some(a_dt), Some(b_dt)) => b_dt
+                        .cmp(&a_dt)
+                        .then_with(|| tiebreak_id(sa, sb)),
+                    (Some(_), None) => std::cmp::Ordering::Less,
+                    (None, Some(_)) => std::cmp::Ordering::Greater,
+                    (None, None) => tiebreak_id(sa, sb),
+                }
+            }
+            SortOrder::LossLowest => {
+                // Lowest loss first; None summary → f32::MAX sorts last.
+                let la = sa
+                    .and_then(|s| s.summary.as_ref())
+                    .map_or(f32::MAX, |s| s.loss);
+                let lb = sb
+                    .and_then(|s| s.summary.as_ref())
+                    .map_or(f32::MAX, |s| s.loss);
+                la.total_cmp(&lb).then_with(|| tiebreak_id(sa, sb))
+            }
+            SortOrder::DiceHighest => {
+                // Highest dice first; None summary → f32::MIN sorts last.
+                let da = sa
+                    .and_then(|s| s.summary.as_ref())
+                    .map_or(f32::MIN, |s| s.dice);
+                let db = sb
+                    .and_then(|s| s.summary.as_ref())
+                    .map_or(f32::MIN, |s| s.dice);
+                // Descending: compare b vs a.
+                db.total_cmp(&da).then_with(|| tiebreak_id(sa, sb))
+            }
+            SortOrder::Name => {
+                // Ascending by display name (comment if set, else id), case-insensitive.
+                let na = sa.map_or_else(String::default, |s| {
+                        if s.comment.is_empty() {
+                            s.get_id().to_lowercase()
+                        } else {
+                            s.comment.to_lowercase()
+                        }
+                    });
+                let nb = sb.map_or_else(String::default, |s| {
+                        if s.comment.is_empty() {
+                            s.get_id().to_lowercase()
+                        } else {
+                            s.comment.to_lowercase()
+                        }
+                    });
+                na.cmp(&nb).then_with(|| tiebreak_id(sa, sb))
+            }
+        }
+    });
+
+    // Apply the sorted order to the grid parent's children list.
+    // The "New Scenario" action card is always placed last; it was never part
+    // of the sort input and must be explicitly re-appended so replace_children
+    // doesn't detach it from the grid.
+    let mut ordered: Vec<Entity> = visible_entities;
+    if let Ok(action) = action_cards.single() {
+        ordered.push(action);
+    }
+    if let Ok(grid) = grids.single() {
+        commands.entity(grid).replace_children(&ordered);
+    }
+}
+
+/// Stable tiebreaker: ascending by scenario ID (empty/missing IDs sort last).
+#[tracing::instrument(skip_all)]
+fn tiebreak_id(
+    a: Option<&crate::core::scenario::Scenario>,
+    b: Option<&crate::core::scenario::Scenario>,
+) -> std::cmp::Ordering {
+    let id_a = a.map_or("", |s| s.get_id().as_str());
+    let id_b = b.map_or("", |s| s.get_id().as_str());
+    id_a.cmp(id_b)
 }
 
 /// "New Scenario" toolbar button — same action as the action card.

@@ -50,6 +50,13 @@ pub struct ScenarioCard {
     pub index: usize,
 }
 
+/// Stable scenario-identity label attached to every card root entity.
+///
+/// Used by `apply_filter_and_sort` to map card entities back to their
+/// scenario data without relying on child-order indices.
+#[derive(Component, Debug, Clone)]
+pub struct CardScenarioId(pub String);
+
 /// Marker for the "New Scenario" action card.
 #[derive(Component, Debug)]
 pub struct NewScenarioActionCard;
@@ -150,6 +157,7 @@ pub fn spawn_card(
                 scenario_id: scenario_id.to_string(),
                 index,
             },
+            CardScenarioId(scenario_id.to_string()),
             Button,
             Node {
                 flex_direction: FlexDirection::Column,
