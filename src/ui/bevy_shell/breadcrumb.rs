@@ -62,7 +62,7 @@ fn build_breadcrumb(
 /// Updates the breadcrumb text whenever `UiState` transitions.
 #[tracing::instrument(skip_all)]
 pub fn update_breadcrumb(
-    mut transitions: EventReader<StateTransitionEvent<UiState>>,
+    mut transitions: MessageReader<StateTransitionEvent<UiState>>,
     mut texts: Query<(&mut Text, &mut TextColor), With<BreadcrumbText>>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,

@@ -93,11 +93,11 @@ pub fn spawn_context_menu(
                 border: UiRect::all(Val::Px(1.0)),
                 overflow: Overflow::clip(),
                 min_width: Val::Px(160.0),
+                border_radius: BorderRadius::all(Val::Px(4.0)),
                 ..default()
             },
-            BorderRadius::all(Val::Px(4.0)),
             BackgroundColor(colors::BG1),
-            BorderColor(colors::BG3),
+            BorderColor::all(colors::BG3),
             ZIndex(100),
         ))
         .with_children(|menu| {

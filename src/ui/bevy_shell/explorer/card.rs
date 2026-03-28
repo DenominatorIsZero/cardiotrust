@@ -166,11 +166,11 @@ pub fn spawn_card(
                 border: UiRect::all(Val::Px(2.0)),
                 min_width: Val::Px(200.0),
                 min_height: Val::Px(280.0),
+                border_radius: BorderRadius::all(Val::Px(8.0)),
                 ..default()
             },
-            BorderRadius::all(Val::Px(8.0)),
             BackgroundColor(colors::BG1),
-            BorderColor(Color::NONE),
+            BorderColor::all(Color::NONE),
         ))
         .with_children(|card| {
             // ── Status badge ──────────────────────────────────────────────────
@@ -178,9 +178,9 @@ pub fn spawn_card(
                 Node {
                     padding: UiRect::axes(Val::Px(8.0), Val::Px(4.0)),
                     align_self: AlignSelf::FlexStart,
+                    border_radius: BorderRadius::all(Val::Px(12.0)),
                     ..default()
                 },
-                BorderRadius::all(Val::Px(12.0)),
                 BackgroundColor(badge_color),
             ))
             .with_children(|badge| {
@@ -357,9 +357,9 @@ fn spawn_thumbnail_area(
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 overflow: Overflow::clip(),
+                border_radius: BorderRadius::all(Val::Px(4.0)),
                 ..default()
             },
-            BorderRadius::all(Val::Px(4.0)),
             BackgroundColor(colors::BG3),
         ))
         .with_children(|area| match (status, thumbnail) {
@@ -499,9 +499,9 @@ fn spawn_quick_button(
                 padding: UiRect::axes(Val::Px(6.0), Val::Px(2.0)),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
+                border_radius: BorderRadius::all(Val::Px(3.0)),
                 ..default()
             },
-            BorderRadius::all(Val::Px(3.0)),
             BackgroundColor(Color::NONE),
         ))
         .with_children(|btn| {
@@ -546,10 +546,10 @@ pub fn update_active_card_border(
 ) {
     for (card, mut border, mut bg) in &mut cards {
         if selected.index == Some(card.index) {
-            border.set_if_neq(BorderColor(colors::ORANGE));
+            border.set_if_neq(BorderColor::all(colors::ORANGE));
             bg.set_if_neq(BackgroundColor(colors::BG2));
         } else {
-            border.set_if_neq(BorderColor(Color::NONE));
+            border.set_if_neq(BorderColor::all(Color::NONE));
         }
     }
 }
@@ -666,11 +666,11 @@ pub fn spawn_new_scenario_action_card(commands: &mut Commands) -> Entity {
                 row_gap: Val::Px(8.0),
                 min_width: Val::Px(200.0),
                 min_height: Val::Px(120.0),
+                border_radius: BorderRadius::all(Val::Px(8.0)),
                 ..default()
             },
-            BorderRadius::all(Val::Px(8.0)),
             BackgroundColor(Color::NONE),
-            BorderColor(colors::GREY1),
+            BorderColor::all(colors::GREY1),
         ))
         .with_children(|btn| {
             btn.spawn((
@@ -836,7 +836,7 @@ pub fn handle_card_quick_actions(
 pub fn handle_card_inline_edit(
     mut edit_mode: ResMut<CardEditMode>,
     mut scenario_list: ResMut<ScenarioList>,
-    mut keyboard: EventReader<KeyboardInput>,
+    mut keyboard: MessageReader<KeyboardInput>,
     search_focused: Res<super::toolbar::SearchFocused>,
 ) {
     // Don't consume keyboard events when search field is focused.

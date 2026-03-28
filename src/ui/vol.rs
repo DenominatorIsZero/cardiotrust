@@ -35,7 +35,7 @@ pub fn draw_ui_volumetric(
     mut cutting_plane: ResMut<CuttingPlaneSettings>,
     mut sensor_bracket_settings: ResMut<BacketSettings>,
     mut cameras: Query<&mut EditorCam, With<Camera>>,
-    mut ev_setup: EventWriter<SetupHeartAndSensors>,
+    mut ev_setup: MessageWriter<SetupHeartAndSensors>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
 ) {

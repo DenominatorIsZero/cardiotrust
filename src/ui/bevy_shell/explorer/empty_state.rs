@@ -95,14 +95,14 @@ pub fn spawn_empty_state(
                 grp.spawn((
                     EmptyStateNewScenarioButton,
                     Button,
-                    Node {
-                        padding: UiRect::axes(Val::Px(24.0), Val::Px(12.0)),
-                        align_items: AlignItems::Center,
-                        justify_content: JustifyContent::Center,
-                        ..default()
-                    },
-                    BorderRadius::all(Val::Px(4.0)),
-                    BackgroundColor(colors::ORANGE),
+                Node {
+                    padding: UiRect::axes(Val::Px(24.0), Val::Px(12.0)),
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    border_radius: BorderRadius::all(Val::Px(4.0)),
+                    ..default()
+                },
+                BackgroundColor(colors::ORANGE),
                 ))
                 .with_children(|btn| {
                     btn.spawn((
@@ -152,9 +152,9 @@ pub fn spawn_empty_state(
                         padding: UiRect::axes(Val::Px(20.0), Val::Px(10.0)),
                         align_items: AlignItems::Center,
                         justify_content: JustifyContent::Center,
+                        border_radius: BorderRadius::all(Val::Px(4.0)),
                         ..default()
                     },
-                    BorderRadius::all(Val::Px(4.0)),
                     BackgroundColor(colors::BG3),
                 ))
                 .with_children(|btn| {

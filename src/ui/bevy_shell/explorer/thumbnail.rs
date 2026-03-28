@@ -226,7 +226,7 @@ pub fn queue_thumbnail_generation(
             bevy::render::render_resource::TextureDimension::D2,
             pixels,
             bevy::render::render_resource::TextureFormat::Rgba8UnormSrgb,
-            bevy::render::render_asset::RenderAssetUsages::RENDER_WORLD,
+            bevy::asset::RenderAssetUsages::RENDER_WORLD,
         );
         let handle = images.add(image);
         cache.states.insert(id, ThumbnailState::Ready(handle));

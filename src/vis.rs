@@ -43,7 +43,7 @@ use crate::{
     },
 };
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct SetupHeartAndSensors(pub Scenario);
 
 #[allow(clippy::module_name_repetitions)]
@@ -61,7 +61,7 @@ impl Plugin for VisPlugin {
             .init_resource::<ColorOptions>()
             .init_resource::<VisibilityOptions>()
             .init_resource::<BacketSettings>()
-            .add_event::<SetupHeartAndSensors>()
+            .add_message::<SetupHeartAndSensors>()
             .add_systems(
                 PreStartup,
                 setup_light_and_camera.before(EguiStartupSet::InitContexts),
@@ -108,16 +108,16 @@ impl Plugin for VisPlugin {
 #[tracing::instrument(level = "info", skip_all)]
 pub fn setup_light_and_camera(mut commands: Commands) {
     info!("Setting up light and camera.");
-    commands.insert_resource(AmbientLight {
-        color: Color::WHITE,
-        brightness: 1000.0,
-        affects_lightmapped_meshes: false,
-    });
 
     commands
         .spawn((
             Camera3d::default(),
             Transform::from_xyz(-100.0, 200.0, 50.0).looking_at(Vec3::ZERO, Vec3::Z),
+            AmbientLight {
+                color: Color::WHITE,
+                brightness: 1000.0,
+                affects_lightmapped_meshes: false,
+            },
         ))
         .insert(EditorCam {
             orbit_constraint: OrbitConstraint::Free,
@@ -190,7 +190,7 @@ fn spawn_axis(
 #[allow(clippy::cast_precision_loss, clippy::too_many_arguments)]
 #[tracing::instrument(level = "info", skip_all)]
 pub fn handle_setup_heart_and_sensors(
-    mut ev_setup: EventReader<SetupHeartAndSensors>,
+    mut ev_setup: MessageReader<SetupHeartAndSensors>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,

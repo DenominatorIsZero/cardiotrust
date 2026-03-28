@@ -160,11 +160,11 @@ fn spawn_toolbar_into(commands: &mut Commands, parent: Entity) {
                     border: UiRect::all(Val::Px(1.0)),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::SpaceBetween,
+                    border_radius: BorderRadius::all(Val::Px(4.0)),
                     ..default()
                 },
-                BorderRadius::all(Val::Px(4.0)),
                 BackgroundColor(colors::BG3),
-                BorderColor(colors::GREY1),
+                BorderColor::all(colors::GREY1),
             ))
             .with_children(|field| {
                 field.spawn((
@@ -215,9 +215,9 @@ fn spawn_toolbar_into(commands: &mut Commands, parent: Entity) {
                     padding: UiRect::axes(Val::Px(16.0), Val::Px(8.0)),
                     align_items: AlignItems::Center,
                     justify_content: JustifyContent::Center,
+                    border_radius: BorderRadius::all(Val::Px(4.0)),
                     ..default()
                 },
-                BorderRadius::all(Val::Px(4.0)),
                 BackgroundColor(colors::ORANGE),
             ))
             .with_children(|btn| {
@@ -244,9 +244,9 @@ fn spawn_filter_button(parent: &mut ChildSpawnerCommands, label: &str, filter: S
             Button,
             Node {
                 padding: UiRect::axes(Val::Px(10.0), Val::Px(4.0)),
+                border_radius: BorderRadius::all(Val::Px(12.0)),
                 ..default()
             },
-            BorderRadius::all(Val::Px(12.0)),
             BackgroundColor(colors::BG3),
         ))
         .with_children(|btn| {
@@ -269,9 +269,9 @@ fn spawn_sort_button(parent: &mut ChildSpawnerCommands, label: &str, order: Sort
             Button,
             Node {
                 padding: UiRect::axes(Val::Px(10.0), Val::Px(4.0)),
+                border_radius: BorderRadius::all(Val::Px(12.0)),
                 ..default()
             },
-            BorderRadius::all(Val::Px(12.0)),
             BackgroundColor(colors::BG3),
         ))
         .with_children(|btn| {
@@ -433,7 +433,10 @@ pub fn update_search_field_visuals(
         colors::GREY1
     };
     for mut border in &mut field_borders {
-        border.0 = border_color;
+        border.top = border_color;
+        border.right = border_color;
+        border.bottom = border_color;
+        border.left = border_color;
     }
 }
 
@@ -507,7 +510,7 @@ pub fn handle_search_outside_click(
 /// Reads keyboard input into `SearchQuery` resource when the search field is focused.
 #[tracing::instrument(skip_all)]
 pub fn handle_text_search_input(
-    mut keyboard: EventReader<KeyboardInput>,
+    mut keyboard: MessageReader<KeyboardInput>,
     mut search: ResMut<SearchQuery>,
     mut focused: ResMut<SearchFocused>,
     edit_mode: Res<CardEditMode>,

@@ -128,11 +128,11 @@ fn spawn_open_project_panel(parent: &mut ChildSpawnerCommands) {
                 padding: UiRect::all(Val::Px(16.0)),
                 row_gap: Val::Px(12.0),
                 border: UiRect::all(Val::Px(1.0)),
+                border_radius: BorderRadius::all(Val::Px(8.0)),
                 ..default()
             },
             BackgroundColor(colors::BG1),
-            BorderColor(colors::GREY1),
-            BorderRadius::all(Val::Px(8.0)),
+            BorderColor::all(colors::GREY1),
         ))
         .with_children(|panel| {
             panel.spawn((
@@ -153,10 +153,10 @@ fn spawn_open_project_panel(parent: &mut ChildSpawnerCommands) {
                         padding: UiRect::axes(Val::Px(16.0), Val::Px(10.0)),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
+                        border_radius: BorderRadius::all(Val::Px(4.0)),
                         ..default()
                     },
                     BackgroundColor(colors::ORANGE),
-                    BorderRadius::all(Val::Px(4.0)),
                 ))
                 .with_children(|btn| {
                     btn.spawn((
@@ -180,10 +180,10 @@ fn spawn_recent_projects_panel(parent: &mut ChildSpawnerCommands, recent: &[Path
                 flex_direction: FlexDirection::Column,
                 padding: UiRect::all(Val::Px(16.0)),
                 row_gap: Val::Px(8.0),
+                border_radius: BorderRadius::all(Val::Px(8.0)),
                 ..default()
             },
             BackgroundColor(colors::BG1),
-            BorderRadius::all(Val::Px(8.0)),
         ))
         .with_children(|panel| {
             panel.spawn((
@@ -218,10 +218,10 @@ fn spawn_recent_projects_panel(parent: &mut ChildSpawnerCommands, recent: &[Path
                             Node {
                                 padding: UiRect::axes(Val::Px(12.0), Val::Px(8.0)),
                                 align_items: AlignItems::Center,
+                                border_radius: BorderRadius::all(Val::Px(4.0)),
                                 ..default()
                             },
                             BackgroundColor(colors::BG3),
-                            BorderRadius::all(Val::Px(4.0)),
                         ))
                         .with_children(|btn| {
                             btn.spawn((
@@ -248,10 +248,10 @@ fn spawn_demo_projects_panel(parent: &mut ChildSpawnerCommands) {
                 flex_direction: FlexDirection::Column,
                 padding: UiRect::all(Val::Px(16.0)),
                 row_gap: Val::Px(8.0),
+                border_radius: BorderRadius::all(Val::Px(8.0)),
                 ..default()
             },
             BackgroundColor(colors::BG1),
-            BorderRadius::all(Val::Px(8.0)),
         ))
         .with_children(|panel| {
             panel.spawn((
@@ -269,10 +269,10 @@ fn spawn_demo_projects_panel(parent: &mut ChildSpawnerCommands) {
                         Node {
                             padding: UiRect::axes(Val::Px(12.0), Val::Px(8.0)),
                             align_items: AlignItems::Center,
+                            border_radius: BorderRadius::all(Val::Px(4.0)),
                             ..default()
                         },
                         BackgroundColor(colors::BG3),
-                        BorderRadius::all(Val::Px(4.0)),
                     ))
                     .with_children(|card| {
                         card.spawn((
