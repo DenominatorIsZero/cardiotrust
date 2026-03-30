@@ -2,10 +2,23 @@
 //!
 //! Digit keys 1–6 navigate to views (subject to precondition guards).
 //! Escape navigates to the logical parent view.
+//!
+//! All shortcuts are suppressed while any text-entry widget is focused so that
+//! typing numbers (e.g. in a slider value input) does not trigger navigation.
 
 use bevy::prelude::*;
 
-use crate::{core::scenario::Status, ui::UiState, ProjectState, ScenarioList, SelectedSenario};
+use crate::{
+    core::scenario::Status,
+    ui::{
+        bevy_shell::scenario::{
+            header::CommentInputState,
+            widgets::{NumberInputWidget, SliderValueInput, TextInputWidget},
+        },
+        UiState,
+    },
+    ProjectState, ScenarioList, SelectedSenario,
+};
 
 /// Handles keyboard shortcuts for navigation.
 ///
@@ -16,6 +29,8 @@ use crate::{core::scenario::Status, ui::UiState, ProjectState, ScenarioList, Sel
 /// * `5` → Volumetric (guard: scenario Done)
 /// * `6` → Scheduler
 /// * Escape → parent view
+///
+/// All shortcuts are skipped while any typing widget is focused.
 #[tracing::instrument(skip_all)]
 pub fn handle_keyboard_shortcuts(
     keys: Res<ButtonInput<KeyCode>>,
@@ -24,7 +39,20 @@ pub fn handle_keyboard_shortcuts(
     scenario_list: Res<ScenarioList>,
     project_state: Res<ProjectState>,
     mut next_state: ResMut<NextState<UiState>>,
+    slider_inputs: Query<&SliderValueInput>,
+    number_inputs: Query<&NumberInputWidget>,
+    text_inputs: Query<&TextInputWidget>,
+    comment_inputs: Query<&CommentInputState>,
 ) {
+    // Suppress all shortcuts while any text-entry widget is focused.
+    if slider_inputs.iter().any(|w| w.focused)
+        || number_inputs.iter().any(|w| w.focused)
+        || text_inputs.iter().any(|w| w.focused)
+        || comment_inputs.iter().any(|w| w.focused)
+    {
+        return;
+    }
+
     let has_project = project_state.current_path.is_some();
     let has_selection = selected_scenario.index.is_some();
     let scenario_done = selected_scenario.index.is_some_and(|i| {

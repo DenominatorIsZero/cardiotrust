@@ -1,35 +1,31 @@
+pub mod events;
+mod persistence;
+pub mod plotting;
 pub mod results;
+pub mod run;
+pub mod status;
 pub mod summary;
 #[cfg(test)]
 mod tests;
 
 use std::{
     fs::{self, File},
-    io::{BufReader, Write},
+    io::Write,
     path::Path,
-    sync::mpsc::Sender,
 };
 
 use anyhow::{Context, Result};
-use bincode;
 use chrono::{self, DateTime, Utc};
-use ndarray_stats::QuantileExt;
+pub use plotting::calculate_plotting_arrays;
+pub use run::run;
 use serde::{Deserialize, Serialize};
+pub use status::Status;
 use toml;
 use tracing::{debug, info, trace, warn};
 
 use self::{results::Results, summary::Summary};
-use super::{
-    algorithm::{self, calculate_pseudo_inverse},
-    config::{algorithm::AlgorithmType, Config},
-    data::Data,
-    model::Model,
-};
-use crate::core::algorithm::{
-    gpu::{epoch::EpochKernel, GPU},
-    metrics,
-    refinement::derivation::calculate_average_delays,
-};
+use super::config::{algorithm::AlgorithmType, Config};
+use crate::core::data::Data;
 
 /// Struct representing a scenario configuration and results.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
@@ -393,521 +389,40 @@ impl Scenario {
         }
     }
 
-    /// Saves the scenario data to a file in the results directory.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the results directory could not be created or the data file could not be written.
+    /// Creates a new Scenario in Planning status without writing to disk.
+    /// Only used in tests.
+    #[cfg(test)]
+    #[must_use]
     #[tracing::instrument(level = "debug")]
-    fn save_data(&self) -> Result<()> {
-        debug!("Saving scenario data for scenario with id {}", self.id);
-        let path = Path::new("./results").join(&self.id);
-        fs::create_dir_all(&path)?;
-        let mut f = File::create(path.join("data.bin"))?;
-        let data = self
-            .data
-            .as_ref()
-            .context("Data not available for saving")?;
-        bincode::serde::encode_into_std_write(data, &mut f, bincode::config::standard())
-            .context("Failed to serialize data to binary format")?;
-        Ok(())
+    pub fn new_in_memory() -> Self {
+        Self {
+            id: format!("test-{}", chrono::Utc::now().format("%Y%m%d%H%M%S%f")),
+            status: Status::Planning,
+            config: Config::default(),
+            data: None,
+            results: None,
+            summary: None,
+            comment: String::new(),
+            started: None,
+            last_update: None,
+            finished: None,
+            duration_s: None,
+        }
     }
 
-    /// Saves the scenario results to a file in the results directory.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the results directory could not be created or the results file could not be written.
+    /// Creates a Planning scenario without saving to disk, for use in tests.
+    #[cfg(test)]
+    #[must_use]
     #[tracing::instrument(level = "debug")]
-    fn save_results(&self) -> Result<()> {
-        debug!("Saving scenario results for scenario with id {}", self.id);
-        let path = Path::new("./results").join(&self.id);
-        fs::create_dir_all(&path)?;
-        let mut f = File::create(path.join("results.bin"))?;
-        let results = self
-            .results
-            .as_ref()
-            .context("Results not available for saving")?;
-        bincode::serde::encode_into_std_write(results, &mut f, bincode::config::standard())
-            .context("Failed to serialize results to binary format")?;
-        Ok(())
+    pub fn empty_planning() -> Self {
+        Self::new_in_memory()
     }
 
-    /// Loads the scenario data from the data.bin file in the results directory if it exists.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the data.bin file cannot be read or parsed.
+    /// Forces the scenario into `Scheduled` status without validation.
+    /// Only used in tests to set up non-Planning states.
+    #[cfg(test)]
     #[tracing::instrument(level = "debug")]
-    pub fn load_data(&mut self) -> Result<()> {
-        debug!("Loading scenario data for scenario with id {}", self.id);
-        if self.data.is_some() {
-            return Ok(());
-        }
-        let file_path = Path::new("./results").join(&self.id).join("data.bin");
-        if file_path.is_file() {
-            let file = File::open(&file_path)
-                .with_context(|| format!("Failed to open data file: {}", file_path.display()))?;
-            self.data = Some(
-                bincode::serde::decode_from_std_read(
-                    &mut BufReader::new(file),
-                    bincode::config::standard(),
-                )
-                .context("Failed to deserialize data from binary format")?,
-            );
-        }
-        Ok(())
+    pub fn force_scheduled(&mut self) {
+        self.status = Status::Scheduled;
     }
-
-    /// Loads the scenario results from the results.bin file in the results directory if it exists.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the results.bin file cannot be read or parsed.
-    #[tracing::instrument(level = "debug")]
-    pub fn load_results(&mut self) -> Result<()> {
-        debug!("Loading scenario results for scenario with id {}", self.id);
-        if self.results.is_some() {
-            return Ok(());
-        }
-        let file_path = Path::new("./results").join(&self.id).join("results.bin");
-        if file_path.is_file() {
-            let file = File::open(&file_path)
-                .with_context(|| format!("Failed to open results file: {}", file_path.display()))?;
-            self.results = Some(
-                bincode::serde::decode_from_std_read(
-                    &mut BufReader::new(file),
-                    bincode::config::standard(),
-                )
-                .context("Failed to deserialize results from binary format")?,
-            );
-        }
-        Ok(())
-    }
-
-    /// Saves the scenario data and results as .npy files in the results directory.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if file or directory creation fails or any save operation fails.
-    #[tracing::instrument(level = "debug")]
-    pub fn save_npy(&self) -> Result<()> {
-        debug!("Saving scenario data and results as npy");
-        let path = Path::new("./results").join(&self.id).join("npy");
-        self.data
-            .as_ref()
-            .context("Scenario data not available for NPY export")?
-            .save_npy(&path.join("data"))?;
-        self.results
-            .as_ref()
-            .context("Scenario results not available for NPY export")?
-            .save_npy(&path.join("results"))?;
-        Ok(())
-    }
-}
-
-/// Runs the simulation for the given scenario, model, and data.
-///
-/// Updates the results and summary structs with the output. Sends the final epoch
-/// count and summary via the provided channels. Saves the results to the scenario.
-///
-/// # Errors
-///
-/// Returns an error if the model parameters are invalid, an unimplemented algorithm
-/// is selected, or any other simulation failure occurs.
-#[tracing::instrument(level = "info", skip_all, fields(id = %scenario.id))]
-pub fn run(
-    mut scenario: Scenario,
-    epoch_tx: &Sender<usize>,
-    summary_tx: &Sender<Summary>,
-) -> Result<()> {
-    debug!("Running scenario with id {}", scenario.id);
-
-    let simulation = &scenario.config.simulation;
-
-    let data = Data::from_simulation_config(simulation)
-        .context("Failed to create simulation data from config - invalid model parameters")?;
-    let mut model = Model::from_model_config(
-        &scenario.config.algorithm.model,
-        simulation.sample_rate_hz,
-        simulation.duration_s,
-    )
-    .context("Failed to create model from config - invalid model parameters")?;
-
-    // synchronice model and simulation sensor parameters
-    model.synchronize_parameters(&data);
-
-    let _ = epoch_tx.send(0);
-
-    let number_of_snapshots = if scenario.config.algorithm.snapshots_interval == 0 {
-        0
-    } else {
-        scenario.config.algorithm.epochs / scenario.config.algorithm.snapshots_interval + 1
-    };
-
-    let mut results = Results::new(
-        scenario.config.algorithm.epochs,
-        model.functional_description.control_function_values.shape()[0],
-        model.spatial_description.sensors.count(),
-        model.spatial_description.voxels.count_states(),
-        model.spatial_description.sensors.count_beats(),
-        number_of_snapshots,
-        scenario.config.algorithm.batch_size,
-        scenario.config.algorithm.optimizer,
-    );
-
-    let mut summary = Summary::default();
-
-    match scenario.config.algorithm.algorithm_type {
-        AlgorithmType::ModelBased => {
-            results.model = Some(model);
-            run_model_based(
-                &mut scenario,
-                &mut results,
-                &data,
-                &mut summary,
-                epoch_tx,
-                summary_tx,
-            )
-            .context("Failed to execute model-based algorithm")?;
-        }
-        AlgorithmType::ModelBasedGPU => {
-            results.model = Some(model);
-            run_model_based_gpu(
-                &mut scenario,
-                &mut results,
-                &data,
-                &mut summary,
-                epoch_tx,
-                summary_tx,
-            )
-            .context("Failed to execute model-based GPU algorithm")?;
-        }
-        AlgorithmType::PseudoInverse => {
-            run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary)
-                .context("Failed to execute pseudo inverse algorithm")?;
-            results.model = Some(model);
-        }
-    }
-
-    calculate_plotting_arrays(&mut results, &data)?;
-
-    metrics::calculate_final(
-        &mut results.metrics,
-        &results.estimations,
-        &data.simulation.model.spatial_description.voxels.types,
-        &results
-            .model
-            .as_ref()
-            .context("Model should be set after algorithm execution")?
-            .spatial_description
-            .voxels
-            .numbers,
-    );
-
-    let optimal_threshold = results
-        .metrics
-        .dice_score_over_threshold
-        .argmax_skipnan()
-        .unwrap_or_default();
-
-    #[allow(clippy::cast_precision_loss)]
-    {
-        summary.threshold = optimal_threshold as f32 / 100.0;
-    }
-    summary.dice = results.metrics.dice_score_over_threshold[optimal_threshold];
-    summary.iou = results.metrics.iou_over_threshold[optimal_threshold];
-    summary.recall = results.metrics.recall_over_threshold[optimal_threshold];
-    summary.precision = results.metrics.precision_over_threshold[optimal_threshold];
-
-    scenario.results = Some(results);
-    scenario.data = Some(data);
-    scenario.summary = Some(summary.clone());
-    scenario.status = Status::Done;
-    scenario
-        .save()
-        .context("Failed to save completed scenario results")?;
-    let _ = epoch_tx.send(scenario.config.algorithm.epochs - 1);
-    let _ = summary_tx.send(summary);
-    Ok(())
-}
-
-#[tracing::instrument(level = "trace", skip_all)]
-pub(crate) fn calculate_plotting_arrays(results: &mut Results, data: &Data) -> Result<()> {
-    results
-        .estimations
-        .system_states_spherical
-        .calculate(&results.estimations.system_states);
-    results
-        .estimations
-        .system_states_spherical_max
-        .calculate(&results.estimations.system_states_spherical)?;
-
-    results
-        .estimations
-        .system_states_spherical_max_delta
-        .theta
-        .assign(
-            &(&data.simulation.system_states_spherical_max.theta
-                - &results.estimations.system_states_spherical_max.theta),
-        );
-
-    results
-        .estimations
-        .system_states_spherical_max_delta
-        .phi
-        .assign(
-            &(&data.simulation.system_states_spherical_max.phi
-                - &results.estimations.system_states_spherical_max.phi),
-        );
-
-    results
-        .estimations
-        .system_states_spherical_max_delta
-        .magnitude
-        .assign(
-            &(&data.simulation.system_states_spherical_max.magnitude
-                - &results.estimations.system_states_spherical_max.magnitude),
-        );
-
-    results.estimations.activation_times.calculate(
-        &results.estimations.system_states_spherical,
-        data.simulation.sample_rate_hz,
-    )?;
-
-    results
-        .estimations
-        .activation_times_delta
-        .assign(&(&*data.simulation.activation_times - &*results.estimations.activation_times));
-
-    results
-        .model
-        .as_mut()
-        .context("Model should be set after algorithm execution")?
-        .update_activation_time(&results.estimations.activation_times);
-    Ok(())
-}
-
-/// Runs the pseudo inverse algorithm on the given scenario, model, and data.
-/// Calculates the pseudo inverse, runs estimations, and calculates summary metrics.
-///
-/// # Errors
-///
-/// Returns an error if the pseudo inverse algorithm fails due to SVD computation issues.
-#[tracing::instrument(level = "info", skip_all)]
-fn run_pseudo_inverse(
-    scenario: &Scenario,
-    model: &Model,
-    results: &mut Results,
-    data: &Data,
-    summary: &mut Summary,
-) -> Result<()> {
-    info!("Running pseudo inverse algorithm");
-    calculate_pseudo_inverse(
-        &model.functional_description,
-        results,
-        data,
-        &scenario.config.algorithm,
-    )?;
-    summary.loss = results.metrics.loss_batch[0];
-    summary.loss_mse = results.metrics.loss_mse_batch[0];
-    summary.loss_maximum_regularization = results.metrics.loss_maximum_regularization_batch[0];
-    Ok(())
-}
-
-/// Runs the model-based algorithm on the given scenario, model, and data.
-/// Calculates model parameters over epochs and calculates summary metrics.
-/// Reduces learning rate at intervals. Saves snapshots at intervals.
-/// Sends epoch and summary updates over channels.
-/// Exits early if loss becomes non-finite.
-#[tracing::instrument(level = "info", skip_all)]
-fn run_model_based(
-    scenario: &mut Scenario,
-    results: &mut Results,
-    data: &Data,
-    summary: &mut Summary,
-    epoch_tx: &Sender<usize>,
-    summary_tx: &Sender<Summary>,
-) -> Result<()> {
-    info!("Running model-based algorithm");
-    let original_learning_rate = scenario.config.algorithm.learning_rate;
-    let mut batch_index = 0;
-    for epoch_index in 0..scenario.config.algorithm.epochs {
-        if epoch_index == 0 {
-            scenario.config.algorithm.learning_rate = 0.0;
-        } else if epoch_index == 1 {
-            scenario.config.algorithm.learning_rate = original_learning_rate;
-        }
-        if scenario.config.algorithm.learning_rate_reduction_interval != 0
-            && (epoch_index % scenario.config.algorithm.learning_rate_reduction_interval == 0)
-        {
-            scenario.config.algorithm.learning_rate *=
-                scenario.config.algorithm.learning_rate_reduction_factor;
-        }
-        algorithm::run_epoch(results, &mut batch_index, data, &scenario.config.algorithm)
-            .with_context(|| format!("Failed to run algorithm epoch {epoch_index}"))?;
-        scenario.status = Status::Running(epoch_index);
-
-        summary.loss = results.metrics.loss_batch[batch_index - 1];
-        summary.loss_mse = results.metrics.loss_mse_batch[batch_index - 1];
-        summary.loss_maximum_regularization =
-            results.metrics.loss_maximum_regularization_batch[batch_index - 1];
-
-        if scenario.config.algorithm.snapshots_interval != 0
-            && epoch_index % scenario.config.algorithm.snapshots_interval == 0
-        {
-            results
-                .snapshots
-                .as_mut()
-                .context("Snapshots should be initialized for GPU algorithm")?
-                .push(
-                    &results.estimations,
-                    &results
-                        .model
-                        .as_ref()
-                        .context("Model should be set during GPU algorithm execution")?
-                        .functional_description
-                        .ap_params,
-                );
-        }
-
-        let _ = epoch_tx.send(epoch_index);
-        let _ = summary_tx.send(summary.clone());
-        // Check if algorithm diverged. If so return early
-        if !summary.loss.is_normal() {
-            break;
-        }
-    }
-    calculate_average_delays(
-        &mut results.estimations.average_delays,
-        &results
-            .model
-            .as_ref()
-            .context("Model should be set during algorithm execution")?
-            .functional_description
-            .ap_params,
-    )?;
-    scenario.config.algorithm.learning_rate = original_learning_rate;
-    Ok(())
-}
-
-#[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
-#[tracing::instrument(level = "info", skip_all)]
-fn run_model_based_gpu(
-    scenario: &mut Scenario,
-    results: &mut Results,
-    data: &Data,
-    summary: &mut Summary,
-    epoch_tx: &Sender<usize>,
-    summary_tx: &Sender<Summary>,
-) -> Result<()> {
-    info!("Running model-based algorithm on gpu");
-    // move data to gpu
-    let gpu = GPU::new()?;
-    let results_gpu = results.to_gpu(&gpu.queue)?;
-    let actual_measurements = data.simulation.measurements.to_gpu(&gpu.queue)?;
-    let number_of_states = results
-        .model
-        .as_ref()
-        .context("Model should be set during GPU algorithm execution")?
-        .spatial_description
-        .voxels
-        .count_states();
-    let number_of_sensors = results
-        .model
-        .as_ref()
-        .context("Model should be set during GPU algorithm execution")?
-        .spatial_description
-        .sensors
-        .count();
-    let number_of_steps = results.estimations.measurements.num_steps();
-    let mut epoch_kernel = EpochKernel::new(
-        &gpu,
-        &results_gpu,
-        &actual_measurements,
-        &scenario.config.algorithm,
-        number_of_states as i32,
-        number_of_sensors as i32,
-        number_of_steps as i32,
-    )?;
-
-    for epoch_index in 0..scenario.config.algorithm.epochs {
-        if epoch_index == 0 {
-            epoch_kernel.set_freeze_delays(true);
-            epoch_kernel.set_freeze_gains(true);
-        } else if epoch_index == 1 {
-            epoch_kernel.set_freeze_delays(scenario.config.algorithm.freeze_delays);
-            epoch_kernel.set_freeze_gains(scenario.config.algorithm.freeze_gains);
-        }
-        epoch_kernel.execute()?;
-        results.metrics.update_from_gpu(&results_gpu.metrics)?;
-
-        summary.loss = results.metrics.loss_batch[epoch_index];
-        summary.loss_mse = results.metrics.loss_mse_batch[epoch_index];
-        summary.loss_maximum_regularization =
-            results.metrics.loss_maximum_regularization_batch[epoch_index];
-
-        if scenario.config.algorithm.snapshots_interval != 0
-            && epoch_index % scenario.config.algorithm.snapshots_interval == 0
-        {
-            results
-                .estimations
-                .update_from_gpu(&results_gpu.estimations)?;
-            results
-                .model
-                .as_mut()
-                .context("Model should be set during GPU algorithm execution")?
-                .functional_description
-                .ap_params
-                .update_from_gpu(&results_gpu.model.functional_description.ap_params)?;
-            results
-                .snapshots
-                .as_mut()
-                .context("Snapshots should be initialized for GPU algorithm")?
-                .push(
-                    &results.estimations,
-                    &results
-                        .model
-                        .as_ref()
-                        .context("Model should be set during GPU algorithm execution")?
-                        .functional_description
-                        .ap_params,
-                );
-        }
-
-        let _ = epoch_tx.send(epoch_index);
-        let _ = summary_tx.send(summary.clone());
-        // Check if algorithm diverged. If so return early
-        if !summary.loss.is_normal() {
-            break;
-        }
-    }
-    results.update_from_gpu(&results_gpu)?;
-    calculate_average_delays(
-        &mut results.estimations.average_delays,
-        &results
-            .model
-            .as_ref()
-            .context("Model should be set during GPU algorithm execution")?
-            .functional_description
-            .ap_params,
-    )?;
-    Ok(())
-}
-
-/// Enumeration of possible scenario execution statuses.
-///
-/// * `Planning`: Scenario is being planned.
-/// * `Done`: Scenario execution finished.
-/// * `Running`: Scenario is running the specified epoch.
-/// * `Aborted`: Scenario execution was aborted.
-/// * `Scheduled`: Scenario execution is scheduled but not yet running.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
-pub enum Status {
-    Planning,
-    Done,
-    Simulating,
-    Running(usize),
-    Aborted,
-    Scheduled,
 }

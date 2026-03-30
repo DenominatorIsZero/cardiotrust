@@ -1,10 +1,12 @@
-use std::ops::{Deref, DerefMut, Sub};
+pub mod shapes;
+#[cfg(test)]
+mod tests;
 
 use anyhow::{Context, Result};
 use approx::AbsDiffEq;
-use ndarray::Array1;
 use ocl::Buffer;
 use serde::{Deserialize, Serialize};
+pub use shapes::{AverageDelays, MappedResiduals, MaximumRegularization};
 use tracing::{debug, trace};
 
 use super::Optimizer;
@@ -300,6 +302,7 @@ pub fn calculate_smoothness_derivatives(
     }
     Ok(())
 }
+
 /// Calculates the derivatives for the allpass filter gains.
 #[inline]
 #[allow(clippy::cast_precision_loss)]
@@ -327,6 +330,7 @@ pub fn calculate_derivatives_gains(
         }
     }
 }
+
 /// Calculates the derivatives for the allpass filter coefficients using a simplified form for the AP derivative.
 ///
 /// # Errors
@@ -513,7 +517,6 @@ pub fn calculate_maximum_regularization(
     regularization_threshold: f32,
 ) {
     trace!("Calculating maximum regularization");
-    // self.maximum_regularization_sum = 0.0; // This is probably wrong, no?
     for state_index in (0..system_states.raw_dim()[0]).step_by(3) {
         let sum = system_states[[state_index]].abs()
             + system_states[[state_index + 1]].abs()
@@ -533,6 +536,7 @@ pub fn calculate_maximum_regularization(
         }
     }
 }
+
 #[inline]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_mapped_residuals(
@@ -549,6 +553,7 @@ pub fn calculate_mapped_residuals(
         &mut mapped_residuals.view_mut().insert_axis(ndarray::Axis(1)),
     );
 }
+
 #[allow(clippy::cast_precision_loss)]
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn calculate_average_delays(
@@ -591,369 +596,4 @@ pub fn calculate_average_delays(
         }
     }
     Ok(())
-}
-
-/// Shape for the mapped residuals.
-///
-/// Has dimensions (`number_of_states`)
-///
-/// The residuals (measurements) of the state estimation
-/// get mapped onto the system states.
-/// These values are then used for the calcualtion of the derivatives
-///
-/// The mapped residuals are calculated as
-/// `H_T` * y
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct MappedResiduals(Array1<f32>);
-
-impl MappedResiduals {
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn new(number_of_states: usize) -> Self {
-        trace!("Creating ArrayMappedResiduals");
-        Self(Array1::zeros(number_of_states))
-    }
-
-    #[tracing::instrument(level = "trace", skip_all)]
-    fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
-        let buffer = Buffer::builder()
-            .queue(queue.clone())
-            .len(self.len())
-            .copy_host_slice(
-                self.as_slice()
-                    .context("Failed to get array slice for GPU copy")?,
-            )
-            .build()
-            .context("Failed to build GPU buffer for mapped residuals")?;
-        Ok(buffer)
-    }
-
-    #[tracing::instrument(level = "trace", skip_all)]
-    fn update_from_gpu(&mut self, mapped_residuals: &Buffer<f32>) -> Result<()> {
-        mapped_residuals
-            .read(
-                self.as_slice_mut()
-                    .context("Failed to get mutable array slice for GPU read")?,
-            )
-            .enq()
-            .context("Failed to read mapped residuals from GPU buffer")?;
-        Ok(())
-    }
-}
-
-impl Deref for MappedResiduals {
-    type Target = Array1<f32>;
-
-    #[tracing::instrument(level = "trace")]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for MappedResiduals {
-    #[tracing::instrument(level = "trace")]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-/// Shape for the average delays in each voxel.
-///
-/// Has dimensions (`number_of_states / 3`)
-///
-/// The average delays are calculated as a
-/// weighted sum of the delays by the gains in that direction.
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct AverageDelays(Array1<Option<f32>>);
-
-impl AverageDelays {
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn empty(number_of_states: usize) -> Self {
-        trace!("Creating AverageDelays");
-        Self(Array1::from_elem(number_of_states / 3, None))
-    }
-}
-
-impl<'b> Sub<&'b AverageDelays> for &AverageDelays {
-    type Output = AverageDelays;
-
-    #[tracing::instrument(level = "trace")]
-    fn sub(self, rhs: &'b AverageDelays) -> Self::Output {
-        let result = self
-            .0
-            .iter()
-            .zip(rhs.0.iter())
-            .map(|(a, b)| match (a, b) {
-                (Some(x), Some(y)) => Some(x - y),
-                _ => None,
-            })
-            .collect();
-        AverageDelays(result)
-    }
-}
-impl Deref for AverageDelays {
-    type Target = Array1<Option<f32>>;
-
-    #[tracing::instrument(level = "trace")]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for AverageDelays {
-    #[tracing::instrument(level = "trace")]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-/// Shape for the maximum system states regularization.
-///
-/// Has dimensions (`number_of_states`)
-///
-/// The maximum current density in a single voxel should not exceed one.
-/// For this we have to add up all three absoutle values of
-/// components in each voxel.
-/// If this sum is greater than one, the system state get's copied into
-/// this array. Otherwise the component get's set to zero.
-///
-/// You can think about it like a kind of relu activation.
-/// Only if all three components added up are greater than one,
-/// do we want to dercease the components, otherwise the
-/// magnitude should not influence the loss and therefore
-/// the derivatives.
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
-pub struct MaximumRegularization(Array1<f32>);
-
-impl MaximumRegularization {
-    #[must_use]
-    #[tracing::instrument(level = "trace")]
-    pub fn new(number_of_states: usize) -> Self {
-        trace!("Creating ArrayMaximumRegularization");
-        Self(Array1::zeros(number_of_states))
-    }
-
-    #[tracing::instrument(level = "trace", skip_all)]
-    fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
-        let buffer = Buffer::builder()
-            .queue(queue.clone())
-            .len(self.len())
-            .copy_host_slice(
-                self.as_slice()
-                    .context("Failed to get array slice for GPU copy")?,
-            )
-            .build()
-            .context("Failed to build GPU buffer for maximum regularization")?;
-        Ok(buffer)
-    }
-
-    #[tracing::instrument(level = "trace", skip_all)]
-    fn update_from_gpu(&mut self, maximum_regularization: &Buffer<f32>) -> Result<()> {
-        maximum_regularization
-            .read(
-                self.as_slice_mut()
-                    .context("Failed to get mutable array slice for GPU read")?,
-            )
-            .enq()
-            .context("Failed to read maximum regularization from GPU buffer")?;
-        Ok(())
-    }
-}
-
-impl Deref for MaximumRegularization {
-    type Target = Array1<f32>;
-
-    #[tracing::instrument(level = "trace")]
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for MaximumRegularization {
-    #[tracing::instrument(level = "trace")]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use approx::assert_relative_eq;
-    use ndarray::{Array2, Dim};
-
-    use super::*;
-    use crate::core::{
-        algorithm::estimation::Estimations,
-        model::functional::{allpass::from_samples_to_coef, FunctionalDescription},
-    };
-    #[test]
-    fn coef_no_crash() -> Result<()> {
-        let number_of_steps = 2000;
-        let number_of_states = 3000;
-        let number_of_sensors = 10;
-        let number_of_beats = 1;
-        let step = 10;
-        let mut derivatives = Derivatives::new(number_of_states, Optimizer::Sgd);
-        let estimations = Estimations::empty(
-            number_of_states,
-            number_of_sensors,
-            number_of_steps,
-            number_of_beats,
-        );
-        let functional_description = FunctionalDescription::empty(
-            number_of_states,
-            number_of_sensors,
-            number_of_steps,
-            number_of_beats,
-            Dim([1000, 1, 1]),
-        );
-        let config = Algorithm {
-            maximum_regularization_strength: 0.0,
-            smoothness_regularization_strength: 0.0,
-            ..Default::default()
-        };
-
-        calculate_derivatives_coefs_simple(
-            &mut derivatives,
-            &estimations,
-            &functional_description,
-            step,
-            &config,
-        )?;
-        Ok(())
-    }
-
-    #[test]
-    fn calculate_no_crash() -> anyhow::Result<()> {
-        let number_of_states = 1500;
-        let number_of_sensors = 300;
-        let number_of_steps = 2000;
-        let number_of_beats = 10;
-        let step = 333;
-        let voxels_in_dims = Dim([1000, 1, 1]);
-        let config = Algorithm {
-            maximum_regularization_strength: 0.0,
-            smoothness_regularization_strength: 0.0,
-            ..Default::default()
-        };
-
-        let mut derivates = Derivatives::new(number_of_states, config.optimizer);
-        let functional_description = FunctionalDescription::empty(
-            number_of_states,
-            number_of_sensors,
-            number_of_steps,
-            number_of_beats,
-            voxels_in_dims,
-        );
-        let estimations = Estimations::empty(
-            number_of_states,
-            number_of_sensors,
-            number_of_steps,
-            number_of_beats,
-        );
-
-        calculate_step_derivatives(
-            &mut derivates,
-            &estimations,
-            &functional_description,
-            &config,
-            step,
-            0,
-            estimations.measurements.num_sensors(),
-        )?;
-        Ok(())
-    }
-
-    #[test]
-    fn calculate_average_delays_single_voxel() -> Result<()> {
-        let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
-
-        let mut average_delays = AverageDelays::empty(3);
-        let delays = Array2::from_elem((1, 26), 2);
-        let coefs = Array2::from_elem((1, 26), from_samples_to_coef(0.5));
-        let gains = Array2::from_elem((3, 78), 1.0);
-
-        ap_params.delays.assign(&delays);
-        ap_params.coefs.assign(&coefs);
-        ap_params.gains.assign(&gains);
-
-        calculate_average_delays(&mut average_delays, &ap_params)?;
-        assert_relative_eq!(
-            average_delays[0].context("Expected average delay at index 0")?,
-            1.836_931_7,
-            epsilon = 1e-6
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_calculate_average_delays_multiple_voxels() -> Result<()> {
-        let mut ap_params = APParameters::empty(6, Dim([2, 1, 1]));
-
-        let mut average_delays = AverageDelays::empty(6);
-        let delays = Array2::from_elem((2, 26), 2);
-        let coefs = Array2::from_elem((2, 26), from_samples_to_coef(0.4));
-        let gains = Array2::from_elem((6, 78), 1.0);
-
-        ap_params.delays.assign(&delays);
-        ap_params.coefs.assign(&coefs);
-        ap_params.gains.assign(&gains);
-
-        calculate_average_delays(&mut average_delays, &ap_params)?;
-        assert_relative_eq!(
-            average_delays[0].context("Expected average delay at index 0")?,
-            1.763_453_2,
-            epsilon = 1e-4
-        );
-        assert_relative_eq!(
-            average_delays[1].context("Expected average delay at index 1")?,
-            1.763_453,
-            epsilon = 1e-4
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_calculate_average_delays_zero_gains() -> Result<()> {
-        let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
-
-        let mut average_delays = AverageDelays::empty(3);
-        let delays = Array2::from_elem((1, 26), 2);
-        let coefs = Array2::from_elem((1, 26), from_samples_to_coef(0.5));
-        let gains = Array2::from_elem((3, 78), 0.0);
-
-        ap_params.delays.assign(&delays);
-        ap_params.coefs.assign(&coefs);
-        ap_params.gains.assign(&gains);
-
-        calculate_average_delays(&mut average_delays, &ap_params)?;
-        assert!(average_delays[0].is_none());
-        Ok(())
-    }
-
-    #[test]
-    fn test_calculate_average_delays_mixed_gains() -> Result<()> {
-        let mut ap_params = APParameters::empty(3, Dim([1, 1, 1]));
-
-        let mut average_delays = AverageDelays::empty(3);
-        let delays = Array2::from_elem((1, 26), 2);
-        let coefs = Array2::from_elem((1, 26), from_samples_to_coef(0.1));
-        let mut gains = Array2::from_elem((3, 78), 0.0);
-        gains[[0, 10]] = 1.0;
-        gains[[1, 20]] = 4.0;
-        gains[[2, 30]] = 2.0;
-
-        ap_params.delays.assign(&delays);
-        ap_params.coefs.assign(&coefs);
-        ap_params.gains.assign(&gains);
-
-        calculate_average_delays(&mut average_delays, &ap_params)?;
-        assert_relative_eq!(
-            average_delays[0].context("Expected average delay at index 0")?,
-            1.504_952_5,
-            epsilon = 1e-6
-        );
-        Ok(())
-    }
 }

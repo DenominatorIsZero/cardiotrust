@@ -6,11 +6,10 @@ use ocl::Queue;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
-use super::algorithm::metrics::Metrics;
 use crate::core::{
     algorithm::{
         estimation::{Estimations, EstimationsGPU},
-        metrics::MetricsGPU,
+        metrics::{Metrics, MetricsGPU},
         refinement::{
             derivation::{Derivatives, DerivativesGPU},
             Optimizer,

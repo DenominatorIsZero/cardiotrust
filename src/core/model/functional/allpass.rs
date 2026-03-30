@@ -1,13 +1,12 @@
+mod connect;
 mod delay;
 mod direction;
 mod gain;
 pub mod shapes;
 
 use anyhow::{Context, Result};
-use approx::relative_eq;
 use itertools::Itertools;
-use ndarray::{arr1, s, Array1, Array3, Array4, Dim};
-use ndarray_stats::QuantileExt;
+use ndarray::Dim;
 use ocl::{Buffer, Queue};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -16,13 +15,7 @@ use self::{
     delay::calculate_delay_samples_array,
     shapes::{ActivationTimeMs, Coefs, Gains, Indices, UnitDelays},
 };
-use crate::core::{
-    config::model::Model,
-    model::spatial::{
-        voxels::{self, VoxelType},
-        SpatialDescription,
-    },
-};
+use crate::core::{config::model::Model, model::spatial::SpatialDescription};
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -79,7 +72,7 @@ impl APParameters {
             spatial_description.voxels.types.raw_dim(),
         );
 
-        connect_voxels(spatial_description, config, &mut ap_params)?;
+        connect::connect_voxels(spatial_description, config, &mut ap_params)?;
 
         let delays_samples = calculate_delay_samples_array(
             spatial_description,
@@ -288,240 +281,6 @@ fn init_output_state_indicies(spatial_description: &SpatialDescription) -> Resul
     Ok(output_state_indices)
 }
 
-/// Connects voxels in the model based on voxel type and proximity.
-/// Iteratively activates voxels by updating `activation_time_s` and `current_directions`.
-/// Stops when no more voxels can be connected at the current time step.
-#[tracing::instrument(level = "debug", skip_all)]
-fn connect_voxels(
-    spatial_description: &SpatialDescription,
-    config: &Model,
-    ap_params: &mut APParameters,
-) -> Result<()> {
-    debug!("Connecting voxels");
-    let mut activation_time_s =
-        Array3::<Option<f32>>::from_elem(spatial_description.voxels.types.raw_dim(), None);
-    let mut current_directions =
-        Array4::<f32>::zeros(spatial_description.voxels.positions_mm.raw_dim());
-
-    let v_types = &spatial_description.voxels.types;
-
-    let mut current_time_s: f32 = 0.0;
-    // Handle Sinoatrial node
-    v_types
-        .indexed_iter()
-        .filter(|(_, v_type)| **v_type == VoxelType::Sinoatrial)
-        .for_each(|(index, _)| {
-            activation_time_s[index] = Some(current_time_s);
-            current_directions
-                .slice_mut(s![index.0, index.1, index.2, ..])
-                .assign(&arr1(&[1.0, 0.0, 0.0]));
-        });
-    let mut connected_something = true;
-
-    while connected_something {
-        // reset the connected something variable so we don't get stuck here forever
-        // have to check the activation times because there might be some connection possible
-        // with a voxel that is not yet activated.
-        if !activation_time_s
-            .iter()
-            .filter_map(|time_s| *time_s)
-            .any(|time_s| time_s > current_time_s)
-        {
-            connected_something = false;
-        }
-        // find all voxels with an activation time equal to the current time
-        // i.e., currently activated voxels
-        let output_voxel_indices = find_candidate_voxels(&activation_time_s, current_time_s);
-
-        for output_voxel_index in output_voxel_indices {
-            for x_offset in -1..=1 {
-                for y_offset in -1..=1 {
-                    for z_offset in -1..=1 {
-                        connected_something |= try_to_connect(
-                            (x_offset, y_offset, z_offset),
-                            output_voxel_index,
-                            spatial_description,
-                            &mut activation_time_s,
-                            config,
-                            &mut current_directions,
-                            ap_params,
-                        )
-                        .unwrap_or_else(|e| {
-                            tracing::error!("Connection failed: {}", e);
-                            false
-                        });
-                    }
-                }
-            }
-        }
-        let candidate_times_s: Vec<f32> = activation_time_s
-            .iter()
-            .filter_map(|&t| t)
-            .filter(|&t| t > current_time_s)
-            .collect();
-        let candidate_times_s = Array1::from_vec(candidate_times_s);
-        current_time_s = *candidate_times_s.min_skipnan();
-    }
-    ap_params
-        .activation_time_ms
-        .iter_mut()
-        .zip(activation_time_s)
-        .for_each(|(ms, s)| *ms = s.map(|time| time * 1000.0));
-    Ok(())
-}
-
-/// Attempts to connect the voxel at the given offset from the output voxel.
-/// Returns true if a connection was made, false otherwise.
-#[tracing::instrument(level = "trace")]
-fn try_to_connect(
-    voxel_offset: (i32, i32, i32),
-    output_voxel_index: (usize, usize, usize),
-    spatial_description: &SpatialDescription,
-    activation_time_s: &mut ndarray::ArrayBase<ndarray::OwnedRepr<Option<f32>>, Dim<[usize; 3]>>,
-    config: &Model,
-    current_directions: &mut ndarray::ArrayBase<ndarray::OwnedRepr<f32>, Dim<[usize; 4]>>,
-    ap_params: &mut APParameters,
-) -> Result<bool> {
-    trace!(
-        "Trying to connect voxel at offset {:?} to output voxel {:?}",
-        voxel_offset,
-        output_voxel_index
-    );
-    let v_types = &spatial_description.voxels.types;
-    let v_position_mm = &spatial_description.voxels.positions_mm;
-    let v_numbers = &spatial_description.voxels.numbers;
-    let (x_offset, y_offset, z_offset) = voxel_offset;
-
-    // no self connection allowed
-    if x_offset == 0 && y_offset == 0 && z_offset == 0 {
-        return Ok(false);
-    }
-    let (x_out, y_out, z_out) = output_voxel_index;
-    let x_out_i32 = i32::try_from(x_out)
-        .with_context(|| format!("Output voxel x-coordinate {x_out} exceeds i32::MAX"))?;
-    let y_out_i32 = i32::try_from(y_out)
-        .with_context(|| format!("Output voxel y-coordinate {y_out} exceeds i32::MAX"))?;
-    let z_out_i32 = i32::try_from(z_out)
-        .with_context(|| format!("Output voxel z-coordinate {z_out} exceeds i32::MAX"))?;
-
-    let input_voxel_index = [
-        x_out_i32 - x_offset,
-        y_out_i32 - y_offset,
-        z_out_i32 - z_offset,
-    ];
-    // Skip if the input voxel doesn't exist
-    if !spatial_description.voxels.is_valid_index(input_voxel_index) {
-        return Ok(false);
-    }
-    let x_in_usize = usize::try_from(x_out_i32 - x_offset).with_context(|| {
-        format!(
-            "Input voxel x-coordinate {} cannot be converted to usize",
-            x_out_i32 - x_offset
-        )
-    })?;
-    let y_in_usize = usize::try_from(y_out_i32 - y_offset).with_context(|| {
-        format!(
-            "Input voxel y-coordinate {} cannot be converted to usize",
-            y_out_i32 - y_offset
-        )
-    })?;
-    let z_in_usize = usize::try_from(z_out_i32 - z_offset).with_context(|| {
-        format!(
-            "Input voxel z-coordinate {} cannot be converted to usize",
-            z_out_i32 - z_offset
-        )
-    })?;
-
-    let input_voxel_index = [x_in_usize, y_in_usize, z_in_usize];
-    // SKip if the input voxel is already connected
-    if activation_time_s[input_voxel_index].is_some() {
-        return Ok(false);
-    }
-    let output_voxel_type = &v_types[output_voxel_index];
-    let input_voxel_type = &v_types[input_voxel_index];
-    // Skip if connection is not alowed
-    if !voxels::is_connection_allowed(output_voxel_type, input_voxel_type) {
-        return Ok(false);
-    }
-    // Skip pathologies if the propagation factor is zero
-    if input_voxel_type == &VoxelType::Pathological
-        && relative_eq!(config.common.current_factor_in_pathology, 0.0)
-    {
-        return Ok(false);
-    }
-    // Now we finally found something that we want to connect.
-    let input_state_number = v_numbers[input_voxel_index]
-        .with_context(|| format!("Input voxel at {input_voxel_index:?} has no assigned number"))?;
-    let output_position_mm = &v_position_mm.slice(s![x_out, y_out, z_out, ..]);
-    let [x_in, y_in, z_in] = input_voxel_index;
-    let input_position_mm = &v_position_mm.slice(s![x_in, y_in, z_in, ..]);
-    let propagation_velocity_m_per_s = config.common.propagation_velocities.get(*input_voxel_type);
-    let delay_s = delay::calculate_delay_s(
-        input_position_mm,
-        output_position_mm,
-        propagation_velocity_m_per_s,
-    );
-    // update activation time of input voxel, marking them as connected
-    let output_activation_time = activation_time_s[output_voxel_index].with_context(|| {
-        format!("Output voxel at {output_voxel_index:?} has no activation time")
-    })?;
-    activation_time_s[input_voxel_index] = Some(output_activation_time + delay_s);
-    let direction = direction::calculate(input_position_mm, output_position_mm);
-    current_directions
-        .slice_mut(s![x_in, y_in, z_in, ..])
-        .assign(&direction);
-    let mut gain = gain::calculate(
-        &direction,
-        current_directions.slice(s![x_out, y_out, z_out, ..]),
-    );
-    if *input_voxel_type == VoxelType::Pathological && *output_voxel_type != VoxelType::Pathological
-    {
-        gain *= config.common.current_factor_in_pathology;
-    }
-    if *output_voxel_type == VoxelType::Pathological && *input_voxel_type != VoxelType::Pathological
-    {
-        gain *= 1.0 / config.common.current_factor_in_pathology;
-    }
-    assign_gain(
-        ap_params,
-        input_state_number,
-        x_offset,
-        y_offset,
-        z_offset,
-        &gain,
-    );
-    Ok(true)
-}
-
-/// Assigns the given gain values to the appropriate indices in the
-/// all-pass filter parameter gains array. Maps the gain values from the
-/// (`input_dim`, `output_dim`) coordinate space to the flattened 22D gains array
-/// using the provided state number and offset indices.
-#[tracing::instrument(level = "trace")]
-fn assign_gain(
-    ap_params: &mut APParameters,
-    input_state_number: usize,
-    x_offset: i32,
-    y_offset: i32,
-    z_offset: i32,
-    gain: &ndarray::ArrayBase<ndarray::OwnedRepr<f32>, Dim<[usize; 2]>>,
-) {
-    trace!(
-        "Assigning gain {:?} to input state number {}",
-        gain,
-        input_state_number
-    );
-    for input_dimension in 0..3 {
-        for output_dimension in 0..3 {
-            ap_params.gains[(
-                input_state_number + input_dimension,
-                offset_to_gain_index(x_offset, y_offset, z_offset, output_dimension)
-                    .expect("Offsets to be valid"),
-            )] = gain[(input_dimension, output_dimension)];
-        }
-    }
-}
-
 /// Converts the given x, y, z offset values to an index in the 2D gains array.
 ///
 /// The offsets are relative to a given input voxel. The output dimension
@@ -617,27 +376,6 @@ pub const fn delay_index_to_offset(delay_index: usize) -> Option<[i32; 3]> {
     Some([x_offset, y_offset, z_offset])
 }
 
-/// Finds candidate voxels that are activated at the given `current_time_s`.
-///
-/// Filters the `activation_time_s` array for voxels with activation time
-/// equal to `current_time_s`, returning a vector of their indices.
-#[tracing::instrument(level = "trace")]
-fn find_candidate_voxels(
-    activation_time_s: &ndarray::ArrayBase<ndarray::OwnedRepr<Option<f32>>, Dim<[usize; 3]>>,
-    current_time_s: f32,
-) -> Vec<(usize, usize, usize)> {
-    trace!("Finding candidate voxels at time {}", current_time_s);
-    let output_voxel_indices: Vec<(usize, usize, usize)> = activation_time_s
-        .indexed_iter()
-        .filter_map(|(index, &time_s)| {
-            time_s
-                .filter(|&t| relative_eq!(t, current_time_s))
-                .map(|_| index)
-        })
-        .collect();
-    output_voxel_indices
-}
-
 /// Converts a sample value in the range to the corresponding
 /// all-pass filter coefficient.
 #[tracing::instrument(level = "trace")]
@@ -668,64 +406,4 @@ pub fn from_coef_to_samples(coef: f32) -> f32 {
 }
 
 #[cfg(test)]
-mod test {
-    use approx::assert_relative_eq;
-
-    use crate::core::model::functional::allpass::{
-        from_samples_to_coef, from_samples_to_usize, offset_to_gain_index,
-    };
-
-    #[test]
-    fn from_samples_to_usize_1() {
-        assert_eq!(1, from_samples_to_usize(1.0));
-        assert_eq!(1, from_samples_to_usize(1.2));
-        assert_eq!(10, from_samples_to_usize(10.9));
-        assert_eq!(10, from_samples_to_usize(10.0));
-    }
-
-    #[test]
-    fn from_samples_to_coef_1() {
-        assert_relative_eq!(1.0 / 3.0, from_samples_to_coef(0.5));
-        assert_relative_eq!(1.0 / 3.0, from_samples_to_coef(1.5));
-        assert_relative_eq!(1.0 / 3.0, from_samples_to_coef(99999.5));
-
-        assert_relative_eq!(0.9999, from_samples_to_coef(0.0));
-        assert_relative_eq!(0.9999, from_samples_to_coef(1.0));
-        assert_relative_eq!(0.9999, from_samples_to_coef(99999.0));
-    }
-
-    #[test]
-    fn offset_to_index_test() {
-        let desired = 2;
-        let actual = offset_to_gain_index(-1, -1, -1, 2).expect("Offsets to be valid.");
-        assert_eq!(desired, actual);
-
-        let desired = 5;
-        let actual = offset_to_gain_index(-1, -1, 0, 2).expect("Offsets to be valid.");
-        assert_eq!(desired, actual);
-
-        let desired = 8;
-        let actual = offset_to_gain_index(-1, -1, 1, 2).expect("Offsets to be valid.");
-        assert_eq!(desired, actual);
-
-        let desired = 77;
-        let actual = offset_to_gain_index(1, 1, 1, 2).expect("Offsets to be valid.");
-        assert_eq!(desired, actual);
-
-        let desired = 42;
-        let actual = offset_to_gain_index(0, 1, -1, 0).expect("Offsets to be valid.");
-        assert_eq!(desired, actual);
-
-        let desired = 45;
-        let actual = offset_to_gain_index(0, 1, 0, 0).expect("Offsets to be valid.");
-        assert_eq!(desired, actual);
-
-        let desired = 60;
-        let actual = offset_to_gain_index(1, 0, -1, 0).expect("Offsets to be valid.");
-        assert_eq!(desired, actual);
-
-        let desired = 63;
-        let actual = offset_to_gain_index(1, 0, 0, 0).expect("Offsets to be valid.");
-        assert_eq!(desired, actual);
-    }
-}
+mod tests;

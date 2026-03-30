@@ -9,6 +9,7 @@ pub mod explorer;
 pub mod home;
 pub mod project;
 pub mod routing;
+pub mod scenario;
 pub mod sidebar;
 
 use bevy::prelude::*;
@@ -20,6 +21,7 @@ use self::{
     home::{despawn_home_view, spawn_home_view, FolderDialogReceiver},
     project::load_project_on_path_change,
     routing::handle_keyboard_shortcuts,
+    scenario::ScenarioViewPlugin,
     sidebar::{
         apply_nav_item_preconditions, apply_sidebar_width, auto_collapse_on_narrow_viewport,
         handle_chevron_click, handle_nav_item_click, spawn_sidebar, update_nav_item_visual_states,
@@ -38,6 +40,9 @@ impl Plugin for BevyShellPlugin {
 
         // Explorer view — Bevy-native card grid (UiType::Bevy only).
         app.add_plugins(ExplorerViewPlugin);
+
+        // Scenario editor view — Bevy-native tabbed layout (UiType::Bevy only).
+        app.add_plugins(ScenarioViewPlugin);
 
         // Spawn / despawn the root layout when entering / exiting Bevy mode.
         app.add_systems(
