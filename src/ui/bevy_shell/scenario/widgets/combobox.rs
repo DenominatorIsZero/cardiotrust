@@ -1,4 +1,4 @@
-//! ComboBox widget — dropdown selection control.
+//! `ComboBox` widget — dropdown selection control.
 
 use bevy::{prelude::*, ui::UiGlobalTransform};
 

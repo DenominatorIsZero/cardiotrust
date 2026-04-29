@@ -1,7 +1,6 @@
 pub mod bevy_shell;
 pub mod colors;
 mod explorer;
-mod results;
 mod scenario;
 mod topbar;
 mod vol;
@@ -11,14 +10,8 @@ use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
 use bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
 
 use self::{
-    bevy_shell::BevyShellPlugin,
-    explorer::draw_ui_explorer,
-    results::{
-        draw_ui_results, reset_result_images, PlaybackSpeed, ResultImages, SelectedResultImage,
-    },
-    scenario::draw_ui_scenario,
-    topbar::draw_ui_topbar,
-    vol::draw_ui_volumetric,
+    bevy_shell::BevyShellPlugin, explorer::draw_ui_explorer, scenario::draw_ui_scenario,
+    topbar::draw_ui_topbar, vol::draw_ui_volumetric,
 };
 
 #[allow(clippy::module_name_repetitions)]
@@ -31,9 +24,6 @@ impl Plugin for UiPlugin {
         info!("Initializing UI plugin.");
         app.init_state::<UiState>()
             .init_state::<UiType>()
-            .init_resource::<ResultImages>()
-            .init_resource::<SelectedResultImage>()
-            .init_resource::<PlaybackSpeed>()
             .init_resource::<SidebarState>()
             .add_plugins(EguiPlugin::default())
             .add_plugins(BevyShellPlugin)
@@ -57,17 +47,10 @@ impl Plugin for UiPlugin {
             )
             .add_systems(
                 EguiPrimaryContextPass,
-                draw_ui_results
-                    .run_if(in_state(UiState::Results).and(in_state(UiType::EGui)))
-                    .after(draw_ui_topbar),
-            )
-            .add_systems(
-                EguiPrimaryContextPass,
                 draw_ui_volumetric
                     .run_if(in_state(UiState::Volumetric).and(in_state(UiType::EGui)))
                     .after(draw_ui_topbar),
-            )
-            .add_systems(Update, reset_result_images);
+            );
     }
 }
 

@@ -1,4 +1,4 @@
-//! NumberInput widget — click-to-type numeric field.
+//! `NumberInput` widget — click-to-type numeric field.
 
 use bevy::{input::keyboard::KeyboardInput, prelude::*};
 

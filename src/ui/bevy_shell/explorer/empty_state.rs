@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use super::{
     card::create_new_scenario,
     toolbar::{fuzzy_match, SearchFocused, SearchQuery, StatusFilter},
-    ExplorerGridNode,
+    ExplorerGridNode, ExplorerScrollFrame,
 };
 use crate::{ui::colors, ProjectState, ScenarioList, SelectedSenario};
 
@@ -184,8 +184,24 @@ pub fn toggle_empty_state(
     scenario_list: Res<ScenarioList>,
     filter: Res<StatusFilter>,
     search: Res<SearchQuery>,
-    mut empty_nodes: Query<&mut Node, With<EmptyStateNode>>,
-    mut grid_nodes: Query<&mut Node, (With<ExplorerGridNode>, Without<EmptyStateNode>)>,
+    mut empty_nodes: Query<
+        &mut Node,
+        (
+            With<EmptyStateNode>,
+            Without<ExplorerScrollFrame>,
+            Without<EmptyStateGenericGroup>,
+            Without<EmptyStateSearchGroup>,
+        ),
+    >,
+    mut grid_nodes: Query<
+        &mut Node,
+        (
+            With<ExplorerScrollFrame>,
+            Without<EmptyStateNode>,
+            Without<EmptyStateGenericGroup>,
+            Without<EmptyStateSearchGroup>,
+        ),
+    >,
     mut generic_groups: Query<
         &mut Node,
         (
@@ -193,6 +209,7 @@ pub fn toggle_empty_state(
             Without<EmptyStateNode>,
             Without<ExplorerGridNode>,
             Without<EmptyStateSearchGroup>,
+            Without<ExplorerScrollFrame>,
         ),
     >,
     mut search_groups: Query<
@@ -202,6 +219,7 @@ pub fn toggle_empty_state(
             Without<EmptyStateNode>,
             Without<ExplorerGridNode>,
             Without<EmptyStateGenericGroup>,
+            Without<ExplorerScrollFrame>,
         ),
     >,
     mut search_messages: Query<&mut Text, With<EmptyStateSearchMessage>>,

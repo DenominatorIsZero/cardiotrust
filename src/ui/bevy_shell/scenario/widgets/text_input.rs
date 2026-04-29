@@ -1,4 +1,4 @@
-//! TextInput widget — single-line text entry field.
+//! `TextInput` widget — single-line text entry field.
 
 use bevy::{input::keyboard::KeyboardInput, prelude::*};
 

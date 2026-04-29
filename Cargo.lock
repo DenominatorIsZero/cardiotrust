@@ -2075,6 +2075,7 @@ dependencies = [
  "bevy_editor_cam",
  "bevy_egui",
  "bevy_obj",
+ "bevy_ui_widgets",
  "bincode",
  "chrono",
  "criterion",

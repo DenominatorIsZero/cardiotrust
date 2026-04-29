@@ -1,17 +1,24 @@
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result};
+use image::ImageEncoder;
 use ndarray::s;
 use tracing::debug;
 
-use super::{GifType, ImageType};
+use super::{AnimType, GifType, ImageType};
 use crate::{
     core::{
         algorithm::metrics::predict_voxeltype,
         model::functional::allpass::shapes::ActivationTimeMs, scenario::Scenario,
     },
     vis::plotting::{
-        gif::states::states_spherical_plot_over_time,
+        gif::{
+            matrix::matrix_over_slices_plot, states::states_spherical_plot_over_time,
+            voxel_type::voxel_types_over_slices_plot,
+        },
         png::{
             activation_time::activation_time_plot,
             delay::average_delay_plot,
@@ -23,6 +30,8 @@ use crate::{
         PlotSlice, StateSphericalPlotMode,
     },
 };
+
+// ── Image generation ──────────────────────────────────────────────────────────
 
 /// Generates the image for the given scenario and image type.
 #[allow(
@@ -385,6 +394,216 @@ pub(super) fn generate_image(scenario: Scenario, image_type: ImageType) -> Resul
     .with_context(|| format!("Failed to generate plot for image type: {image_type:?}"))?;
     Ok(())
 }
+
+// ── Animation (PNG-sequence) generation ───────────────────────────────────────
+
+/// Generates a PNG frame sequence for the given animation type.
+///
+/// Frames are written to `results/{id}/img/anim/{anim_type}/frame_{n:04}.png`.
+/// The returned `PathBuf` is the frame directory.
+///
+/// This function is dispatched from a background thread; callers use the
+/// [`Arc<Mutex<Option<Result<PathBuf>>>>`] channel pattern.
+#[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
+#[tracing::instrument(level = "debug", skip(scenario))]
+pub(super) fn generate_animation(scenario: Scenario, anim_type: AnimType) -> Result<PathBuf> {
+    debug!("Generating animation frames for {:?}", anim_type);
+
+    let anim_dir = Path::new("results")
+        .join(scenario.get_id())
+        .join("img")
+        .join("anim")
+        .join(anim_type.dir_name());
+    fs::create_dir_all(&anim_dir).with_context(|| {
+        format!(
+            "Failed to create animation directory: {}",
+            anim_dir.display()
+        )
+    })?;
+
+    // Return early if frames already exist.
+    if let Some(frames) = detect_existing_frames(scenario.get_id(), anim_type) {
+        if !frames.is_empty() {
+            return Ok(anim_dir);
+        }
+    }
+
+    let Some(results) = scenario.results.as_ref() else {
+        return Err(anyhow::anyhow!(
+            "Scenario results not available for animation generation"
+        ));
+    };
+    let estimations = &results.estimations;
+    let Some(model) = results.model.as_ref() else {
+        return Err(anyhow::anyhow!(
+            "Model not available in results for animation generation"
+        ));
+    };
+    let Some(data) = scenario.data.as_ref() else {
+        return Err(anyhow::anyhow!(
+            "Scenario data not available for animation generation"
+        ));
+    };
+
+    let gif_bundle = match anim_type {
+        AnimType::StatesAlgorithm => states_spherical_plot_over_time(
+            &estimations.system_states_spherical,
+            &estimations.system_states_spherical_max,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            data.simulation.sample_rate_hz,
+            &model.spatial_description.voxels.numbers,
+            None,
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            Some(0.1),
+            Some(20),
+        )
+        .context("Failed to generate StatesAlgorithm animation frames")?,
+        AnimType::StatesSimulation => states_spherical_plot_over_time(
+            &data.simulation.system_states_spherical,
+            &data.simulation.system_states_spherical_max,
+            &data
+                .simulation
+                .model
+                .spatial_description
+                .voxels
+                .positions_mm,
+            model.spatial_description.voxels.size_mm,
+            data.simulation.sample_rate_hz,
+            &model.spatial_description.voxels.numbers,
+            None,
+            Some(PlotSlice::Z(0)),
+            Some(StateSphericalPlotMode::ABS),
+            Some(0.1),
+            Some(20),
+        )
+        .context("Failed to generate StatesSimulation animation frames")?,
+        AnimType::MatrixOverSlices => {
+            // Map max state magnitudes onto a 3-D spatial grid via VoxelNumbers.
+            let numbers = &model.spatial_description.voxels.numbers;
+            let shape = numbers.shape();
+            let max_mag = &estimations.system_states_spherical_max.magnitude;
+            let mut arr = ndarray::Array3::<f32>::zeros((shape[0], shape[1], shape[2]));
+            for ((x, y, z), num) in numbers.indexed_iter() {
+                if let Some(n) = num {
+                    // VoxelNumbers stores the state index (multiples of 3);
+                    // dividing by 3 gives the voxel index into magnitude.
+                    let voxel_idx = n / 3;
+                    if let Some(&val) = max_mag.get(voxel_idx) {
+                        arr[(x, y, z)] = val;
+                    }
+                }
+            }
+            matrix_over_slices_plot(
+                &arr,
+                None,
+                None,
+                None,
+                None,
+                None,
+                Some("Max State Magnitude"),
+                Some("y [mm]"),
+                Some("x [mm]"),
+                Some("au"),
+                None,
+                None,
+                None,
+            )
+            .context("Failed to generate MatrixOverSlices animation frames")?
+        }
+        AnimType::VoxelTypesOverSlices => voxel_types_over_slices_plot(
+            &model.spatial_description.voxels.types,
+            &model.spatial_description.voxels.positions_mm,
+            model.spatial_description.voxels.size_mm,
+            None,
+            None,
+            None,
+        )
+        .context("Failed to generate VoxelTypesOverSlices animation frames")?,
+    };
+
+    // Write each frame as a PNG file.
+    for (index, rgb_bytes) in gif_bundle.data.iter().enumerate() {
+        let frame_path = anim_dir.join(format!("frame_{index:04}.png"));
+        write_rgb_as_png(rgb_bytes, gif_bundle.width, gif_bundle.height, &frame_path)
+            .with_context(|| {
+                format!(
+                    "Failed to write animation frame {index} to {}",
+                    frame_path.display()
+                )
+            })?;
+    }
+
+    Ok(anim_dir)
+}
+
+/// Writes raw RGB bytes (row-major, 3 bytes per pixel) as a PNG file.
+#[tracing::instrument(level = "trace", skip(rgb_bytes))]
+fn write_rgb_as_png(rgb_bytes: &[u8], width: u32, height: u32, path: &Path) -> Result<()> {
+    let file = std::fs::File::create(path)
+        .with_context(|| format!("Failed to create PNG file: {}", path.display()))?;
+    let writer = std::io::BufWriter::new(file);
+    let encoder = image::codecs::png::PngEncoder::new(writer);
+    encoder
+        .write_image(rgb_bytes, width, height, image::ExtendedColorType::Rgb8)
+        .with_context(|| format!("Failed to encode PNG for: {}", path.display()))?;
+    Ok(())
+}
+
+/// Detects existing PNG frames in the animation directory for the given type.
+///
+/// Returns `Some(paths)` if the directory exists and contains at least one
+/// `frame_NNNN.png` file, otherwise `None`.
+#[tracing::instrument(level = "trace")]
+pub(super) fn detect_existing_image(scenario_id: &str, image_type: ImageType) -> Option<PathBuf> {
+    let path = Path::new("results")
+        .join(scenario_id)
+        .join("img")
+        .join(image_type.to_string())
+        .with_extension("png");
+
+    path.is_file().then_some(path)
+}
+
+#[tracing::instrument(level = "debug")]
+pub(super) fn detect_existing_frames(
+    scenario_id: &str,
+    anim_type: AnimType,
+) -> Option<Vec<PathBuf>> {
+    let dir = Path::new("results")
+        .join(scenario_id)
+        .join("img")
+        .join("anim")
+        .join(anim_type.dir_name());
+
+    if !dir.is_dir() {
+        return None;
+    }
+
+    let entries = fs::read_dir(&dir).ok()?;
+    let mut frames: Vec<PathBuf> = entries
+        .filter_map(|e| {
+            let e = e.ok()?;
+            let name = e.file_name();
+            let name = name.to_string_lossy();
+            if name.starts_with("frame_") && name.ends_with(".png") {
+                Some(e.path())
+            } else {
+                None
+            }
+        })
+        .collect();
+    frames.sort();
+
+    if frames.is_empty() {
+        None
+    } else {
+        Some(frames)
+    }
+}
+
+// ── Legacy GIF generation (kept for backward compat / tests) ──────────────────
 
 /// Generates animated GIF visualizations of the system states over time from the simulation results.
 #[allow(

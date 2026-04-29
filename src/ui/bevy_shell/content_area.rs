@@ -41,6 +41,7 @@ pub fn spawn_root_layout(mut commands: Commands) {
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
+                min_height: Val::Px(0.0),
                 flex_direction: FlexDirection::Row,
                 ..default()
             },
@@ -51,6 +52,7 @@ pub fn spawn_root_layout(mut commands: Commands) {
                 flex_direction: FlexDirection::Column,
                 flex_grow: 1.0,
                 height: Val::Percent(100.0),
+                min_height: Val::Px(0.0),
                 ..default()
             })
             .with_children(|col| {
@@ -84,6 +86,8 @@ pub fn spawn_root_layout(mut commands: Commands) {
                     Node {
                         flex_grow: 1.0,
                         width: Val::Percent(100.0),
+                        min_height: Val::Px(0.0),
+                        overflow: Overflow::clip(),
                         ..default()
                     },
                 ));

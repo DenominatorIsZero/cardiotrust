@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use approx::relative_eq;
 use ndarray::{arr1, s, Array3, Array4, Dim};
+use ndarray_stats::QuantileExt;
 use tracing::{debug, trace};
 
 use super::APParameters;
@@ -87,7 +88,6 @@ pub(super) fn connect_voxels(
             .filter(|&t| t > current_time_s)
             .collect();
         let candidate_times_s = ndarray::Array1::from_vec(candidate_times_s);
-        use ndarray_stats::QuantileExt;
         current_time_s = *candidate_times_s.min_skipnan();
     }
     ap_params

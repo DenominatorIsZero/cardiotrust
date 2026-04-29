@@ -21,6 +21,7 @@ pub mod thumbnail;
 pub mod toolbar;
 
 use bevy::prelude::*;
+use bevy_ui_widgets::{ControlOrientation, CoreScrollbarThumb, Scrollbar};
 
 use self::{
     card::{
@@ -55,6 +56,10 @@ pub struct ExplorerViewRoot;
 /// Marker for the grid root node that holds scenario cards.
 #[derive(Component, Debug)]
 pub struct ExplorerGridNode;
+
+/// Marker for the scroll frame that owns the explorer grid and scrollbar.
+#[derive(Component, Debug)]
+pub struct ExplorerScrollFrame;
 
 // ── Plugin ────────────────────────────────────────────────────────────────────
 
@@ -154,26 +159,79 @@ fn spawn_explorer_view(mut commands: Commands, content_slots: Query<Entity, With
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
+                min_height: Val::Px(0.0),
                 flex_direction: FlexDirection::Column,
-                overflow: Overflow::scroll_y(),
                 ..default()
             },
             BackgroundColor(crate::ui::colors::BG0),
         ))
         .with_children(|root| {
-            // Grid node — cards are inserted here by sync_cards_to_scenarios
+            // Scroll frame containing the grid viewport + scrollbar.
             root.spawn((
-                ExplorerGridNode,
                 Node {
-                    width: Val::Percent(100.0),
                     display: Display::Grid,
-                    grid_template_columns: RepeatedGridTrack::flex(3, 1.0),
-                    column_gap: Val::Px(16.0),
-                    row_gap: Val::Px(16.0),
-                    padding: UiRect::all(Val::Px(16.0)),
+                    width: Val::Percent(100.0),
+                    flex_grow: 1.0,
+                    min_height: Val::Px(0.0),
+                    grid_template_columns: vec![
+                        RepeatedGridTrack::flex(1, 1.0),
+                        RepeatedGridTrack::px(1, 10.0),
+                    ],
+                    column_gap: Val::Px(8.0),
+                    padding: UiRect::all(Val::Px(8.0)),
                     ..default()
                 },
-            ));
+                ExplorerScrollFrame,
+            ))
+            .with_children(|frame| {
+                let scroll_area = frame
+                    .spawn((
+                        Node {
+                            width: Val::Percent(100.0),
+                            height: Val::Percent(100.0),
+                            min_height: Val::Px(0.0),
+                            overflow: Overflow::scroll_y(),
+                            ..default()
+                        },
+                        ScrollPosition::default(),
+                        BackgroundColor(crate::ui::colors::BG0),
+                    ))
+                    .with_children(|scroll| {
+                        scroll.spawn((
+                            ExplorerGridNode,
+                            Node {
+                                width: Val::Percent(100.0),
+                                display: Display::Grid,
+                                grid_template_columns: RepeatedGridTrack::flex(3, 1.0),
+                                column_gap: Val::Px(16.0),
+                                row_gap: Val::Px(16.0),
+                                padding: UiRect::all(Val::Px(16.0)),
+                                ..default()
+                            },
+                        ));
+                    })
+                    .id();
+
+                frame.spawn((
+                    Node {
+                        width: Val::Px(10.0),
+                        height: Val::Percent(100.0),
+                        min_height: Val::Px(0.0),
+                        ..default()
+                    },
+                    Scrollbar::new(scroll_area, ControlOrientation::Vertical, 24.0),
+                    BackgroundColor(crate::ui::colors::BG1),
+                    children![(
+                        Node {
+                            position_type: PositionType::Absolute,
+                            border_radius: BorderRadius::all(Val::Px(5.0)),
+                            ..default()
+                        },
+                        BackgroundColor(crate::ui::colors::GREY1),
+                        CoreScrollbarThumb,
+                    )],
+                ));
+            });
         })
         .id();
 

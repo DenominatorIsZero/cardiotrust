@@ -8,11 +8,14 @@ pub mod content_area;
 pub mod explorer;
 pub mod home;
 pub mod project;
+pub mod results;
 pub mod routing;
 pub mod scenario;
+pub mod scroll;
 pub mod sidebar;
 
 use bevy::prelude::*;
+use bevy_ui_widgets::ScrollbarPlugin;
 
 use self::{
     breadcrumb::update_breadcrumb,
@@ -20,8 +23,10 @@ use self::{
     explorer::ExplorerViewPlugin,
     home::{despawn_home_view, spawn_home_view, FolderDialogReceiver},
     project::load_project_on_path_change,
+    results::ResultsViewPlugin,
     routing::handle_keyboard_shortcuts,
     scenario::ScenarioViewPlugin,
+    scroll::{on_scroll_handler, send_scroll_events},
     sidebar::{
         apply_nav_item_preconditions, apply_sidebar_width, auto_collapse_on_narrow_viewport,
         handle_chevron_click, handle_nav_item_click, spawn_sidebar, update_nav_item_visual_states,
@@ -37,12 +42,17 @@ impl Plugin for BevyShellPlugin {
     #[tracing::instrument(level = "info", skip(app))]
     fn build(&self, app: &mut App) {
         app.init_resource::<FolderDialogReceiver>();
+        app.add_plugins(ScrollbarPlugin);
+        app.add_observer(on_scroll_handler);
 
         // Explorer view — Bevy-native card grid (UiType::Bevy only).
         app.add_plugins(ExplorerViewPlugin);
 
         // Scenario editor view — Bevy-native tabbed layout (UiType::Bevy only).
         app.add_plugins(ScenarioViewPlugin);
+
+        // Results gallery view — Bevy-native (UiType::Bevy only).
+        app.add_plugins(ResultsViewPlugin);
 
         // Spawn / despawn the root layout when entering / exiting Bevy mode.
         app.add_systems(
@@ -67,6 +77,7 @@ impl Plugin for BevyShellPlugin {
                 update_breadcrumb,
                 handle_keyboard_shortcuts,
                 load_project_on_path_change,
+                send_scroll_events,
             )
                 .run_if(in_state(UiType::Bevy)),
         )
