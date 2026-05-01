@@ -13,6 +13,7 @@ pub mod routing;
 pub mod scenario;
 pub mod scroll;
 pub mod sidebar;
+pub mod volumetric;
 
 use bevy::prelude::*;
 use bevy_ui_widgets::ScrollbarPlugin;
@@ -31,6 +32,7 @@ use self::{
         apply_nav_item_preconditions, apply_sidebar_width, auto_collapse_on_narrow_viewport,
         handle_chevron_click, handle_nav_item_click, spawn_sidebar, update_nav_item_visual_states,
     },
+    volumetric::VolumetricViewPlugin,
 };
 use crate::ui::{UiState, UiType};
 
@@ -53,6 +55,9 @@ impl Plugin for BevyShellPlugin {
 
         // Results gallery view — Bevy-native (UiType::Bevy only).
         app.add_plugins(ResultsViewPlugin);
+
+        // Volumetric view — Bevy-native workspace with scoped egui overlays.
+        app.add_plugins(VolumetricViewPlugin);
 
         // Spawn / despawn the root layout when entering / exiting Bevy mode.
         app.add_systems(

@@ -112,7 +112,11 @@ pub fn setup_light_and_camera(mut commands: Commands) {
     commands
         .spawn((
             Camera3d::default(),
-            Transform::from_xyz(-100.0, 200.0, 50.0).looking_at(Vec3::ZERO, Vec3::Z),
+            Transform {
+                translation: Vec3::new(-300.962, -859.492, 653.266),
+                rotation: Quat::from_xyzw(0.450315, -0.047057, -0.253808, 0.854742),
+                scale: Vec3::ONE,
+            },
             AmbientLight {
                 color: Color::WHITE,
                 brightness: 1000.0,
