@@ -15,7 +15,7 @@ use crate::{
     core::{
         algorithm::refinement::Optimizer,
         config::{algorithm::APDerivative, model::ControlFunction},
-        scenario::{run, Scenario},
+        scenario::{run_test_scenario, Scenario},
     },
     tests::{clean_files, setup_folder},
     vis::plotting::png::line::{line_plot, log_y_plot},
@@ -216,7 +216,8 @@ fn create_and_run(
                 let send_scenario = scenario.clone();
                 let (epoch_tx, _) = channel();
                 let (summary_tx, _) = channel();
-                let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
+                let handle =
+                    thread::spawn(move || run_test_scenario(send_scenario, &epoch_tx, &summary_tx));
                 println!("handle {handle:?}");
                 join_handles.push(handle);
             }
@@ -250,7 +251,7 @@ fn build_scenario(
     control_function: ControlFunction,
     id: &str,
 ) -> anyhow::Result<Scenario> {
-    let mut scenario = Scenario::build(Some(id.to_string()))?;
+    let mut scenario = Scenario::build(Some(id.to_string()));
 
     // Configure Sensor
     if single_sensor {

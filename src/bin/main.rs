@@ -3,8 +3,8 @@ use std::process::Command;
 use anyhow::{Context, Result};
 use bevy::{log::LogPlugin, prelude::*};
 use cardiotrust::{
-    scheduler::SchedulerPlugin, ui::UiPlugin, vis::VisPlugin, ProjectState, ScenarioList,
-    SelectedSenario,
+    scheduler::SchedulerPlugin, ui::UiPlugin, vis::VisPlugin, ActiveLoadedScenario,
+    PendingProjectLoad, ProjectState, ScenarioList, SelectedSenario,
 };
 use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt};
@@ -30,6 +30,8 @@ fn run_app() -> Result<()> {
     App::new()
         .insert_resource(ScenarioList::empty())
         .init_resource::<SelectedSenario>()
+        .init_resource::<PendingProjectLoad>()
+        .init_resource::<ActiveLoadedScenario>()
         .insert_resource(ProjectState {
             recent: ProjectState::load_recent(),
             ..Default::default()

@@ -11,7 +11,7 @@ use super::{
     },
     AnimState, ResultAnimCache, ResultImageCache, ResultImageState,
 };
-use crate::ui::colors;
+use crate::{ui::colors, ActiveLoadedScenario};
 
 // ── Static card sync ──────────────────────────────────────────────────────────
 
@@ -315,8 +315,7 @@ pub fn update_card_hover(
 pub fn handle_generate_button_static(
     buttons: Query<(&CardGenerateButton, &Interaction), (Changed<Interaction>, With<Button>)>,
     mut image_cache: ResMut<ResultImageCache>,
-    scenario_list: Res<crate::ScenarioList>,
-    selected: Res<crate::SelectedSenario>,
+    active_loaded_scenario: Res<ActiveLoadedScenario>,
 ) {
     for (btn, interaction) in &buttons {
         if *interaction != Interaction::Pressed {
@@ -332,25 +331,21 @@ pub fn handle_generate_button_static(
             continue;
         }
 
-        let Some(index) = selected.index else {
+        let Some(active) = active_loaded_scenario.0.as_ref() else {
             continue;
         };
-        let Some(entry) = scenario_list.entries.get(index) else {
-            continue;
-        };
-        let scenario = entry.scenario.clone();
+        let scenario = active.scenario.clone();
+        let payload = active.payload.clone();
+        let output_path = active
+            .storage
+            .image_path(scenario.get_id(), &image_type.to_string());
 
         let channel = super::new_channel::<std::path::PathBuf>();
         let channel_writer = channel.clone();
 
         std::thread::spawn(move || {
-            let result = super::generate::generate_image(scenario.clone(), image_type).map(|()| {
-                std::path::Path::new("results")
-                    .join(scenario.get_id())
-                    .join("img")
-                    .join(image_type.to_string())
-                    .with_extension("png")
-            });
+            let result =
+                super::generate::generate_image(scenario, payload, output_path, image_type);
             if let Ok(mut guard) = channel_writer.lock() {
                 *guard = Some(result);
             }
@@ -366,8 +361,7 @@ pub fn handle_generate_button_static(
 pub fn handle_generate_button_anim(
     buttons: Query<(&CardGenerateButton, &Interaction), (Changed<Interaction>, With<Button>)>,
     mut anim_cache: ResMut<ResultAnimCache>,
-    scenario_list: Res<crate::ScenarioList>,
-    selected: Res<crate::SelectedSenario>,
+    active_loaded_scenario: Res<ActiveLoadedScenario>,
 ) {
     for (btn, interaction) in &buttons {
         if *interaction != Interaction::Pressed {
@@ -383,19 +377,21 @@ pub fn handle_generate_button_anim(
             continue;
         }
 
-        let Some(index) = selected.index else {
+        let Some(active) = active_loaded_scenario.0.as_ref() else {
             continue;
         };
-        let Some(entry) = scenario_list.entries.get(index) else {
-            continue;
-        };
-        let scenario = entry.scenario.clone();
+        let scenario = active.scenario.clone();
+        let payload = active.payload.clone();
+        let anim_dir = active
+            .storage
+            .animation_dir(scenario.get_id(), anim_type.dir_name());
 
         let channel = super::new_channel::<std::path::PathBuf>();
         let channel_writer = channel.clone();
 
         std::thread::spawn(move || {
-            let result = super::generate::generate_animation(scenario, anim_type);
+            let result =
+                super::generate::generate_animation(scenario, payload, anim_dir, anim_type);
             if let Ok(mut guard) = channel_writer.lock() {
                 *guard = Some(result);
             }

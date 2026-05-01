@@ -6,7 +6,7 @@ use super::content_area::ShellRoot;
 use crate::{
     core::scenario::Status,
     ui::{colors, SidebarState, UiState},
-    ProjectState, ScenarioList, SelectedSenario,
+    ScenarioList, SelectedSenario,
 };
 
 // ── Viewport threshold for auto-collapse ─────────────────────────────────────
@@ -265,15 +265,13 @@ pub fn apply_nav_item_preconditions(
     nav_items: Query<(Entity, &NavItem), With<Button>>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
-    project_state: Res<ProjectState>,
 ) {
     // Only re-evaluate when something relevant actually changed.
-    if !selected_scenario.is_changed() && !scenario_list.is_changed() && !project_state.is_changed()
-    {
+    if !selected_scenario.is_changed() && !scenario_list.is_changed() {
         return;
     }
 
-    let no_project = project_state.current_path.is_none();
+    let no_project = scenario_list.project_root.is_none();
 
     for (entity, nav_item) in &nav_items {
         let disabled = if no_project {

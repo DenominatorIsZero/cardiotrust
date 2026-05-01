@@ -34,17 +34,17 @@ use self::{
     torso::spawn_torso,
 };
 use crate::{
-    core::scenario::Scenario,
     ui::UiState,
     vis::{
         cutting_plane::{spawn_cutting_plane, update_cutting_plane_position},
         heart::{setup_material_atlas, setup_mesh_atlas, update_heart_voxel_visibility},
         sensors::{spawn_sensor_bracket, update_sensor_bracket_position, update_sensor_positions},
     },
+    LoadedScenario,
 };
 
 #[derive(Message)]
-pub struct SetupHeartAndSensors(pub Scenario);
+pub struct SetupHeartAndSensors(pub LoadedScenario);
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]

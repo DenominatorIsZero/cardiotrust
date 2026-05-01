@@ -12,7 +12,7 @@ use crate::{
         sensors::BacketSettings,
         SetupHeartAndSensors,
     },
-    ScenarioList, SelectedSenario,
+    ActiveLoadedScenario, ScenarioList, SelectedSenario,
 };
 
 /// Draws the UI for the volumetric visualization, including the side panel
@@ -38,19 +38,21 @@ pub fn draw_ui_volumetric(
     mut ev_setup: MessageWriter<SetupHeartAndSensors>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
+    active_loaded_scenario: Res<ActiveLoadedScenario>,
 ) {
     trace!("Running system to draw volumetric UI.");
-    let scenario = if let Some(index) = selected_scenario.index {
+    if let Some(index) = selected_scenario.index {
         scenario_list.entries.get(index).map_or_else(
             || {
                 error!("Selected scenario index {} is out of bounds", index);
                 None
             },
-            |entry| Some(&entry.scenario),
+            Some,
         )
     } else {
         None
     };
+    let scenario = active_loaded_scenario.0.as_ref();
     let ctx = match contexts.ctx_mut() {
         Ok(ctx) => ctx,
         Err(e) => {
@@ -72,8 +74,7 @@ pub fn draw_ui_volumetric(
             .add_enabled(scenario.is_some(), egui::Button::new("Init Voxels"))
             .clicked()
         {
-            if let Some(scenario) = scenario {
-                let scenario = scenario.clone();
+            if let Some(scenario) = scenario.cloned() {
                 ev_setup.write(SetupHeartAndSensors(scenario));
             } else {
                 error!("No scenario available for voxel initialization");
@@ -168,8 +169,7 @@ pub fn draw_ui_volumetric(
                 ui.add(egui::Slider::new(
                     &mut motion_step,
                     0..=scenario
-                        .and_then(|s| s.results.as_ref())
-                        .and_then(|r| r.model.as_ref())
+                        .and_then(|s| s.payload.results.model.as_ref())
                         .map_or(0, |m| {
                             m.spatial_description.sensors.array_offsets_mm.shape()[0]
                                 .saturating_sub(1)
@@ -183,8 +183,13 @@ pub fn draw_ui_volumetric(
                 #[allow(clippy::range_minus_one)]
                 ui.add(egui::Slider::new(
                     &mut selected_sensor,
-                    0..=scenario.and_then(|s| s.results.as_ref()).map_or(0, |r| {
-                        r.estimations.measurements.num_sensors().saturating_sub(1)
+                    0..=scenario.map_or(0, |s| {
+                        s.payload
+                            .results
+                            .estimations
+                            .measurements
+                            .num_sensors()
+                            .saturating_sub(1)
                     }),
                 ));
                 if selected_sensor != sample_tracker.selected_sensor {
@@ -307,22 +312,20 @@ pub fn draw_ui_volumetric(
                         };
                     }
                 }
-                let samplerate_hz = f64::from(scenario.config.simulation.sample_rate_hz);
+                let samplerate_hz = f64::from(scenario.scenario.config.simulation.sample_rate_hz);
                 let signal: PlotPoints = (0..sample_tracker.max_sample)
                     .map(|i| {
                         #[allow(clippy::cast_precision_loss)]
                         let x = i as f64 / samplerate_hz;
                         [
                             x,
-                            scenario.results.as_ref().map_or(0.0, |r| {
-                                f64::from(
-                                    r.estimations.measurements[(
-                                        sample_tracker.selected_beat,
-                                        i,
-                                        sample_tracker.selected_sensor,
-                                    )],
-                                )
-                            }),
+                            f64::from(
+                                scenario.payload.results.estimations.measurements[(
+                                    sample_tracker.selected_beat,
+                                    i,
+                                    sample_tracker.selected_sensor,
+                                )],
+                            ),
                         ]
                     })
                     .collect();

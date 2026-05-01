@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use cardiotrust::core::{
     algorithm::refinement::Optimizer,
     config::{algorithm::Algorithm, model::SensorArrayMotion, simulation::Simulation},
-    scenario::Scenario,
+    scenario::{Scenario, ScenarioStorage},
 };
 use tracing::info;
 use tracing_subscriber::{fmt, layer::SubscriberExt};
@@ -35,6 +35,7 @@ fn run_planner() -> Result<()> {
 
 #[tracing::instrument(level = "info")]
 fn plan_scenarios() -> Result<()> {
+    let storage = ScenarioStorage::new("./results");
     let learning_rate = 100.0;
     let steps = 30_000;
     let batch_size = 1;
@@ -63,13 +64,13 @@ fn plan_scenarios() -> Result<()> {
     simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Static;
     simulation_config.model.common.measurement_covariance_mean = 1e-20;
 
-    let mut scenario = Scenario::build(Some(format!("{experiment_name} - (I) - Static Array")))?;
+    let mut scenario = Scenario::build(Some(format!("{experiment_name} - (I) - Static Array")));
     scenario.config.algorithm = algorithm_config.clone();
     scenario.config.simulation = simulation_config.clone();
     scenario.schedule().with_context(|| {
         format!("Failed to schedule static array scenario for experiment '{experiment_name}'")
     })?;
-    scenario.save().with_context(|| {
+    storage.save_metadata(&scenario).with_context(|| {
         format!("Failed to save static array scenario for experiment '{experiment_name}'")
     })?;
 
@@ -83,12 +84,13 @@ fn plan_scenarios() -> Result<()> {
             simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Grid;
             let mut scenario = Scenario::build(Some(format!(
                 "{experiment_name} - (II) - Move Along Y - {y_step:0>4} Steps"
-            )))?;
+            )));
             scenario.config.algorithm = algorithm_config.clone();
             scenario.config.simulation = simulation_config.clone();
             scenario.schedule()
                 .with_context(|| format!("Failed to schedule Y-motion scenario for experiment '{experiment_name}', {y_step} steps"))?;
-            scenario.save()
+            storage
+                .save_metadata(&scenario)
                 .with_context(|| format!("Failed to save Y-motion scenario for experiment '{experiment_name}', {y_step} steps"))?;
         }
     }
@@ -102,12 +104,13 @@ fn plan_scenarios() -> Result<()> {
         simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Grid;
         let mut scenario = Scenario::build(Some(format!(
             "{experiment_name} - (II) - Move Along XYZ - {total_steps:0>4} Steps"
-        )))?;
+        )));
         scenario.config.algorithm = algorithm_config.clone();
         scenario.config.simulation = simulation_config.clone();
         scenario.schedule()
             .with_context(|| format!("Failed to schedule XYZ-motion scenario for experiment '{experiment_name}', {total_steps} total steps"))?;
-        scenario.save()
+        storage
+            .save_metadata(&scenario)
             .with_context(|| format!("Failed to save XYZ-motion scenario for experiment '{experiment_name}', {total_steps} total steps"))?;
     }
 
@@ -123,12 +126,13 @@ fn plan_scenarios() -> Result<()> {
         simulation_config.model.common.sensor_array_motion = SensorArrayMotion::Grid;
         let mut scenario = Scenario::build(Some(format!(
             "{experiment_name} - (III) - Move Along XYZ (LR Sweep)- {lr} LR"
-        )))?;
+        )));
         scenario.config.algorithm = algorithm_config.clone();
         scenario.config.simulation = simulation_config.clone();
         scenario.schedule()
             .with_context(|| format!("Failed to schedule LR sweep scenario for experiment '{experiment_name}', learning rate {lr}"))?;
-        scenario.save()
+        storage
+            .save_metadata(&scenario)
             .with_context(|| format!("Failed to save LR sweep scenario for experiment '{experiment_name}', learning rate {lr}"))?;
     }
 

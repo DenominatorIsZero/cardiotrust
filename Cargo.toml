@@ -55,6 +55,9 @@ tracing-appender = "0.2.3"
 tracing-subscriber = "0.3.22"
 test-log = "0.2.18"
 
+[features]
+legacy_scenario_tests = []
+
 [dev-dependencies]
 criterion = "0.7.0"
 

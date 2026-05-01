@@ -226,10 +226,10 @@ pub fn handle_context_menu_actions(
             ContextMenuAction::Copy => {
                 if let Some(idx) = scenario_index {
                     if let Some(entry) = scenario_list.entries.get(idx) {
-                        match crate::core::scenario::Scenario::build(None) {
-                            Ok(mut new_scenario) => {
-                                new_scenario.config = entry.scenario.config.clone();
-                                new_scenario.comment = format!(
+                        match entry.copy_as_planning() {
+                            Ok(mut copied_bundle) => {
+                                copied_bundle.scenario.config = entry.scenario.config.clone();
+                                copied_bundle.scenario.comment = format!(
                                     "Copy of {}",
                                     entry
                                         .scenario
@@ -239,15 +239,10 @@ pub fn handle_context_menu_actions(
                                         .trim_start_matches("Copy of ")
                                         .trim()
                                 );
-                                if let Err(e) = new_scenario.save() {
+                                if let Err(e) = copied_bundle.save_metadata() {
                                     tracing::warn!("Failed to save copied scenario: {e}");
                                 }
-                                scenario_list.entries.push(crate::ScenarioBundle {
-                                    scenario: new_scenario,
-                                    join_handle: None,
-                                    epoch_rx: None,
-                                    summary_rx: None,
-                                });
+                                scenario_list.entries.push(copied_bundle);
                             }
                             Err(e) => tracing::warn!("Failed to create copy of scenario: {e}"),
                         }
@@ -257,7 +252,7 @@ pub fn handle_context_menu_actions(
             ContextMenuAction::Delete => {
                 if let Some(idx) = scenario_index {
                     if idx < scenario_list.entries.len() {
-                        let _ = scenario_list.entries[idx].scenario.delete();
+                        let _ = scenario_list.entries[idx].delete();
                         scenario_list.entries.remove(idx);
                         if selected.index == Some(idx) {
                             selected.index = None;

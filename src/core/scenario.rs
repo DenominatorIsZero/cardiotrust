@@ -8,24 +8,27 @@ pub mod summary;
 #[cfg(test)]
 mod tests;
 
-use std::{
-    fs::{self, File},
-    io::Write,
-    path::Path,
-};
-
-use anyhow::{Context, Result};
+use anyhow::Result;
 use chrono::{self, DateTime, Utc};
+pub use persistence::ScenarioStorage;
 pub use plotting::calculate_plotting_arrays;
 pub use run::run;
 use serde::{Deserialize, Serialize};
 pub use status::Status;
-use toml;
-use tracing::{debug, info, trace, warn};
+use tracing::{debug, trace, warn};
+
+#[cfg(test)]
+use std::path::{Path, PathBuf};
 
 use self::{results::Results, summary::Summary};
 use super::config::{algorithm::AlgorithmType, Config};
 use crate::core::data::Data;
+
+#[derive(Debug, Clone)]
+pub struct ScenarioPayload {
+    pub data: Data,
+    pub results: Results,
+}
 
 /// Struct representing a scenario configuration and results.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
@@ -33,10 +36,6 @@ pub struct Scenario {
     id: String,
     status: Status,
     pub config: Config,
-    #[serde(skip_serializing, skip_deserializing)]
-    pub data: Option<Data>,
-    #[serde(skip_serializing, skip_deserializing)]
-    pub results: Option<Results>,
     pub summary: Option<Summary>,
     #[serde(default)]
     pub comment: String,
@@ -48,6 +47,15 @@ pub struct Scenario {
     pub finished: Option<DateTime<Utc>>,
     #[serde(default)]
     pub duration_s: Option<i64>,
+    #[cfg(test)]
+    #[serde(skip)]
+    pub data: Option<Data>,
+    #[cfg(test)]
+    #[serde(skip)]
+    pub results: Option<Results>,
+    #[cfg(test)]
+    #[serde(skip)]
+    storage_root: Option<PathBuf>,
 }
 
 impl Scenario {
@@ -66,14 +74,18 @@ impl Scenario {
             id: "EMPTY".into(),
             status: Status::Scheduled,
             config: Config::default(),
-            data: None,
-            results: None,
             summary: None,
             comment: "EMPTY".into(),
             started: None,
             last_update: None,
             finished: None,
             duration_s: None,
+            #[cfg(test)]
+            data: None,
+            #[cfg(test)]
+            results: None,
+            #[cfg(test)]
+            storage_root: None,
         }
     }
 
@@ -83,89 +95,28 @@ impl Scenario {
     /// Planning, the config to default, data and results to None, summary to
     /// None, and comment to empty string.
     ///
-    /// # Errors
-    ///
-    /// Returns an error if the new scenario could not be saved to the filesystem.
     #[tracing::instrument(level = "debug")]
-    pub fn build(id: Option<String>) -> Result<Self> {
+    pub fn build(id: Option<String>) -> Self {
         debug!("Building new scenario");
-        let scenario = Self {
+        Self {
             id: id.unwrap_or_else(|| {
                 format!("{}", chrono::Utc::now().format("%Y-%m-%d-%H-%M-%S-%f"))
             }),
             status: Status::Planning,
             config: Config::default(),
-            data: None,
-            results: None,
             summary: None,
             comment: String::new(),
             started: None,
             last_update: None,
             finished: None,
             duration_s: None,
-        };
-        scenario
-            .save()
-            .context("Failed to save newly created scenario")?;
-        Ok(scenario)
-    }
-
-    /// Loads a Scenario from the scenario.toml file in the given path.
-    ///
-    /// Reads the contents of the scenario.toml file and parses it into a
-    /// Scenario struct.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the scenario.toml file could not be read or parsed.
-    #[tracing::instrument(level = "info", skip_all)]
-    pub fn load(path: &Path) -> Result<Self> {
-        info!("Loading scenario from {}", path.to_string_lossy());
-        let scenario_path = path.join("scenario.toml");
-        let contents = fs::read_to_string(&scenario_path).with_context(|| {
-            format!(
-                "Failed to read scenario.toml file: {}",
-                scenario_path.display()
-            )
-        })?;
-
-        let scenario: Self = toml::from_str(&contents).with_context(|| {
-            format!(
-                "Failed to parse scenario.toml in directory: {}",
-                path.display()
-            )
-        })?;
-
-        Ok(scenario)
-    }
-
-    /// Saves the Scenario to a scenario.toml file in the ./results directory.
-    ///
-    /// Creates the directory path from the scenario ID. Converts the Scenario to a TOML string. Creates the file and writes the TOML string to it.
-    /// If the scenario has data, calls `save_data()`. If the scenario has results, calls `save_results()`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if scenario could not be parsed into toml string.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if scenario.toml file could not be created.
-    #[tracing::instrument(level = "info", skip(self))]
-    pub fn save(&self) -> Result<()> {
-        info!("Saving scenario with id {}", self.id);
-        let path = Path::new("./results").join(&self.id);
-        let toml = toml::to_string(&self).context("Failed to serialize scenario to TOML format")?;
-        fs::create_dir_all(&path)?;
-        let mut f = File::create(path.join("scenario.toml"))?;
-        f.write_all(toml.as_bytes())?;
-        if self.data.is_some() {
-            self.save_data()?;
+            #[cfg(test)]
+            data: None,
+            #[cfg(test)]
+            results: None,
+            #[cfg(test)]
+            storage_root: None,
         }
-        if self.results.is_some() {
-            self.save_results()?;
-        }
-        Ok(())
     }
 
     /// Returns a reference to the scenario's unique ID.
@@ -316,19 +267,6 @@ impl Scenario {
         }
     }
 
-    /// Deletes the results directory for this scenario.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the results directory could not be deleted.
-    #[tracing::instrument(level = "info", skip_all)]
-    pub fn delete(&self) -> Result<(), std::io::Error> {
-        info!("Deleting scenario with id {}", self.id);
-        let path = Path::new("./results").join(&self.id);
-        fs::remove_dir_all(path)?;
-        Ok(())
-    }
-
     /// Returns an immutable reference to the scenario status.
     #[must_use]
     pub const fn get_status(&self) -> &Status {
@@ -399,14 +337,18 @@ impl Scenario {
             id: format!("test-{}", chrono::Utc::now().format("%Y%m%d%H%M%S%f")),
             status: Status::Planning,
             config: Config::default(),
-            data: None,
-            results: None,
             summary: None,
             comment: String::new(),
             started: None,
             last_update: None,
             finished: None,
             duration_s: None,
+            #[cfg(test)]
+            data: None,
+            #[cfg(test)]
+            results: None,
+            #[cfg(test)]
+            storage_root: None,
         }
     }
 
@@ -425,4 +367,72 @@ impl Scenario {
     pub fn force_scheduled(&mut self) {
         self.status = Status::Scheduled;
     }
+
+    #[cfg(test)]
+    #[tracing::instrument(level = "debug")]
+    pub fn save(&mut self) -> Result<()> {
+        let storage = ScenarioStorage::new(
+            self.storage_root
+                .clone()
+                .unwrap_or_else(|| PathBuf::from("./results")),
+        );
+        storage.save_metadata(self)?;
+        self.storage_root = Some(storage.project_root().to_path_buf());
+        Ok(())
+    }
+
+    #[cfg(test)]
+    #[tracing::instrument(level = "debug")]
+    pub fn load(path: &Path) -> Result<Self> {
+        let project_root = path.parent().unwrap_or_else(|| Path::new("./results"));
+        let storage = ScenarioStorage::new(project_root.to_path_buf());
+        let mut scenario = storage.load_metadata(path)?;
+        scenario.storage_root = Some(project_root.to_path_buf());
+        scenario.data = None;
+        scenario.results = None;
+        Ok(scenario)
+    }
+
+    #[cfg(test)]
+    #[tracing::instrument(level = "debug")]
+    pub fn load_data(&mut self) -> Result<()> {
+        let payload = self.load_payload_for_tests()?;
+        self.data = Some(payload.data);
+        self.results = Some(payload.results);
+        Ok(())
+    }
+
+    #[cfg(test)]
+    #[tracing::instrument(level = "debug")]
+    pub fn load_results(&mut self) -> Result<()> {
+        let payload = self.load_payload_for_tests()?;
+        self.data = Some(payload.data);
+        self.results = Some(payload.results);
+        Ok(())
+    }
+
+    #[cfg(test)]
+    #[tracing::instrument(level = "debug")]
+    fn load_payload_for_tests(&self) -> Result<ScenarioPayload> {
+        let storage = ScenarioStorage::new(
+            self.storage_root
+                .clone()
+                .unwrap_or_else(|| PathBuf::from("./results")),
+        );
+        storage.load_payload(self.get_id())
+    }
+}
+
+#[cfg(test)]
+#[tracing::instrument(level = "info", skip_all, fields(id = %scenario.id))]
+pub fn run_test_scenario(
+    scenario: Scenario,
+    epoch_tx: &std::sync::mpsc::Sender<usize>,
+    summary_tx: &std::sync::mpsc::Sender<Summary>,
+) -> Result<()> {
+    let storage_root = scenario
+        .storage_root
+        .clone()
+        .unwrap_or_else(|| PathBuf::from("./results"));
+    run::run(scenario, ScenarioStorage::new(storage_root), epoch_tx, summary_tx)
 }

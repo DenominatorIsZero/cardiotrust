@@ -22,7 +22,9 @@ use self::{
     breadcrumb::update_breadcrumb,
     content_area::{despawn_root_layout, spawn_root_layout},
     explorer::ExplorerViewPlugin,
-    home::{despawn_home_view, spawn_home_view, FolderDialogReceiver},
+    home::{
+        despawn_home_view, spawn_home_view, sync_home_project_switch_guard, FolderDialogReceiver,
+    },
     project::load_project_on_path_change,
     results::ResultsViewPlugin,
     routing::handle_keyboard_shortcuts,
@@ -82,6 +84,7 @@ impl Plugin for BevyShellPlugin {
                 update_breadcrumb,
                 handle_keyboard_shortcuts,
                 load_project_on_path_change,
+                sync_home_project_switch_guard,
                 send_scroll_events,
             )
                 .run_if(in_state(UiType::Bevy)),

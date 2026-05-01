@@ -9,7 +9,7 @@ use super::{
     gallery::{ExportApngButton, ExportMp4Button, ExportNpyButton, ExportStatusLabel},
     ExportState, ResultImageState, ResultsViewState,
 };
-use crate::{ScenarioList, SelectedSenario};
+use crate::{ActiveLoadedScenario, ScenarioList, SelectedSenario};
 
 // ── Save button ────────────────────────────────────────────────────────────────
 
@@ -36,12 +36,9 @@ pub fn handle_save_button(
             let Some(entry) = scenario_list.entries.get(index) else {
                 continue;
             };
-            let id = entry.scenario.get_id().clone();
-            let dir = std::path::Path::new("results")
-                .join(&id)
-                .join("img")
-                .join("anim")
-                .join(anim_type.dir_name());
+            let dir = entry
+                .storage
+                .animation_dir(entry.scenario.get_id(), anim_type.dir_name());
             open_in_file_manager(&dir);
             continue;
         };
@@ -57,12 +54,9 @@ pub fn handle_save_button(
         let Some(entry) = scenario_list.entries.get(index) else {
             continue;
         };
-        let id = entry.scenario.get_id().clone();
-        let path = std::path::Path::new("results")
-            .join(&id)
-            .join("img")
-            .join(image_type.to_string())
-            .with_extension("png");
+        let path = entry
+            .storage
+            .image_path(entry.scenario.get_id(), &image_type.to_string());
         open_in_file_manager(&path);
     }
 }
@@ -101,28 +95,26 @@ fn open_in_file_manager(path: &std::path::Path) {
 #[tracing::instrument(skip_all)]
 pub fn handle_export_npy(
     buttons: Query<(&ExportNpyButton, &Interaction), (Changed<Interaction>, With<Button>)>,
-    scenario_list: Res<ScenarioList>,
-    selected: Res<SelectedSenario>,
+    active_loaded_scenario: Res<ActiveLoadedScenario>,
     mut view_state: ResMut<ResultsViewState>,
 ) {
     for (_, interaction) in &buttons {
         if *interaction != Interaction::Pressed {
             continue;
         }
-        let Some(index) = selected.index else {
+        let Some(active) = active_loaded_scenario.0.as_ref() else {
             continue;
         };
-        let Some(entry) = scenario_list.entries.get(index) else {
-            continue;
-        };
-        let scenario = entry.scenario.clone();
-        let scenario_id = scenario.get_id().clone();
+        let scenario = active.scenario.clone();
+        let payload = active.payload.clone();
+        let storage = active.storage.clone();
+        let out_dir = storage.npy_dir(scenario.get_id());
         let channel = super::new_channel::<std::path::PathBuf>();
         let writer = channel.clone();
         std::thread::spawn(move || {
-            let result = scenario
-                .save_npy()
-                .map(|()| std::path::PathBuf::from("results").join(&scenario_id));
+            let result = storage
+                .save_npy(scenario.get_id(), &payload)
+                .map(|()| out_dir);
             if let Ok(mut guard) = writer.lock() {
                 *guard = Some(result);
             }
@@ -153,8 +145,6 @@ pub fn handle_export_apng(
         let Some(entry) = scenario_list.entries.get(index) else {
             continue;
         };
-        let id = entry.scenario.get_id().clone();
-
         let first_ready_dir = [
             super::AnimType::StatesAlgorithm,
             super::AnimType::StatesSimulation,
@@ -169,11 +159,9 @@ pub fn handle_export_apng(
             )
         })
         .map(|&anim_type| {
-            std::path::Path::new("results")
-                .join(&id)
-                .join("img")
-                .join("anim")
-                .join(anim_type.dir_name())
+            entry
+                .storage
+                .animation_dir(entry.scenario.get_id(), anim_type.dir_name())
         });
 
         let Some(frames_dir) = first_ready_dir else {
@@ -183,10 +171,9 @@ pub fn handle_export_apng(
             continue;
         };
 
-        let out_path = std::path::Path::new("results")
-            .join(&id)
-            .join("export")
-            .join("animation.png");
+        let out_path = entry
+            .storage
+            .export_path(entry.scenario.get_id(), "animation.png");
 
         let channel = super::new_channel::<std::path::PathBuf>();
         let writer = channel.clone();

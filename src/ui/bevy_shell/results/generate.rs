@@ -12,7 +12,8 @@ use super::{AnimType, GifType, ImageType};
 use crate::{
     core::{
         algorithm::metrics::predict_voxeltype,
-        model::functional::allpass::shapes::ActivationTimeMs, scenario::Scenario,
+        model::functional::allpass::shapes::ActivationTimeMs,
+        scenario::{Scenario, ScenarioPayload},
     },
     vis::plotting::{
         gif::{
@@ -43,34 +44,30 @@ use crate::{
     clippy::used_underscore_binding,
     unreachable_code
 )]
-#[tracing::instrument(level = "debug")]
-pub(super) fn generate_image(scenario: Scenario, image_type: ImageType) -> Result<()> {
+#[tracing::instrument(level = "debug", skip(payload))]
+pub(super) fn generate_image(
+    scenario: Scenario,
+    payload: ScenarioPayload,
+    path: PathBuf,
+    image_type: ImageType,
+) -> Result<PathBuf> {
     debug!("Generating image");
-    let mut path = Path::new("results").join(scenario.get_id()).join("img");
-    fs::create_dir_all(&path)
-        .with_context(|| format!("Failed to create image directory: {}", path.display()))?;
-    path = path.join(image_type.to_string()).with_extension("png");
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("Failed to create image directory: {}", parent.display()))?;
+    }
     if path.is_file() {
-        return Ok(());
+        return Ok(path);
     }
     let _file_name = path.with_extension("");
-    let Some(results) = scenario.results.as_ref() else {
-        return Err(anyhow::anyhow!(
-            "Scenario results not available for image generation"
-        ));
-    };
-    let estimations = &results.estimations;
-    let Some(model) = results.model.as_ref() else {
+    let estimations = &payload.results.estimations;
+    let Some(model) = payload.results.model.as_ref() else {
         return Err(anyhow::anyhow!(
             "Model not available in results for image generation"
         ));
     };
-    let Some(data) = scenario.data.as_ref() else {
-        return Err(anyhow::anyhow!(
-            "Scenario data not available for image generation"
-        ));
-    };
-    let metrics = &results.metrics;
+    let data = &payload.data;
+    let metrics = &payload.results.metrics;
     match image_type {
         // might want to return this at some later point
         ImageType::StatesMaxAlgorithm => states_spherical_plot(
@@ -392,7 +389,7 @@ pub(super) fn generate_image(scenario: Scenario, image_type: ImageType) -> Resul
         ),
     }
     .with_context(|| format!("Failed to generate plot for image type: {image_type:?}"))?;
-    Ok(())
+    Ok(path)
 }
 
 // ── Animation (PNG-sequence) generation ───────────────────────────────────────
@@ -405,15 +402,15 @@ pub(super) fn generate_image(scenario: Scenario, image_type: ImageType) -> Resul
 /// This function is dispatched from a background thread; callers use the
 /// [`Arc<Mutex<Option<Result<PathBuf>>>>`] channel pattern.
 #[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
-#[tracing::instrument(level = "debug", skip(scenario))]
-pub(super) fn generate_animation(scenario: Scenario, anim_type: AnimType) -> Result<PathBuf> {
+#[tracing::instrument(level = "debug", skip(payload))]
+pub(super) fn generate_animation(
+    scenario: Scenario,
+    payload: ScenarioPayload,
+    anim_dir: PathBuf,
+    anim_type: AnimType,
+) -> Result<PathBuf> {
     debug!("Generating animation frames for {:?}", anim_type);
 
-    let anim_dir = Path::new("results")
-        .join(scenario.get_id())
-        .join("img")
-        .join("anim")
-        .join(anim_type.dir_name());
     fs::create_dir_all(&anim_dir).with_context(|| {
         format!(
             "Failed to create animation directory: {}",
@@ -422,28 +419,19 @@ pub(super) fn generate_animation(scenario: Scenario, anim_type: AnimType) -> Res
     })?;
 
     // Return early if frames already exist.
-    if let Some(frames) = detect_existing_frames(scenario.get_id(), anim_type) {
+    if let Some(frames) = detect_existing_frames(&anim_dir) {
         if !frames.is_empty() {
             return Ok(anim_dir);
         }
     }
 
-    let Some(results) = scenario.results.as_ref() else {
-        return Err(anyhow::anyhow!(
-            "Scenario results not available for animation generation"
-        ));
-    };
-    let estimations = &results.estimations;
-    let Some(model) = results.model.as_ref() else {
+    let estimations = &payload.results.estimations;
+    let Some(model) = payload.results.model.as_ref() else {
         return Err(anyhow::anyhow!(
             "Model not available in results for animation generation"
         ));
     };
-    let Some(data) = scenario.data.as_ref() else {
-        return Err(anyhow::anyhow!(
-            "Scenario data not available for animation generation"
-        ));
-    };
+    let data = &payload.data;
 
     let gif_bundle = match anim_type {
         AnimType::StatesAlgorithm => states_spherical_plot_over_time(
@@ -562,21 +550,11 @@ pub(super) fn detect_existing_image(scenario_id: &str, image_type: ImageType) ->
         .join("img")
         .join(image_type.to_string())
         .with_extension("png");
-
     path.is_file().then_some(path)
 }
 
 #[tracing::instrument(level = "debug")]
-pub(super) fn detect_existing_frames(
-    scenario_id: &str,
-    anim_type: AnimType,
-) -> Option<Vec<PathBuf>> {
-    let dir = Path::new("results")
-        .join(scenario_id)
-        .join("img")
-        .join("anim")
-        .join(anim_type.dir_name());
-
+pub(super) fn detect_existing_frames(dir: &Path) -> Option<Vec<PathBuf>> {
     if !dir.is_dir() {
         return None;
     }
@@ -613,67 +591,11 @@ pub(super) fn detect_existing_frames(
 )]
 #[tracing::instrument(level = "debug")]
 pub(super) fn generate_gifs(
-    scenario: Scenario,
+    _scenario: Scenario,
     gif_type: GifType,
-    playback_speed: f32,
+    _playback_speed: f32,
 ) -> Result<()> {
-    debug!("Generating GIFs for scenario {}", scenario.get_id());
-    let mut path = Path::new("results").join(scenario.get_id()).join("img");
-    fs::create_dir_all(&path)
-        .with_context(|| format!("Failed to create GIF directory: {}", path.display()))?;
-    path = path.join(gif_type.to_string()).with_extension("gif");
-    if path.is_file() {
-        return Ok(());
-    }
-    let Some(results) = scenario.results.as_ref() else {
-        return Err(anyhow::anyhow!(
-            "Scenario results not available for GIF generation"
-        ));
-    };
-    let Some(model) = results.model.as_ref() else {
-        return Err(anyhow::anyhow!(
-            "Model not available in results for GIF generation"
-        ));
-    };
-    let Some(data) = scenario.data.as_ref() else {
-        return Err(anyhow::anyhow!(
-            "Scenario data not available for GIF generation"
-        ));
-    };
-    let estimations = &results.estimations;
-    match gif_type {
-        GifType::StatesAlgorithm => states_spherical_plot_over_time(
-            &estimations.system_states_spherical,
-            &estimations.system_states_spherical_max,
-            &model.spatial_description.voxels.positions_mm,
-            model.spatial_description.voxels.size_mm,
-            scenario.config.simulation.sample_rate_hz,
-            &model.spatial_description.voxels.numbers,
-            Some(path.as_path()),
-            Some(PlotSlice::Z(0)),
-            Some(StateSphericalPlotMode::ABS),
-            Some(playback_speed),
-            Some(20),
-        ),
-        GifType::StatesSimulation => states_spherical_plot_over_time(
-            &data.simulation.system_states_spherical,
-            &data.simulation.system_states_spherical_max,
-            &data
-                .simulation
-                .model
-                .spatial_description
-                .voxels
-                .positions_mm,
-            model.spatial_description.voxels.size_mm,
-            scenario.config.simulation.sample_rate_hz,
-            &model.spatial_description.voxels.numbers,
-            Some(path.as_path()),
-            Some(PlotSlice::Z(0)),
-            Some(StateSphericalPlotMode::ABS),
-            Some(playback_speed),
-            Some(20),
-        ),
-    }
-    .with_context(|| format!("Failed to generate GIF for type: {gif_type:?}"))?;
-    Ok(())
+    Err(anyhow::anyhow!(
+        "Legacy GIF generation is unsupported after project-aware storage refactor ({gif_type:?})"
+    ))
 }

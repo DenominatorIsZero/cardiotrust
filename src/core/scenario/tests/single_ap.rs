@@ -17,7 +17,7 @@ use crate::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
         config::model::ControlFunction,
         model::functional::allpass::from_coef_to_samples,
-        scenario::{run, Scenario},
+        scenario::{run_test_scenario, Scenario},
     },
     tests::{clean_files, setup_folder},
     vis::plotting::png::line::{line_plot, log_y_plot},
@@ -145,7 +145,7 @@ fn heavy_yes_roll_down() -> Result<()> {
 
 #[tracing::instrument(level = "trace")]
 fn build_scenario(target_velocity: f32, initial_velocity: f32, id: &str) -> Result<Scenario> {
-    let mut scenario = Scenario::build(Some(id.to_string()))?;
+    let mut scenario = Scenario::build(Some(id.to_string()));
     // configure control function
     scenario.config.simulation.model.common.control_function = ControlFunction::Ohara;
     // configure sensors
@@ -704,7 +704,8 @@ fn create_and_run(
                 let send_scenario = scenario.clone();
                 let (epoch_tx, _) = channel();
                 let (summary_tx, _) = channel();
-                let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
+                let handle =
+                    thread::spawn(move || run_test_scenario(send_scenario, &epoch_tx, &summary_tx));
                 println!("handle {handle:?}");
                 join_handles.push(handle);
             }

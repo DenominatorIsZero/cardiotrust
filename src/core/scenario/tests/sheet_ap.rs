@@ -16,7 +16,7 @@ use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
         model::functional::allpass::from_coef_to_samples,
-        scenario::{run, tests::SAVE_NPY, Scenario},
+        scenario::{run_test_scenario, tests::SAVE_NPY, Scenario},
     },
     tests::{clean_files, setup_folder},
     vis::plotting::png::line::{line_plot, log_y_plot},
@@ -67,7 +67,7 @@ fn build_scenario(
     learning_rate: f32,
     id: String,
 ) -> Result<Scenario> {
-    let mut scenario = Scenario::build(Some(id))?;
+    let mut scenario = Scenario::build(Some(id));
 
     let voxel_size_mm = 2.5;
     let sample_rate_hz = 2000.0;
@@ -566,7 +566,9 @@ fn create_and_run(
                     let send_scenario = scenario.clone();
                     let (epoch_tx, _) = channel();
                     let (summary_tx, _) = channel();
-                    let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
+                    let handle = thread::spawn(move || {
+                        run_test_scenario(send_scenario, &epoch_tx, &summary_tx)
+                    });
                     println!("handle {handle:?}");
                     join_handles.push(handle);
                 }

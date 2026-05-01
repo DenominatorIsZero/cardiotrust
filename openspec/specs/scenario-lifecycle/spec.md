@@ -1,6 +1,6 @@
 ## Purpose
 
-Governs the scenario as the top-level unit of experimental work — its lifecycle state machine, configuration locking, pre-run unification of simulation and estimation parameters, execution dispatch, result persistence, and progress observability. A scenario is the container that binds a configuration to a run and its outcomes.
+Governs the scenario as the top-level unit of experimental work - its lifecycle state machine, configuration locking, pre-run unification of simulation and estimation parameters, execution dispatch, and progress observability. A scenario is the container that binds a configuration to a run and its outcomes.
 
 This spec is distinct from `scheduler` (which governs how multiple scenarios are queued and executed concurrently across the application) and from `configuration` (which governs the parameter values a scenario holds). Scenario lifecycle concerns the progression of a single experiment from creation to completion; the scheduler concerns fleet-level coordination of many experiments.
 
@@ -57,20 +57,6 @@ Before a scenario begins execution, the shared parameters (sensor geometry, samp
 
 - **WHEN** the pseudo-inverse algorithm type is selected and execution begins
 - **THEN** the epoch count is set to one, regardless of the value in the original configuration
-
-### Requirement: Execution produces a persisted, self-contained record
-
-When a scenario completes successfully, its configuration, summary metrics, simulation data, and estimation results SHALL be written to stable storage. The scenario is fully recoverable from storage — reloading it at a later time produces a scenario value equivalent to the one at completion.
-
-#### Scenario: Completed scenario can be reloaded from storage
-
-- **WHEN** a Done scenario is saved and then reloaded from storage
-- **THEN** the reloaded scenario has the same configuration, status, and summary metrics as the saved one
-
-#### Scenario: Simulation data and estimation results are stored separately from configuration
-
-- **WHEN** the scenario configuration is reloaded from storage
-- **THEN** simulation data and estimation results are not eagerly loaded — they are fetched on demand
 
 ### Requirement: Progress is observable during execution
 
@@ -132,3 +118,15 @@ The system SHALL support permanently removing a scenario that is in the Planning
 
 - **WHEN** an attempt is made to delete a scenario that is Scheduled, Running, or Done
 - **THEN** the operation returns an error and the scenario is unchanged
+
+### Requirement: Payload access is explicit and lifecycle-neutral
+
+Accessing persisted payload for a scenario SHALL be an explicit operation separate from loading scenario metadata. If payload loading fails for a scenario, that failure SHALL be reported independently and SHALL NOT change the scenario's lifecycle state recorded in metadata.
+
+#### Scenario: Payload load success does not change lifecycle state
+- **WHEN** payload is explicitly loaded for a scenario whose metadata is already present
+- **THEN** the scenario's lifecycle state SHALL remain the same as it was before payload loading began
+
+#### Scenario: Done scenario remains Done when payload loading fails
+- **WHEN** a scenario's metadata indicates Done and an explicit payload load later fails because persisted payload is missing or corrupted
+- **THEN** the scenario SHALL remain in Done state and the payload failure SHALL be treated as a separate error

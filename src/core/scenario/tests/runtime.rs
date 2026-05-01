@@ -7,7 +7,7 @@ use crate::{
     core::{
         algorithm::refinement::Optimizer,
         config::algorithm::AlgorithmType,
-        scenario::{run, Scenario},
+        scenario::{run_test_scenario, Scenario},
     },
     tests::setup_folder,
 };
@@ -120,7 +120,9 @@ fn create_and_run(
                     let send_scenario = scenario.clone();
                     let (epoch_tx, _) = channel();
                     let (summary_tx, _) = channel();
-                    let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
+                    let handle = thread::spawn(move || {
+                        run_test_scenario(send_scenario, &epoch_tx, &summary_tx)
+                    });
                     println!("handle {handle:?}");
                     join_handles.push(handle);
                 }
@@ -160,7 +162,7 @@ fn build_scenario(
     scenario_type: ScenarioType,
     id: &str,
 ) -> Result<Scenario> {
-    let mut scenario = Scenario::build(Some(id.to_string()))?;
+    let mut scenario = Scenario::build(Some(id.to_string()));
 
     let voxel_size_mm = 2.5;
     let sample_rate_hz = 2000.0;

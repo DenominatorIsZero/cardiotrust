@@ -7,7 +7,7 @@ use super::RUN_IN_TESTS;
 use crate::{
     core::{
         algorithm::{metrics::BatchWiseMetric, refinement::Optimizer},
-        scenario::{run, Scenario},
+        scenario::{run_test_scenario, Scenario},
     },
     tests::{clean_files, setup_folder},
     vis::plotting::png::line::log_y_plot,
@@ -67,7 +67,7 @@ fn build_scenario(
 ) -> anyhow::Result<Scenario> {
     let mut scenario = Scenario::build(Some(format!(
         "{base_id} bulk: {bulk_velocity:.2} [m per s], patch {patch_velocity:.2} [m per s], srs: {smoothness_regularization_stength:.2e}"
-    )))?;
+    )));
 
     // Set tissue types
     scenario.config.simulation.model.common.pathological = true;
@@ -289,7 +289,8 @@ fn create_and_run(
                 let send_scenario = scenario.clone();
                 let (epoch_tx, _) = channel();
                 let (summary_tx, _) = channel();
-                let handle = thread::spawn(move || run(send_scenario, &epoch_tx, &summary_tx));
+                let handle =
+                    thread::spawn(move || run_test_scenario(send_scenario, &epoch_tx, &summary_tx));
                 println!("handle {handle:?}");
                 join_handles.push(handle);
             }

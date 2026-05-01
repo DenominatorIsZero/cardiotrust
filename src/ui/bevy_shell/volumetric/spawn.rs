@@ -19,7 +19,7 @@ use super::{
 use crate::{
     ui::{bevy_shell::content_area::ContentSlot, colors},
     vis::SetupHeartAndSensors,
-    ScenarioList, SelectedSenario,
+    ActiveLoadedScenario, LoadedScenario, ScenarioList, SelectedSenario,
 };
 
 #[tracing::instrument(skip_all)]
@@ -27,10 +27,11 @@ pub(super) fn spawn_volumetric_view(
     mut commands: Commands,
     content_slots: Query<Entity, With<ContentSlot>>,
     windows: Query<&Window>,
-    mut scenario_list: ResMut<ScenarioList>,
+    scenario_list: Res<ScenarioList>,
     selected: Res<SelectedSenario>,
     mut view_state: ResMut<VolumetricViewState>,
     mut ev_setup: MessageWriter<SetupHeartAndSensors>,
+    mut active_loaded_scenario: ResMut<ActiveLoadedScenario>,
 ) {
     let Ok(slot) = content_slots.single() else {
         return;
@@ -44,15 +45,18 @@ pub(super) fn spawn_volumetric_view(
     *view_state = VolumetricViewState::default();
 
     if let Some(index) = selected.index {
-        if let Some(entry) = scenario_list.entries.get_mut(index) {
-            let scenario = &mut entry.scenario;
-            if let Err(error) = scenario.load_data() {
-                error!("Failed to load scenario data for Volumetric view: {error}");
+        if let Some(entry) = scenario_list.entries.get(index) {
+            match entry.load_payload() {
+                Ok(payload) => {
+                    let loaded = LoadedScenario::from_bundle(entry, payload);
+                    ev_setup.write(SetupHeartAndSensors(loaded.clone()));
+                    active_loaded_scenario.0 = Some(loaded);
+                }
+                Err(error) => {
+                    error!("Failed to load scenario payload for Volumetric view: {error}");
+                    active_loaded_scenario.0 = None;
+                }
             }
-            if let Err(error) = scenario.load_results() {
-                error!("Failed to load scenario results for Volumetric view: {error}");
-            }
-            ev_setup.write(SetupHeartAndSensors(scenario.clone()));
         }
     }
 
@@ -110,11 +114,13 @@ pub(super) fn despawn_volumetric_view(
     mut commands: Commands,
     roots: Query<Entity, With<VolumetricViewRoot>>,
     mut view_state: ResMut<VolumetricViewState>,
+    mut active_loaded_scenario: ResMut<ActiveLoadedScenario>,
 ) {
     for entity in &roots {
         commands.entity(entity).despawn();
     }
     *view_state = VolumetricViewState::default();
+    active_loaded_scenario.0 = None;
 }
 
 #[tracing::instrument(skip_all)]

@@ -1,124 +1,185 @@
 use std::{
     fs::{self, File},
     io::BufReader,
-    path::Path,
+    path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use anyhow::{Context, Result};
 use tracing::debug;
 
-use super::Scenario;
+use super::{results::Results, Scenario, ScenarioPayload};
+use crate::core::data::Data;
 
-impl Scenario {
-    /// Saves the scenario data to a file in the results directory.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the results directory could not be created or the data file could not be written.
-    #[tracing::instrument(level = "debug")]
-    pub(super) fn save_data(&self) -> Result<()> {
-        debug!("Saving scenario data for scenario with id {}", self.id);
-        let path = Path::new("./results").join(&self.id);
-        fs::create_dir_all(&path)?;
-        let mut f = File::create(path.join("data.bin"))?;
-        let data = self
-            .data
-            .as_ref()
-            .context("Data not available for saving")?;
-        bincode::serde::encode_into_std_write(data, &mut f, bincode::config::standard())
-            .context("Failed to serialize data to binary format")?;
+#[derive(Debug, Clone)]
+pub struct ScenarioStorage {
+    root: Arc<PathBuf>,
+}
+
+impl ScenarioStorage {
+    #[must_use]
+    #[tracing::instrument(level = "debug", skip_all)]
+    pub fn new(project_root: impl Into<PathBuf>) -> Self {
+        Self {
+            root: Arc::new(project_root.into()),
+        }
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
+    pub fn project_root(&self) -> &Path {
+        self.root.as_ref().as_path()
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
+    pub fn scenario_dir(&self, scenario_id: &str) -> PathBuf {
+        self.project_root().join(scenario_id)
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
+    pub fn metadata_path(&self, scenario_id: &str) -> PathBuf {
+        self.scenario_dir(scenario_id).join("scenario.toml")
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
+    pub fn data_path(&self, scenario_id: &str) -> PathBuf {
+        self.scenario_dir(scenario_id).join("data.bin")
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
+    pub fn results_path(&self, scenario_id: &str) -> PathBuf {
+        self.scenario_dir(scenario_id).join("results.bin")
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
+    pub fn image_path(&self, scenario_id: &str, image_name: &str) -> PathBuf {
+        self.scenario_dir(scenario_id)
+            .join("img")
+            .join(image_name)
+            .with_extension("png")
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
+    pub fn animation_dir(&self, scenario_id: &str, animation_name: &str) -> PathBuf {
+        self.scenario_dir(scenario_id)
+            .join("img")
+            .join("anim")
+            .join(animation_name)
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
+    pub fn export_path(&self, scenario_id: &str, file_name: &str) -> PathBuf {
+        self.scenario_dir(scenario_id)
+            .join("export")
+            .join(file_name)
+    }
+
+    #[must_use]
+    #[tracing::instrument(level = "trace", skip_all)]
+    pub fn npy_dir(&self, scenario_id: &str) -> PathBuf {
+        self.scenario_dir(scenario_id).join("npy")
+    }
+
+    #[tracing::instrument(level = "debug", skip(self, scenario))]
+    pub fn save_metadata(&self, scenario: &Scenario) -> Result<()> {
+        debug!(
+            "Saving scenario metadata for scenario {}",
+            scenario.get_id()
+        );
+        let scenario_dir = self.scenario_dir(scenario.get_id());
+        fs::create_dir_all(&scenario_dir)?;
+        let toml = toml::to_string(scenario).context("Failed to serialize scenario metadata")?;
+        fs::write(self.metadata_path(scenario.get_id()), toml)
+            .context("Failed to write scenario metadata")?;
         Ok(())
     }
 
-    /// Saves the scenario results to a file in the results directory.
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the results directory could not be created or the results file could not be written.
-    #[tracing::instrument(level = "debug")]
-    pub(super) fn save_results(&self) -> Result<()> {
-        debug!("Saving scenario results for scenario with id {}", self.id);
-        let path = Path::new("./results").join(&self.id);
-        fs::create_dir_all(&path)?;
-        let mut f = File::create(path.join("results.bin"))?;
-        let results = self
-            .results
-            .as_ref()
-            .context("Results not available for saving")?;
-        bincode::serde::encode_into_std_write(results, &mut f, bincode::config::standard())
-            .context("Failed to serialize results to binary format")?;
+    #[tracing::instrument(level = "info", skip_all)]
+    pub fn load_metadata(&self, path: &Path) -> Result<Scenario> {
+        let metadata_path = path.join("scenario.toml");
+        let contents = fs::read_to_string(&metadata_path).with_context(|| {
+            format!(
+                "Failed to read scenario.toml file: {}",
+                metadata_path.display()
+            )
+        })?;
+
+        toml::from_str(&contents).with_context(|| {
+            format!(
+                "Failed to parse scenario.toml in directory: {}",
+                path.display()
+            )
+        })
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    pub fn save_payload(&self, scenario_id: &str, payload: &ScenarioPayload) -> Result<()> {
+        let scenario_dir = self.scenario_dir(scenario_id);
+        fs::create_dir_all(&scenario_dir)?;
+
+        let mut data_file = File::create(self.data_path(scenario_id))?;
+        bincode::serde::encode_into_std_write(
+            &payload.data,
+            &mut data_file,
+            bincode::config::standard(),
+        )
+        .context("Failed to serialize data to binary format")?;
+
+        let mut results_file = File::create(self.results_path(scenario_id))?;
+        bincode::serde::encode_into_std_write(
+            &payload.results,
+            &mut results_file,
+            bincode::config::standard(),
+        )
+        .context("Failed to serialize results to binary format")?;
         Ok(())
     }
 
-    /// Loads the scenario data from the data.bin file in the results directory if it exists.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the data.bin file cannot be read or parsed.
-    #[tracing::instrument(level = "debug")]
-    pub fn load_data(&mut self) -> Result<()> {
-        debug!("Loading scenario data for scenario with id {}", self.id);
-        if self.data.is_some() {
-            return Ok(());
-        }
-        let file_path = Path::new("./results").join(&self.id).join("data.bin");
-        if file_path.is_file() {
-            let file = File::open(&file_path)
-                .with_context(|| format!("Failed to open data file: {}", file_path.display()))?;
-            self.data = Some(
-                bincode::serde::decode_from_std_read(
-                    &mut BufReader::new(file),
-                    bincode::config::standard(),
-                )
-                .context("Failed to deserialize data from binary format")?,
-            );
-        }
+    #[tracing::instrument(level = "debug", skip_all)]
+    pub fn load_payload(&self, scenario_id: &str) -> Result<ScenarioPayload> {
+        let data_path = self.data_path(scenario_id);
+        let data_file = File::open(&data_path)
+            .with_context(|| format!("Failed to open data file: {}", data_path.display()))?;
+        let data: Data = bincode::serde::decode_from_std_read(
+            &mut BufReader::new(data_file),
+            bincode::config::standard(),
+        )
+        .context("Failed to deserialize data from binary format")?;
+
+        let results_path = self.results_path(scenario_id);
+        let results_file = File::open(&results_path)
+            .with_context(|| format!("Failed to open results file: {}", results_path.display()))?;
+        let results: Results = bincode::serde::decode_from_std_read(
+            &mut BufReader::new(results_file),
+            bincode::config::standard(),
+        )
+        .context("Failed to deserialize results from binary format")?;
+
+        Ok(ScenarioPayload { data, results })
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    pub fn save_npy(&self, scenario_id: &str, payload: &ScenarioPayload) -> Result<()> {
+        let path = self.npy_dir(scenario_id);
+        payload.data.save_npy(&path.join("data"))?;
+        payload.results.save_npy(&path.join("results"))?;
         Ok(())
     }
 
-    /// Loads the scenario results from the results.bin file in the results directory if it exists.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the results.bin file cannot be read or parsed.
-    #[tracing::instrument(level = "debug")]
-    pub fn load_results(&mut self) -> Result<()> {
-        debug!("Loading scenario results for scenario with id {}", self.id);
-        if self.results.is_some() {
-            return Ok(());
+    #[tracing::instrument(level = "info", skip_all)]
+    pub fn delete_scenario(&self, scenario_id: &str) -> Result<()> {
+        let scenario_dir = self.scenario_dir(scenario_id);
+        if scenario_dir.exists() {
+            fs::remove_dir_all(&scenario_dir)
+                .with_context(|| format!("Failed to delete {}", scenario_dir.display()))?;
         }
-        let file_path = Path::new("./results").join(&self.id).join("results.bin");
-        if file_path.is_file() {
-            let file = File::open(&file_path)
-                .with_context(|| format!("Failed to open results file: {}", file_path.display()))?;
-            self.results = Some(
-                bincode::serde::decode_from_std_read(
-                    &mut BufReader::new(file),
-                    bincode::config::standard(),
-                )
-                .context("Failed to deserialize results from binary format")?,
-            );
-        }
-        Ok(())
-    }
-
-    /// Saves the scenario data and results as .npy files in the results directory.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if file or directory creation fails or any save operation fails.
-    #[tracing::instrument(level = "debug")]
-    pub fn save_npy(&self) -> Result<()> {
-        debug!("Saving scenario data and results as npy");
-        let path = Path::new("./results").join(&self.id).join("npy");
-        self.data
-            .as_ref()
-            .context("Scenario data not available for NPY export")?
-            .save_npy(&path.join("data"))?;
-        self.results
-            .as_ref()
-            .context("Scenario results not available for NPY export")?
-            .save_npy(&path.join("results"))?;
         Ok(())
     }
 }

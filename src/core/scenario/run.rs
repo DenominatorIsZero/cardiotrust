@@ -4,7 +4,9 @@ use anyhow::{Context, Result};
 use ndarray_stats::QuantileExt;
 use tracing::{debug, info};
 
-use super::{results::Results, summary::Summary, Scenario, Status};
+use super::{
+    results::Results, summary::Summary, Scenario, ScenarioPayload, ScenarioStorage, Status,
+};
 use crate::core::{
     algorithm::{
         self, calculate_pseudo_inverse,
@@ -29,6 +31,7 @@ use crate::core::{
 #[tracing::instrument(level = "info", skip_all, fields(id = %scenario.id))]
 pub fn run(
     mut scenario: Scenario,
+    storage: ScenarioStorage,
     epoch_tx: &Sender<usize>,
     summary_tx: &Sender<Summary>,
 ) -> Result<()> {
@@ -131,13 +134,15 @@ pub fn run(
     summary.recall = results.metrics.recall_over_threshold[optimal_threshold];
     summary.precision = results.metrics.precision_over_threshold[optimal_threshold];
 
-    scenario.results = Some(results);
-    scenario.data = Some(data);
+    let payload = ScenarioPayload { data, results };
     scenario.summary = Some(summary.clone());
     scenario.status = Status::Done;
-    scenario
-        .save()
-        .context("Failed to save completed scenario results")?;
+    storage
+        .save_metadata(&scenario)
+        .context("Failed to save completed scenario metadata")?;
+    storage
+        .save_payload(scenario.get_id(), &payload)
+        .context("Failed to save completed scenario payload")?;
     let _ = epoch_tx.send(scenario.config.algorithm.epochs - 1);
     let _ = summary_tx.send(summary);
     Ok(())

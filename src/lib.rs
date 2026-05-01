@@ -28,24 +28,111 @@ use anyhow::{Context, Result};
 use bevy::prelude::*;
 use tracing::{info, warn};
 
-use crate::core::scenario::{summary::Summary, Scenario};
+use crate::core::scenario::{summary::Summary, Scenario, ScenarioPayload, ScenarioStorage};
 
 #[derive(Resource, Debug, Default)]
 pub struct SelectedSenario {
     pub index: Option<usize>,
 }
 
+#[derive(Resource, Debug, Default, Clone)]
+pub struct PendingProjectLoad(pub Option<PathBuf>);
+
+#[derive(Resource, Debug, Clone)]
+pub struct LoadedScenario {
+    pub scenario: Scenario,
+    pub payload: ScenarioPayload,
+    pub storage: ScenarioStorage,
+}
+
+#[derive(Resource, Debug, Default, Clone)]
+pub struct ActiveLoadedScenario(pub Option<LoadedScenario>);
+
+impl LoadedScenario {
+    #[must_use]
+    #[tracing::instrument(level = "debug", skip_all)]
+    pub fn from_bundle(bundle: &ScenarioBundle, payload: ScenarioPayload) -> Self {
+        Self {
+            scenario: bundle.scenario.clone(),
+            payload,
+            storage: bundle.storage.clone(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct ScenarioBundle {
     pub scenario: Scenario,
+    pub storage: ScenarioStorage,
     pub join_handle: Option<JoinHandle<()>>,
     pub epoch_rx: Option<Mutex<Receiver<usize>>>,
     pub summary_rx: Option<Mutex<Receiver<Summary>>>,
 }
 
+impl ScenarioBundle {
+    #[must_use]
+    #[tracing::instrument(level = "debug", skip_all)]
+    pub fn new(scenario: Scenario, storage: ScenarioStorage) -> Self {
+        Self {
+            scenario,
+            storage,
+            join_handle: None,
+            epoch_rx: None,
+            summary_rx: None,
+        }
+    }
+
+    #[tracing::instrument(level = "debug", skip_all)]
+    pub fn create(storage: ScenarioStorage, scenario: Scenario) -> Result<Self> {
+        storage.save_metadata(&scenario)?;
+        Ok(Self::new(scenario, storage))
+    }
+
+    #[tracing::instrument(level = "debug", skip(self))]
+    pub fn save_metadata(&self) -> Result<()> {
+        self.storage.save_metadata(&self.scenario)
+    }
+
+    #[tracing::instrument(level = "debug", skip(self))]
+    pub fn load_payload(&self) -> Result<ScenarioPayload> {
+        self.storage.load_payload(self.scenario.get_id())
+    }
+
+    #[tracing::instrument(level = "debug", skip(self, payload))]
+    pub fn save_payload(&self, payload: &ScenarioPayload) -> Result<()> {
+        self.storage.save_payload(self.scenario.get_id(), payload)
+    }
+
+    #[tracing::instrument(level = "debug", skip(self, payload))]
+    pub fn save_npy(&self, payload: &ScenarioPayload) -> Result<()> {
+        self.storage.save_npy(self.scenario.get_id(), payload)
+    }
+
+    #[tracing::instrument(level = "debug", skip(self))]
+    pub fn delete(&self) -> Result<()> {
+        self.storage.delete_scenario(self.scenario.get_id())
+    }
+
+    #[tracing::instrument(level = "debug", skip(self))]
+    pub fn copy_as_planning(&self) -> Result<Self> {
+        let mut scenario = Scenario::build(None);
+        scenario.config = self.scenario.config.clone();
+        scenario.comment = format!(
+            "Copy of {}",
+            self.scenario
+                .comment
+                .trim()
+                .trim_start_matches("Copy of ")
+                .trim()
+        );
+        Self::create(self.storage.clone(), scenario)
+    }
+}
+
 #[derive(Resource, Debug)]
 pub struct ScenarioList {
     pub entries: Vec<ScenarioBundle>,
+    pub project_root: Option<PathBuf>,
 }
 
 impl ScenarioList {
@@ -53,6 +140,7 @@ impl ScenarioList {
     pub const fn empty() -> Self {
         Self {
             entries: Vec::new(),
+            project_root: None,
         }
     }
 
@@ -66,8 +154,10 @@ impl ScenarioList {
     #[tracing::instrument(level = "info")]
     pub fn load_from(path: &Path) -> Result<Self> {
         info!("Loading scenarios from {}", path.display());
+        let storage = ScenarioStorage::new(path.to_path_buf());
         let mut scenario_list = Self {
             entries: Vec::<ScenarioBundle>::new(),
+            project_root: Some(path.to_path_buf()),
         };
         create_dir_all(path)
             .with_context(|| format!("Failed to create directory {}", path.display()))?;
@@ -79,14 +169,11 @@ impl ScenarioList {
             let entry = entry.context("Failed to read directory entry")?;
             let entry_path = entry.path();
             if entry_path.is_dir() {
-                match Scenario::load(&entry_path) {
+                match storage.load_metadata(&entry_path) {
                     Ok(scenario) => {
-                        scenario_list.entries.push(ScenarioBundle {
-                            scenario,
-                            join_handle: None,
-                            epoch_rx: None,
-                            summary_rx: None,
-                        });
+                        scenario_list
+                            .entries
+                            .push(ScenarioBundle::new(scenario, storage.clone()));
                     }
                     Err(e) => {
                         warn!(
@@ -120,21 +207,9 @@ impl ScenarioList {
 }
 
 impl Default for ScenarioList {
-    /// Loads existing scenario results from the `./results` directory into a
-    /// [`ScenarioList`], sorting them by scenario ID. Creates the `./results`
-    /// directory if it does not exist.
-    ///
-    /// This provides the default initialized state for the scenario list resource,
-    /// populated from any existing results. If loading fails, returns an empty list.
     #[tracing::instrument(level = "info")]
     fn default() -> Self {
-        match Self::load() {
-            Ok(scenario_list) => scenario_list,
-            Err(e) => {
-                warn!("Failed to load scenarios from ./results directory: {}", e);
-                Self::empty()
-            }
-        }
+        Self::empty()
     }
 }
 
@@ -145,8 +220,6 @@ impl Default for ScenarioList {
 /// loading system to reload [`ScenarioList`] when the path changes.
 #[derive(Resource, Debug, Default)]
 pub struct ProjectState {
-    /// The currently loaded project folder, or `None` if no project is open.
-    pub current_path: Option<PathBuf>,
     /// Recently opened project folders, most-recent first, capped at 8.
     pub recent: Vec<PathBuf>,
 }

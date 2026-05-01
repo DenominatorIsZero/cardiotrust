@@ -39,7 +39,10 @@ use bevy::prelude::*;
 use strum_macros::{Display, EnumIter};
 
 pub use self::gallery::{despawn_results_view, spawn_results_view};
-use crate::ui::{UiState, UiType};
+use crate::{
+    ui::{UiState, UiType},
+    ActiveLoadedScenario,
+};
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
@@ -251,6 +254,7 @@ impl Plugin for ResultsViewPlugin {
         app.init_resource::<ResultImageCache>();
         app.init_resource::<ResultAnimCache>();
         app.init_resource::<ResultsViewState>();
+        app.init_resource::<ActiveLoadedScenario>();
 
         // Spawn / despawn
         app.add_systems(
@@ -362,8 +366,10 @@ pub fn reset_result_caches(
     mut image_cache: ResMut<ResultImageCache>,
     mut anim_cache: ResMut<ResultAnimCache>,
     mut view_state: ResMut<ResultsViewState>,
+    mut active_loaded_scenario: ResMut<ActiveLoadedScenario>,
 ) {
     *image_cache = ResultImageCache::default();
     *anim_cache = ResultAnimCache::default();
     *view_state = ResultsViewState::default();
+    active_loaded_scenario.0 = None;
 }

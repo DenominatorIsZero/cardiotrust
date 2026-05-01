@@ -17,7 +17,7 @@ use crate::{
         },
         UiState,
     },
-    ProjectState, ScenarioList, SelectedSenario,
+    ScenarioList, SelectedSenario,
 };
 
 /// Handles keyboard shortcuts for navigation.
@@ -37,7 +37,6 @@ pub fn handle_keyboard_shortcuts(
     ui_state: Res<State<UiState>>,
     selected_scenario: Res<SelectedSenario>,
     scenario_list: Res<ScenarioList>,
-    project_state: Res<ProjectState>,
     mut next_state: ResMut<NextState<UiState>>,
     slider_inputs: Query<&SliderValueInput>,
     number_inputs: Query<&NumberInputWidget>,
@@ -53,7 +52,7 @@ pub fn handle_keyboard_shortcuts(
         return;
     }
 
-    let has_project = project_state.current_path.is_some();
+    let has_project = scenario_list.project_root.is_some();
     let has_selection = selected_scenario.index.is_some();
     let scenario_done = selected_scenario.index.is_some_and(|i| {
         scenario_list

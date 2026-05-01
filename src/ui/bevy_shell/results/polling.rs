@@ -145,14 +145,8 @@ pub fn poll_anim_generation(
             }
             Ok(anim_dir) => {
                 // Discover frame files in the directory.
-                let frames: Vec<PathBuf> = super::generate::detect_existing_frames(
-                    // We don't have the scenario ID here, so derive from dir path.
-                    // The anim_dir is results/{id}/img/anim/{type}
-                    // Extract scenario ID from the directory structure.
-                    extract_scenario_id(&anim_dir).as_deref().unwrap_or(""),
-                    anim_type,
-                )
-                .unwrap_or_default();
+                let frames: Vec<PathBuf> =
+                    super::generate::detect_existing_frames(&anim_dir).unwrap_or_default();
 
                 if frames.is_empty() {
                     anim_cache.0.insert(
@@ -263,18 +257,4 @@ fn load_image_bytes(path: &std::path::Path) -> anyhow::Result<(Vec<u8>, u32, u32
     let rgba = img.to_rgba8();
     let (w, h) = rgba.dimensions();
     Ok((rgba.into_raw(), w, h))
-}
-
-/// Extracts the scenario ID from an animation directory path.
-///
-/// Expected format: `results/{scenario_id}/img/anim/{anim_type}`
-#[tracing::instrument(level = "trace", skip_all)]
-fn extract_scenario_id(anim_dir: &std::path::Path) -> Option<String> {
-    // Walk up 3 levels from anim_dir: anim_dir -> anim -> img -> {id}
-    anim_dir
-        .parent() // .../anim
-        .and_then(|p| p.parent()) // .../img
-        .and_then(|p| p.parent()) // results/{id}
-        .and_then(|p| p.file_name())
-        .map(|s| s.to_string_lossy().into_owned())
 }

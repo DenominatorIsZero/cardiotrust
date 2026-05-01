@@ -8,7 +8,7 @@ use super::UiState;
 use crate::{
     core::scenario::Status,
     scheduler::{NumberOfJobs, SchedulerState},
-    ScenarioList, SelectedSenario,
+    ActiveLoadedScenario, LoadedScenario, ScenarioList, SelectedSenario,
 };
 
 /// Draws the UI for the top bar, containing buttons to switch between UI states
@@ -21,10 +21,11 @@ pub fn draw_ui_topbar(
     mut contexts: EguiContexts,
     ui_state: Res<State<UiState>>,
     scheduler_state: Res<State<SchedulerState>>,
-    mut scenario_list: ResMut<ScenarioList>,
+    scenario_list: Res<ScenarioList>,
     selected_scenario: Res<SelectedSenario>,
     mut number_of_jobs: ResMut<NumberOfJobs>,
     mut cameras: Query<&mut EditorCam, With<Camera>>,
+    mut active_loaded_scenario: ResMut<ActiveLoadedScenario>,
 ) {
     trace!("Running system to draw topbar.");
     let ctx = match contexts.ctx_mut() {
@@ -78,13 +79,16 @@ pub fn draw_ui_topbar(
                 .clicked()
             {
                 if let Some(index) = selected_scenario.index {
-                    if let Some(entry) = scenario_list.entries.get_mut(index) {
-                        let scenario = &mut entry.scenario;
-                        if let Err(e) = scenario.load_data() {
-                            error!("Failed to load scenario data: {}", e);
-                        }
-                        if let Err(e) = scenario.load_results() {
-                            error!("Failed to load scenario results: {}", e);
+                    if let Some(entry) = scenario_list.entries.get(index) {
+                        match entry.load_payload() {
+                            Ok(payload) => {
+                                active_loaded_scenario.0 =
+                                    Some(LoadedScenario::from_bundle(entry, payload));
+                            }
+                            Err(e) => {
+                                error!("Failed to load scenario payload: {}", e);
+                                return;
+                            }
                         }
                         commands.insert_resource(NextState::Pending(UiState::Results));
                     } else {
@@ -109,13 +113,16 @@ pub fn draw_ui_topbar(
                 .clicked()
             {
                 if let Some(index) = selected_scenario.index {
-                    if let Some(entry) = scenario_list.entries.get_mut(index) {
-                        let scenario = &mut entry.scenario;
-                        if let Err(e) = scenario.load_data() {
-                            error!("Failed to load scenario data: {}", e);
-                        }
-                        if let Err(e) = scenario.load_results() {
-                            error!("Failed to load scenario results: {}", e);
+                    if let Some(entry) = scenario_list.entries.get(index) {
+                        match entry.load_payload() {
+                            Ok(payload) => {
+                                active_loaded_scenario.0 =
+                                    Some(LoadedScenario::from_bundle(entry, payload));
+                            }
+                            Err(e) => {
+                                error!("Failed to load scenario payload: {}", e);
+                                return;
+                            }
                         }
                         commands.insert_resource(NextState::Pending(UiState::Volumetric));
                     } else {

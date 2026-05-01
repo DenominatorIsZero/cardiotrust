@@ -16,7 +16,7 @@ use crate::{
         },
         scenario::{Scenario, Status},
     },
-    ScenarioBundle, ScenarioList, SelectedSenario,
+    ScenarioList, SelectedSenario,
 };
 
 const FIRST_COLUMN_WIDTH: f32 = 150.0;
@@ -154,28 +154,28 @@ fn draw_ui_scenario_topbar(
                 _ => (),
             }
             if ui.button("Save").clicked() {
-                if let Err(e) = scenario.save() {
+                if let Err(e) = scenarios.entries[index].save_metadata() {
                     error!("Failed to save scenario: {}", e);
                 }
             } else if ui.button("Delete").clicked() {
-                if let Err(e) = scenario.delete() {
+                if let Err(e) = scenarios.entries[index].delete() {
                     error!("Failed to delete scenario: {}", e);
                 } else {
                     scenarios.entries.remove(index);
                     selected_scenario.index = Some(0);
                 }
             } else if ui.button("Copy").clicked() {
-                let mut new_scenario =
-                    Scenario::build(None).expect("Failed to create new scenario");
-                new_scenario.config = scenario.config.clone();
-                new_scenario.comment.clone_from(&scenario.comment);
-                scenarios.entries.push(ScenarioBundle {
-                    scenario: new_scenario,
-                    join_handle: None,
-                    epoch_rx: None,
-                    summary_rx: None,
-                });
-                selected_scenario.index = Some(scenarios.entries.len() - 1);
+                let config = scenario.config.clone();
+                let comment = scenario.comment.clone();
+                match entry.copy_as_planning() {
+                    Ok(mut bundle) => {
+                        bundle.scenario.config = config;
+                        bundle.scenario.comment = comment;
+                        scenarios.entries.push(bundle);
+                        selected_scenario.index = Some(scenarios.entries.len() - 1);
+                    }
+                    Err(e) => error!("Failed to copy scenario: {}", e),
+                }
             }
             ui.separator();
             let Some(index) = selected_scenario.index else {
@@ -194,7 +194,7 @@ fn draw_ui_scenario_topbar(
                 .add(egui::TextEdit::multiline(&mut scenario.comment).desired_width(f32::INFINITY))
                 .lost_focus()
             {
-                if let Err(e) = scenario.save() {
+                if let Err(e) = entry.save_metadata() {
                     error!("Failed to save scenario: {}", e);
                 }
             }

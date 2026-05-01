@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use tracing::warn;
 
 use super::Status;
-use crate::{ScenarioBundle, ScenarioList, SelectedSenario};
+use crate::{ScenarioList, SelectedSenario};
 
 // ── Message types ─────────────────────────────────────────────────────────────
 
@@ -52,24 +52,18 @@ pub fn handle_copy_scenario(
         let config = entry.scenario.config.clone();
         let comment = entry.scenario.comment.clone();
 
-        match super::Scenario::build(None) {
-            Ok(mut new_scenario) => {
-                // The copy starts in Planning status (guaranteed by build()).
-                new_scenario.config = config;
-                new_scenario.comment = format!(
+        match entry.copy_as_planning() {
+            Ok(mut copied_bundle) => {
+                copied_bundle.scenario.config = config;
+                copied_bundle.scenario.comment = format!(
                     "Copy of {}",
                     comment.trim().trim_start_matches("Copy of ").trim()
                 );
-                if let Err(e) = new_scenario.save() {
+                if let Err(e) = copied_bundle.save_metadata() {
                     warn!("handle_copy_scenario: failed to save copied scenario: {e}");
                 }
                 let new_index = scenario_list.entries.len();
-                scenario_list.entries.push(ScenarioBundle {
-                    scenario: new_scenario,
-                    join_handle: None,
-                    epoch_rx: None,
-                    summary_rx: None,
-                });
+                scenario_list.entries.push(copied_bundle);
                 selected.index = Some(new_index);
             }
             Err(e) => {
@@ -106,7 +100,7 @@ pub fn handle_delete_scenario(
             continue;
         }
 
-        if let Err(e) = entry.scenario.delete() {
+        if let Err(e) = entry.delete() {
             warn!("handle_delete_scenario: failed to delete scenario from disk: {e}");
         }
 
@@ -131,6 +125,7 @@ pub fn handle_delete_scenario(
 #[cfg(test)]
 mod tests {
     use super::{super::Scenario, *};
+    use crate::ScenarioBundle;
 
     #[test]
     fn copy_creates_scenario_in_planning() {
@@ -181,10 +176,12 @@ mod tests {
         let mut list = ScenarioList {
             entries: vec![ScenarioBundle {
                 scenario,
+                storage: crate::core::scenario::ScenarioStorage::new("./results/tests"),
                 join_handle: None,
                 epoch_rx: None,
                 summary_rx: None,
             }],
+            project_root: None,
         };
 
         // Simulate delete (Planning succeeds)
@@ -203,10 +200,12 @@ mod tests {
         let list = ScenarioList {
             entries: vec![ScenarioBundle {
                 scenario,
+                storage: crate::core::scenario::ScenarioStorage::new("./results/tests"),
                 join_handle: None,
                 epoch_rx: None,
                 summary_rx: None,
             }],
+            project_root: None,
         };
 
         // The handler should NOT remove the scenario

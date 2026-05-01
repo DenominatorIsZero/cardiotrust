@@ -17,7 +17,7 @@ use std::path::PathBuf;
 use super::card::spawn_gallery_cards;
 use crate::{
     ui::{bevy_shell::content_area::ContentSlot, colors},
-    ScenarioList, SelectedSenario,
+    ActiveLoadedScenario, LoadedScenario, ScenarioList, SelectedSenario,
 };
 
 // ── Components ─────────────────────────────────────────────────────────────────
@@ -99,8 +99,9 @@ pub fn spawn_results_view(
     mut view_state: ResMut<ResultsViewState>,
     mut image_cache: ResMut<super::ResultImageCache>,
     mut anim_cache: ResMut<super::ResultAnimCache>,
-    mut scenario_list: ResMut<ScenarioList>,
+    scenario_list: Res<ScenarioList>,
     selected: Res<SelectedSenario>,
+    mut active_loaded_scenario: ResMut<ActiveLoadedScenario>,
 ) {
     let Ok(slot) = content_slots.single() else {
         return;
@@ -108,13 +109,15 @@ pub fn spawn_results_view(
 
     // Load data + results from disk so generation systems can access them.
     if let Some(index) = selected.index {
-        if let Some(entry) = scenario_list.entries.get_mut(index) {
-            let scenario = &mut entry.scenario;
-            if let Err(e) = scenario.load_data() {
-                error!("Failed to load scenario data for Results view: {e}");
-            }
-            if let Err(e) = scenario.load_results() {
-                error!("Failed to load scenario results for Results view: {e}");
+        if let Some(entry) = scenario_list.entries.get(index) {
+            match entry.load_payload() {
+                Ok(payload) => {
+                    active_loaded_scenario.0 = Some(LoadedScenario::from_bundle(entry, payload));
+                }
+                Err(e) => {
+                    error!("Failed to load scenario payload for Results view: {e}");
+                    active_loaded_scenario.0 = None;
+                }
             }
         }
     }
@@ -124,6 +127,7 @@ pub fn spawn_results_view(
     if let Some(index) = selected.index {
         if let Some(entry) = scenario_list.entries.get(index) {
             preload_existing_results(
+                &entry.storage,
                 entry.scenario.get_id(),
                 &mut image_cache,
                 &mut anim_cache,
@@ -355,6 +359,7 @@ fn spawn_tab_body(
 
 #[tracing::instrument(skip_all)]
 fn preload_existing_results(
+    storage: &crate::core::scenario::ScenarioStorage,
     scenario_id: &str,
     image_cache: &mut super::ResultImageCache,
     anim_cache: &mut super::ResultAnimCache,
@@ -370,7 +375,8 @@ fn preload_existing_results(
             if image_cache.0.contains_key(&image_type) {
                 continue;
             }
-            let Some(path) = super::generate::detect_existing_image(scenario_id, image_type) else {
+            let path = storage.image_path(scenario_id, &image_type.to_string());
+            let Some(path) = path.is_file().then_some(path) else {
                 continue;
             };
             image_cache.0.insert(
@@ -385,8 +391,8 @@ fn preload_existing_results(
             if anim_cache.0.contains_key(&anim_type) {
                 continue;
             }
-            let Some(frame_paths) = super::generate::detect_existing_frames(scenario_id, anim_type)
-            else {
+            let anim_dir = storage.animation_dir(scenario_id, anim_type.dir_name());
+            let Some(frame_paths) = super::generate::detect_existing_frames(&anim_dir) else {
                 continue;
             };
             let channels = frame_paths

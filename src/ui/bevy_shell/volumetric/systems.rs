@@ -27,7 +27,6 @@ use super::{
     },
 };
 use crate::{
-    core::scenario::Scenario,
     ui::colors,
     vis::{
         cutting_plane::CuttingPlaneSettings,
@@ -35,7 +34,7 @@ use crate::{
         sample_tracker::SampleTracker,
         sensors::BacketSettings,
     },
-    ScenarioList, SelectedSenario,
+    ActiveLoadedScenario, LoadedScenario,
 };
 
 #[tracing::instrument(skip_all)]
@@ -268,14 +267,10 @@ pub(super) fn update_control_value_labels(
     visibility_options: Res<VisibilityOptions>,
     cutting_plane: Res<CuttingPlaneSettings>,
     sensor_bracket_settings: Res<BacketSettings>,
-    selected_scenario: Res<SelectedSenario>,
-    scenario_list: Res<ScenarioList>,
+    active_loaded_scenario: Res<ActiveLoadedScenario>,
     mut labels: Query<(&ControlValueText, &mut Text)>,
 ) {
-    let scenario = selected_scenario
-        .index
-        .and_then(|index| scenario_list.entries.get(index))
-        .map(|entry| &entry.scenario);
+    let scenario = active_loaded_scenario.0.as_ref();
 
     for (label, mut text) in &mut labels {
         text.0 = control_value_text(
@@ -519,13 +514,9 @@ pub(super) fn handle_control_action_buttons(
     mut visibility_options: ResMut<VisibilityOptions>,
     mut cutting_plane: ResMut<CuttingPlaneSettings>,
     mut sensor_bracket_settings: ResMut<BacketSettings>,
-    selected_scenario: Res<SelectedSenario>,
-    scenario_list: Res<ScenarioList>,
+    active_loaded_scenario: Res<ActiveLoadedScenario>,
 ) {
-    let scenario = selected_scenario
-        .index
-        .and_then(|index| scenario_list.entries.get(index))
-        .map(|entry| &entry.scenario);
+    let scenario = active_loaded_scenario.0.as_ref();
 
     for (button, interaction) in &buttons {
         if *interaction != Interaction::Pressed {
@@ -553,8 +544,7 @@ pub(super) fn handle_control_action_buttons(
             }
             ControlAction::StepBeat(direction) => {
                 let beat_max = scenario
-                    .and_then(|scenario| scenario.results.as_ref())
-                    .and_then(|results| results.model.as_ref())
+                    .and_then(|scenario| scenario.payload.results.model.as_ref())
                     .map_or(0, |model| {
                         model.spatial_description.sensors.array_offsets_mm.shape()[0]
                             .saturating_sub(1)
@@ -563,15 +553,15 @@ pub(super) fn handle_control_action_buttons(
                     step_usize(sample_tracker.selected_beat, direction, beat_max);
             }
             ControlAction::StepSensor(direction) => {
-                let sensor_max = scenario
-                    .and_then(|scenario| scenario.results.as_ref())
-                    .map_or(0, |results| {
-                        results
-                            .estimations
-                            .measurements
-                            .num_sensors()
-                            .saturating_sub(1)
-                    });
+                let sensor_max = scenario.map_or(0, |scenario| {
+                    scenario
+                        .payload
+                        .results
+                        .estimations
+                        .measurements
+                        .num_sensors()
+                        .saturating_sub(1)
+                });
                 sample_tracker.selected_sensor =
                     step_usize(sample_tracker.selected_sensor, direction, sensor_max);
             }
@@ -767,8 +757,7 @@ pub(super) fn draw_volumetric_overlays(
     state: Res<VolumetricViewState>,
     mut sample_tracker: ResMut<SampleTracker>,
     mut cameras: Query<&mut EditorCam, With<Camera>>,
-    selected_scenario: Res<SelectedSenario>,
-    scenario_list: Res<ScenarioList>,
+    active_loaded_scenario: Res<ActiveLoadedScenario>,
 ) {
     let Ok(ctx) = contexts.ctx_mut() else {
         return;
@@ -778,10 +767,7 @@ pub(super) fn draw_volumetric_overlays(
     };
     let scale = window.scale_factor();
 
-    let scenario = selected_scenario
-        .index
-        .and_then(|index| scenario_list.entries.get(index))
-        .map(|entry| &entry.scenario);
+    let scenario = active_loaded_scenario.0.as_ref();
 
     if !state.fullscreen {
         if let Ok((transform, computed)) = plot_hosts.single() {
@@ -828,19 +814,16 @@ pub(super) fn draw_volumetric_overlays(
 #[tracing::instrument(level = "trace", skip_all)]
 fn draw_signal_plot(
     ui: &mut egui::Ui,
-    scenario: Option<&Scenario>,
+    scenario: Option<&LoadedScenario>,
     sample_tracker: &mut SampleTracker,
 ) {
     let Some(scenario) = scenario else {
         ui.label("No signal data available.");
         return;
     };
-    let Some(results) = scenario.results.as_ref() else {
-        ui.label("No signal results loaded.");
-        return;
-    };
+    let results = &scenario.payload.results;
 
-    let sample_rate_hz = f64::from(scenario.config.simulation.sample_rate_hz);
+    let sample_rate_hz = f64::from(scenario.scenario.config.simulation.sample_rate_hz);
     let signal: PlotPoints = (0..sample_tracker.max_sample)
         .map(|index| {
             #[allow(clippy::cast_precision_loss)]

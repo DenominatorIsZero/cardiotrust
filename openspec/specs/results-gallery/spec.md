@@ -143,11 +143,11 @@ Cards SHALL provide a subtle visual affordance on hover to indicate interactivit
 ---
 
 ### Requirement: Action bar with secondary operations
-A persistent action bar SHALL provide access to Export to .npy, a global playback speed setting, and animation export options.
+A persistent action bar SHALL provide access to export the selected scenario's payload as NumPy arrays, a global playback speed setting, and animation export options. All exports SHALL be written into the selected scenario's persisted output area for the currently opened project.
 
 #### Scenario: Export to .npy
 - **WHEN** the user activates "Export to .npy"
-- **THEN** the scenario data SHALL be exported as NumPy arrays to the scenario's output directory
+- **THEN** the selected scenario's payload SHALL be exported as NumPy arrays into that scenario's persisted output area
 
 #### Scenario: Playback speed setting
 - **WHEN** the user adjusts the playback speed control

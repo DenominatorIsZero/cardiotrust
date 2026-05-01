@@ -96,7 +96,7 @@ pub fn handle_card_quick_actions(
         match action.kind {
             CardQuickActionKind::Delete => {
                 if idx < scenario_list.entries.len() {
-                    let _ = scenario_list.entries[idx].scenario.delete();
+                    let _ = scenario_list.entries[idx].delete();
                     scenario_list.entries.remove(idx);
                     if selected.index == Some(idx) {
                         selected.index = None;
@@ -105,11 +105,10 @@ pub fn handle_card_quick_actions(
             }
             CardQuickActionKind::Copy => {
                 if let Some(entry) = scenario_list.entries.get(idx) {
-                    // Build a new scenario with a fresh ID, copying config and comment.
-                    match crate::core::scenario::Scenario::build(None) {
-                        Ok(mut new_scenario) => {
-                            new_scenario.config = entry.scenario.config.clone();
-                            new_scenario.comment = format!(
+                    match entry.copy_as_planning() {
+                        Ok(mut copied_bundle) => {
+                            copied_bundle.scenario.config = entry.scenario.config.clone();
+                            copied_bundle.scenario.comment = format!(
                                 "Copy of {}",
                                 entry
                                     .scenario
@@ -120,15 +119,10 @@ pub fn handle_card_quick_actions(
                                     .trim_start_matches("Copy of ")
                                     .trim()
                             );
-                            if let Err(e) = new_scenario.save() {
+                            if let Err(e) = copied_bundle.save_metadata() {
                                 tracing::warn!("Failed to save copied scenario: {e}");
                             }
-                            scenario_list.entries.push(crate::ScenarioBundle {
-                                scenario: new_scenario,
-                                join_handle: None,
-                                epoch_rx: None,
-                                summary_rx: None,
-                            });
+                            scenario_list.entries.push(copied_bundle);
                         }
                         Err(e) => tracing::warn!("Failed to create copy of scenario: {e}"),
                     }
@@ -172,7 +166,7 @@ pub fn handle_card_inline_edit(
                 // Commit the edit and persist to disk.
                 if let Some(entry) = scenario_list.entries.get_mut(editing_index) {
                     entry.scenario.comment.clone_from(&edit_mode.draft);
-                    if let Err(e) = entry.scenario.save() {
+                    if let Err(e) = entry.save_metadata() {
                         tracing::warn!("Failed to save scenario after comment edit: {e}");
                     }
                 }
@@ -232,15 +226,15 @@ pub fn create_new_scenario(
     selected: &mut SelectedSenario,
     _project_state: &crate::ProjectState,
 ) {
-    match crate::core::scenario::Scenario::build(None) {
-        Ok(scenario) => {
+    let Some(project_root) = scenario_list.project_root.clone() else {
+        tracing::warn!("Cannot create a scenario without an active project");
+        return;
+    };
+    let storage = crate::core::scenario::ScenarioStorage::new(project_root);
+    match crate::ScenarioBundle::create(storage, crate::core::scenario::Scenario::build(None)) {
+        Ok(bundle) => {
             let index = scenario_list.entries.len();
-            scenario_list.entries.push(crate::ScenarioBundle {
-                scenario,
-                join_handle: None,
-                epoch_rx: None,
-                summary_rx: None,
-            });
+            scenario_list.entries.push(bundle);
             selected.index = Some(index);
         }
         Err(e) => {

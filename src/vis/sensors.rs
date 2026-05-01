@@ -1,9 +1,8 @@
 use bevy::{math::vec3, prelude::*};
 use ndarray::Array2;
-use tracing::error;
 
 use super::{options::VisibilityOptions, sample_tracker::SampleTracker};
-use crate::core::scenario::Scenario;
+use crate::LoadedScenario;
 
 #[derive(Component)]
 pub(crate) struct SensorData {
@@ -23,7 +22,7 @@ pub(crate) fn spawn_sensors(
     commands: &mut Commands,
     ass: &Res<AssetServer>,
     materials: &mut Assets<StandardMaterial>,
-    scenario: &Scenario,
+    scenario: &LoadedScenario,
     sensors: &Query<(Entity, &SensorData)>,
 ) {
     debug!("Running system to spawn sensors.");
@@ -31,11 +30,7 @@ pub(crate) fn spawn_sensors(
     for (entity, _) in sensors.iter() {
         commands.entity(entity).despawn();
     }
-    let Some(data) = scenario.data.as_ref() else {
-        error!("No scenario data available for sensor spawning");
-        return;
-    };
-    let model = &data.simulation.model;
+    let model = &scenario.payload.data.simulation.model;
     let sensors = &model.spatial_description.sensors;
 
     // note that we have to include the `Scene0` label
@@ -149,18 +144,20 @@ pub(crate) fn spawn_sensor_bracket(
     ass: &Res<AssetServer>,
     sensor_bracket_settings: &mut ResMut<BacketSettings>,
     commands: &mut Commands,
-    scenario: &Scenario,
+    scenario: &LoadedScenario,
     brackets: &Query<(Entity, &SensorBracket)>,
 ) {
     for (entity, _) in brackets.iter() {
         commands.entity(entity).despawn();
     }
 
-    let Some(data) = scenario.data.as_ref() else {
-        error!("No scenario data available for sensor bracket spawning");
-        return;
-    };
-    let sensors = &data.simulation.model.spatial_description.sensors;
+    let sensors = &scenario
+        .payload
+        .data
+        .simulation
+        .model
+        .spatial_description
+        .sensors;
     #[allow(clippy::no_effect_underscore_binding)]
     let radius = sensors.array_radius_mm;
     let motion_steps = sensors.array_offsets_mm.shape()[0];

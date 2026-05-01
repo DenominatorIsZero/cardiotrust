@@ -15,9 +15,8 @@ use super::{
     sample_tracker::SampleTracker,
 };
 use crate::{
-    core::{model::spatial::voxels::VoxelType, scenario::Scenario},
-    vis::options::ColorSource,
-    ScenarioList, SelectedSenario,
+    core::model::spatial::voxels::VoxelType, vis::options::ColorSource, ActiveLoadedScenario,
+    LoadedScenario,
 };
 
 #[derive(Component)]
@@ -136,7 +135,7 @@ pub fn init_voxels(
     meshes: &mut Assets<Mesh>,
     materials: &Res<MaterialAtlas>,
     mesh_atlas: &mut ResMut<MeshAtlas>,
-    scenario: &Scenario,
+    scenario: &LoadedScenario,
     sample_tracker: &SampleTracker,
     voxels: &Query<(Entity, &VoxelData)>,
 ) {
@@ -145,11 +144,7 @@ pub fn init_voxels(
     for (entity, _) in voxels.iter() {
         commands.entity(entity).despawn();
     }
-    let Some(data) = scenario.data.as_ref() else {
-        error!("No scenario data available for voxel initialization");
-        return;
-    };
-    let model = &data.simulation.model;
+    let model = &scenario.payload.data.simulation.model;
     let voxels = &model.spatial_description.voxels;
     let voxel_count = model.spatial_description.voxels.count_xyz();
     info!("Voxel count: {voxel_count:?}");
@@ -254,27 +249,18 @@ fn voxel_is_visible(position: Vec3, cutting_plane: &CuttingPlaneSettings) -> boo
 pub fn on_color_mode_changed(
     color_options: Res<ColorOptions>,
     query: Query<&mut VoxelData>,
-    scenario_list: Res<ScenarioList>,
-    selected_scenario: Res<SelectedSenario>,
+    active_loaded_scenario: Res<ActiveLoadedScenario>,
     materials: Res<MaterialAtlas>,
 ) {
     trace!("Running system to change visualization mode.");
-    if selected_scenario.index.is_none() {
-        return;
-    }
     if !color_options.is_changed() {
         return;
     }
     debug!("Visualization mode changed to {:?}.", color_options.mode);
-    let Some(index) = selected_scenario.index else {
-        error!("No scenario selected for color mode change");
+    let Some(scenario) = active_loaded_scenario.0.as_ref() else {
+        error!("No loaded scenario available for color mode change");
         return;
     };
-    let Some(entry) = scenario_list.entries.get(index) else {
-        error!("Selected scenario index {} is out of bounds", index);
-        return;
-    };
-    let scenario = &entry.scenario;
 
     match color_options.mode {
         ColorMode::EstimationVoxelTypes => {
@@ -354,18 +340,20 @@ pub fn on_color_mode_changed(
 fn set_heart_voxel_colors_to_types(
     mut query: Query<&mut VoxelData>,
     materials: Res<MaterialAtlas>,
-    scenario: &Scenario,
+    scenario: &LoadedScenario,
     simulation_not_model: bool,
 ) {
     debug!("Setting heart voxel colors to types.");
     let voxel_types = if simulation_not_model {
-        if let Some(data) = scenario.data.as_ref() {
-            &data.simulation.model.spatial_description.voxels.types
-        } else {
-            error!("No simulation data available for voxel type visualization");
-            return;
-        }
-    } else if let Some(model) = scenario.results.as_ref().and_then(|r| r.model.as_ref()) {
+        &scenario
+            .payload
+            .data
+            .simulation
+            .model
+            .spatial_description
+            .voxels
+            .types
+    } else if let Some(model) = scenario.payload.results.model.as_ref() {
         &model.spatial_description.voxels.types
     } else {
         error!("No estimation model available for voxel type visualization");
@@ -454,22 +442,24 @@ pub const fn type_to_color(voxel_type: VoxelType) -> Color {
 fn set_heart_voxel_colors_to_norm(
     mut query: Query<&mut VoxelData>,
     materials: Res<MaterialAtlas>,
-    scenario: &Scenario,
+    scenario: &LoadedScenario,
     simulation_not_model: bool,
 ) {
     debug!("Setting heart voxel colors to norm.");
     let system_states = if simulation_not_model {
-        if let Some(data) = scenario.data.as_ref() {
-            &data.simulation.system_states_spherical.magnitude
-        } else {
-            error!("No simulation data available for norm visualization");
-            return;
-        }
-    } else if let Some(results) = scenario.results.as_ref() {
-        &results.estimations.system_states_spherical.magnitude
+        &scenario
+            .payload
+            .data
+            .simulation
+            .system_states_spherical
+            .magnitude
     } else {
-        error!("No estimation results available for norm visualization");
-        return;
+        &scenario
+            .payload
+            .results
+            .estimations
+            .system_states_spherical
+            .magnitude
     };
 
     query.par_iter_mut().for_each(|mut data| {
@@ -492,38 +482,35 @@ fn set_heart_voxel_colors_to_norm(
 fn set_heart_voxel_colors_to_max(
     mut query: Query<&mut VoxelData>,
     materials: Res<MaterialAtlas>,
-    scenario: &Scenario,
+    scenario: &LoadedScenario,
     source: ColorSource,
     relative_coloring: bool,
 ) {
     debug!("Setting heart voxel colors to max.");
     let system_states = match source {
         ColorSource::Simulation => {
-            if let Some(data) = scenario.data.as_ref() {
-                &data.simulation.system_states_spherical_max.magnitude
-            } else {
-                error!("No simulation data available for max magnitude visualization");
-                return;
-            }
+            &scenario
+                .payload
+                .data
+                .simulation
+                .system_states_spherical_max
+                .magnitude
         }
         ColorSource::Estimation => {
-            if let Some(results) = scenario.results.as_ref() {
-                &results.estimations.system_states_spherical_max.magnitude
-            } else {
-                error!("No estimation results available for max magnitude visualization");
-                return;
-            }
+            &scenario
+                .payload
+                .results
+                .estimations
+                .system_states_spherical_max
+                .magnitude
         }
         ColorSource::Delta => {
-            if let Some(results) = scenario.results.as_ref() {
-                &results
-                    .estimations
-                    .system_states_spherical_max_delta
-                    .magnitude
-            } else {
-                error!("No estimation delta results available for max magnitude visualization");
-                return;
-            }
+            &scenario
+                .payload
+                .results
+                .estimations
+                .system_states_spherical_max_delta
+                .magnitude
         }
     };
 
@@ -556,36 +543,15 @@ fn set_heart_voxel_colors_to_max(
 fn set_heart_voxel_colors_to_activation_time(
     mut query: Query<&mut VoxelData>,
     materials: Res<MaterialAtlas>,
-    scenario: &Scenario,
+    scenario: &LoadedScenario,
     source: ColorSource,
     relative_coloring: bool,
 ) {
     debug!("Setting heart voxel colors to max.");
     let activation_time_ms = match source {
-        ColorSource::Simulation => {
-            if let Some(data) = scenario.data.as_ref() {
-                &data.simulation.activation_times
-            } else {
-                error!("No simulation data available for activation time visualization");
-                return;
-            }
-        }
-        ColorSource::Estimation => {
-            if let Some(results) = scenario.results.as_ref() {
-                &results.estimations.activation_times
-            } else {
-                error!("No estimation results available for activation time visualization");
-                return;
-            }
-        }
-        ColorSource::Delta => {
-            if let Some(results) = scenario.results.as_ref() {
-                &results.estimations.activation_times_delta
-            } else {
-                error!("No estimation delta results available for activation time visualization");
-                return;
-            }
-        }
+        ColorSource::Simulation => &scenario.payload.data.simulation.activation_times,
+        ColorSource::Estimation => &scenario.payload.results.estimations.activation_times,
+        ColorSource::Delta => &scenario.payload.results.estimations.activation_times_delta,
     };
 
     let mut offset = 0.0;

@@ -9,7 +9,7 @@ use super::{
     gallery::{BatchProgressLabel, GenerateAllButton, GenerateAllInTabButton},
     generate, AnimState, ResultAnimCache, ResultImageCache, ResultImageState,
 };
-use crate::{ScenarioList, SelectedSenario};
+use crate::ActiveLoadedScenario;
 
 // ── Generate All in Tab ────────────────────────────────────────────────────────
 
@@ -20,8 +20,7 @@ pub fn handle_generate_all_in_tab(
     mut image_cache: ResMut<ResultImageCache>,
     mut anim_cache: ResMut<ResultAnimCache>,
     mut view_state: ResMut<super::ResultsViewState>,
-    scenario_list: Res<ScenarioList>,
-    selected: Res<SelectedSenario>,
+    active_loaded_scenario: Res<ActiveLoadedScenario>,
 ) {
     let mut pressed = false;
     for (_, interaction) in &buttons {
@@ -33,8 +32,7 @@ pub fn handle_generate_all_in_tab(
         return;
     }
 
-    let Some(index) = selected.index else { return };
-    let Some(entry) = scenario_list.entries.get(index) else {
+    let Some(active) = active_loaded_scenario.0.as_ref() else {
         return;
     };
 
@@ -49,17 +47,15 @@ pub fn handle_generate_all_in_tab(
             image_cache.0.get(&image_type),
             None | Some(ResultImageState::Pending | ResultImageState::Ready(_))
         ) {
-            let scenario = entry.scenario.clone();
+            let scenario = active.scenario.clone();
+            let payload = active.payload.clone();
+            let output_path = active
+                .storage
+                .image_path(scenario.get_id(), &image_type.to_string());
             let channel = super::new_channel::<std::path::PathBuf>();
             let writer = channel.clone();
             std::thread::spawn(move || {
-                let result = generate::generate_image(scenario.clone(), image_type).map(|()| {
-                    std::path::Path::new("results")
-                        .join(scenario.get_id())
-                        .join("img")
-                        .join(image_type.to_string())
-                        .with_extension("png")
-                });
+                let result = generate::generate_image(scenario, payload, output_path, image_type);
                 if let Ok(mut guard) = writer.lock() {
                     *guard = Some(result);
                 }
@@ -75,11 +71,15 @@ pub fn handle_generate_all_in_tab(
             anim_cache.0.get(&anim_type),
             None | Some(AnimState::Pending | AnimState::Ready(_))
         ) {
-            let scenario = entry.scenario.clone();
+            let scenario = active.scenario.clone();
+            let payload = active.payload.clone();
+            let anim_dir = active
+                .storage
+                .animation_dir(scenario.get_id(), anim_type.dir_name());
             let channel = super::new_channel::<std::path::PathBuf>();
             let writer = channel.clone();
             std::thread::spawn(move || {
-                let result = generate::generate_animation(scenario, anim_type);
+                let result = generate::generate_animation(scenario, payload, anim_dir, anim_type);
                 if let Ok(mut guard) = writer.lock() {
                     *guard = Some(result);
                 }
@@ -100,8 +100,7 @@ pub fn handle_generate_all(
     mut image_cache: ResMut<ResultImageCache>,
     mut anim_cache: ResMut<ResultAnimCache>,
     mut view_state: ResMut<super::ResultsViewState>,
-    scenario_list: Res<ScenarioList>,
-    selected: Res<SelectedSenario>,
+    active_loaded_scenario: Res<ActiveLoadedScenario>,
 ) {
     let mut pressed = false;
     for (_, interaction) in &buttons {
@@ -113,8 +112,7 @@ pub fn handle_generate_all(
         return;
     }
 
-    let Some(index) = selected.index else { return };
-    let Some(entry) = scenario_list.entries.get(index) else {
+    let Some(active) = active_loaded_scenario.0.as_ref() else {
         return;
     };
 
@@ -136,17 +134,16 @@ pub fn handle_generate_all(
                 image_cache.0.get(&image_type),
                 None | Some(ResultImageState::Pending | ResultImageState::Ready(_))
             ) {
-                let scenario = entry.scenario.clone();
+                let scenario = active.scenario.clone();
+                let payload = active.payload.clone();
+                let output_path = active
+                    .storage
+                    .image_path(scenario.get_id(), &image_type.to_string());
                 let channel = super::new_channel::<std::path::PathBuf>();
                 let writer = channel.clone();
                 std::thread::spawn(move || {
-                    let result = generate::generate_image(scenario.clone(), image_type).map(|()| {
-                        std::path::Path::new("results")
-                            .join(scenario.get_id())
-                            .join("img")
-                            .join(image_type.to_string())
-                            .with_extension("png")
-                    });
+                    let result =
+                        generate::generate_image(scenario, payload, output_path, image_type);
                     if let Ok(mut guard) = writer.lock() {
                         *guard = Some(result);
                     }
@@ -162,11 +159,16 @@ pub fn handle_generate_all(
                 anim_cache.0.get(&anim_type),
                 None | Some(AnimState::Pending | AnimState::Ready(_))
             ) {
-                let scenario = entry.scenario.clone();
+                let scenario = active.scenario.clone();
+                let payload = active.payload.clone();
+                let anim_dir = active
+                    .storage
+                    .animation_dir(scenario.get_id(), anim_type.dir_name());
                 let channel = super::new_channel::<std::path::PathBuf>();
                 let writer = channel.clone();
                 std::thread::spawn(move || {
-                    let result = generate::generate_animation(scenario, anim_type);
+                    let result =
+                        generate::generate_animation(scenario, payload, anim_dir, anim_type);
                     if let Ok(mut guard) = writer.lock() {
                         *guard = Some(result);
                     }

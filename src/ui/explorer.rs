@@ -108,13 +108,14 @@ pub fn draw_ui_explorer(
                 body.row(30.0, |mut row| {
                     row.col(|ui| {
                         if ui.button("New").clicked() {
-                            scenario_list.entries.push(ScenarioBundle {
-                                scenario: Scenario::build(None)
-                                    .expect("Failed to create new scenario"),
-                                join_handle: None,
-                                epoch_rx: None,
-                                summary_rx: None,
-                            });
+                            if let Some(project_root) = scenario_list.project_root.clone() {
+                                let storage =
+                                    crate::core::scenario::ScenarioStorage::new(project_root);
+                                match ScenarioBundle::create(storage, Scenario::build(None)) {
+                                    Ok(bundle) => scenario_list.entries.push(bundle),
+                                    Err(e) => error!("Failed to create new scenario: {}", e),
+                                }
+                            }
                             selected_scenario.index = Some(scenario_list.entries.len() - 1);
                             commands.insert_resource(NextState::Pending(UiState::Scenario));
                         }
@@ -228,7 +229,7 @@ fn draw_row(
                 )
                 .lost_focus()
             {
-                if let Err(e) = scenario_list.entries[index].scenario.save() {
+                if let Err(e) = scenario_list.entries[index].save_metadata() {
                     error!("Failed to save scenario: {}", e);
                 }
             }

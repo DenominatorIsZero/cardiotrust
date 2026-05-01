@@ -5,13 +5,13 @@ use bevy_egui::egui;
 
 use super::types::{ControlValueKind, StepDirection, VisibilityTarget};
 use crate::{
-    core::scenario::Scenario,
     vis::{
         cutting_plane::CuttingPlaneSettings,
         options::{ColorMode, ColorOptions, VisibilityOptions},
         sample_tracker::SampleTracker,
         sensors::BacketSettings,
     },
+    LoadedScenario,
 };
 
 #[tracing::instrument(level = "trace")]
@@ -59,7 +59,7 @@ pub(super) fn default_screenshot_file_name() -> String {
 #[tracing::instrument(level = "trace", skip_all)]
 pub(super) fn control_value_text(
     kind: ControlValueKind,
-    scenario: Option<&Scenario>,
+    scenario: Option<&LoadedScenario>,
     sample_tracker: &SampleTracker,
     color_options: &ColorOptions,
     visibility_options: &VisibilityOptions,
@@ -78,23 +78,22 @@ pub(super) fn control_value_text(
         ),
         ControlValueKind::Beat => {
             let beat_max = scenario
-                .and_then(|scenario| scenario.results.as_ref())
-                .and_then(|results| results.model.as_ref())
+                .and_then(|scenario| scenario.payload.results.model.as_ref())
                 .map_or(0, |model| {
                     model.spatial_description.sensors.array_offsets_mm.shape()[0].saturating_sub(1)
                 });
             format!("{}/{}", sample_tracker.selected_beat, beat_max)
         }
         ControlValueKind::Sensor => {
-            let sensor_max = scenario
-                .and_then(|scenario| scenario.results.as_ref())
-                .map_or(0, |results| {
-                    results
-                        .estimations
-                        .measurements
-                        .num_sensors()
-                        .saturating_sub(1)
-                });
+            let sensor_max = scenario.map_or(0, |scenario| {
+                scenario
+                    .payload
+                    .results
+                    .estimations
+                    .measurements
+                    .num_sensors()
+                    .saturating_sub(1)
+            });
             format!("{}/{}", sample_tracker.selected_sensor, sensor_max)
         }
         ControlValueKind::Visibility(target) => on_off(match target {
