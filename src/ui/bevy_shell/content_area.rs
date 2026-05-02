@@ -95,7 +95,7 @@ pub fn spawn_root_layout(mut commands: Commands) {
         });
 }
 
-/// Despawns the shell root and all its children when exiting `UiType::Bevy`.
+/// Despawns the shell root and all its children.
 #[tracing::instrument(skip_all)]
 pub fn despawn_root_layout(mut commands: Commands, roots: Query<Entity, With<ShellRoot>>) {
     for entity in &roots {

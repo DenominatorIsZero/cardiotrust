@@ -13,7 +13,7 @@ pub(super) const DEFAULT_PANEL_WIDTH: f32 = 280.0;
 pub(super) const DEFAULT_FULLSCREEN_CAMERA_TRANSLATION: Vec3 =
     Vec3::new(-300.962, -859.492, 653.266);
 pub(super) const DEFAULT_CAMERA_ROTATION: Quat =
-    Quat::from_xyzw(0.450315, -0.047057, -0.253808, 0.854742);
+    Quat::from_xyzw(0.450_315, -0.047_057, -0.253_808, 0.854_742);
 pub(super) const PLOT_HANDLE_HEIGHT: f32 = 18.0;
 pub(super) const PANEL_SECTION_GAP: f32 = 12.0;
 pub(super) const PANEL_ROW_GAP: f32 = 10.0;
@@ -24,6 +24,7 @@ pub(super) const TAB_BUTTON_HEIGHT: f32 = 42.0;
 pub(super) const TAB_STRIP_HALF_HEIGHT: f32 = 105.0;
 pub(super) const PANEL_RIGHT_OFFSET: f32 = TAB_STRIP_WIDTH + 24.0;
 pub(super) const SMALL_ACTION_BUTTON_SIZE: f32 = 28.0;
+use super::plot::{PlotImage, PlotImageRequest};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(super) enum VolumetricSection {
@@ -84,6 +85,13 @@ pub(super) struct ScreenshotDialogReceiver(
     pub(super) Option<Mutex<mpsc::Receiver<Option<std::path::PathBuf>>>>,
 );
 
+#[derive(Resource, Default, Debug, Clone)]
+pub(super) struct PlotImageState {
+    pub(super) request: Option<PlotImageRequest>,
+    pub(super) image: Option<PlotImage>,
+    pub(super) handle: Option<Handle<Image>>,
+}
+
 #[derive(Component, Debug)]
 pub(super) struct VolumetricViewRoot;
 
@@ -106,6 +114,18 @@ pub(super) struct SectionPanel {
 
 #[derive(Component, Debug)]
 pub(super) struct PlotContainer;
+
+#[derive(Component, Debug)]
+pub(super) struct PlotCanvas;
+
+#[derive(Component, Debug, Clone, Copy)]
+pub(super) struct PlotImageNode;
+
+#[derive(Component, Debug)]
+pub(super) struct PlotCursor;
+
+#[derive(Component, Debug)]
+pub(super) struct PlotEmptyLabel;
 
 #[derive(Component, Debug)]
 pub(super) struct PlotResizeHandle;

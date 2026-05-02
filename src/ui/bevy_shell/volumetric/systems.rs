@@ -6,19 +6,19 @@ use bevy::{
     ui::UiGlobalTransform,
 };
 use bevy_editor_cam::controller::component::{EditorCam, EnabledMotion};
-use bevy_egui::{egui, EguiContexts};
-use egui_plot::{Line, Plot, PlotPoints, VLine};
 
 use super::{
     helpers::{
         color_mode_label, control_value_text, cycle_color_mode, default_screenshot_file_name,
-        logical_rect_from_node, step_f32, step_playback_speed, step_usize, step_vec3_axis,
+        step_f32, step_playback_speed, step_usize, step_vec3_axis,
     },
+    plot::{build_signal_plot_image, cursor_left_px, image_from_plot, PlotImageRequest},
     types::{
         BlocksCameraMotion, ColorModeButton, ColorModeButtonLabel, ColorModeChevron,
         ColorModeDropdown, ColorModeOptionButton, ControlAction, ControlActionButton,
-        ControlValueText, OverlayPanelHost, OverlayPanelTitle, OverlayTabStrip, PlotCollapseButton,
-        PlotCollapseLabel, PlotContainer, PlotResizeHandle, PlotStatusLabel,
+        ControlValueText, OverlayPanelHost, OverlayPanelTitle, OverlayTabStrip, PlotCanvas,
+        PlotCollapseButton, PlotCollapseLabel, PlotContainer, PlotCursor, PlotEmptyLabel,
+        PlotImageNode, PlotImageState, PlotResizeHandle, PlotStatusLabel,
         ScreenshotDialogReceiver, SectionPanel, SectionTabButton, SectionTabLabel,
         ToolbarFullscreenButton, ToolbarFullscreenLabel, ToolbarResetCameraButton,
         ToolbarScreenshotButton, ToolbarScreenshotLabel, VolumetricViewState,
@@ -34,10 +34,11 @@ use crate::{
         sample_tracker::SampleTracker,
         sensors::BacketSettings,
     },
-    ActiveLoadedScenario, LoadedScenario,
+    ActiveLoadedScenario,
 };
 
 #[tracing::instrument(skip_all)]
+#[allow(clippy::type_complexity)]
 pub(super) fn sync_volumetric_layout(
     windows: Query<&Window>,
     state: Res<VolumetricViewState>,
@@ -115,6 +116,7 @@ pub(super) fn update_section_tab_visuals(
 }
 
 #[tracing::instrument(skip_all)]
+#[allow(clippy::type_complexity)]
 pub(super) fn update_toolbar_visuals(
     state: Res<VolumetricViewState>,
     mut fullscreen_buttons: Query<&mut BackgroundColor, With<ToolbarFullscreenButton>>,
@@ -181,6 +183,7 @@ pub(super) fn update_plot_labels(
 }
 
 #[tracing::instrument(skip_all)]
+#[allow(clippy::type_complexity)]
 pub(super) fn update_color_mode_dropdown(
     state: Res<VolumetricViewState>,
     color_options: Res<ColorOptions>,
@@ -248,7 +251,7 @@ pub(super) fn sync_overlay_panel_contents(
         .to_string();
 
     for mut text in &mut titles {
-        text.0 = title.clone();
+        text.0.clone_from(&title);
     }
 
     for (panel, mut node) in &mut panels {
@@ -286,6 +289,7 @@ pub(super) fn update_control_value_labels(
 }
 
 #[tracing::instrument(skip_all)]
+#[allow(clippy::type_complexity)]
 pub(super) fn handle_section_tab_click(
     mut state: ResMut<VolumetricViewState>,
     buttons: Query<(&SectionTabButton, &Interaction), (Changed<Interaction>, With<Button>)>,
@@ -342,6 +346,7 @@ pub(super) fn collapse_overlay_on_outside_click(
 }
 
 #[tracing::instrument(skip_all)]
+#[allow(clippy::type_complexity)]
 pub(super) fn handle_toolbar_buttons(
     mut state: ResMut<VolumetricViewState>,
     mut screenshot_dialog_rx: ResMut<ScreenshotDialogReceiver>,
@@ -400,7 +405,7 @@ pub(super) fn handle_toolbar_buttons(
             std::thread::spawn(move || {
                 let path = rfd::FileDialog::new()
                     .set_title("Save volumetric screenshot")
-                    .set_file_name(&default_screenshot_file_name())
+                    .set_file_name(default_screenshot_file_name())
                     .add_filter("PNG image", &["png"])
                     .save_file();
                 let _ = tx.send(path);
@@ -420,29 +425,24 @@ pub(super) fn poll_screenshot_dialog(
     mut commands: Commands,
     mut screenshot_dialog_rx: ResMut<ScreenshotDialogReceiver>,
 ) {
-    let done = if let Some(mutex) = &screenshot_dialog_rx.0 {
-        match mutex.lock() {
-            Err(_) => true,
-            Ok(rx) => match rx.try_recv() {
-                Ok(Some(path)) => {
-                    let path = path.display().to_string();
-                    info!("Saving volumetric screenshot to {path}");
-                    commands
-                        .spawn(Screenshot::primary_window())
-                        .observe(save_to_disk(path));
-                    true
-                }
-                Ok(None) => {
-                    info!("Volumetric screenshot save cancelled");
-                    true
-                }
-                Err(mpsc::TryRecvError::Empty) => false,
-                Err(mpsc::TryRecvError::Disconnected) => true,
-            },
-        }
-    } else {
-        false
-    };
+    let done = screenshot_dialog_rx.0.as_ref().is_some_and(|mutex| {
+        mutex.lock().map_or(true, |rx| match rx.try_recv() {
+            Ok(Some(path)) => {
+                let path = path.display().to_string();
+                info!("Saving volumetric screenshot to {path}");
+                commands
+                    .spawn(Screenshot::primary_window())
+                    .observe(save_to_disk(path));
+                true
+            }
+            Ok(None) => {
+                info!("Volumetric screenshot save cancelled");
+                true
+            }
+            Err(mpsc::TryRecvError::Empty) => false,
+            Err(mpsc::TryRecvError::Disconnected) => true,
+        })
+    });
 
     if done {
         screenshot_dialog_rx.0 = None;
@@ -491,6 +491,7 @@ pub(super) fn handle_color_mode_button(
 }
 
 #[tracing::instrument(skip_all)]
+#[allow(clippy::type_complexity)]
 pub(super) fn handle_color_mode_option_click(
     mut state: ResMut<VolumetricViewState>,
     mut color_options: ResMut<ColorOptions>,
@@ -507,6 +508,7 @@ pub(super) fn handle_color_mode_option_click(
 }
 
 #[tracing::instrument(skip_all)]
+#[allow(clippy::type_complexity)]
 pub(super) fn handle_control_action_buttons(
     buttons: Query<(&ControlActionButton, &Interaction), (Changed<Interaction>, With<Button>)>,
     mut sample_tracker: ResMut<SampleTracker>,
@@ -567,22 +569,22 @@ pub(super) fn handle_control_action_buttons(
             }
             ControlAction::ToggleVisibility(target) => match target {
                 super::types::VisibilityTarget::Heart => {
-                    visibility_options.heart = !visibility_options.heart
+                    visibility_options.heart = !visibility_options.heart;
                 }
                 super::types::VisibilityTarget::CuttingPlane => {
-                    visibility_options.cutting_plane = !visibility_options.cutting_plane
+                    visibility_options.cutting_plane = !visibility_options.cutting_plane;
                 }
                 super::types::VisibilityTarget::Sensors => {
-                    visibility_options.sensors = !visibility_options.sensors
+                    visibility_options.sensors = !visibility_options.sensors;
                 }
                 super::types::VisibilityTarget::SensorBracket => {
-                    visibility_options.sensor_bracket = !visibility_options.sensor_bracket
+                    visibility_options.sensor_bracket = !visibility_options.sensor_bracket;
                 }
                 super::types::VisibilityTarget::Torso => {
-                    visibility_options.torso = !visibility_options.torso
+                    visibility_options.torso = !visibility_options.torso;
                 }
                 super::types::VisibilityTarget::Room => {
-                    visibility_options.room = !visibility_options.room
+                    visibility_options.room = !visibility_options.room;
                 }
             },
             ControlAction::ToggleCuttingPlaneEnabled => {
@@ -681,7 +683,7 @@ pub(super) fn handle_plot_resize(
         return;
     };
     let plot_center = plot_transform.affine().translation;
-    let plot_bottom = plot_center.y + plot_node.size().y * 0.5;
+    let plot_bottom = plot_node.size().y.mul_add(0.5, plot_center.y);
     let max_height = (window.resolution.height() * MAX_PLOT_HEIGHT_RATIO).max(MIN_PLOT_HEIGHT);
     let new_height = ((plot_bottom - physical_cursor.y) / window.scale_factor())
         .clamp(MIN_PLOT_HEIGHT, max_height);
@@ -748,125 +750,172 @@ pub(super) fn disable_camera_motion_over_volumetric_ui(
     }
 }
 
-#[allow(clippy::too_many_arguments, clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::cast_precision_loss)]
 #[tracing::instrument(skip_all)]
-pub(super) fn draw_volumetric_overlays(
-    mut contexts: EguiContexts,
+pub(super) fn sync_plot_visuals(
     windows: Query<&Window>,
-    plot_hosts: Query<(&UiGlobalTransform, &ComputedNode), With<PlotContainer>>,
-    state: Res<VolumetricViewState>,
-    mut sample_tracker: ResMut<SampleTracker>,
-    mut cameras: Query<&mut EditorCam, With<Camera>>,
+    plot_canvases: Query<&ComputedNode, With<PlotCanvas>>,
+    mut plot_images: Query<(&mut Node, &mut ImageNode), With<PlotImageNode>>,
+    mut cursor_nodes: Query<
+        &mut Node,
+        (With<PlotCursor>, Without<PlotImageNode>, Without<PlotEmptyLabel>),
+    >,
+    mut empty_labels: Query<
+        &mut Node,
+        (With<PlotEmptyLabel>, Without<PlotImageNode>, Without<PlotCursor>),
+    >,
+    mut plot_image_state: ResMut<PlotImageState>,
+    mut images: ResMut<Assets<Image>>,
+    sample_tracker: Res<SampleTracker>,
     active_loaded_scenario: Res<ActiveLoadedScenario>,
 ) {
-    let Ok(ctx) = contexts.ctx_mut() else {
+    let Ok(window) = windows.single() else {
+        return;
+    };
+    let Ok(canvas) = plot_canvases.single() else {
+        return;
+    };
+    let scale = window.scale_factor();
+    let canvas_size = canvas.size() / scale;
+    let width = canvas_size.x.max(0.0);
+    let height = canvas_size.y.max(0.0);
+
+    let scenario = active_loaded_scenario.0.as_ref();
+    let Some(scenario) = scenario else {
+        set_plot_empty_state(&mut plot_images, &mut cursor_nodes, &mut empty_labels, true);
+        return;
+    };
+    let sample_count = scenario.payload.results.estimations.measurements.shape()[1];
+    if sample_count == 0 || width <= 1.0 || height <= 1.0 {
+        set_plot_empty_state(&mut plot_images, &mut cursor_nodes, &mut empty_labels, true);
+        return;
+    }
+
+    let measurements = &scenario.payload.results.estimations.measurements;
+    let beat_index = sample_tracker
+        .selected_beat
+        .min(measurements.shape()[0].saturating_sub(1));
+    let sensor_index = sample_tracker
+        .selected_sensor
+        .min(measurements.shape()[2].saturating_sub(1));
+    set_plot_empty_state(&mut plot_images, &mut cursor_nodes, &mut empty_labels, false);
+
+    let request = PlotImageRequest {
+        width: width.round().max(1.0) as u32,
+        height: height.round().max(1.0) as u32,
+        beat_index,
+        sensor_index,
+    };
+
+    if plot_image_state.request.as_ref() != Some(&request) {
+        let signal = measurements.slice(ndarray::s![beat_index, .., sensor_index]);
+        match build_signal_plot_image(signal, scenario.scenario.config.simulation.sample_rate_hz, &request)
+        {
+            Ok(plot) => {
+                let handle = images.add(image_from_plot(&plot));
+                plot_image_state.request = Some(request.clone());
+                plot_image_state.image = Some(plot);
+                plot_image_state.handle = Some(handle);
+            }
+            Err(error) => {
+                error!("Failed to render signal plot image: {error}");
+                set_plot_empty_state(&mut plot_images, &mut cursor_nodes, &mut empty_labels, true);
+                plot_image_state.request = None;
+                plot_image_state.image = None;
+                plot_image_state.handle = None;
+                return;
+            }
+        }
+    }
+
+    for (mut node, mut image_node) in &mut plot_images {
+        if let Some(handle) = &plot_image_state.handle {
+            image_node.image = handle.clone();
+            node.display = Display::Flex;
+        } else {
+            node.display = Display::None;
+        }
+    }
+
+    for mut cursor in &mut cursor_nodes {
+        let max_sample_index = sample_count.saturating_sub(1);
+        let current_sample = sample_tracker.current_sample.min(max_sample_index);
+        cursor.display = Display::Flex;
+        if let Some(plot) = plot_image_state.image.as_ref() {
+            cursor.left = Val::Px(cursor_left_px(current_sample, sample_count, plot));
+        }
+    }
+}
+
+#[allow(clippy::type_complexity)]
+#[tracing::instrument(skip_all)]
+fn set_plot_empty_state(
+    plot_images: &mut Query<(&mut Node, &mut ImageNode), With<PlotImageNode>>,
+    cursor_nodes: &mut Query<
+        &mut Node,
+        (With<PlotCursor>, Without<PlotImageNode>, Without<PlotEmptyLabel>),
+    >,
+    empty_labels: &mut Query<
+        &mut Node,
+        (With<PlotEmptyLabel>, Without<PlotImageNode>, Without<PlotCursor>),
+    >,
+    empty: bool,
+) {
+    for (mut node, mut image_node) in plot_images.iter_mut() {
+        node.display = Display::None;
+        image_node.image = Handle::default();
+    }
+    for mut cursor in cursor_nodes.iter_mut() {
+        cursor.display = Display::None;
+    }
+    for mut label in empty_labels.iter_mut() {
+        label.display = if empty { Display::Flex } else { Display::None };
+    }
+}
+
+#[allow(
+    clippy::type_complexity,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
+#[tracing::instrument(skip_all)]
+pub(super) fn handle_plot_click(
+    mouse: Res<ButtonInput<MouseButton>>,
+    windows: Query<&Window>,
+    canvases: Query<(&UiGlobalTransform, &ComputedNode), With<PlotCanvas>>,
+    mut sample_tracker: ResMut<SampleTracker>,
+    active_loaded_scenario: Res<ActiveLoadedScenario>,
+) {
+    if !sample_tracker.manual || !mouse.just_pressed(MouseButton::Left) {
+        return;
+    }
+
+    let Some(scenario) = active_loaded_scenario.0.as_ref() else {
         return;
     };
     let Ok(window) = windows.single() else {
         return;
     };
-    let scale = window.scale_factor();
-
-    let scenario = active_loaded_scenario.0.as_ref();
-
-    if !state.fullscreen {
-        if let Ok((transform, computed)) = plot_hosts.single() {
-            let host_rect = logical_rect_from_node(transform, computed, scale);
-            let plot_top = host_rect.min.y + super::types::PLOT_HANDLE_HEIGHT;
-            let plot_height = (host_rect.height() - super::types::PLOT_HANDLE_HEIGHT).max(0.0);
-            let plot_width = host_rect.width().max(0.0);
-
-            if !state.plot_collapsed && plot_width > 24.0 && plot_height > 20.0 {
-                egui::Area::new("volumetric_signal_plot".into())
-                    .order(egui::Order::Foreground)
-                    .fixed_pos(egui::pos2(host_rect.min.x, plot_top))
-                    .show(ctx, |ui| {
-                        let plot_size = egui::vec2(plot_width, plot_height);
-                        let inner_size = egui::vec2(
-                            (plot_size.x - 24.0).max(0.0),
-                            (plot_size.y - 20.0).max(0.0),
-                        );
-                        ui.set_min_size(plot_size);
-                        ui.set_max_size(plot_size);
-                        egui::Frame::new()
-                            .inner_margin(egui::Margin::symmetric(12, 10))
-                            .show(ui, |ui| {
-                                ui.set_min_size(inner_size);
-                                ui.spacing_mut().item_spacing = egui::vec2(6.0, 6.0);
-                                draw_signal_plot(ui, scenario, &mut sample_tracker);
-                            });
-                    });
-            }
-        }
-    }
-
-    if ctx.is_pointer_over_area() {
-        for mut camera in &mut cameras {
-            camera.enabled_motion = EnabledMotion {
-                pan: false,
-                orbit: false,
-                zoom: false,
-            };
-        }
-    }
-}
-
-#[tracing::instrument(level = "trace", skip_all)]
-fn draw_signal_plot(
-    ui: &mut egui::Ui,
-    scenario: Option<&LoadedScenario>,
-    sample_tracker: &mut SampleTracker,
-) {
-    let Some(scenario) = scenario else {
-        ui.label("No signal data available.");
+    let Some(cursor) = window.cursor_position() else {
         return;
     };
-    let results = &scenario.payload.results;
-
-    let sample_rate_hz = f64::from(scenario.scenario.config.simulation.sample_rate_hz);
-    let signal: PlotPoints = (0..sample_tracker.max_sample)
-        .map(|index| {
-            #[allow(clippy::cast_precision_loss)]
-            let time = index as f64 / sample_rate_hz;
-            let amplitude = f64::from(
-                results.estimations.measurements[(
-                    sample_tracker.selected_beat,
-                    index,
-                    sample_tracker.selected_sensor,
-                )],
-            );
-            [time, amplitude]
-        })
-        .collect();
-
-    let cursor_time = if sample_tracker.max_sample == 0 {
-        0.0
-    } else {
-        #[allow(clippy::cast_precision_loss)]
-        {
-            sample_tracker.current_sample as f64 / sample_rate_hz
-        }
+    let physical_cursor = cursor * window.scale_factor();
+    let Ok((transform, computed)) = canvases.single() else {
+        return;
     };
-
-    let plot_response = Plot::new("volumetric_signal_plot_widget")
-        .width(ui.available_width())
-        .height(ui.available_height().max(120.0))
-        .allow_boxed_zoom(false)
-        .allow_scroll(false)
-        .show_axes([true, true])
-        .x_axis_label("Time (s)")
-        .y_axis_label("Amplitude")
-        .show(ui, |plot_ui| {
-            plot_ui.line(Line::new("Signal", signal));
-            plot_ui.vline(VLine::new("Current Sample", cursor_time));
-            plot_ui.pointer_coordinate()
-        });
-
-    if sample_tracker.manual && plot_response.response.clicked() {
-        if let Some(pointer) = plot_response.inner {
-            let max_sample = sample_tracker.max_sample.saturating_sub(1);
-            let selected_sample = (pointer.x * sample_rate_hz).round().max(0.0) as usize;
-            sample_tracker.current_sample = selected_sample.min(max_sample);
-        }
+    if !computed.contains_point(*transform, physical_cursor) {
+        return;
     }
+
+    let sample_count = scenario.payload.results.estimations.measurements.shape()[1];
+    if sample_count == 0 {
+        return;
+    }
+
+    let center = transform.affine().translation;
+    let min_x = computed.size().x.mul_add(-0.5, center.x);
+    let relative_x = ((physical_cursor.x - min_x) / computed.size().x).clamp(0.0, 1.0);
+    let max_sample = sample_count.saturating_sub(1);
+    sample_tracker.current_sample = (relative_x * max_sample as f32).round() as usize;
 }

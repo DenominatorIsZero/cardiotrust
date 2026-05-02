@@ -51,7 +51,7 @@ use crate::{
     core::scenario::events::{
         handle_copy_scenario, handle_delete_scenario, CopyScenarioMessage, DeleteScenarioMessage,
     },
-    ui::{bevy_shell::content_area::ContentSlot, UiState, UiType},
+    ui::{bevy_shell::content_area::ContentSlot, UiState},
     ScenarioList, SelectedSenario,
 };
 
@@ -150,18 +150,12 @@ impl Plugin for ScenarioViewPlugin {
             .add_systems(Update, (handle_copy_scenario, handle_delete_scenario));
 
         // Spawn / despawn
-        app.add_systems(
-            OnEnter(UiState::Scenario),
-            spawn_scenario_view.run_if(in_state(UiType::Bevy)),
-        )
-        .add_systems(
-            OnExit(UiState::Scenario),
-            despawn_scenario_view.run_if(in_state(UiType::Bevy)),
-        );
+        app.add_systems(OnEnter(UiState::Scenario), spawn_scenario_view)
+            .add_systems(OnExit(UiState::Scenario), despawn_scenario_view);
 
         // Per-frame update systems — split across two add_systems calls to stay
         // within Bevy's 20-element tuple limit for IntoSystemConfigs.
-        let scenario_condition = in_state(UiType::Bevy).and(in_state(UiState::Scenario));
+        let scenario_condition = in_state(UiState::Scenario);
         app.add_systems(
             Update,
             (

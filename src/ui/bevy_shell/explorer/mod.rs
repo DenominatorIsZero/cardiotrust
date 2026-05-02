@@ -1,6 +1,6 @@
 //! Explorer view — Bevy-native card-grid layout for scenario browsing.
 //!
-//! Registered in `bevy_shell::BevyShellPlugin` behind the `UiType::Bevy` guard.
+//! Registered in `bevy_shell::BevyShellPlugin` for the supported UI path.
 //!
 //! # Module layout
 //!
@@ -44,7 +44,7 @@ use self::{
         SearchFocused,
     },
 };
-use crate::ui::{bevy_shell::content_area::ContentSlot, UiState, UiType};
+use crate::ui::{bevy_shell::content_area::ContentSlot, UiState};
 
 // ── Marker components ─────────────────────────────────────────────────────────
 
@@ -76,27 +76,21 @@ impl Plugin for ExplorerViewPlugin {
         app.init_resource::<LastCardClick>();
         app.init_resource::<SearchFocused>();
 
-        // Spawn / despawn the Explorer view when entering / exiting Explorer state
-        // (only while the Bevy UI backend is active).
+        // Spawn / despawn the Explorer view when entering / exiting Explorer state.
         // Order: root first, then toolbar and empty-state which parent into the root.
         app.add_systems(
             OnEnter(UiState::Explorer),
-            (spawn_explorer_view, spawn_toolbar, spawn_empty_state)
-                .chain()
-                .run_if(in_state(UiType::Bevy)),
+            (spawn_explorer_view, spawn_toolbar, spawn_empty_state).chain(),
         )
-        .add_systems(
-            OnExit(UiState::Explorer),
-            despawn_explorer_view.run_if(in_state(UiType::Bevy)),
-        );
+        .add_systems(OnExit(UiState::Explorer), despawn_explorer_view);
 
-        // Per-frame systems — only run while Bevy UI + Explorer are active.
+        // Per-frame systems — only run while Explorer is active.
         // Nested sub-tuples work around the 20-element tuple limit.
         //
         // Ordering:
         //   handle_text_search_input → apply_filter_and_sort → update_card_label_highlights
         //   update_card_labels → update_card_label_highlights
-        let explorer_condition = in_state(UiType::Bevy).and(in_state(UiState::Explorer));
+        let explorer_condition = in_state(UiState::Explorer);
         app.add_systems(
             Update,
             (

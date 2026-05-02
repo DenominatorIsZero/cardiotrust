@@ -559,7 +559,7 @@ pub(super) fn detect_existing_frames(dir: &Path) -> Option<Vec<PathBuf>> {
         return None;
     }
 
-    let entries = fs::read_dir(&dir).ok()?;
+    let entries = fs::read_dir(dir).ok()?;
     let mut frames: Vec<PathBuf> = entries
         .filter_map(|e| {
             let e = e.ok()?;
@@ -591,10 +591,11 @@ pub(super) fn detect_existing_frames(dir: &Path) -> Option<Vec<PathBuf>> {
 )]
 #[tracing::instrument(level = "debug")]
 pub(super) fn generate_gifs(
-    _scenario: Scenario,
+    scenario: Scenario,
     gif_type: GifType,
-    _playback_speed: f32,
+    playback_speed: f32,
 ) -> Result<()> {
+    let _ = (scenario, playback_speed);
     Err(anyhow::anyhow!(
         "Legacy GIF generation is unsupported after project-aware storage refactor ({gif_type:?})"
     ))

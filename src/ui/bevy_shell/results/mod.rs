@@ -1,6 +1,6 @@
 //! Results gallery view — Bevy-native plugin.
 //!
-//! Replaces the old egui-based `results.rs` with a Bevy-native gallery UI
+//! Implements the supported Bevy-native gallery UI
 //! that displays generated plots and animations for a completed scenario.
 //!
 //! # Module layout
@@ -39,10 +39,7 @@ use bevy::prelude::*;
 use strum_macros::{Display, EnumIter};
 
 pub use self::gallery::{despawn_results_view, spawn_results_view};
-use crate::{
-    ui::{UiState, UiType},
-    ActiveLoadedScenario,
-};
+use crate::{ui::UiState, ActiveLoadedScenario};
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
@@ -257,16 +254,13 @@ impl Plugin for ResultsViewPlugin {
         app.init_resource::<ActiveLoadedScenario>();
 
         // Spawn / despawn
-        app.add_systems(
-            OnEnter(UiState::Results),
-            spawn_results_view.run_if(in_state(UiType::Bevy)),
-        )
-        .add_systems(
-            OnExit(UiState::Results),
-            (despawn_results_view, reset_result_caches).run_if(in_state(UiType::Bevy)),
-        );
+        app.add_systems(OnEnter(UiState::Results), spawn_results_view)
+            .add_systems(
+                OnExit(UiState::Results),
+                (despawn_results_view, reset_result_caches),
+            );
 
-        let results_condition = in_state(UiType::Bevy).and(in_state(UiState::Results));
+        let results_condition = in_state(UiState::Results);
 
         // Tab bar
         app.add_systems(

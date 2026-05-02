@@ -344,6 +344,7 @@ pub fn despawn_home_view(mut commands: Commands, roots: Query<Entity, With<HomeV
 /// The result is sent through [`FolderDialogReceiver`] and picked up each
 /// frame by [`poll_folder_dialog`].
 #[tracing::instrument(skip_all)]
+#[allow(clippy::type_complexity)]
 pub fn handle_open_project_button(
     buttons: Query<
         (&Interaction, Option<&HomeProjectSwitchDisabled>),

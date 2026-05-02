@@ -1,18 +1,10 @@
 pub mod bevy_shell;
 pub mod colors;
-mod explorer;
-mod scenario;
-mod topbar;
-mod vol;
 
 use bevy::prelude::*;
 use bevy_editor_cam::prelude::{EditorCam, EnabledMotion};
-use bevy_egui::{EguiPlugin, EguiPrimaryContextPass};
 
-use self::{
-    bevy_shell::BevyShellPlugin, explorer::draw_ui_explorer, scenario::draw_ui_scenario,
-    topbar::draw_ui_topbar, vol::draw_ui_volumetric,
-};
+use self::bevy_shell::BevyShellPlugin;
 
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug)]
@@ -23,45 +15,13 @@ impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         info!("Initializing UI plugin.");
         app.init_state::<UiState>()
-            .init_state::<UiType>()
             .init_resource::<SidebarState>()
-            .add_plugins(EguiPlugin::default())
             .add_plugins(BevyShellPlugin)
-            .add_systems(Update, enable_camera_motion)
-            .add_systems(Update, toggle_ui_type_on_f2)
-            .add_systems(
-                EguiPrimaryContextPass,
-                draw_ui_topbar.run_if(in_state(UiType::EGui)),
-            )
-            .add_systems(
-                EguiPrimaryContextPass,
-                draw_ui_explorer
-                    .run_if(in_state(UiState::Explorer).and(in_state(UiType::EGui)))
-                    .after(draw_ui_topbar),
-            )
-            .add_systems(
-                EguiPrimaryContextPass,
-                draw_ui_scenario
-                    .run_if(in_state(UiState::Scenario).and(in_state(UiType::EGui)))
-                    .after(draw_ui_topbar),
-            )
-            .add_systems(
-                EguiPrimaryContextPass,
-                draw_ui_volumetric
-                    .run_if(in_state(UiState::Volumetric).and(in_state(UiType::EGui)))
-                    .after(draw_ui_topbar),
-            );
+            .add_systems(Update, enable_camera_motion);
     }
 }
 
-/// An enum representing the different UI states (views) of the application.
-///
-/// The default state is `Explorer`. Under the Bevy backend all six views are
-/// reachable; under `EGui` only `Explorer`, `Scenario`, `Results`, and
-/// `Volumetric` are used.
-///
-/// This allows conditional rendering of different UI components
-/// depending on the current state.
+/// The different content views of the application.
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash)]
 #[allow(clippy::module_name_repetitions)]
 pub enum UiState {
@@ -77,25 +37,6 @@ impl Default for UiState {
     #[tracing::instrument(level = "trace")]
     fn default() -> Self {
         Self::Home
-    }
-}
-
-/// Selects which UI backend is active.
-///
-/// `EGui` (default) runs the existing EGUI-based UI systems. `Bevy` will run
-/// the Bevy-native UI systems once they are implemented. Toggle at runtime
-/// with the **F2** key.
-#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash)]
-#[allow(clippy::module_name_repetitions)]
-pub enum UiType {
-    EGui,
-    Bevy,
-}
-
-impl Default for UiType {
-    #[tracing::instrument(level = "trace")]
-    fn default() -> Self {
-        Self::Bevy
     }
 }
 
@@ -120,21 +61,6 @@ impl Default for SidebarState {
             width: 200.0,
             user_expanded: true,
         }
-    }
-}
-
-/// Toggles [`UiType`] between `EGui` and `Bevy` each time **F2** is pressed.
-#[tracing::instrument(skip_all, level = "trace")]
-pub fn toggle_ui_type_on_f2(
-    keys: Res<ButtonInput<KeyCode>>,
-    ui_type: Res<State<UiType>>,
-    mut next: ResMut<NextState<UiType>>,
-) {
-    if keys.just_pressed(KeyCode::F2) {
-        next.set(match ui_type.get() {
-            UiType::EGui => UiType::Bevy,
-            UiType::Bevy => UiType::EGui,
-        });
     }
 }
 

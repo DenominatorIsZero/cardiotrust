@@ -12,7 +12,6 @@ use bevy::{
     prelude::*,
 };
 use bevy_editor_cam::controller::component::{EditorCam, OrbitConstraint};
-use bevy_egui::EguiStartupSet;
 use bevy_obj::ObjPlugin;
 use cutting_plane::update_cutting_plane_visibility;
 use heart::VoxelData;
@@ -62,10 +61,7 @@ impl Plugin for VisPlugin {
             .init_resource::<VisibilityOptions>()
             .init_resource::<BacketSettings>()
             .add_message::<SetupHeartAndSensors>()
-            .add_systems(
-                PreStartup,
-                setup_light_and_camera.before(EguiStartupSet::InitContexts),
-            )
+            .add_systems(PreStartup, setup_light_and_camera)
             .add_systems(
                 Startup,
                 (
@@ -114,7 +110,7 @@ pub fn setup_light_and_camera(mut commands: Commands) {
             Camera3d::default(),
             Transform {
                 translation: Vec3::new(-300.962, -859.492, 653.266),
-                rotation: Quat::from_xyzw(0.450315, -0.047057, -0.253808, 0.854742),
+                rotation: Quat::from_xyzw(0.450_315, -0.047_057, -0.253_808, 0.854_742),
                 scale: Vec3::ONE,
             },
             AmbientLight {

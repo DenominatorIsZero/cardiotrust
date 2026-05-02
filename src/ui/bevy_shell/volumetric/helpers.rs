@@ -1,7 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use bevy::{prelude::*, ui::UiGlobalTransform};
-use bevy_egui::egui;
+use bevy::prelude::*;
 
 use super::types::{ControlValueKind, StepDirection, VisibilityTarget};
 use crate::{
@@ -229,16 +228,4 @@ pub(super) fn format_vec3_axis(vector: Vec3, axis: usize, precision: usize) -> S
         _ => vector.z,
     };
     format!("{value:.precision$}")
-}
-
-#[tracing::instrument(level = "trace", skip_all)]
-pub(super) fn logical_rect_from_node(
-    transform: &UiGlobalTransform,
-    computed: &ComputedNode,
-    scale: f32,
-) -> egui::Rect {
-    let size = computed.size() / scale;
-    let center = transform.affine().translation / scale;
-    let min = center - size * 0.5;
-    egui::Rect::from_min_size(egui::pos2(min.x, min.y), egui::vec2(size.x, size.y))
 }

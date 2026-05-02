@@ -34,7 +34,6 @@ fn run_app() -> Result<()> {
         .init_resource::<ActiveLoadedScenario>()
         .insert_resource(ProjectState {
             recent: ProjectState::load_recent(),
-            ..Default::default()
         })
         .add_plugins(
             DefaultPlugins

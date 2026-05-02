@@ -8,6 +8,9 @@ pub mod summary;
 #[cfg(test)]
 mod tests;
 
+#[cfg(test)]
+use std::path::{Path, PathBuf};
+
 use anyhow::Result;
 use chrono::{self, DateTime, Utc};
 pub use persistence::ScenarioStorage;
@@ -16,9 +19,6 @@ pub use run::run;
 use serde::{Deserialize, Serialize};
 pub use status::Status;
 use tracing::{debug, trace, warn};
-
-#[cfg(test)]
-use std::path::{Path, PathBuf};
 
 use self::{results::Results, summary::Summary};
 use super::config::{algorithm::AlgorithmType, Config};
@@ -434,5 +434,10 @@ pub fn run_test_scenario(
         .storage_root
         .clone()
         .unwrap_or_else(|| PathBuf::from("./results"));
-    run::run(scenario, ScenarioStorage::new(storage_root), epoch_tx, summary_tx)
+    run::run(
+        scenario,
+        ScenarioStorage::new(storage_root),
+        epoch_tx,
+        summary_tx,
+    )
 }

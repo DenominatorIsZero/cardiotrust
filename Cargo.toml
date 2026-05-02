@@ -20,14 +20,10 @@ dirs = "5.0"
 rfd = "0.17.2"
 bevy = {version = "0.18.1", features = ["bevy_gltf"]}
 bevy_ui_widgets = "0.18.1"
-bevy_egui = {version = "0.39.1", default-features = false, features = ["open_url", "default_fonts", "render"]}
 bevy_editor_cam = "0.8.0"
 bevy_obj = "0.18.2"
 bincode = {version = "2.0.1", features = ["serde"]}
 chrono = {version = "0.4.44", features = ["serde"]}
-egui = "0.33.0"
-egui_extras = {version="0.33.0", features = ["all_loaders"]}
-egui_plot = "0.34.1"
 gif = "0.13.3"
 image = {version = "0.25.8", features = ["png"]}
 itertools = "0.14.0"

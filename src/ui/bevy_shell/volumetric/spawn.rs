@@ -6,14 +6,14 @@ use super::{
         BlocksCameraMotion, ColorModeButton, ColorModeButtonLabel, ColorModeChevron,
         ColorModeDropdown, ColorModeOptionButton, ControlAction, ControlActionButton,
         ControlValueKind, ControlValueText, OverlayPanelHost, OverlayPanelTitle, OverlayTabStrip,
-        PlotCollapseButton, PlotCollapseLabel, PlotContainer, PlotResizeHandle, PlotStatusLabel,
-        SectionPanel, SectionTabButton, SectionTabLabel, ToolbarContainer, ToolbarFullscreenButton,
-        ToolbarFullscreenLabel, ToolbarResetCameraButton, ToolbarScreenshotButton,
-        ToolbarScreenshotLabel, ViewportHost, VisibilityTarget, VolumetricSection,
-        VolumetricViewRoot, VolumetricViewState, DEFAULT_PANEL_WIDTH, DEFAULT_PLOT_HEIGHT,
-        PANEL_CARD_BG, PANEL_CARD_RADIUS, PANEL_RIGHT_OFFSET, PANEL_ROW_GAP, PANEL_SECTION_GAP,
-        PLOT_HANDLE_HEIGHT, SMALL_ACTION_BUTTON_SIZE, TAB_BUTTON_HEIGHT, TAB_STRIP_HALF_HEIGHT,
-        TAB_STRIP_WIDTH,
+        PlotCanvas, PlotCollapseButton, PlotCollapseLabel, PlotContainer, PlotCursor,
+        PlotEmptyLabel, PlotImageNode, PlotResizeHandle, PlotStatusLabel, SectionPanel, SectionTabButton,
+        SectionTabLabel, ToolbarContainer, ToolbarFullscreenButton, ToolbarFullscreenLabel,
+        ToolbarResetCameraButton, ToolbarScreenshotButton, ToolbarScreenshotLabel, ViewportHost,
+        VisibilityTarget, VolumetricSection, VolumetricViewRoot, VolumetricViewState,
+        DEFAULT_PANEL_WIDTH, DEFAULT_PLOT_HEIGHT, PANEL_CARD_BG, PANEL_CARD_RADIUS,
+        PANEL_RIGHT_OFFSET, PANEL_ROW_GAP, PANEL_SECTION_GAP, PLOT_HANDLE_HEIGHT,
+        SMALL_ACTION_BUTTON_SIZE, TAB_BUTTON_HEIGHT, TAB_STRIP_HALF_HEIGHT, TAB_STRIP_WIDTH,
     },
 };
 use crate::{
@@ -1044,6 +1044,67 @@ fn spawn_plot_container(commands: &mut Commands, parent: Entity) {
         ))
         .id();
     commands.entity(parent).add_child(plot);
+
+    let canvas = commands
+        .spawn((
+            PlotCanvas,
+            Node {
+                position_type: PositionType::Absolute,
+                top: Val::Px(PLOT_HANDLE_HEIGHT + 8.0),
+                left: Val::Px(12.0),
+                right: Val::Px(12.0),
+                bottom: Val::Px(12.0),
+                overflow: Overflow::clip(),
+                ..default()
+            },
+            BackgroundColor(colors::BG0),
+        ))
+        .with_children(|canvas| {
+            canvas.spawn((
+                PlotImageNode,
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(0.0),
+                    top: Val::Px(0.0),
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    display: Display::None,
+                    ..default()
+                },
+                ImageNode::default(),
+            ));
+
+            canvas.spawn((
+                PlotCursor,
+                Node {
+                    position_type: PositionType::Absolute,
+                    display: Display::None,
+                    width: Val::Px(super::plot::PLOT_CURSOR_WIDTH_PX),
+                    top: Val::Px(0.0),
+                    bottom: Val::Px(0.0),
+                    ..default()
+                },
+                BackgroundColor(colors::ORANGE),
+            ));
+
+            canvas.spawn((
+                PlotEmptyLabel,
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Percent(50.0),
+                    top: Val::Percent(50.0),
+                    ..default()
+                },
+                Text::new("No signal data available."),
+                TextFont {
+                    font_size: 12.0,
+                    ..default()
+                },
+                TextColor(colors::GREY1),
+            ));
+        })
+        .id();
+    commands.entity(plot).add_child(canvas);
 
     let handle = commands
         .spawn((
