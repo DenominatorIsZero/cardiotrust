@@ -44,7 +44,9 @@ RIGHT (vertical):
 
 ### 1. Planning
 
-When exploring the codebase, use the project's domain glossary so that test names and interface vocabulary match the project's language, and respect ADRs in the area you're touching.
+When exploring the codebase, use the relevant OpenSpec capability specs so that test names and interface vocabulary match the project's language, and respect any active or archived OpenSpec design decisions in the area you're touching.
+
+If the behavior under change is already covered by OpenSpec, align your tests to that capability's requirements and scenarios. If the behavior is new and this repo expects OpenSpec updates for it, identify the relevant active change spec delta before coding so tests and specs describe the same behavior.
 
 Before writing any code:
 
