@@ -7,13 +7,14 @@ use super::{
         ColorModeDropdown, ColorModeOptionButton, ControlAction, ControlActionButton,
         ControlValueKind, ControlValueText, OverlayPanelHost, OverlayPanelTitle, OverlayTabStrip,
         PlotCanvas, PlotCollapseButton, PlotCollapseLabel, PlotContainer, PlotCursor,
-        PlotEmptyLabel, PlotImageNode, PlotResizeHandle, PlotStatusLabel, SectionPanel, SectionTabButton,
-        SectionTabLabel, ToolbarContainer, ToolbarFullscreenButton, ToolbarFullscreenLabel,
-        ToolbarResetCameraButton, ToolbarScreenshotButton, ToolbarScreenshotLabel, ViewportHost,
-        VisibilityTarget, VolumetricSection, VolumetricViewRoot, VolumetricViewState,
-        DEFAULT_PANEL_WIDTH, DEFAULT_PLOT_HEIGHT, PANEL_CARD_BG, PANEL_CARD_RADIUS,
-        PANEL_RIGHT_OFFSET, PANEL_ROW_GAP, PANEL_SECTION_GAP, PLOT_HANDLE_HEIGHT,
-        SMALL_ACTION_BUTTON_SIZE, TAB_BUTTON_HEIGHT, TAB_STRIP_HALF_HEIGHT, TAB_STRIP_WIDTH,
+        PlotEmptyLabel, PlotImageNode, PlotResizeHandle, PlotStatusLabel, SectionPanel,
+        SectionTabButton, SectionTabLabel, ToolbarContainer, ToolbarFullscreenButton,
+        ToolbarFullscreenLabel, ToolbarResetCameraButton, ToolbarScreenshotButton,
+        ToolbarScreenshotLabel, ViewportHost, VisibilityTarget, VolumetricSection,
+        VolumetricViewRoot, VolumetricViewState, DEFAULT_PANEL_WIDTH, DEFAULT_PLOT_HEIGHT,
+        PANEL_CARD_BG, PANEL_CARD_RADIUS, PANEL_RIGHT_OFFSET, PANEL_ROW_GAP, PANEL_SECTION_GAP,
+        PLOT_HANDLE_HEIGHT, SMALL_ACTION_BUTTON_SIZE, TAB_BUTTON_HEIGHT, TAB_STRIP_HALF_HEIGHT,
+        TAB_STRIP_WIDTH,
     },
 };
 use crate::{
@@ -1091,8 +1092,8 @@ fn spawn_plot_container(commands: &mut Commands, parent: Entity) {
                 PlotEmptyLabel,
                 Node {
                     position_type: PositionType::Absolute,
-                    left: Val::Percent(50.0),
-                    top: Val::Percent(50.0),
+                    left: Val::Px(18.0),
+                    top: Val::Px(12.0),
                     ..default()
                 },
                 Text::new("No signal data available."),

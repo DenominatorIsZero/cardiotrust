@@ -67,7 +67,10 @@ impl Plugin for BevyShellPlugin {
         app.add_plugins(VolumetricViewPlugin);
 
         // Spawn the root layout once at startup.
-        app.add_systems(Startup, (spawn_root_layout, spawn_sidebar).chain());
+        app.add_systems(
+            Startup,
+            (spawn_root_layout, spawn_sidebar, spawn_home_view).chain(),
+        );
 
         // Home view — spawn on enter, despawn on exit.
         app.add_systems(OnEnter(UiState::Home), spawn_home_view)

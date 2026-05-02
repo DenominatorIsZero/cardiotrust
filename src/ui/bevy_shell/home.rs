@@ -63,9 +63,14 @@ pub struct HomeProjectSwitchDisabled;
 pub fn spawn_home_view(
     mut commands: Commands,
     content_slots: Query<Entity, With<ContentSlot>>,
+    existing_roots: Query<Entity, With<HomeViewRoot>>,
     project_state: Res<ProjectState>,
     scenario_list: Res<ScenarioList>,
 ) {
+    if !existing_roots.is_empty() {
+        return;
+    }
+
     let Ok(slot) = content_slots.single() else {
         return;
     };

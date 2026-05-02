@@ -1,6 +1,6 @@
 ## Purpose
 
-Governs the desktop application's user interface shell — page routing between the four content views (Explorer, Scenario editor, Results, Volumetric), precondition rules for navigation, the scenario list and its live progress display, configuration editing with state-based locking, on-demand result image generation and caching, and scheduler start/stop controls.
+Governs the desktop application's user interface shell — page routing between the six content views (Home, Explorer, Scenario, Results, Volumetric, Scheduler), precondition rules for navigation, the scenario list and its live progress display, configuration editing with state-based locking, on-demand result image generation and caching, and scheduler start/stop controls.
 
 This spec is distinct from `visualization` (which governs the 3-D rendering that occupies the Volumetric view) and from `scheduler` (which governs the background execution logic that the UI controls expose). UI navigation covers observable user-facing behavior: what controls exist, when they are enabled, and what transitions they trigger.
 
@@ -8,26 +8,21 @@ This spec is distinct from `visualization` (which governs the 3-D rendering that
 
 ### Requirement: Exactly one content view is active at all times
 
-The application SHALL have exactly one active content view at any time, selected from: Home, Explorer, Scenario, Results, Volumetric, and Scheduler. When the Bevy backend is active, the Home view is the initial view. When the EGui backend is active, the initial view remains Explorer. Switching views is instantaneous. These behaviors apply only when the respective backend is active.
+The application SHALL have exactly one active content view at any time, selected from: Home, Explorer, Scenario, Results, Volumetric, and Scheduler. The application SHALL start on the Home view. Switching views is instantaneous.
 
 #### Scenario: Only one content panel renders per frame
 
-- **WHEN** the application is in any active view state and the EGUI backend is selected
-- **THEN** exactly one content panel occupies the central area of the screen
+- **WHEN** the application is in any active view state
+- **THEN** exactly one content panel occupies the main content area of the screen
 
-#### Scenario: Navigation bar is always visible
+#### Scenario: Navigation shell is always visible
 
-- **WHEN** the application is in any view state and the EGUI backend is selected
-- **THEN** the top navigation bar is rendered
+- **WHEN** the application is in any view state
+- **THEN** the persistent navigation shell is rendered
 
-#### Scenario: No EGUI panels render when Bevy backend is selected
+#### Scenario: Application starts on Home view
 
-- **WHEN** the UI backend selector is set to `Bevy`
-- **THEN** no EGUI draw systems execute and no EGUI panels appear on screen
-
-#### Scenario: Bevy backend starts on Home view
-
-- **WHEN** the application is launched with the Bevy backend active
+- **WHEN** the application is launched
 - **THEN** the initial view is Home
 
 ### Requirement: Navigation to project-dependent views is disabled when no project is loaded

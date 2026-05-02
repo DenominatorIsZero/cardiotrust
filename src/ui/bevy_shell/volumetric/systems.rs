@@ -18,12 +18,12 @@ use super::{
         ColorModeDropdown, ColorModeOptionButton, ControlAction, ControlActionButton,
         ControlValueText, OverlayPanelHost, OverlayPanelTitle, OverlayTabStrip, PlotCanvas,
         PlotCollapseButton, PlotCollapseLabel, PlotContainer, PlotCursor, PlotEmptyLabel,
-        PlotImageNode, PlotImageState, PlotResizeHandle, PlotStatusLabel,
-        ScreenshotDialogReceiver, SectionPanel, SectionTabButton, SectionTabLabel,
-        ToolbarFullscreenButton, ToolbarFullscreenLabel, ToolbarResetCameraButton,
-        ToolbarScreenshotButton, ToolbarScreenshotLabel, VolumetricViewState,
-        DEFAULT_CAMERA_ROTATION, DEFAULT_FULLSCREEN_CAMERA_TRANSLATION, DEFAULT_PLOT_HEIGHT,
-        MAX_PLOT_HEIGHT_RATIO, MIN_PLOT_HEIGHT,
+        PlotImageNode, PlotImageState, PlotResizeHandle, PlotStatusLabel, ScreenshotDialogReceiver,
+        SectionPanel, SectionTabButton, SectionTabLabel, ToolbarFullscreenButton,
+        ToolbarFullscreenLabel, ToolbarResetCameraButton, ToolbarScreenshotButton,
+        ToolbarScreenshotLabel, VolumetricViewState, DEFAULT_CAMERA_ROTATION,
+        DEFAULT_FULLSCREEN_CAMERA_TRANSLATION, DEFAULT_PLOT_HEIGHT, MAX_PLOT_HEIGHT_RATIO,
+        MIN_PLOT_HEIGHT,
     },
 };
 use crate::{
@@ -750,7 +750,12 @@ pub(super) fn disable_camera_motion_over_volumetric_ui(
     }
 }
 
-#[allow(clippy::type_complexity, clippy::cast_precision_loss)]
+#[allow(
+    clippy::type_complexity,
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss
+)]
 #[tracing::instrument(skip_all)]
 pub(super) fn sync_plot_visuals(
     windows: Query<&Window>,
@@ -758,11 +763,19 @@ pub(super) fn sync_plot_visuals(
     mut plot_images: Query<(&mut Node, &mut ImageNode), With<PlotImageNode>>,
     mut cursor_nodes: Query<
         &mut Node,
-        (With<PlotCursor>, Without<PlotImageNode>, Without<PlotEmptyLabel>),
+        (
+            With<PlotCursor>,
+            Without<PlotImageNode>,
+            Without<PlotEmptyLabel>,
+        ),
     >,
     mut empty_labels: Query<
         &mut Node,
-        (With<PlotEmptyLabel>, Without<PlotImageNode>, Without<PlotCursor>),
+        (
+            With<PlotEmptyLabel>,
+            Without<PlotImageNode>,
+            Without<PlotCursor>,
+        ),
     >,
     mut plot_image_state: ResMut<PlotImageState>,
     mut images: ResMut<Assets<Image>>,
@@ -785,20 +798,25 @@ pub(super) fn sync_plot_visuals(
         set_plot_empty_state(&mut plot_images, &mut cursor_nodes, &mut empty_labels, true);
         return;
     };
-    let sample_count = scenario.payload.results.estimations.measurements.shape()[1];
+    let sample_count = scenario.payload.data.simulation.measurements.shape()[1];
     if sample_count == 0 || width <= 1.0 || height <= 1.0 {
         set_plot_empty_state(&mut plot_images, &mut cursor_nodes, &mut empty_labels, true);
         return;
     }
 
-    let measurements = &scenario.payload.results.estimations.measurements;
+    let measurements = &scenario.payload.data.simulation.measurements;
     let beat_index = sample_tracker
         .selected_beat
         .min(measurements.shape()[0].saturating_sub(1));
     let sensor_index = sample_tracker
         .selected_sensor
         .min(measurements.shape()[2].saturating_sub(1));
-    set_plot_empty_state(&mut plot_images, &mut cursor_nodes, &mut empty_labels, false);
+    set_plot_empty_state(
+        &mut plot_images,
+        &mut cursor_nodes,
+        &mut empty_labels,
+        false,
+    );
 
     let request = PlotImageRequest {
         width: width.round().max(1.0) as u32,
@@ -809,8 +827,11 @@ pub(super) fn sync_plot_visuals(
 
     if plot_image_state.request.as_ref() != Some(&request) {
         let signal = measurements.slice(ndarray::s![beat_index, .., sensor_index]);
-        match build_signal_plot_image(signal, scenario.scenario.config.simulation.sample_rate_hz, &request)
-        {
+        match build_signal_plot_image(
+            signal,
+            scenario.scenario.config.simulation.sample_rate_hz,
+            &request,
+        ) {
             Ok(plot) => {
                 let handle = images.add(image_from_plot(&plot));
                 plot_image_state.request = Some(request.clone());
@@ -853,11 +874,19 @@ fn set_plot_empty_state(
     plot_images: &mut Query<(&mut Node, &mut ImageNode), With<PlotImageNode>>,
     cursor_nodes: &mut Query<
         &mut Node,
-        (With<PlotCursor>, Without<PlotImageNode>, Without<PlotEmptyLabel>),
+        (
+            With<PlotCursor>,
+            Without<PlotImageNode>,
+            Without<PlotEmptyLabel>,
+        ),
     >,
     empty_labels: &mut Query<
         &mut Node,
-        (With<PlotEmptyLabel>, Without<PlotImageNode>, Without<PlotCursor>),
+        (
+            With<PlotEmptyLabel>,
+            Without<PlotImageNode>,
+            Without<PlotCursor>,
+        ),
     >,
     empty: bool,
 ) {
@@ -884,11 +913,17 @@ pub(super) fn handle_plot_click(
     mouse: Res<ButtonInput<MouseButton>>,
     windows: Query<&Window>,
     canvases: Query<(&UiGlobalTransform, &ComputedNode), With<PlotCanvas>>,
+    plot_image_state: Res<PlotImageState>,
     mut sample_tracker: ResMut<SampleTracker>,
     active_loaded_scenario: Res<ActiveLoadedScenario>,
+    mut dragging_plot: Local<bool>,
 ) {
-    if !sample_tracker.manual || !mouse.just_pressed(MouseButton::Left) {
+    if !sample_tracker.manual {
         return;
+    }
+
+    if mouse.just_released(MouseButton::Left) {
+        *dragging_plot = false;
     }
 
     let Some(scenario) = active_loaded_scenario.0.as_ref() else {
@@ -901,21 +936,35 @@ pub(super) fn handle_plot_click(
         return;
     };
     let physical_cursor = cursor * window.scale_factor();
+    let Some(plot) = plot_image_state.image.as_ref() else {
+        return;
+    };
     let Ok((transform, computed)) = canvases.single() else {
         return;
     };
-    if !computed.contains_point(*transform, physical_cursor) {
+    let cursor_inside_canvas = computed.contains_point(*transform, physical_cursor);
+    if mouse.just_pressed(MouseButton::Left) {
+        *dragging_plot = cursor_inside_canvas;
+    }
+    if !*dragging_plot || !mouse.pressed(MouseButton::Left) {
+        return;
+    }
+    if !cursor_inside_canvas {
         return;
     }
 
-    let sample_count = scenario.payload.results.estimations.measurements.shape()[1];
+    let sample_count = scenario.payload.data.simulation.measurements.shape()[1];
     if sample_count == 0 {
         return;
     }
 
     let center = transform.affine().translation;
     let min_x = computed.size().x.mul_add(-0.5, center.x);
-    let relative_x = ((physical_cursor.x - min_x) / computed.size().x).clamp(0.0, 1.0);
+    let canvas_width = computed.size().x.max(1.0);
+    let chart_left = (plot.chart_left_px / plot.width as f32).mul_add(canvas_width, min_x);
+    let chart_right = (plot.chart_right_px / plot.width as f32).mul_add(canvas_width, min_x);
+    let chart_width = (chart_right - chart_left).max(1.0);
+    let relative_x = ((physical_cursor.x - chart_left) / chart_width).clamp(0.0, 1.0);
     let max_sample = sample_count.saturating_sub(1);
     sample_tracker.current_sample = (relative_x * max_sample as f32).round() as usize;
 }
