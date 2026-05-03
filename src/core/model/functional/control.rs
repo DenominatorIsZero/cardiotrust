@@ -9,7 +9,7 @@ use approx::RelativeEq;
 use ndarray::Array1;
 use ndarray_npy::{read_npy, WriteNpyExt};
 use ocl::Buffer;
-use rubato::{Resampler, SincFixedIn, SincInterpolationParameters};
+use rubato::{audioadapter_buffers::owned::InterleavedOwned, Async, FixedAsync, Resampler, SincInterpolationParameters};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
@@ -194,25 +194,28 @@ impl ControlFunction {
                         interpolation: rubato::SincInterpolationType::Cubic,
                         window: rubato::WindowFunction::BlackmanHarris2,
                     };
-                    let mut resampler = SincFixedIn::<f32>::new(
+                    let mut resampler = Async::<f32>::new_sinc(
                         f64::from(sample_rate_hz) / f64::from(from_sample_rate_hz),
                         10.0,
-                        params,
+                        &params,
                         control_function_raw.len(),
                         1,
+                        FixedAsync::Input,
                     )
                     .with_context(|| format!(
                         "Failed to create resampler for O'Hara control function (from {from_sample_rate_hz}Hz to {sample_rate_hz}Hz)"
                     ))?;
 
-                    let input_frames: Vec<Vec<f32>> = vec![control_function_raw.to_vec()];
+                    let input_frames =
+                        InterleavedOwned::new_from(control_function_raw.to_vec(), 1, control_function_raw.len())
+                            .context("Failed to prepare O'Hara control function for resampling")?;
 
-                    let output_frames = resampler.process(&input_frames, None)
+                    let output_frames = resampler.process(&input_frames, 0, None)
                         .with_context(|| format!(
                             "Failed to resample O'Hara control function from {from_sample_rate_hz}Hz to {sample_rate_hz}Hz"
                         ))?;
 
-                    control_function_raw = output_frames[0].clone().into();
+                    control_function_raw = output_frames.take_data().into();
                 }
 
                 let control_function_values: Vec<f32> = (0..desired_length_samples)
