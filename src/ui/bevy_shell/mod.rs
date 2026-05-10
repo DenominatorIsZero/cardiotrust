@@ -96,11 +96,20 @@ impl Plugin for BevyShellPlugin {
         .add_systems(PreUpdate, auto_collapse_on_narrow_viewport);
 
         // Home view button handlers.
+        #[cfg(feature = "native")]
         app.add_systems(
             Update,
             (
                 home::handle_open_project_button,
                 home::handle_recent_project_click,
+            )
+                .run_if(in_state(UiState::Home)),
+        );
+        #[cfg(not(feature = "native"))]
+        app.add_systems(
+            Update,
+            (
+                home::handle_demo_project_click,
             )
                 .run_if(in_state(UiState::Home)),
         );

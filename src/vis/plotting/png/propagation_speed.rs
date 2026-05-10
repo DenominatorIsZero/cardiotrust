@@ -23,7 +23,7 @@ pub(crate) fn average_propagation_speed_plot(
     voxel_positions_mm: &VoxelPositions,
     voxel_size_mm: f32,
     sample_rate_hz: f32,
-    path: &Path,
+    path: Option<&Path>,
     slice: Option<PlotSlice>,
 ) -> anyhow::Result<PngBundle> {
     trace!("Generating activation time plot");
@@ -96,7 +96,7 @@ pub(crate) fn average_propagation_speed_plot(
         None,
         step,
         offset,
-        Some(path),
+        path,
         Some(title.as_str()),
         y_label,
         x_label,
@@ -150,7 +150,7 @@ mod test {
                 .positions_mm,
             data.simulation.model.spatial_description.voxels.size_mm,
             data.simulation.sample_rate_hz,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             Some(PlotSlice::Z(0)),
         )
         .context("Failed to generate average propagation speed plot for test")?;

@@ -1,7 +1,5 @@
 //! Polling systems: check background threads and advance image/anim states.
 
-use std::path::PathBuf;
-
 use bevy::{
     asset::RenderAssetUsages,
     prelude::*,
@@ -9,7 +7,7 @@ use bevy::{
 };
 
 use super::{
-    new_channel, AnimPlaybackState, AnimState, ResultAnimCache, ResultImageCache, ResultImageState,
+    AnimPlaybackState, AnimState, ResultAnimCache, ResultImageCache, ResultImageState,
     ResultsViewState,
 };
 
@@ -17,12 +15,14 @@ use super::{
 
 /// Polls in-flight image generation tasks.
 ///
-/// When a task finishes and produced a `PathBuf`, transitions state to
-/// `Loading` and spawns the byte-loading thread.
+/// When a `PngBundle` arrives (RGB bytes), converts to RGBA and uploads
+/// directly to the GPU. No separate file-load step.
 #[tracing::instrument(skip_all)]
-pub fn poll_image_generation(mut image_cache: ResMut<ResultImageCache>) {
-    // Collect which image types need to transition.
-    let to_load: Vec<_> = image_cache
+pub fn poll_image_generation(
+    mut image_cache: ResMut<ResultImageCache>,
+    mut images: ResMut<Assets<Image>>,
+) {
+    let to_upload: Vec<_> = image_cache
         .0
         .iter()
         .filter_map(|(image_type, state)| {
@@ -37,34 +37,25 @@ pub fn poll_image_generation(mut image_cache: ResMut<ResultImageCache>) {
         })
         .collect();
 
-    for (image_type, result) in to_load {
+    for (image_type, result) in to_upload {
         match result {
             Err(e) => {
                 image_cache
                     .0
                     .insert(image_type, ResultImageState::Failed(e.to_string()));
             }
-            Ok(path) => {
-                // Spawn a thread to load PNG bytes from disk.
-                let channel = new_channel::<(Vec<u8>, u32, u32)>();
-                let channel_writer = channel.clone();
-                std::thread::spawn(move || {
-                    let result = load_image_bytes(&path);
-                    if let Ok(mut guard) = channel_writer.lock() {
-                        *guard = Some(result);
-                    }
-                });
+            Ok(bundle) => {
+                let rgba = rgb_to_rgba(&bundle.data);
+                let handle = upload_image(&mut images, &rgba, bundle.width, bundle.height);
                 image_cache
                     .0
-                    .insert(image_type, ResultImageState::Loading { channel });
+                    .insert(image_type, ResultImageState::Ready(handle));
             }
         }
     }
 }
 
-/// Polls in-flight image loading tasks.
-///
-/// When bytes arrive, uploads the image to the GPU via `Assets<Image>`.
+/// Polls in-flight image-loading tasks (pre-existing cached images from disk).
 #[tracing::instrument(skip_all)]
 pub fn poll_image_loading(
     mut image_cache: ResMut<ResultImageCache>,
@@ -93,18 +84,7 @@ pub fn poll_image_loading(
                     .insert(image_type, ResultImageState::Failed(e.to_string()));
             }
             Ok((rgba_bytes, width, height)) => {
-                let bevy_image = Image::new(
-                    Extent3d {
-                        width,
-                        height,
-                        depth_or_array_layers: 1,
-                    },
-                    TextureDimension::D2,
-                    rgba_bytes,
-                    TextureFormat::Rgba8UnormSrgb,
-                    RenderAssetUsages::RENDER_WORLD,
-                );
-                let handle = images.add(bevy_image);
+                let handle = upload_image(&mut images, &rgba_bytes, width, height);
                 image_cache
                     .0
                     .insert(image_type, ResultImageState::Ready(handle));
@@ -116,12 +96,16 @@ pub fn poll_image_loading(
 // ── Animation polling ─────────────────────────────────────────────────────────
 
 /// Polls in-flight animation generation tasks.
+///
+/// When a `GifBundle` arrives, each RGB frame is converted to RGBA and
+/// uploaded to the GPU. Goes directly to `Ready` — no file-load step.
 #[tracing::instrument(skip_all)]
 pub fn poll_anim_generation(
     mut anim_cache: ResMut<ResultAnimCache>,
+    mut images: ResMut<Assets<Image>>,
     view_state: Res<ResultsViewState>,
 ) {
-    let to_load: Vec<_> = anim_cache
+    let to_upload: Vec<_> = anim_cache
         .0
         .iter()
         .filter_map(|(anim_type, state)| {
@@ -136,55 +120,39 @@ pub fn poll_anim_generation(
         })
         .collect();
 
-    for (anim_type, result) in to_load {
+    for (anim_type, result) in to_upload {
         match result {
             Err(e) => {
                 anim_cache
                     .0
                     .insert(anim_type, AnimState::Failed(e.to_string()));
             }
-            Ok(anim_dir) => {
-                // Discover frame files in the directory.
-                let frames: Vec<PathBuf> =
-                    super::generate::detect_existing_frames(&anim_dir).unwrap_or_default();
+            Ok(bundle) => {
+                let fps = view_state.playback_speed.max(1.0);
+                let timer_duration = std::time::Duration::from_secs_f32(1.0 / fps);
 
-                if frames.is_empty() {
-                    anim_cache.0.insert(
-                        anim_type,
-                        AnimState::Failed("No frames found after generation".to_string()),
-                    );
-                    continue;
+                let mut frames: Vec<Handle<Image>> = Vec::with_capacity(bundle.data.len());
+                for rgb_bytes in &bundle.data {
+                    let rgba = rgb_to_rgba(rgb_bytes);
+                    let handle = upload_image(&mut images, &rgba, bundle.width, bundle.height);
+                    frames.push(handle);
                 }
 
-                // Spawn loading threads for each frame.
-                let fps = view_state.playback_speed.max(1.0);
-                let channels: Vec<_> = frames
-                    .iter()
-                    .map(|path| {
-                        let channel = new_channel::<(Vec<u8>, u32, u32)>();
-                        let writer = channel.clone();
-                        let p = path.clone();
-                        std::thread::spawn(move || {
-                            let result = load_image_bytes(&p);
-                            if let Ok(mut guard) = writer.lock() {
-                                *guard = Some(result);
-                            }
-                        });
-                        channel
-                    })
-                    .collect();
-
-                let loaded = vec![None; channels.len()];
-                let _ = fps; // will use when creating timer
+                let playback = AnimPlaybackState {
+                    frames,
+                    current_frame: 0,
+                    playing: false,
+                    timer: Timer::new(timer_duration, TimerMode::Repeating),
+                };
                 anim_cache
                     .0
-                    .insert(anim_type, AnimState::Loading { channels, loaded });
+                    .insert(anim_type, AnimState::Ready(playback));
             }
         }
     }
 }
 
-/// Polls in-flight animation frame loading.
+/// Polls in-flight animation frame loading (pre-existing cached frames from disk).
 #[tracing::instrument(skip_all)]
 pub fn poll_anim_loading(
     mut anim_cache: ResMut<ResultAnimCache>,
@@ -209,22 +177,9 @@ pub fn poll_anim_loading(
             if let Ok(mut guard) = channel.try_lock() {
                 if let Some(result) = guard.take() {
                     match result {
-                        Err(_e) => {
-                            // Leave as None — will surface as incomplete
-                        }
+                        Err(_e) => {}
                         Ok((rgba_bytes, width, height)) => {
-                            let bevy_image = Image::new(
-                                Extent3d {
-                                    width,
-                                    height,
-                                    depth_or_array_layers: 1,
-                                },
-                                TextureDimension::D2,
-                                rgba_bytes,
-                                TextureFormat::Rgba8UnormSrgb,
-                                RenderAssetUsages::RENDER_WORLD,
-                            );
-                            let handle = images.add(bevy_image);
+                            let handle = upload_image(&mut images, &rgba_bytes, width, height);
                             loaded[i] = Some(handle);
                         }
                     }
@@ -232,7 +187,6 @@ pub fn poll_anim_loading(
             }
         }
 
-        // Check if all frames are loaded.
         let all_loaded = loaded.iter().all(Option::is_some);
         if all_loaded {
             let frames: Vec<Handle<Image>> = loaded.iter().filter_map(Clone::clone).collect();
@@ -249,12 +203,36 @@ pub fn poll_anim_loading(
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/// Loads a PNG or RGB image from `path` and returns `(rgba_bytes, width, height)`.
-#[tracing::instrument(level = "trace", skip_all)]
-fn load_image_bytes(path: &std::path::Path) -> anyhow::Result<(Vec<u8>, u32, u32)> {
-    let img = image::open(path)
-        .map_err(|e| anyhow::anyhow!("Failed to open image {}: {}", path.display(), e))?;
-    let rgba = img.to_rgba8();
-    let (w, h) = rgba.dimensions();
-    Ok((rgba.into_raw(), w, h))
+/// Converts packed RGB bytes (3 bytes/pixel) to RGBA (4 bytes/pixel).
+fn rgb_to_rgba(rgb: &[u8]) -> Vec<u8> {
+    let pixel_count = rgb.len() / 3;
+    let mut rgba = Vec::with_capacity(pixel_count * 4);
+    for i in 0..pixel_count {
+        rgba.push(rgb[i * 3]);
+        rgba.push(rgb[i * 3 + 1]);
+        rgba.push(rgb[i * 3 + 2]);
+        rgba.push(255);
+    }
+    rgba
+}
+
+/// Creates a Bevy `Image` from raw RGBA bytes and uploads to the GPU.
+fn upload_image(
+    images: &mut Assets<Image>,
+    rgba: &[u8],
+    width: u32,
+    height: u32,
+) -> Handle<Image> {
+    let bevy_image = Image::new(
+        Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        rgba.to_vec(),
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::RENDER_WORLD,
+    );
+    images.add(bevy_image)
 }

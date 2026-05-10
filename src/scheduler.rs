@@ -1,10 +1,7 @@
-use std::{
-    mem::discriminant,
-    sync::{mpsc::channel, Mutex},
-    thread,
-};
+use std::mem::discriminant;
 
 use bevy::prelude::*;
+use crossbeam_channel::unbounded;
 use tracing::error;
 
 use crate::{
@@ -99,17 +96,18 @@ pub fn start_scenarios(
         {
             let send_scenario = entry.scenario.clone();
             let send_storage = entry.storage.clone();
-            let (epoch_tx, epoch_rx) = channel();
-            let (summary_tx, summary_rx) = channel();
-            let handle = thread::spawn(move || {
-                if let Err(e) = run(send_scenario, send_storage, &epoch_tx, &summary_tx) {
+            let (epoch_tx, epoch_rx) = unbounded();
+            let (summary_tx, summary_rx) = unbounded();
+            let (done_tx, done_rx) = unbounded();
+            rayon::spawn(move || {
+                if let Err(e) = run(send_scenario, send_storage, &epoch_tx, &summary_tx, done_tx) {
                     tracing::error!("Scenario failed: {:?}", e);
                 }
             });
             entry.scenario.set_simulating();
-            entry.join_handle = Some(handle);
-            entry.epoch_rx = Some(Mutex::new(epoch_rx));
-            entry.summary_rx = Some(Mutex::new(summary_rx));
+            entry.done_rx = Some(done_rx);
+            entry.epoch_rx = Some(std::sync::Mutex::new(epoch_rx));
+            entry.summary_rx = Some(std::sync::Mutex::new(summary_rx));
         }
     }
 }
@@ -122,7 +120,7 @@ pub fn start_scenarios(
 /// # Panics
 ///
 /// Panics if a running scenario has no epoch receiver, summary receiver or
-/// join handle.
+/// done receiver.
 #[allow(clippy::needless_pass_by_value)]
 #[tracing::instrument(level = "trace", skip(commands))]
 pub fn check_scenarios(
@@ -215,11 +213,11 @@ pub fn check_scenarios(
                 cleanup_needed = true;
             }
 
-            // Handle join handle
-            if let Some(join_handle) = &entry.join_handle {
-                if join_handle.is_finished() {
+            // Handle done receiver
+            if let Some(done_rx) = &entry.done_rx {
+                if done_rx.try_recv().is_ok() {
                     entry.scenario.set_done();
-                    entry.join_handle = None;
+                    entry.done_rx = None;
                     entry.epoch_rx = None;
                     entry.summary_rx = None;
                     if let Err(e) = entry.save_metadata() {
@@ -228,7 +226,7 @@ pub fn check_scenarios(
                 }
             } else {
                 error!(
-                    "Running scenario {} missing join handle - cleaning up",
+                    "Running scenario {} missing done receiver - cleaning up",
                     entry.scenario.get_id()
                 );
                 cleanup_needed = true;
@@ -237,7 +235,7 @@ pub fn check_scenarios(
             // Clean up corrupted or missing resources
             if cleanup_needed || epoch_poisoned || summary_poisoned {
                 entry.scenario.set_done();
-                entry.join_handle = None;
+                entry.done_rx = None;
                 entry.epoch_rx = None;
                 entry.summary_rx = None;
             }

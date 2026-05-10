@@ -16,30 +16,28 @@ categories = ["science", "simulation", "visualization"]
 [dependencies]
 anyhow = "1.0.102"
 approx = "0.5.1"
-dirs = "6.0.0"
-rfd = "0.17.2"
 bevy = {version = "0.18.1", features = ["bevy_gltf"]}
 bevy_ui_widgets = "0.18.1"
 bevy_editor_cam = "0.8.0"
 bevy_obj = "0.18.2"
-bincode = {version = "2.0.0", features = ["serde"]}
 chrono = {version = "0.4.44", features = ["serde"]}
+crossbeam-channel = "0.5.15"
 gif = "0.14.2"
 image = {version = "0.25.10", features = ["png"]}
+include_dir = "0.7.4"
 itertools = "0.14.0"
 nalgebra = {version = "0.34.2", features = ["serde-serialize"]}
 ndarray = {version = "0.16.1", features = ["approx", "serde"]}
-ndarray-npy = "0.9.1"
 ndarray-stats = "0.6.0"
 num-traits = "0.2.19"
 num-derive = "0.4.2"
-nifti = "0.17.0"
-ocl = "0.19.7"
 physical_constants = "0.5.0"
 plotters = "0.3.7"
+postcard = {version = "1.1.1", features = ["use-std"]}
 rand = "0.10.1"
 rand_chacha = "0.10.0"
 rand_distr = "0.6.0"
+rayon = "1.10.0"
 rubato = "2.0.0"
 serde = {version = "1.0.228", features = ["derive"]}
 scarlet = "1.2.0"
@@ -47,11 +45,29 @@ strum = "0.28.0"
 strum_macros = "0.28.0"
 toml = "1.1.2"
 tracing = {version = "0.1.44", features = ["max_level_info", "release_max_level_info"]}
-tracing-appender = "0.2.5"
 tracing-subscriber = "0.3.23"
 test-log = "0.2.20"
 
+# Native-only dependencies (gated behind "native" feature)
+dirs = {version = "6.0.0", optional = true}
+rfd = {version = "0.17.2", optional = true}
+ocl = {version = "0.19.7", optional = true}
+tracing-appender = {version = "0.2.5", optional = true}
+nifti = {version = "0.17.0", optional = true}
+ndarray-npy = {version = "0.9.1", optional = true}
+
+# WASM-only dependencies
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-rayon = {version = "1.0.90", optional = true}
+tracing-wasm = "0.2.1"
+getrandom = {version = "0.4", features = ["wasm_js"]}
+getrandom02 = {package = "getrandom", version = "0.2", features = ["js"]}
+getrandom03 = {package = "getrandom", version = "0.3", features = ["wasm_js"]}
+
 [features]
+default = ["native"]
+native = ["dep:dirs", "dep:rfd", "dep:ocl", "dep:tracing-appender", "dep:nifti", "dep:ndarray-npy"]
+wasm = ["dep:wasm-bindgen-rayon"]
 legacy_scenario_tests = []
 
 [dev-dependencies]

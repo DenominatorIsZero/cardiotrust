@@ -7,6 +7,7 @@ pub mod shapes;
 use anyhow::{Context, Result};
 use itertools::Itertools;
 use ndarray::Dim;
+#[cfg(feature = "native")]
 use ocl::{Buffer, Queue};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -28,6 +29,7 @@ pub struct APParameters {
     pub activation_time_ms: ActivationTimeMs,
 }
 
+#[cfg(feature = "native")]
 pub struct APParametersGPU {
     pub gains: Buffer<f32>,
     pub output_state_indices: Buffer<i32>,
@@ -104,6 +106,7 @@ impl APParameters {
     /// # Errors
     ///
     /// Returns an error if any of the component save operations fail.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "debug")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         debug!("Saving allpass parameters to npy");
@@ -116,6 +119,7 @@ impl APParameters {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
     pub fn to_gpu(&self, queue: &Queue) -> Result<APParametersGPU> {
@@ -161,6 +165,7 @@ impl APParameters {
         })
     }
 
+    #[cfg(feature = "native")]
     #[allow(clippy::cast_sign_loss)]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, ap_params: &APParametersGPU) -> Result<()> {

@@ -45,7 +45,16 @@ impl SpatialDescription {
         let voxels = if config.handcrafted.is_some() {
             Voxels::from_handcrafted_model_config(config)?
         } else {
-            Voxels::from_mri_model_config(config)?
+            #[cfg(feature = "native")]
+            {
+                Voxels::from_mri_model_config(config)?
+            }
+            #[cfg(not(feature = "native"))]
+            {
+                return Err(anyhow::anyhow!(
+                    "MRI model config requires the 'native' feature"
+                ));
+            }
         };
 
         let sensors = Sensors::from_model_config(&config.common);
@@ -57,6 +66,7 @@ impl SpatialDescription {
     ///
     /// Saves the `heart`, `voxels`, and `sensors` fields to .npy files
     /// in the given `path`.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving spatial description to npy");

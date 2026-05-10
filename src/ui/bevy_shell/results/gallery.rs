@@ -365,49 +365,57 @@ fn preload_existing_results(
     anim_cache: &mut super::ResultAnimCache,
     playback_speed: f32,
 ) {
-    for tab in [
-        GalleryTab::SpatialMaps,
-        GalleryTab::Metrics,
-        GalleryTab::Losses,
-        GalleryTab::TimeFunctions,
-    ] {
-        for image_type in super::card::static_cards_for_tab(tab) {
-            if image_cache.0.contains_key(&image_type) {
-                continue;
+    #[cfg(feature = "native")]
+    {
+        for tab in [
+            GalleryTab::SpatialMaps,
+            GalleryTab::Metrics,
+            GalleryTab::Losses,
+            GalleryTab::TimeFunctions,
+        ] {
+            for image_type in super::card::static_cards_for_tab(tab) {
+                if image_cache.0.contains_key(&image_type) {
+                    continue;
+                }
+                let path = storage.image_path(scenario_id, &image_type.to_string());
+                let Some(path) = path.is_file().then_some(path) else {
+                    continue;
+                };
+                image_cache.0.insert(
+                    image_type,
+                    super::ResultImageState::Loading {
+                        channel: spawn_image_load(path),
+                    },
+                );
             }
-            let path = storage.image_path(scenario_id, &image_type.to_string());
-            let Some(path) = path.is_file().then_some(path) else {
-                continue;
-            };
-            image_cache.0.insert(
-                image_type,
-                super::ResultImageState::Loading {
-                    channel: spawn_image_load(path),
-                },
-            );
-        }
 
-        for anim_type in super::card::anim_cards_for_tab(tab) {
-            if anim_cache.0.contains_key(&anim_type) {
-                continue;
+            for anim_type in super::card::anim_cards_for_tab(tab) {
+                if anim_cache.0.contains_key(&anim_type) {
+                    continue;
+                }
+                let anim_dir = storage.animation_dir(scenario_id, anim_type.dir_name());
+                let Some(frame_paths) = super::generate::detect_existing_frames(&anim_dir) else {
+                    continue;
+                };
+                let channels = frame_paths
+                    .into_iter()
+                    .map(spawn_image_load)
+                    .collect::<Vec<_>>();
+                let loaded = vec![None; channels.len()];
+                let _ = playback_speed;
+                anim_cache
+                    .0
+                    .insert(anim_type, super::AnimState::Loading { channels, loaded });
             }
-            let anim_dir = storage.animation_dir(scenario_id, anim_type.dir_name());
-            let Some(frame_paths) = super::generate::detect_existing_frames(&anim_dir) else {
-                continue;
-            };
-            let channels = frame_paths
-                .into_iter()
-                .map(spawn_image_load)
-                .collect::<Vec<_>>();
-            let loaded = vec![None; channels.len()];
-            let _ = playback_speed;
-            anim_cache
-                .0
-                .insert(anim_type, super::AnimState::Loading { channels, loaded });
         }
+    }
+    #[cfg(not(feature = "native"))]
+    {
+        let _ = (storage, scenario_id, image_cache, anim_cache, playback_speed);
     }
 }
 
+#[cfg(feature = "native")]
 #[tracing::instrument(level = "trace")]
 fn spawn_image_load(path: PathBuf) -> super::AsyncChannel<(Vec<u8>, u32, u32)> {
     let channel = super::new_channel::<(Vec<u8>, u32, u32)>();
@@ -421,6 +429,7 @@ fn spawn_image_load(path: PathBuf) -> super::AsyncChannel<(Vec<u8>, u32, u32)> {
     channel
 }
 
+#[cfg(feature = "native")]
 #[tracing::instrument(level = "trace", skip_all)]
 fn load_image_bytes(path: &std::path::Path) -> anyhow::Result<(Vec<u8>, u32, u32)> {
     let img = image::open(path)
@@ -537,13 +546,23 @@ fn spawn_action_bar(commands: &mut Commands, parent: Entity) {
     commands.entity(parent).add_child(bar);
 
     commands.entity(bar).with_children(|row| {
-        spawn_action_button(row, "Export .npy", ExportNpyButton);
-        row.spawn(Node {
-            flex_grow: 1.0,
-            ..default()
-        });
-        spawn_action_button(row, "Export APNG", ExportApngButton);
-        spawn_action_button(row, "Export MP4", ExportMp4Button);
+        #[cfg(feature = "native")]
+        {
+            spawn_action_button(row, "Export .npy", ExportNpyButton);
+            row.spawn(Node {
+                flex_grow: 1.0,
+                ..default()
+            });
+            spawn_action_button(row, "Export APNG", ExportApngButton);
+            spawn_action_button(row, "Export MP4", ExportMp4Button);
+        }
+        #[cfg(not(feature = "native"))]
+        {
+            row.spawn(Node {
+                flex_grow: 1.0,
+                ..default()
+            });
+        }
         row.spawn((
             ExportStatusLabel,
             Text::new(""),

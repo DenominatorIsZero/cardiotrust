@@ -2,9 +2,8 @@ use std::{
     fs::{self, File},
     io::BufWriter,
     path::Path,
-    sync::mpsc::channel,
-    thread,
 };
+use crossbeam_channel::unbounded;
 
 use ndarray::Array1;
 use ndarray_npy::WriteNpyExt;
@@ -459,7 +458,7 @@ fn create_and_run(
     base_id: &str,
     path: &Path,
 ) -> anyhow::Result<()> {
-    let mut join_handles = Vec::new();
+    let mut done_receivers = Vec::new();
     let mut scenarios = Vec::new();
 
     // Up
@@ -485,13 +484,13 @@ fn create_and_run(
                 )?;
                 if RUN_IN_TESTS {
                     let send_scenario = scenario.clone();
-                    let (epoch_tx, _) = channel();
-                    let (summary_tx, _) = channel();
-                    let handle = thread::spawn(move || {
-                        run_test_scenario(send_scenario, &epoch_tx, &summary_tx)
+                    let (epoch_tx, _) = unbounded();
+                    let (summary_tx, _) = unbounded();
+                    let (done_tx, done_rx) = unbounded();
+                    rayon::spawn(move || {
+                        let _ = run_test_scenario(send_scenario, &epoch_tx, &summary_tx, done_tx);
                     });
-                    println!("handle {handle:?}");
-                    join_handles.push(handle);
+                    done_receivers.push(done_rx);
                 }
                 Ok(scenario)
             };
@@ -522,13 +521,13 @@ fn create_and_run(
                 )?;
                 if RUN_IN_TESTS {
                     let send_scenario = scenario.clone();
-                    let (epoch_tx, _) = channel();
-                    let (summary_tx, _) = channel();
-                    let handle = thread::spawn(move || {
-                        run_test_scenario(send_scenario, &epoch_tx, &summary_tx)
+                    let (epoch_tx, _) = unbounded();
+                    let (summary_tx, _) = unbounded();
+                    let (done_tx, done_rx) = unbounded();
+                    rayon::spawn(move || {
+                        let _ = run_test_scenario(send_scenario, &epoch_tx, &summary_tx, done_tx);
                     });
-                    println!("handle {handle:?}");
-                    join_handles.push(handle);
+                    done_receivers.push(done_rx);
                 }
                 Ok(scenario)
             };
@@ -537,8 +536,8 @@ fn create_and_run(
     }
 
     if RUN_IN_TESTS {
-        for handle in join_handles {
-            handle.join().unwrap()?;
+        for done_rx in done_receivers {
+            done_rx.recv().unwrap();
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());

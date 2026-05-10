@@ -395,7 +395,7 @@ pub(super) fn handle_toolbar_buttons(
             continue;
         }
 
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(feature = "native")]
         {
             if screenshot_dialog_rx.0.is_some() {
                 continue;
@@ -413,7 +413,7 @@ pub(super) fn handle_toolbar_buttons(
             screenshot_dialog_rx.0 = Some(std::sync::Mutex::new(rx));
         }
 
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(not(feature = "native"))]
         {
             info!("Screenshot save dialog is unavailable on wasm32");
         }

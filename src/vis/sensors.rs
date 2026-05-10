@@ -1,7 +1,7 @@
 use bevy::{math::vec3, prelude::*};
 use ndarray::Array2;
 
-use super::{options::VisibilityOptions, sample_tracker::SampleTracker};
+use super::{asset_path, options::VisibilityOptions, sample_tracker::SampleTracker};
 use crate::LoadedScenario;
 
 #[derive(Component)]
@@ -34,7 +34,7 @@ pub(crate) fn spawn_sensors(
     let sensors = &model.spatial_description.sensors;
 
     // note that we have to include the `Scene0` label
-    let mesh: Handle<Mesh> = ass.load("RoundArrow.obj");
+    let mesh: Handle<Mesh> = ass.load(asset_path("RoundArrow.obj"));
 
     let motion_steps = sensors.array_offsets_mm.shape()[0];
 
@@ -169,7 +169,7 @@ pub(crate) fn spawn_sensor_bracket(
         positions[(i, 2)] = sensors.array_center_mm[2] + sensors.array_offsets_mm[(i, 2)];
     }
 
-    let glb_handle = ass.load("sensor_array.glb#Scene0");
+    let glb_handle = ass.load(asset_path("sensor_array.glb#Scene0"));
 
     commands.spawn((
         SceneRoot(glb_handle),

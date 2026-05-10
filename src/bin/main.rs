@@ -1,3 +1,4 @@
+#[cfg(feature = "native")]
 use std::process::Command;
 
 use anyhow::{Context, Result};
@@ -6,7 +7,7 @@ use cardiotrust::{
     scheduler::SchedulerPlugin, ui::UiPlugin, vis::VisPlugin, ActiveLoadedScenario,
     PendingProjectLoad, ProjectState, ScenarioList, SelectedSenario,
 };
-use tracing::info;
+use tracing::{info, warn};
 use tracing_subscriber::{fmt, layer::SubscriberExt};
 
 #[tracing::instrument(level = "info")]
@@ -27,9 +28,61 @@ fn run_app() -> Result<()> {
 
     info!("Starting CardioTRust application. Git hash: {}", git_hash);
 
-    App::new()
-        .insert_resource(ScenarioList::empty())
-        .init_resource::<SelectedSenario>()
+    let mut app = App::new();
+
+    #[cfg(not(feature = "native"))]
+    {
+        // On WASM, load embedded demo projects at startup
+        match ScenarioList::load_from_embedded() {
+            Ok(demo_list) => {
+                app.insert_resource(demo_list);
+            }
+            Err(e) => {
+                warn!("Failed to load embedded demo projects: {e}");
+                app.insert_resource(ScenarioList::empty());
+            }
+        }
+    }
+    #[cfg(feature = "native")]
+    {
+        app.insert_resource(ScenarioList::empty());
+    }
+
+    // ── WASM: embedded asset I/O ───────────────────────────────────────────
+    // Register compile-time-embedded 3D assets before the AssetPlugin runs,
+    // so `AssetPlugin::init_default_source` sees our source and skips the
+    // filesystem-backed default.
+    #[cfg(not(feature = "native"))]
+    {
+        use bevy::asset::io::{
+            memory::{Dir, MemoryAssetReader},
+            AssetSourceBuilder, AssetSourceBuilders, AssetSourceId,
+        };
+        use std::path::Path;
+
+        let dir = Dir::default();
+        macro_rules! embed {
+            ($path:expr) => {
+                dir.insert_asset(
+                    Path::new($path),
+                    include_bytes!(concat!("../../assets/", $path)).as_ref(),
+                )
+            };
+        }
+        embed!("bed.glb");
+        embed!("room.glb");
+        embed!("torso.glb");
+        embed!("RoundArrow.obj");
+        embed!("RoundArrow.mtl");
+        embed!("sensor_array.glb");
+
+        let mut sources = AssetSourceBuilders::default();
+        let builder = AssetSourceBuilder::new(move || Box::new(MemoryAssetReader { root: dir.clone() }));
+        sources.insert(AssetSourceId::Default, builder);
+        app.insert_resource(sources);
+    }
+
+    app.init_resource::<SelectedSenario>()
         .init_resource::<PendingProjectLoad>()
         .init_resource::<ActiveLoadedScenario>()
         .insert_resource(ProjectState {
@@ -57,9 +110,23 @@ fn run_app() -> Result<()> {
 #[tracing::instrument(level = "debug")]
 fn setup_logging() -> Result<()> {
     // Try to set up file logging, fall back to stdout-only if it fails
-    if let Err(e) = try_setup_file_logging() {
-        eprintln!("Warning: Could not set up file logging ({e}), using stdout only");
-        setup_stdout_logging()?;
+    #[cfg(feature = "native")]
+    {
+        if let Err(e) = try_setup_file_logging() {
+            eprintln!("Warning: Could not set up file logging ({e}), using stdout only");
+            setup_stdout_logging()?;
+        }
+    }
+    #[cfg(not(feature = "native"))]
+    {
+        #[cfg(target_arch = "wasm32")]
+        {
+            tracing_wasm::set_as_global_default();
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            setup_stdout_logging()?;
+        }
     }
 
     Ok(())
@@ -80,6 +147,7 @@ fn setup_stdout_logging() -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "native")]
 #[tracing::instrument(level = "debug")]
 fn try_setup_file_logging() -> Result<()> {
     let file_appender = tracing_appender::rolling::daily("./logs", "CardioTRust.log");
@@ -109,6 +177,7 @@ fn try_setup_file_logging() -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "native")]
 #[tracing::instrument(level = "debug")]
 fn get_git_hash() -> String {
     Command::new("git")
@@ -124,4 +193,10 @@ fn get_git_hash() -> String {
         })
         .map(|hash| hash.trim().to_string())
         .unwrap_or_else(|| "unknown".to_string())
+}
+
+#[cfg(not(feature = "native"))]
+#[tracing::instrument(level = "debug")]
+fn get_git_hash() -> String {
+    option_env!("GIT_HASH").unwrap_or("unknown").to_string()
 }

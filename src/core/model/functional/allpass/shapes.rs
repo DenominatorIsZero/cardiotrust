@@ -7,7 +7,9 @@ use std::{
 use anyhow::{Context, Result};
 use approx::assert_relative_eq;
 use ndarray::{Array2, Array3, Dim};
+#[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
+#[cfg(feature = "native")]
 use ocl::Buffer;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -36,6 +38,7 @@ impl ActivationTimeMs {
     /// # Errors
     ///
     /// Returns an error if the directory cannot be created or the file cannot be written.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving activation time to npy");
@@ -104,6 +107,7 @@ impl Gains {
     ///
     /// Returns an error if the directory cannot be created or the file cannot be written.
     #[allow(dead_code)]
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path, name: &str) -> Result<()> {
         trace!("Saving gains to npy");
@@ -122,6 +126,7 @@ impl Gains {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<ocl::Buffer<f32>> {
         let buffer = Buffer::builder()
@@ -136,6 +141,7 @@ impl Gains {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, buffer: &Buffer<f32>) -> Result<()> {
         buffer
@@ -186,6 +192,7 @@ impl Indices {
     /// # Errors
     ///
     /// Returns an error if the directory cannot be created or the file cannot be written.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving indices gains to npy");
@@ -259,6 +266,7 @@ impl Coefs {
     /// # Errors
     ///
     /// Returns an error if the directory cannot be created or the file cannot be written.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving delays to npy");
@@ -277,6 +285,7 @@ impl Coefs {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
         let buffer = Buffer::builder()
@@ -291,6 +300,7 @@ impl Coefs {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, coefs: &Buffer<f32>) -> Result<()> {
         coefs
@@ -339,6 +349,7 @@ impl UnitDelays {
     /// # Errors
     ///
     /// Returns an error if the directory cannot be created or the file cannot be written.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving delays to npy");

@@ -7,6 +7,7 @@ const DEFAULT_FPS: u32 = 10;
 const _DEFAULT_TIME_PER_FRAME_MS: u32 = 500;
 
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone)]
 pub struct GifBundle {
     pub data: Vec<Vec<u8>>,
     pub width: u32,

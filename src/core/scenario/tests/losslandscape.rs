@@ -2,9 +2,8 @@ use std::{
     fs::{self, File},
     io::BufWriter,
     path::Path,
-    sync::mpsc::channel,
-    thread,
 };
+use crossbeam_channel::unbounded;
 
 use anyhow::{Context, Result};
 use ndarray::Array1;
@@ -188,7 +187,7 @@ fn create_and_run(
     let initial_velocity = voxel_size_mm / 1000.0 / initial_delay_s;
 
     let mut scenarios = Vec::new();
-    let mut join_handles = Vec::new();
+    let mut done_receivers = Vec::new();
 
     for i in 0..support_points {
         let gt_delay = (i as f32).mul_add(step, min_delay);
@@ -214,22 +213,25 @@ fn create_and_run(
             )?;
             if RUN_IN_TESTS {
                 let send_scenario = scenario.clone();
-                let (epoch_tx, _) = channel();
-                let (summary_tx, _) = channel();
-                let handle =
-                    thread::spawn(move || run_test_scenario(send_scenario, &epoch_tx, &summary_tx));
-                println!("handle {handle:?}");
-                join_handles.push(handle);
+                let (epoch_tx, _) = unbounded();
+                let (summary_tx, _) = unbounded();
+                let (done_tx, done_rx) = unbounded();
+                rayon::spawn(move || {
+                    if let Err(e) = run_test_scenario(send_scenario, &epoch_tx, &summary_tx, done_tx) {
+                        tracing::error!("Scenario failed: {:?}", e);
+                    }
+                });
+                done_receivers.push(done_rx);
             }
             scenarios.push(scenario);
         }
     }
 
     if RUN_IN_TESTS {
-        for handle in join_handles {
-            handle
-                .join()
-                .map_err(|e| anyhow::anyhow!("Thread panicked: {e:?}"))??;
+        for done_rx in done_receivers {
+            done_rx
+                .recv()
+                .map_err(|_| anyhow::anyhow!("Thread panicked"))?;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());

@@ -41,15 +41,31 @@ pub fn spawn_algorithm_tab(
     );
 
     // Algorithm type combo
+    #[cfg(feature = "native")]
     let algo_options = vec![
         "ModelBased".to_string(),
         "ModelBasedGPU".to_string(),
         "PseudoInverse".to_string(),
     ];
+    #[cfg(not(feature = "native"))]
+    let algo_options = vec![
+        "ModelBased".to_string(),
+        "PseudoInverse".to_string(),
+    ];
     let algo_idx = match algo.algorithm_type {
         AlgorithmType::ModelBased => 0,
+        #[cfg(feature = "native")]
         AlgorithmType::ModelBasedGPU => 1,
-        AlgorithmType::PseudoInverse => 2,
+        AlgorithmType::PseudoInverse => {
+            #[cfg(feature = "native")]
+            {
+                2
+            }
+            #[cfg(not(feature = "native"))]
+            {
+                1
+            }
+        }
     };
     let (slot, _) = spawn_param_row_into(
         commands,

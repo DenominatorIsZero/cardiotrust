@@ -39,7 +39,11 @@ use bevy::prelude::*;
 use strum_macros::{Display, EnumIter};
 
 pub use self::gallery::{despawn_results_view, spawn_results_view};
-use crate::{ui::UiState, ActiveLoadedScenario};
+use crate::{
+    ui::UiState,
+    vis::plotting::{GifBundle, PngBundle},
+    ActiveLoadedScenario,
+};
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
@@ -151,9 +155,9 @@ pub(crate) fn new_channel<T>() -> AsyncChannel<T> {
 pub enum ResultImageState {
     /// Not yet requested.
     Pending,
-    /// Background thread is generating the PNG file.
-    Generating { channel: AsyncChannel<PathBuf> },
-    /// Background thread is loading bytes from disk.
+    /// Background thread is generating the plot in memory.
+    Generating { channel: AsyncChannel<PngBundle> },
+    /// Loading pre-existing cached image bytes from disk (native only).
     Loading {
         channel: AsyncChannel<(Vec<u8>, u32, u32)>,
     },
@@ -168,8 +172,9 @@ pub enum ResultImageState {
 pub enum AnimState {
     Pending,
     Generating {
-        channel: AsyncChannel<PathBuf>,
+        channel: AsyncChannel<GifBundle>,
     },
+    /// Loading pre-existing cached frames from disk (native only).
     Loading {
         channels: Vec<AsyncChannel<(Vec<u8>, u32, u32)>>,
         loaded: Vec<Option<Handle<Image>>>,

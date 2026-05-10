@@ -134,7 +134,7 @@ fn loss_decreases_and_plot() -> anyhow::Result<()> {
     let path = Path::new(COMMON_PATH).join("default").join("loss.png");
     standard_y_plot(
         &results.metrics.loss,
-        Path::new(path.as_path()),
+        Some(&path),
         "Loss",
         "Loss",
         "Step",
@@ -146,7 +146,7 @@ fn loss_decreases_and_plot() -> anyhow::Result<()> {
         .join("loss_epoch.png");
     standard_y_plot(
         &results.metrics.loss_batch,
-        Path::new(path.as_path()),
+        Some(&path),
         "Sum Loss Per Epoch",
         "Loss",
         "Epoch",

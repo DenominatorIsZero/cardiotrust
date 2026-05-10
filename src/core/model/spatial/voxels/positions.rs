@@ -6,10 +6,13 @@ use std::{
 
 use anyhow::Context;
 use ndarray::{arr1, s, Array4, Dim};
+#[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
 use serde::{Deserialize, Serialize};
 
-use super::{super::nifti::MriData, VoxelType};
+use super::VoxelType;
+#[cfg(feature = "native")]
+use super::super::nifti::MriData;
 use crate::core::config::model::Model;
 
 #[allow(clippy::unsafe_derive_deserialize)]
@@ -72,6 +75,7 @@ impl VoxelPositions {
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss
     )]
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_mri_model_config(config: &Model, mri_data: &MriData) -> Self {
         tracing::trace!("Creating voxel positions from mri model config");
@@ -151,6 +155,7 @@ impl VoxelPositions {
     /// The position values are saved as a 4D float32 array with shape
     /// (x, y, z, 3), where the last dimension contains the x, y, z
     /// coordinates for each voxel position.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         tracing::trace!("Saving voxel positions to npy files");

@@ -2,6 +2,7 @@ use std::ops::{Deref, DerefMut, Sub};
 
 use anyhow::{Context, Result};
 use ndarray::Array1;
+#[cfg(feature = "native")]
 use ocl::Buffer;
 use serde::{Deserialize, Serialize};
 use tracing::trace;
@@ -27,6 +28,7 @@ impl MappedResiduals {
         Self(Array1::zeros(number_of_states))
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(super) fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
         let buffer = Buffer::builder()
@@ -41,6 +43,7 @@ impl MappedResiduals {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(super) fn update_from_gpu(&mut self, mapped_residuals: &Buffer<f32>) -> Result<()> {
         mapped_residuals
@@ -148,6 +151,7 @@ impl MaximumRegularization {
         Self(Array1::zeros(number_of_states))
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(super) fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
         let buffer = Buffer::builder()
@@ -162,6 +166,7 @@ impl MaximumRegularization {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(super) fn update_from_gpu(&mut self, maximum_regularization: &Buffer<f32>) -> Result<()> {
         maximum_regularization

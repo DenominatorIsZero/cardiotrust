@@ -7,7 +7,9 @@ use std::{
 use anyhow::{Context, Result};
 use approx::RelativeEq;
 use ndarray::Array1;
+#[cfg(feature = "native")]
 use ndarray_npy::{read_npy, WriteNpyExt};
+#[cfg(feature = "native")]
 use ocl::Buffer;
 use rubato::{audioadapter_buffers::owned::InterleavedOwned, Async, FixedAsync, Resampler, SincInterpolationParameters};
 use serde::{Deserialize, Serialize};
@@ -69,6 +71,7 @@ impl ControlMatrix {
     /// # Errors
     ///
     /// Returns an error if the directory cannot be created or the file cannot be written.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving control matrix to npy");
@@ -94,6 +97,7 @@ impl ControlMatrix {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
         let buffer = Buffer::builder()
@@ -108,6 +112,7 @@ impl ControlMatrix {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, control_matrix: &Buffer<f32>) -> Result<()> {
         control_matrix
@@ -165,6 +170,7 @@ impl ControlFunction {
     ///
     /// Returns an error if the control function input file cannot be read or
     /// if resampling operations fail.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "debug")]
     #[allow(
         clippy::cast_possible_truncation,
@@ -271,6 +277,7 @@ impl ControlFunction {
     /// # Errors
     ///
     /// Returns an error if the directory cannot be created or the file cannot be written.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving control function values to npy");
@@ -299,6 +306,7 @@ impl ControlFunction {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
         let buffer = ocl::Buffer::builder()
@@ -313,6 +321,7 @@ impl ControlFunction {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, control_function_values: &Buffer<f32>) -> Result<()> {
         control_function_values
@@ -418,7 +427,7 @@ mod test {
         standard_time_plot(
             &control_function,
             sample_rate_hz,
-            path.as_path(),
+            Some(path.as_path()),
             "Control Function",
             "j [A/mm^2]",
         )
@@ -448,7 +457,7 @@ mod test {
         standard_time_plot(
             &control_function,
             sample_rate_hz,
-            path.as_path(),
+            Some(path.as_path()),
             "Control Function",
             "j [A/mm^2]",
         )
@@ -478,7 +487,7 @@ mod test {
         standard_time_plot(
             &control_function,
             sample_rate_hz,
-            path.as_path(),
+            Some(path.as_path()),
             "Control Function",
             "j [A/mm^2]",
         )

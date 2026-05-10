@@ -6,8 +6,10 @@ use std::{
 
 use anyhow::{Context, Result};
 use ndarray::Array1;
+#[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
 use ndarray_stats::QuantileExt;
+#[cfg(feature = "native")]
 use ocl::Buffer;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -36,6 +38,7 @@ pub struct Metrics {
     pub recall_over_threshold: Array1<f32>,
 }
 
+#[cfg(feature = "native")]
 pub struct MetricsGPU {
     pub loss: Buffer<f32>,
     pub loss_batch: Buffer<f32>,
@@ -80,6 +83,7 @@ impl Metrics {
     /// # Errors
     ///
     /// Returns an error if directory creation fails or any file I/O operation fails.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving metrics to npy");
@@ -131,6 +135,7 @@ impl Metrics {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<MetricsGPU> {
         Ok(MetricsGPU {
@@ -145,6 +150,7 @@ impl Metrics {
         })
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, metrics: &MetricsGPU) -> Result<()> {
         self.loss.update_from_gpu(&metrics.loss)?;
@@ -467,6 +473,7 @@ impl SampleWiseMetric {
     /// # Errors
     ///
     /// Returns an error if directory creation fails or file I/O operation fails.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     fn save_npy(&self, path: &std::path::Path, name: &str) -> Result<()> {
         trace!("Saving ArrayMetricsSample");
@@ -485,6 +492,7 @@ impl SampleWiseMetric {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
         let buffer = Buffer::builder()
@@ -499,6 +507,7 @@ impl SampleWiseMetric {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     fn update_from_gpu(&mut self, loss: &Buffer<f32>) -> Result<()> {
         loss.read(
@@ -546,6 +555,7 @@ impl BatchWiseMetric {
     /// # Errors
     ///
     /// Returns an error if directory creation fails or file I/O operation fails.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     fn save_npy(&self, path: &std::path::Path, name: &str) -> Result<()> {
         trace!("Saving ArrayMetricsEpoch to npy");
@@ -564,6 +574,7 @@ impl BatchWiseMetric {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     fn to_gpu(&self, queue: &ocl::Queue) -> Result<Buffer<f32>> {
         let buffer = Buffer::builder()
@@ -578,6 +589,7 @@ impl BatchWiseMetric {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     fn update_from_gpu(&mut self, loss_batch: &Buffer<f32>) -> Result<()> {
         loss_batch

@@ -6,6 +6,7 @@ use std::{
 
 use anyhow::Context;
 use ndarray::Array3;
+#[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
 use serde::{Deserialize, Serialize};
 
@@ -66,6 +67,7 @@ impl VoxelNumbers {
     /// Saves the voxel numbers to a .npy file at the given path.
     /// The voxel numbers are converted to i32, with -1 representing None.
     /// Uses numpy's .npy format for efficient storage and loading.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         tracing::trace!("Saving voxel numbers to npy files");

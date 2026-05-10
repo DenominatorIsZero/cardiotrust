@@ -1,6 +1,7 @@
 pub mod prediction;
 
 use anyhow::{Context, Result};
+#[cfg(feature = "native")]
 use ocl::Buffer;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
@@ -35,6 +36,7 @@ pub struct Estimations {
     pub average_delays: AverageDelays,
 }
 
+#[cfg(feature = "native")]
 pub struct EstimationsGPU {
     pub ap_outputs_now: Buffer<f32>,
     pub ap_outputs_last: Buffer<f32>,
@@ -87,6 +89,7 @@ impl Estimations {
 
     /// Saves the system states and measurements to .npy files at the given path.
     /// The filenames will be automatically generated based on the struct field names.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving estimations to npy files");
@@ -95,6 +98,7 @@ impl Estimations {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<EstimationsGPU> {
         Ok(EstimationsGPU {
@@ -124,6 +128,7 @@ impl Estimations {
         })
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, estimations: &EstimationsGPU) -> Result<()> {
         self.ap_outputs_now

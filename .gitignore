@@ -48,3 +48,7 @@ logs/
 # Development artifacts
 .sass-cache/
 .parcel-cache/
+
+# WASM demo project data (binaries generated locally)
+/wasm-projects/*/
+!/wasm-projects/README.md

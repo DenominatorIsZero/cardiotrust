@@ -19,6 +19,8 @@ use super::{
     project::{is_project_switch_blocked, PROJECT_SWITCH_BLOCKED_MESSAGE},
 };
 use crate::{ui::colors, PendingProjectLoad, ProjectState, ScenarioList};
+#[cfg(not(feature = "native"))]
+use crate::{SelectedSenario, ui::UiState};
 
 // ── Folder-dialog channel resource ───────────────────────────────────────────
 
@@ -45,6 +47,13 @@ pub struct OpenProjectButton;
 #[derive(Component, Debug, Clone)]
 pub struct RecentProjectEntry {
     pub path: PathBuf,
+}
+
+/// Attached to each WASM demo-project card; holds the index in the embedded
+/// [`ScenarioList`].
+#[derive(Component, Debug, Clone, Copy)]
+pub struct DemoProjectEntry {
+    pub index: usize,
 }
 
 #[derive(Component, Debug)]
@@ -128,9 +137,9 @@ pub fn spawn_home_view(
                     // Recent Projects panel
                     spawn_recent_projects_panel(col, &project_state.recent, switching_blocked);
 
-                    // WASM-only demo placeholder
-                    #[cfg(target_arch = "wasm32")]
-                    spawn_demo_projects_panel(col);
+                    // WASM-only demo panel
+                    #[cfg(not(feature = "native"))]
+                    spawn_demo_projects_panel(col, &scenario_list);
                 });
         })
         .id();
@@ -284,9 +293,11 @@ fn spawn_recent_projects_panel(
 }
 
 /// WASM-only: spawns three placeholder "Demo Project" cards.
-#[cfg(target_arch = "wasm32")]
+#[cfg(not(feature = "native"))]
 #[tracing::instrument(skip_all)]
-fn spawn_demo_projects_panel(parent: &mut ChildSpawnerCommands) {
+#[cfg(not(feature = "native"))]
+#[tracing::instrument(skip_all)]
+fn spawn_demo_projects_panel(parent: &mut ChildSpawnerCommands, scenario_list: &ScenarioList) {
     parent
         .spawn((
             Node {
@@ -308,22 +319,38 @@ fn spawn_demo_projects_panel(parent: &mut ChildSpawnerCommands) {
                 TextColor(colors::FG0),
             ));
 
-            for label in ["Demo Project 1", "Demo Project 2", "Demo Project 3"] {
+            for (index, entry) in scenario_list.entries.iter().enumerate() {
+                let scenario = &entry.scenario;
+                let label = scenario.comment.clone();
+                let status = scenario.get_status_str();
+
                 panel
                     .spawn((
+                        Button,
+                        DemoProjectEntry { index },
                         Node {
                             padding: UiRect::axes(Val::Px(12.0), Val::Px(8.0)),
-                            align_items: AlignItems::Center,
+                            flex_direction: FlexDirection::Column,
+                            align_items: AlignItems::FlexStart,
                             border_radius: BorderRadius::all(Val::Px(4.0)),
+                            row_gap: Val::Px(2.0),
                             ..default()
                         },
                         BackgroundColor(colors::BG3),
                     ))
                     .with_children(|card| {
                         card.spawn((
-                            Text::new(format!("{label} (Coming Soon)")),
+                            Text::new(label),
                             TextFont {
-                                font_size: 13.0,
+                                font_size: 14.0,
+                                ..default()
+                            },
+                            TextColor(colors::FG0),
+                        ));
+                        card.spawn((
+                            Text::new(status),
+                            TextFont {
+                                font_size: 11.0,
                                 ..default()
                             },
                             TextColor(colors::GREY1),
@@ -359,7 +386,7 @@ pub fn handle_open_project_button(
 ) {
     for (interaction, disabled) in &buttons {
         if disabled.is_none() && *interaction == Interaction::Pressed && dialog_rx.0.is_none() {
-            #[cfg(not(target_arch = "wasm32"))]
+            #[cfg(feature = "native")]
             {
                 let (tx, rx) = mpsc::channel();
                 std::thread::spawn(move || {
@@ -430,6 +457,28 @@ pub fn handle_recent_project_click(
                 warn!("Failed to save recent projects: {}", e);
             }
             pending_project_load.0 = Some(path);
+        }
+    }
+}
+
+/// Handles clicks on WASM demo-project cards.
+///
+/// Sets the selected scenario index to the clicked demo and transitions to
+/// the Explorer view.
+#[cfg(not(feature = "native"))]
+#[tracing::instrument(skip_all)]
+pub fn handle_demo_project_click(
+    entries: Query<
+        (&DemoProjectEntry, &Interaction),
+        Changed<Interaction>,
+    >,
+    mut selected_scenario: ResMut<SelectedSenario>,
+    mut next_state: ResMut<NextState<UiState>>,
+) {
+    for (entry, interaction) in &entries {
+        if *interaction == Interaction::Pressed {
+            selected_scenario.index = Some(entry.index);
+            next_state.set(UiState::Explorer);
         }
     }
 }

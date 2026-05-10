@@ -60,6 +60,7 @@ impl Data {
     /// # Errors
     ///
     /// Returns an error if any file I/O operation fails.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving data to npy");

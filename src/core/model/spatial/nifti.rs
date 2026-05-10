@@ -1,3 +1,5 @@
+#![cfg(feature = "native")]
+
 use std::path::Path;
 
 use anyhow::{anyhow, Context};
@@ -114,7 +116,7 @@ pub(crate) fn determine_voxel_type(
 #[cfg(test)]
 mod tests {
 
-    use std::path::Path;
+use std::path::Path;
 
     use ndarray::Axis;
 

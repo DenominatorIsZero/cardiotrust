@@ -254,7 +254,7 @@ fn test_standard_y_plot_basic() -> Result<()> {
 
     let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 
-    standard_y_plot(&y, files[0].as_path(), "Test Plot", "Y", "X")
+    standard_y_plot(&y, Some(files[0].as_path()), "Test Plot", "Y", "X")
         .context("Failed to generate standard y plot")?;
 
     assert!(files[0].is_file());
@@ -270,7 +270,7 @@ fn test_standard_y_plot_empty() -> Result<()> {
 
     let y = Array1::from_vec(vec![]);
 
-    let result = standard_y_plot(&y, files[0].as_path(), "Test Plot", "Y", "X");
+    let result = standard_y_plot(&y, Some(files[0].as_path()), "Test Plot", "Y", "X");
 
     assert!(result.is_err());
     assert!(!files[0].is_file());
@@ -287,7 +287,7 @@ fn test_standard_y_plot_invalid_path() -> Result<()> {
 
     let y = Array1::from_vec(vec![1.0, 2.0, 3.0]);
 
-    let result = standard_y_plot(&y, files[0].as_path(), "Test Plot", "Y", "X");
+    let result = standard_y_plot(&y, Some(files[0].as_path()), "Test Plot", "Y", "X");
 
     assert!(result.is_err());
     assert!(!files[0].exists());
@@ -309,7 +309,7 @@ fn test_standard_time_plot_normal() -> Result<()> {
     let title = "Test Plot";
     let y_label = "Y Label";
 
-    standard_time_plot(&y, sample_rate_hz, files[0].as_path(), title, y_label)
+    standard_time_plot(&y, sample_rate_hz, Some(files[0].as_path()), title, y_label)
         .context("Failed to generate standard time plot")?;
 
     assert!(files[0].is_file());
@@ -331,7 +331,7 @@ fn test_standard_time_plot_zero_sample_rate() -> Result<()> {
     let title = "Test Plot";
     let y_label = "Y Label";
 
-    let result = standard_time_plot(&y, sample_rate_hz, files[0].as_path(), title, y_label);
+    let result = standard_time_plot(&y, sample_rate_hz, Some(files[0].as_path()), title, y_label);
 
     assert!(result.is_err());
     assert!(!files[0].is_file());
@@ -352,7 +352,7 @@ fn test_standard_time_plot_negative_sample_rate() -> Result<()> {
     let title = "Test Plot";
     let y_label = "Y Label";
 
-    let result = standard_time_plot(&y, sample_rate_hz, files[0].as_path(), title, y_label);
+    let result = standard_time_plot(&y, sample_rate_hz, Some(files[0].as_path()), title, y_label);
 
     assert!(result.is_err());
     assert!(!files[0].is_file());
@@ -379,7 +379,7 @@ fn test_xyz_state_plot_basic() -> Result<()> {
     let title = "Test Plot";
     let sample_rate_hz = 10.0;
 
-    plot_state_xyz(&system_states, 1, sample_rate_hz, files[0].as_path(), title)
+    plot_state_xyz(&system_states, 1, sample_rate_hz, Some(files[0].as_path()), title)
         .context("Failed to create XYZ state plot")?;
 
     assert!(files[0].is_file());
@@ -398,7 +398,7 @@ fn test_xyz_state_plot_invalid_index() -> Result<()> {
     let title = "Test Plot";
     let sample_rate_hz = 10.0;
 
-    let results = plot_state_xyz(&system_states, 5, sample_rate_hz, files[0].as_path(), title);
+    let results = plot_state_xyz(&system_states, 5, sample_rate_hz, Some(files[0].as_path()), title);
 
     assert!(results.is_err());
     assert!(!files[0].is_file());

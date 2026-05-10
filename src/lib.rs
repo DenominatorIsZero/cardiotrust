@@ -20,12 +20,12 @@ pub mod vis;
 use std::{
     fs::{self, create_dir_all},
     path::{Path, PathBuf},
-    sync::{mpsc::Receiver, Mutex},
-    thread::JoinHandle,
+    sync::Mutex,
 };
 
 use anyhow::{Context, Result};
 use bevy::prelude::*;
+use crossbeam_channel::Receiver;
 use tracing::{info, warn};
 
 use crate::core::scenario::{summary::Summary, Scenario, ScenarioPayload, ScenarioStorage};
@@ -64,7 +64,7 @@ impl LoadedScenario {
 pub struct ScenarioBundle {
     pub scenario: Scenario,
     pub storage: ScenarioStorage,
-    pub join_handle: Option<JoinHandle<()>>,
+    pub done_rx: Option<crossbeam_channel::Receiver<()>>,
     pub epoch_rx: Option<Mutex<Receiver<usize>>>,
     pub summary_rx: Option<Mutex<Receiver<Summary>>>,
 }
@@ -76,7 +76,7 @@ impl ScenarioBundle {
         Self {
             scenario,
             storage,
-            join_handle: None,
+            done_rx: None,
             epoch_rx: None,
             summary_rx: None,
         }
@@ -103,6 +103,7 @@ impl ScenarioBundle {
         self.storage.save_payload(self.scenario.get_id(), payload)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "debug", skip(self, payload))]
     pub fn save_npy(&self, payload: &ScenarioPayload) -> Result<()> {
         self.storage.save_npy(self.scenario.get_id(), payload)
@@ -193,16 +194,84 @@ impl ScenarioList {
         Ok(scenario_list)
     }
 
-    /// Loads existing scenario results from the `./results` directory into a
-    /// [`ScenarioList`], sorting them by scenario ID. Creates the `./results`
-    /// directory if it does not exist.
+    /// Loads existing scenario results from embedded WASM demo projects.
     ///
-    /// # Errors
-    ///
-    /// Returns an error if the results directory cannot be created or read.
+    /// Uses `include_dir!` to read `wasm-projects/` at compile time and
+    /// populates a `MemoryStorage`-backed `ScenarioList`.
+    #[cfg(not(feature = "native"))]
     #[tracing::instrument(level = "info")]
-    pub fn load() -> Result<Self> {
-        Self::load_from(Path::new("./results"))
+    pub fn load_from_embedded() -> Result<Self> {
+        info!("Loading demo scenarios from embedded wasm-projects");
+        let storage = ScenarioStorage::new_memory();
+        let mut scenario_list = Self {
+            entries: Vec::new(),
+            project_root: None,
+        };
+
+        static EMBEDDED_DIR: include_dir::Dir<'_> =
+            include_dir::include_dir!("$CARGO_MANIFEST_DIR/wasm-projects");
+
+        for entry in EMBEDDED_DIR.dirs() {
+            let scenario_id = entry
+                .path()
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or_default();
+
+            if scenario_id.is_empty() || scenario_id.starts_with('.') {
+                continue;
+            }
+
+            let toml_bytes = entry
+                .get_file("scenario.toml")
+                .map(|f| f.contents())
+                .with_context(|| {
+                    format!("Missing scenario.toml for embedded project: {scenario_id}")
+                })?;
+            let toml_str = std::str::from_utf8(toml_bytes)
+                .context("scenario.toml is not valid UTF-8")?;
+            let scenario: Scenario = toml::from_str(toml_str)
+                .with_context(|| {
+                    format!("Failed to parse scenario metadata: {scenario_id}")
+                })?;
+
+            let data_bytes = entry
+                .get_file("data.bin")
+                .map(|f| f.contents())
+                .with_context(|| {
+                    format!("Missing data.bin for embedded project: {scenario_id}")
+                })?;
+            storage.put_memory_bytes(
+                ScenarioStorage::memory_key(scenario_id, "data.bin"),
+                data_bytes.to_vec(),
+            )?;
+
+            if let Some(results_file) = entry.get_file("results.bin") {
+                storage.put_memory_bytes(
+                    ScenarioStorage::memory_key(scenario_id, "results.bin"),
+                    results_file.contents().to_vec(),
+                )?;
+            }
+
+            storage.put_memory_bytes(
+                ScenarioStorage::memory_key(scenario_id, "scenario.toml"),
+                toml_bytes.to_vec(),
+            )?;
+
+            scenario_list
+                .entries
+                .push(ScenarioBundle::new(scenario, storage.clone()));
+        }
+
+        scenario_list
+            .entries
+            .sort_by_key(|entry| entry.scenario.get_id().clone());
+
+        info!(
+            "Loaded {} embedded demo scenarios",
+            scenario_list.entries.len()
+        );
+        Ok(scenario_list)
     }
 }
 
@@ -243,7 +312,7 @@ impl ProjectState {
     ///
     /// Returns an error if the config directory cannot be created or the file
     /// cannot be written.
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(feature = "native")]
     #[tracing::instrument(skip(self))]
     pub fn save_recent(&self) -> Result<()> {
         let config_dir = dirs_config_path()?;
@@ -262,7 +331,7 @@ impl ProjectState {
         Ok(())
     }
 
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(not(feature = "native"))]
     #[tracing::instrument(skip(self))]
     pub fn save_recent(&self) -> Result<()> {
         Ok(())
@@ -274,7 +343,7 @@ impl ProjectState {
     /// Returns an empty `Vec` on any error (missing file, parse failure, …).
     ///
     /// On WASM targets this always returns an empty `Vec`.
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(feature = "native")]
     #[tracing::instrument]
     pub fn load_recent() -> Vec<PathBuf> {
         (|| -> Result<Vec<PathBuf>> {
@@ -289,7 +358,7 @@ impl ProjectState {
         .unwrap_or_default()
     }
 
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(not(feature = "native"))]
     #[tracing::instrument]
     pub fn load_recent() -> Vec<PathBuf> {
         Vec::new()
@@ -302,7 +371,7 @@ impl ProjectState {
 /// # Errors
 ///
 /// Returns an error if the home config directory cannot be determined.
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "native")]
 #[tracing::instrument]
 fn dirs_config_path() -> Result<PathBuf> {
     let base = dirs::config_dir().context("Could not determine config directory")?;
@@ -310,7 +379,7 @@ fn dirs_config_path() -> Result<PathBuf> {
 }
 
 /// TOML serialization helper for the recent-projects config file.
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "native")]
 #[derive(serde::Serialize, serde::Deserialize)]
 struct RecentProjectsToml {
     recent: Vec<String>,

@@ -17,7 +17,7 @@ pub(crate) fn activation_time_plot(
     activation_time_ms: &ActivationTimeMs,
     voxel_positions_mm: &VoxelPositions,
     voxel_size_mm: f32,
-    path: &Path,
+    path: Option<&Path>,
     slice: Option<PlotSlice>,
 ) -> Result<PngBundle> {
     trace!("Generating activation time plot");
@@ -80,7 +80,7 @@ pub(crate) fn activation_time_plot(
         None,
         step,
         offset,
-        Some(path),
+        path,
         Some(title.as_str()),
         y_label,
         x_label,
@@ -126,7 +126,7 @@ mod test {
                 .voxels
                 .positions_mm,
             data.simulation.model.spatial_description.voxels.size_mm,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             Some(PlotSlice::Z(0)),
         )?;
 
@@ -160,7 +160,7 @@ mod test {
                 .voxels
                 .positions_mm,
             data.simulation.model.spatial_description.voxels.size_mm,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             Some(PlotSlice::X(10)),
         )?;
 
@@ -194,7 +194,7 @@ mod test {
                 .voxels
                 .positions_mm,
             data.simulation.model.spatial_description.voxels.size_mm,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             Some(PlotSlice::Y(5)),
         )?;
 

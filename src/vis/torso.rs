@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::prelude::*;
 
-use super::options::VisibilityOptions;
+use super::{asset_path, options::VisibilityOptions};
 
 #[derive(Component)]
 pub struct Torso;
@@ -19,7 +19,7 @@ pub(crate) fn spawn_torso(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     debug!("Running system to spawn torso.");
-    let my_mesh: Handle<Mesh> = ass.load("torso.glb#Mesh0/Primitive0");
+    let my_mesh: Handle<Mesh> = ass.load(asset_path("torso.glb#Mesh0/Primitive0"));
 
     // to position our 3d model, simply use the Transform
     // in the SceneBundlex

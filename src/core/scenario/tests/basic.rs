@@ -86,13 +86,10 @@ fn payload_loading_requires_both_parts() -> anyhow::Result<()> {
     };
 
     fs::create_dir_all(storage.scenario_dir(bundle.scenario.get_id()))?;
-    let mut data_file = std::fs::File::create(storage.data_path(bundle.scenario.get_id()))?;
-    bincode::serde::encode_into_std_write(
-        &payload.data,
-        &mut data_file,
-        bincode::config::standard(),
-    )
-    .context("Failed to serialize test data payload")?;
+    let serialized = postcard::to_stdvec(&payload.data)
+        .context("Failed to serialize test data payload")?;
+    std::fs::write(storage.data_path(bundle.scenario.get_id()), &serialized)
+        .context("Failed to write test data file")?;
 
     let err = bundle
         .load_payload()

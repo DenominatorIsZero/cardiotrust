@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::options::VisibilityOptions;
+use super::{asset_path, options::VisibilityOptions};
 
 #[derive(Component)]
 pub struct Room;
@@ -8,7 +8,7 @@ pub struct Room;
 #[allow(clippy::needless_pass_by_value)]
 #[tracing::instrument(skip(commands, ass), level = "debug")]
 pub(crate) fn spawn_room(mut commands: Commands, ass: Res<AssetServer>) {
-    let glb_handle = ass.load("bed.glb#Scene0");
+    let glb_handle = ass.load(asset_path("bed.glb#Scene0"));
 
     commands.spawn((
         SceneRoot(glb_handle),
@@ -16,7 +16,7 @@ pub(crate) fn spawn_room(mut commands: Commands, ass: Res<AssetServer>) {
         Room,
     ));
 
-    let glb_handle = ass.load("room.glb#Scene0");
+    let glb_handle = ass.load(asset_path("room.glb#Scene0"));
 
     commands.spawn((
         SceneRoot(glb_handle),

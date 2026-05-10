@@ -11,7 +11,11 @@ use super::{
     },
     AnimState, ResultAnimCache, ResultImageCache, ResultImageState,
 };
-use crate::{ui::colors, ActiveLoadedScenario};
+use crate::{
+    ui::colors,
+    vis::plotting::{GifBundle, PngBundle},
+    ActiveLoadedScenario,
+};
 
 // ── Static card sync ──────────────────────────────────────────────────────────
 
@@ -119,15 +123,22 @@ pub fn sync_static_card_state(
         let CardKind::Static(image_type) = btn.kind else {
             continue;
         };
-        let show_save = matches!(
-            image_cache.0.get(&image_type),
-            Some(ResultImageState::Ready(_))
-        );
-        node.display = if show_save {
-            Display::Flex
-        } else {
-            Display::None
-        };
+        #[cfg(feature = "native")]
+        {
+            let show_save = matches!(
+                image_cache.0.get(&image_type),
+                Some(ResultImageState::Ready(_))
+            );
+            node.display = if show_save {
+                Display::Flex
+            } else {
+                Display::None
+            };
+        }
+        #[cfg(not(feature = "native"))]
+        {
+            node.display = Display::None;
+        }
     }
 
     for (btn, mut node) in &mut retry_btns {
@@ -255,12 +266,19 @@ pub fn sync_anim_card_state(
         let CardKind::Anim(anim_type) = btn.kind else {
             continue;
         };
-        let show_save = matches!(anim_cache.0.get(&anim_type), Some(AnimState::Ready(_)));
-        node.display = if show_save {
-            Display::Flex
-        } else {
-            Display::None
-        };
+        #[cfg(feature = "native")]
+        {
+            let show_save = matches!(anim_cache.0.get(&anim_type), Some(AnimState::Ready(_)));
+            node.display = if show_save {
+                Display::Flex
+            } else {
+                Display::None
+            };
+        }
+        #[cfg(not(feature = "native"))]
+        {
+            node.display = Display::None;
+        }
     }
 
     for (btn, mut node) in &mut retry_btns {
@@ -340,7 +358,7 @@ pub fn handle_generate_button_static(
             .storage
             .image_path(scenario.get_id(), &image_type.to_string());
 
-        let channel = super::new_channel::<std::path::PathBuf>();
+        let channel = super::new_channel::<PngBundle>();
         let channel_writer = channel.clone();
 
         std::thread::spawn(move || {
@@ -386,7 +404,7 @@ pub fn handle_generate_button_anim(
             .storage
             .animation_dir(scenario.get_id(), anim_type.dir_name());
 
-        let channel = super::new_channel::<std::path::PathBuf>();
+        let channel = super::new_channel::<GifBundle>();
         let channel_writer = channel.clone();
 
         std::thread::spawn(move || {

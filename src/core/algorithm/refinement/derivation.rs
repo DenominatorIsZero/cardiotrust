@@ -4,6 +4,7 @@ mod tests;
 
 use anyhow::{Context, Result};
 use approx::AbsDiffEq;
+#[cfg(feature = "native")]
 use ocl::Buffer;
 use serde::{Deserialize, Serialize};
 pub use shapes::{AverageDelays, MappedResiduals, MaximumRegularization};
@@ -59,6 +60,7 @@ pub struct Derivatives {
     pub maximum_regularization_sum: f32,
 }
 
+#[cfg(feature = "native")]
 pub struct DerivativesGPU {
     pub gains: Buffer<f32>,
     pub coefs: Buffer<f32>,
@@ -123,6 +125,7 @@ impl Derivatives {
         self.maximum_regularization_sum = 0.0;
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<DerivativesGPU> {
         Ok(DerivativesGPU {
@@ -141,6 +144,7 @@ impl Derivatives {
         })
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, derivatives: &DerivativesGPU) -> Result<()> {
         self.gains.update_from_gpu(&derivatives.gains)?;

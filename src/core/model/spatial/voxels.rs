@@ -11,6 +11,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use ndarray::arr1;
+#[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
 use num_derive::FromPrimitive;
 pub use numbers::VoxelNumbers;
@@ -20,7 +21,10 @@ use strum_macros::{EnumCount, EnumIter};
 use tracing::{debug, trace};
 pub use types::VoxelTypes;
 
+#[cfg(feature = "native")]
 use crate::core::{config::model::Model, model::spatial::nifti::load_from_nii};
+#[cfg(not(feature = "native"))]
+use crate::core::config::model::Model;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Voxels {
@@ -59,6 +63,7 @@ impl Voxels {
         })
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_mri_model_config(config: &Model) -> anyhow::Result<Self> {
         debug!("Creating voxels from mri model config");
@@ -178,6 +183,7 @@ impl Voxels {
     }
 
     /// Saves the voxel grid data to .npy files in the given path.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving voxels to npy files");

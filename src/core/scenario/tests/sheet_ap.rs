@@ -2,9 +2,8 @@ use std::{
     fs::{self, File},
     io::BufWriter,
     path::Path,
-    sync::mpsc::channel,
-    thread,
 };
+use crossbeam_channel::unbounded;
 
 use anyhow::Result;
 use approx::RelativeEq;
@@ -541,7 +540,7 @@ fn create_and_run(
     base_id: &str,
     img_path: &Path,
 ) -> Result<()> {
-    let mut join_handles = Vec::new();
+    let mut done_receivers = Vec::new();
     let mut scenarios = Vec::new();
 
     for voxels_per_axis in &voxels_per_axis {
@@ -564,13 +563,13 @@ fn create_and_run(
                 )?;
                 if RUN_IN_TESTS {
                     let send_scenario = scenario.clone();
-                    let (epoch_tx, _) = channel();
-                    let (summary_tx, _) = channel();
-                    let handle = thread::spawn(move || {
-                        run_test_scenario(send_scenario, &epoch_tx, &summary_tx)
+                    let (epoch_tx, _) = unbounded();
+                    let (summary_tx, _) = unbounded();
+                    let (done_tx, done_rx) = unbounded();
+                    rayon::spawn(move || {
+                        let _ = run_test_scenario(send_scenario, &epoch_tx, &summary_tx, done_tx);
                     });
-                    println!("handle {handle:?}");
-                    join_handles.push(handle);
+                    done_receivers.push(done_rx);
                 }
                 scenario
             };
@@ -579,10 +578,10 @@ fn create_and_run(
     }
 
     if RUN_IN_TESTS {
-        for handle in join_handles {
-            handle
-                .join()
-                .map_err(|e| anyhow::anyhow!("Thread panicked: {e:?}"))??;
+        for done_rx in done_receivers {
+            done_rx
+                .recv()
+                .map_err(|_| anyhow::anyhow!("Thread panicked"))?;
         }
         for scenario in &mut scenarios {
             let path = Path::new("results").join(scenario.id.clone());

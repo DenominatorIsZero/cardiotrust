@@ -177,7 +177,7 @@ mod tests {
             entries: vec![ScenarioBundle {
                 scenario,
                 storage: crate::core::scenario::ScenarioStorage::new("./results/tests"),
-                join_handle: None,
+                done_rx: None,
                 epoch_rx: None,
                 summary_rx: None,
             }],
@@ -201,7 +201,7 @@ mod tests {
             entries: vec![ScenarioBundle {
                 scenario,
                 storage: crate::core::scenario::ScenarioStorage::new("./results/tests"),
-                join_handle: None,
+                done_rx: None,
                 epoch_rx: None,
                 summary_rx: None,
             }],

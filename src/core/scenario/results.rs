@@ -2,21 +2,31 @@ use std::ops::Deref;
 
 use anyhow::{Context, Result};
 use ndarray::{s, Array3, Array4};
+#[cfg(feature = "native")]
 use ocl::Queue;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use crate::core::{
     algorithm::{
-        estimation::{Estimations, EstimationsGPU},
-        metrics::{Metrics, MetricsGPU},
+        estimation::Estimations,
+        metrics::Metrics,
         refinement::{
-            derivation::{Derivatives, DerivativesGPU},
+            derivation::Derivatives,
             Optimizer,
         },
     },
     config::algorithm::Algorithm,
-    model::{functional::allpass::APParameters, Model, ModelGPU},
+    model::{functional::allpass::APParameters, Model},
+};
+#[cfg(feature = "native")]
+use crate::core::{
+    algorithm::{
+        estimation::EstimationsGPU,
+        metrics::MetricsGPU,
+        refinement::derivation::DerivativesGPU,
+    },
+    model::ModelGPU,
 };
 
 /// Results contains the outputs from running a scenario.
@@ -32,6 +42,7 @@ pub struct Results {
     pub model: Option<Model>,
 }
 
+#[cfg(feature = "native")]
 pub struct ResultsGPU {
     pub metrics: MetricsGPU,
     pub estimations: EstimationsGPU,
@@ -103,6 +114,7 @@ impl Results {
     /// # Errors
     ///
     /// Returns an error if any file I/O operation fails.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving results to.npy files");
@@ -115,6 +127,7 @@ impl Results {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn to_gpu(&self, queue: &Queue) -> Result<ResultsGPU> {
@@ -130,6 +143,7 @@ impl Results {
         })
     }
 
+    #[cfg(feature = "native")]
     #[allow(clippy::missing_panics_doc)]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn update_from_gpu(&mut self, results: &ResultsGPU) -> Result<()> {
@@ -373,6 +387,7 @@ impl Deref for MeasurementsSnapshots {
 }
 
 #[cfg(test)]
+#[cfg(feature = "native")]
 mod tests {
     use approx::assert_relative_eq;
     use ocl::{Kernel, Program};

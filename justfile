@@ -37,6 +37,14 @@ build:
 build-release:
   cargo build --release
 
+# WASM
+wasm-build:
+  cargo build --target wasm32-unknown-unknown --no-default-features
+
+wasm-run:
+  cargo build --target wasm32-unknown-unknown --no-default-features
+  npx wasm-server-runner target/wasm32-unknown-unknown/debug/cardiotrust.wasm
+
 # Benchmarking (Research-specific)
 bench:
   cargo bench --bench in_epoch_benches

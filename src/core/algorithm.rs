@@ -1,4 +1,5 @@
 pub mod estimation;
+#[cfg(feature = "native")]
 pub mod gpu;
 pub mod metrics;
 pub mod refinement;

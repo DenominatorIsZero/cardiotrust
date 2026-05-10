@@ -8,12 +8,15 @@ use std::{
 use anyhow::{Context, Result};
 use approx::relative_eq;
 use ndarray::{s, Array2, Array3, ArrayView2};
+#[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
-use ocl::{Buffer, Queue};
 use physical_constants::VACUUM_MAG_PERMEABILITY;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
+
+#[cfg(feature = "native")]
+use ocl::{Buffer, Queue};
 
 use crate::core::{config::model::Model, model::spatial::SpatialDescription};
 
@@ -39,6 +42,7 @@ impl MeasurementMatrix {
         )))
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn to_gpu(&self, queue: &Queue) -> Result<Buffer<f32>> {
         let buffer = Buffer::builder()
@@ -128,6 +132,7 @@ impl MeasurementMatrix {
     /// # Errors
     ///
     /// Returns an error if the directory cannot be created or the file cannot be written.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving measurement matrix to npy file");
@@ -162,6 +167,7 @@ impl MeasurementMatrix {
         MeasurementMatrixAtBeat(self.slice(s![beat, .., ..]))
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, measurement_matrix: &Buffer<f32>) -> Result<()> {
         measurement_matrix
@@ -259,6 +265,7 @@ impl MeasurementCovariance {
     /// # Errors
     ///
     /// Returns an error if the directory cannot be created or the file cannot be written.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving measurement covariance matrix to npy file");
@@ -287,6 +294,7 @@ impl MeasurementCovariance {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<ocl::Buffer<f32>> {
         let buffer = Buffer::builder()
@@ -301,6 +309,7 @@ impl MeasurementCovariance {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, measurement_covariance: &Buffer<f32>) -> Result<()> {
         measurement_covariance

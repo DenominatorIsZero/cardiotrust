@@ -141,9 +141,15 @@ fn plan_scenarios() -> Result<()> {
 
 #[tracing::instrument(level = "debug")]
 fn setup_logging() -> Result<()> {
-    // Try to set up file logging, fall back to stdout-only if it fails
-    if let Err(e) = try_setup_file_logging() {
-        eprintln!("Warning: Could not set up file logging ({e}), using stdout only");
+    #[cfg(feature = "native")]
+    {
+        if let Err(e) = try_setup_file_logging() {
+            eprintln!("Warning: Could not set up file logging ({e}), using stdout only");
+            setup_stdout_logging()?;
+        }
+    }
+    #[cfg(not(feature = "native"))]
+    {
         setup_stdout_logging()?;
     }
 
@@ -165,6 +171,7 @@ fn setup_stdout_logging() -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "native")]
 #[tracing::instrument(level = "debug")]
 fn try_setup_file_logging() -> Result<()> {
     let file_appender = tracing_appender::rolling::daily("./logs", "CardioPlanner.log");

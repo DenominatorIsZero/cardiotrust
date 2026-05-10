@@ -15,6 +15,15 @@ just fmt                  # cargo +nightly fmt (required before committing)
 just check                # cargo check + clippy -D warnings
 just ci                   # fmt-check + check + test
 
+# WASM builds
+cargo check --no-default-features --target wasm32-unknown-unknown   # Verify WASM compiles
+just wasm-build            # Build WASM binary
+just wasm-run              # Build + serve with wasm-server-runner
+```
+
+> `wasm32-unknown-unknown` toolchain required: `rustup target add wasm32-unknown-unknown`
+> WASM demo projects live in `wasm-projects/` — run the native app to generate scenario data, then copy into `wasm-projects/` before building WASM.
+
 # Single test:
 cargo nextest run <test_name>
 cargo nextest run --ignored <test_name>

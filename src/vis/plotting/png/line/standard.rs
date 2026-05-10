@@ -17,7 +17,7 @@ use crate::core::data::shapes::SystemStates;
 #[tracing::instrument(level = "trace")]
 pub fn standard_y_plot<A>(
     y: &ArrayBase<A, Ix1>,
-    path: &Path,
+    path: Option<&Path>,
     title: &str,
     y_label: &str,
     x_label: &str,
@@ -29,7 +29,7 @@ where
     line_plot(
         None,
         vec![y],
-        Some(path),
+        path,
         Some(title),
         Some(y_label),
         Some(x_label),
@@ -41,7 +41,7 @@ where
 #[tracing::instrument(level = "trace")]
 pub fn standard_log_y_plot<A>(
     y: &ArrayBase<A, Ix1>,
-    path: &Path,
+    path: Option<&Path>,
     title: &str,
     y_label: &str,
     x_label: &str,
@@ -53,7 +53,7 @@ where
     log_y_plot(
         None,
         vec![y],
-        Some(path),
+        path,
         Some(title),
         Some(y_label),
         Some(x_label),
@@ -75,7 +75,7 @@ where
 pub fn standard_time_plot<A>(
     y: &ArrayBase<A, Ix1>,
     sample_rate_hz: f32,
-    path: &Path,
+    path: Option<&Path>,
     title: &str,
     y_label: &str,
 ) -> Result<PngBundle>
@@ -94,7 +94,7 @@ where
     line_plot(
         Some(&x),
         vec![y],
-        Some(path),
+        path,
         Some(title),
         Some(y_label),
         Some("t [s]"),
@@ -124,7 +124,7 @@ pub fn plot_state_xyz(
     system_states: &SystemStates,
     state_index: usize,
     sample_rate_hz: f32,
-    path: &Path,
+    path: Option<&Path>,
     title: &str,
 ) -> Result<PngBundle> {
     use ndarray::s;
@@ -146,7 +146,7 @@ pub fn plot_state_xyz(
     line_plot(
         Some(&x),
         y,
-        Some(path),
+        path,
         Some(title.as_str()),
         Some("j [A/mm^2]"),
         Some("t [s]"),

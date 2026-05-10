@@ -1,4 +1,4 @@
-use std::sync::mpsc::Sender;
+use crossbeam_channel::Sender;
 
 use anyhow::{Context, Result};
 use ndarray_stats::QuantileExt;
@@ -8,16 +8,13 @@ use super::{
     results::Results, summary::Summary, Scenario, ScenarioPayload, ScenarioStorage, Status,
 };
 use crate::core::{
-    algorithm::{
-        self, calculate_pseudo_inverse,
-        gpu::{epoch::EpochKernel, GPU},
-        metrics,
-        refinement::derivation::calculate_average_delays,
-    },
+    algorithm::{self, calculate_pseudo_inverse, metrics, refinement::derivation::calculate_average_delays},
     config::algorithm::AlgorithmType,
     data::Data,
     model::Model,
 };
+#[cfg(feature = "native")]
+use crate::core::algorithm::gpu::{epoch::EpochKernel, GPU};
 
 /// Runs the simulation for the given scenario, model, and data.
 ///
@@ -34,7 +31,9 @@ pub fn run(
     storage: ScenarioStorage,
     epoch_tx: &Sender<usize>,
     summary_tx: &Sender<Summary>,
+    done_tx: Sender<()>,
 ) -> Result<()> {
+    let result = (|| -> Result<()> {
     debug!("Running scenario with id {}", scenario.id);
 
     let simulation = &scenario.config.simulation;
@@ -85,6 +84,7 @@ pub fn run(
             )
             .context("Failed to execute model-based algorithm")?;
         }
+        #[cfg(feature = "native")]
         AlgorithmType::ModelBasedGPU => {
             results.model = Some(model);
             run_model_based_gpu(
@@ -146,6 +146,9 @@ pub fn run(
     let _ = epoch_tx.send(scenario.config.algorithm.epochs - 1);
     let _ = summary_tx.send(summary);
     Ok(())
+    })();
+    let _ = done_tx.send(());
+    result
 }
 
 /// Runs the pseudo inverse algorithm on the given scenario, model, and data.
@@ -251,6 +254,7 @@ fn run_model_based(
     Ok(())
 }
 
+#[cfg(feature = "native")]
 #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
 #[tracing::instrument(level = "info", skip_all)]
 fn run_model_based_gpu(

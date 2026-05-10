@@ -21,6 +21,9 @@ use super::{
 };
 use crate::core::{config::model::ControlFunction, scenario::Scenario};
 
+#[cfg(not(feature = "native"))]
+use crate::ui::colors;
+
 // ── Marker components ─────────────────────────────────────────────────────────
 
 /// Marker for the Handcrafted section container (for conditional visibility).
@@ -494,12 +497,27 @@ pub fn spawn_model_tab(
         body,
         "MRI Path",
         "",
+        #[cfg(feature = "native")]
         "Path to the MRI segmentation file (.nii).",
+        #[cfg(not(feature = "native"))]
+        "MRI-based models are not supported in the web demo. You can explore the pre-computed MRI example from the demo projects.",
         &mri_path,
         ParamId::MriPath,
     );
+    #[cfg(feature = "native")]
     commands.entity(slot).with_children(|ctrl| {
         spawn_text_input(ctrl, ParamId::MriPath, &mri_path);
+    });
+    #[cfg(not(feature = "native"))]
+    commands.entity(slot).with_children(|ctrl| {
+        ctrl.spawn((
+            Text::new("Unavailable — MRI not supported in web demo"),
+            TextFont {
+                font_size: 11.0,
+                ..default()
+            },
+            TextColor(colors::GREY1),
+        ));
     });
 }
 

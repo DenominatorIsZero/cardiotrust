@@ -8,6 +8,7 @@ use anyhow::{Context, Result};
 use ndarray::{
     s, Array1, Array2, Array3, ArrayView1, ArrayView2, ArrayViewMut1, ArrayViewMut2, Axis,
 };
+#[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
 use ndarray_stats::QuantileExt;
 use serde::{Deserialize, Serialize};
@@ -37,6 +38,7 @@ impl SystemStates {
     /// # Errors
     ///
     /// Returns an error if directory creation, file creation, or NPY writing fails.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving system states");
@@ -76,6 +78,7 @@ impl SystemStates {
         SystemStatesAtStepMut(self.slice_mut(s![step, ..]))
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<ocl::Buffer<f32>> {
         let buffer = ocl::Buffer::builder()
@@ -90,6 +93,7 @@ impl SystemStates {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, system_states: &ocl::Buffer<f32>) -> Result<()> {
         system_states
@@ -191,6 +195,7 @@ impl SystemStatesSpherical {
             });
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving system states spherical");
@@ -273,6 +278,7 @@ impl SystemStatesSphericalMax {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving system states spherical max");
@@ -350,6 +356,7 @@ impl ActivationTimePerStateMs {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving system states activation time");
@@ -404,6 +411,7 @@ impl Measurements {
     /// # Errors
     ///
     /// Returns an error if directory creation, file creation, or NPY writing fails.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving measurements");
@@ -448,6 +456,7 @@ impl Measurements {
         MeasurementsAtBeatMut(self.slice_mut(s![beat, .., ..]))
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn to_gpu(&self, queue: &ocl::Queue) -> Result<ocl::Buffer<f32>> {
         let buffer = ocl::Buffer::builder()
@@ -462,6 +471,7 @@ impl Measurements {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, measurements: &ocl::Buffer<f32>) -> Result<()> {
         measurements
@@ -584,6 +594,7 @@ impl Residuals {
     /// # Errors
     ///
     /// Returns an error if directory creation, file creation, or NPY writing fails.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving measurements");
@@ -598,6 +609,7 @@ impl Residuals {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn to_gpu(&self, queue: &ocl::Queue) -> Result<ocl::Buffer<f32>> {
         let buffer = ocl::Buffer::builder()
@@ -612,6 +624,7 @@ impl Residuals {
         Ok(buffer)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(&mut self, residuals: &ocl::Buffer<f32>) -> Result<()> {
         residuals

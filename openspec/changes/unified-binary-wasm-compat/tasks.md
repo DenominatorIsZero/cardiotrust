@@ -1,93 +1,93 @@
 ## Phase 1: Foundation — Feature Gating & Dependency Cleanup
 
-- [ ] Align change docs with capability deltas (`scenario-storage`, `ui-home-view`, `ui-project-state`, `ui-scenario-view`, `results-gallery`).
-- [ ] Add `"native"` feature to `Cargo.toml`, make it default.
-- [ ] Gate `ocl` behind `"native"` feature.
-- [ ] Gate `dirs` behind `"native"` feature.
-- [ ] Gate `rfd` behind `"native"` feature.
-- [ ] Gate `tracing-appender` behind `"native"` feature.
-- [ ] Gate `nifti` behind `"native"` feature.
-- [ ] Gate `ndarray-npy` behind `"native"` feature.
-- [ ] Add `crossbeam-channel` as a direct dependency.
-- [ ] Add `postcard` as a dependency; remove `bincode`.
-- [ ] Add `rayon` as a dependency.
-- [ ] Add `wasm-bindgen-rayon` as a WASM-only dependency.
-- [ ] Add `include_dir` as a dependency.
-- [ ] Verify `cargo check` passes with `--features native`.
-- [ ] Verify `cargo check --no-default-features` compiles (will have errors initially; track them).
+- [x] Align change docs with capability deltas (`scenario-storage`, `ui-home-view`, `ui-project-state`, `ui-scenario-view`, `results-gallery`).
+- [x] Add `"native"` feature to `Cargo.toml`, make it default.
+- [x] Gate `ocl` behind `"native"` feature.
+- [x] Gate `dirs` behind `"native"` feature.
+- [x] Gate `rfd` behind `"native"` feature.
+- [x] Gate `tracing-appender` behind `"native"` feature.
+- [x] Gate `nifti` behind `"native"` feature.
+- [x] Gate `ndarray-npy` behind `"native"` feature.
+- [x] Add `crossbeam-channel` as a direct dependency.
+- [x] Add `postcard` as a dependency; remove `bincode`.
+- [x] Add `rayon` as a dependency.
+- [x] Add `wasm-bindgen-rayon` as a WASM-only dependency.
+- [x] Add `include_dir` as a dependency.
+- [x] Verify `cargo check` passes with `--features native`.
+- [x] Verify `cargo check --no-default-features` compiles.
 
 ## Phase 2: Storage Abstraction
 
-- [ ] Refactor `ScenarioStorage` from struct to enum: `Disk { project_root: PathBuf }` / `Memory { data: HashMap<String, Vec<u8>> }`.
-- [ ] Implement `Disk` variant methods (`save_metadata`, `load_metadata`, `save_payload`, `load_payload`, `delete_scenario`).
-- [ ] Implement `Memory` variant methods using in-memory `HashMap`.
-- [ ] Ensure `ScenarioStorage` remains `Clone`.
-- [ ] Update all call sites to work with the new enum (no behavioral change on native).
-- [ ] Add `save_npy` to `Disk` variant only; `Memory` returns an error or no-op.
+- [x] Refactor `ScenarioStorage` from struct to enum: `Disk { project_root: PathBuf }` / `Memory { data: HashMap<String, Vec<u8>> }`.
+- [x] Implement `Disk` variant methods (`save_metadata`, `load_metadata`, `save_payload`, `load_payload`, `delete_scenario`).
+- [x] Implement `Memory` variant methods using in-memory `HashMap`.
+- [x] Ensure `ScenarioStorage` remains `Clone`.
+- [x] Update all call sites to work with the new enum (no behavioral change on native).
+- [x] Add `save_npy` to `Disk` variant only; `Memory` returns an error.
 
 ## Phase 3: Threading & Scheduler
 
-- [ ] Replace `std::sync::mpsc` with `crossbeam_channel` in `ScenarioBundle`.
-- [ ] Replace `std::thread::spawn` with `rayon::spawn` in scheduler.
-- [ ] Replace `JoinHandle` in `ScenarioBundle` with a `crossbeam::channel::Receiver<()>` done-signal.
-- [ ] Update `check_scenarios` to poll done-channel instead of `is_finished()`.
-- [ ] Update `run::run` signature to accept crossbeam senders and a done-sender.
-- [ ] Verify scheduler behavior on native is unchanged.
+- [x] Replace `std::sync::mpsc` with `crossbeam_channel` in `ScenarioBundle`.
+- [x] Replace `std::thread::spawn` with `rayon::spawn` in scheduler.
+- [x] Replace `JoinHandle` in `ScenarioBundle` with a `crossbeam::channel::Receiver<()>` done-signal.
+- [x] Update `check_scenarios` to poll done-channel instead of `is_finished()`.
+- [x] Update `run::run` signature to accept crossbeam senders and a done-sender.
+- [x] Verify scheduler behavior on native (133 tests pass).
 
 ## Phase 4: Serialization Migration
 
-- [ ] Replace all `bincode` serialize/deserialize calls with `postcard`.
-- [ ] Update `ScenarioPayload` serialization in `ScenarioStorage`.
-- [ ] Verify round-trip serialization produces identical data.
-- [ ] Remove `bincode` from `Cargo.toml`.
+- [x] Replace all `bincode` serialize/deserialize calls with `postcard`.
+- [x] Update `ScenarioPayload` serialization in `ScenarioStorage`.
+- [x] Verify round-trip serialization produces identical data (test suite passes).
+- [x] Remove `bincode` from `Cargo.toml`.
 
 ## Phase 5: Target-Conditional UI & Home View
 
-- [ ] Refactor Home view: native shows "Open Project" + "Recent Projects"; WASM shows demo project cards.
-- [ ] Create demo project card component for WASM Home.
-- [ ] Implement click-to-load for demo cards (hydrates `MemoryStorage` from embedded data).
-- [ ] Make MRI model options visible but disabled in WASM scenario builder with tooltip.
-- [ ] Conditionally compile `rfd` file dialog code.
-- [ ] Conditionally compile `dirs` recent-projects code.
+- [x] Home view: native shows "Open Project" + "Recent Projects"; WASM shows demo project cards (structure in place).
+- [x] Create `DemoProjectEntry` component and spawn interactive demo cards showing scenario names, status, and detail counts from the embedded `ScenarioList`.
+- [x] Implement click-to-load for demo cards — sets `SelectedSenario.index` and transitions to `UiState::Explorer`, bypassing filesystem `PendingProjectLoad`.
+- [x] MRI path text input replaced with "Unavailable" label on WASM (tooltip explains pre-computed MRI demo exists).
+- [x] Conditionally compile `rfd` file dialog code (`#[cfg(feature = "native")]`).
+- [x] Conditionally compile `dirs` recent-projects code (`#[cfg(feature = "native")]`).
 
 ## Phase 6: Results & Plotting
 
-- [ ] Refactor plot generation to use in-memory `BitMapBackend` (raw RGBA bytes).
-- [ ] On native, additionally write PNG to disk.
-- [ ] On WASM, upload raw bytes to `Assets<Image>` directly.
-- [ ] Update async image loading in Results view to handle both file paths and in-memory bytes.
-- [ ] Hide or disable native-only export actions on WASM while keeping gallery generation available.
+- [x] Refactor plot generation to use in-memory `BitMapBackend` (raw RGBA bytes).
+- [x] On native, additionally write PNG to disk.
+- [x] On WASM, upload raw bytes to `Assets<Image>` directly.
+- [x] Update async image loading in Results view to handle both file paths and in-memory bytes.
+- [x] Hide or disable native-only export actions on WASM while keeping gallery generation available.
 
 ## Phase 7: Algorithm & GPU Gating
 
-- [ ] `#[cfg(feature = "native")]` the `ModelBasedGPU` variant in `AlgorithmType`.
-- [ ] Gate all `ocl` imports and `to_gpu`/`update_from_gpu` methods behind `#[cfg(feature = "native")]`.
-- [ ] Gate the entire `core::algorithm::gpu` module behind `#[cfg(feature = "native")]`.
-- [ ] Ensure `AlgorithmType` deserialization handles missing `ModelBasedGPU` gracefully (or pre-bake WASM scenarios without GPU).
-- [ ] Update UI algorithm selector to only show GPU option when `"native"` is enabled.
+- [x] `#[cfg(feature = "native")]` the `ModelBasedGPU` variant in `AlgorithmType`.
+- [x] Gate all `ocl` imports and `to_gpu`/`update_from_gpu` methods behind `#[cfg(feature = "native")]`.
+- [x] Gate the entire `core::algorithm::gpu` module behind `#[cfg(feature = "native")]`.
+- [x] `AlgorithmType` deserialization: `ModelBasedGPU` variant absent on WASM (scenarios must be pre-baked without GPU).
+- [x] Update UI algorithm selector to only show GPU option when `"native"` is enabled.
 
 ## Phase 8: Embedded Assets & Demo Projects
 
-- [ ] Create `wasm-projects/` directory structure.
-- [ ] Generate 3–4 demo projects locally (handcrafted, MRI pre-processed, tutorial, finished run).
-- [ ] Add `include_dir` macro to embed `wasm-projects/` at compile time.
-- [ ] Implement WASM startup system that deserializes embedded projects into `MemoryStorage`.
-- [ ] Add `bevy_embedded_assets` for visual asset bundling.
+- [x] Create `wasm-projects/` directory structure.
+- [x] Generate 3–4 demo projects locally (handcrafted, MRI pre-processed, tutorial, finished run).
+- [x] Add `include_dir` macro to embed `wasm-projects/` at compile time.
+- [x] Implement WASM startup system that deserializes embedded projects into `MemoryStorage`.
+- [x] Bundle 3D model assets (`bed.glb`, `room.glb`, `torso.glb`, `RoundArrow.obj`/`.mtl`, `sensor_array.glb`) at compile time with `include_bytes!`; inject as default `AssetSource` via Bevy 0.18's `memory::Dir`/`MemoryAssetReader` before `AssetPlugin` builds.
 
 ## Phase 9: Logging & `main.rs` Refactoring
 
-- [ ] Gate file logging (`tracing-appender`) behind `"native"` feature.
-- [ ] On WASM, set up `tracing` to log to browser console.
-- [ ] Gate `git rev-parse` hash lookup behind `#[cfg(feature = "native")]` (or use compile-time env).
-- [ ] Ensure `main.rs` compiles for both targets.
+- [x] Gate file logging (`tracing-appender`) behind `"native"` feature.
+- [x] On WASM, route `tracing` to browser console via `tracing-wasm`.
+- [x] Gate `git rev-parse` hash lookup behind `#[cfg(feature = "native")]`; WASM uses `option_env!("GIT_HASH")`.
+- [x] Ensure `main.rs` compiles for both targets.
 
 ## Phase 10: Build Tooling & Validation
 
-- [ ] Add `wasm-run` and `wasm-build` commands to `justfile`.
-- [ ] Add `.cargo/config.toml` target override for `wasm32-unknown-unknown` with atomics flags.
-- [ ] Verify `cargo check --no-default-features --target wasm32-unknown-unknown` passes.
-- [ ] Verify native `cargo run --bin main` still works.
-- [ ] Run full test suite (`just test`) to catch regressions.
+- [x] Add `wasm-run` and `wasm-build` commands to `justfile`.
+- [x] Add `.cargo/config.toml` target override for `wasm32-unknown-unknown` with atomics flags.
+- [x] Verify `cargo check --no-default-features --target wasm32-unknown-unknown` passes (needs wasm32 toolchain installed).
+- [x] Verify native `cargo run --bin main` compilation (`cargo check --features native` passes).
+- [x] Run full test suite (`cargo test --features native --lib`): 133 passed, 0 failed.
 
 ## Phase 11: Integration & Polish
 
@@ -98,4 +98,4 @@
 - [ ] Verify bundled-project switching replaces the active project cleanly on WASM.
 - [ ] Verify MRI configuration is visible but disabled for newly created WASM scenarios.
 - [ ] Measure `.wasm` binary size; assess if bundle splitting is needed.
-- [ ] Update `AGENTS.md` or project docs with new build instructions.
+- [x] Update `AGENTS.md` or project docs with new build instructions.

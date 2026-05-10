@@ -7,6 +7,7 @@ pub mod states;
 pub mod voxel_type;
 
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone)]
 pub struct PngBundle {
     pub data: Vec<u8>,
     pub width: u32,

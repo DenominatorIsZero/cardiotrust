@@ -69,7 +69,7 @@ fn run_simulation_default_and_plot() -> anyhow::Result<()> {
         &simulation.system_states,
         sa_index,
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Current Density Sinoatrial Node",
     )?;
 
@@ -84,7 +84,7 @@ fn run_simulation_default_and_plot() -> anyhow::Result<()> {
         &simulation.system_states,
         av_index,
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Current Density Atrioventricular Node",
     )?;
 
@@ -92,7 +92,7 @@ fn run_simulation_default_and_plot() -> anyhow::Result<()> {
     standard_time_plot(
         &simulation.measurements.slice(s![0, .., 0]).to_owned(),
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Measurement Sensor 0 - x",
         "H [pT]",
     )?;
@@ -101,7 +101,7 @@ fn run_simulation_default_and_plot() -> anyhow::Result<()> {
     standard_time_plot(
         &simulation.measurements.slice(s![0, .., 1]).to_owned(),
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Measurement Sensor 0 - y",
         "H [pT]",
     )?;
@@ -110,7 +110,7 @@ fn run_simulation_default_and_plot() -> anyhow::Result<()> {
     standard_time_plot(
         &simulation.measurements.slice(s![0, .., 2]).to_owned(),
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Measurement Sensor 0 - z",
         "H [pT]",
     )?;
@@ -205,7 +205,7 @@ fn run_simulation_pathological_and_plot() -> anyhow::Result<()> {
         &simulation.system_states,
         sa_index,
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Current Density Sinoatrial Node",
     )?;
 
@@ -220,7 +220,7 @@ fn run_simulation_pathological_and_plot() -> anyhow::Result<()> {
         &simulation.system_states,
         av_index,
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Current Density Atrioventricular Node",
     )?;
 
@@ -228,7 +228,7 @@ fn run_simulation_pathological_and_plot() -> anyhow::Result<()> {
     standard_time_plot(
         &simulation.measurements.slice(s![0, .., 0]).to_owned(),
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Measurement Sensor 0 - x",
         "H [pT]",
     )?;
@@ -237,7 +237,7 @@ fn run_simulation_pathological_and_plot() -> anyhow::Result<()> {
     standard_time_plot(
         &simulation.measurements.slice(s![0, .., 1]).to_owned(),
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Measurement Sensor 0 - y",
         "H [pT]",
     )?;
@@ -246,7 +246,7 @@ fn run_simulation_pathological_and_plot() -> anyhow::Result<()> {
     standard_time_plot(
         &simulation.measurements.slice(s![0, .., 2]).to_owned(),
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Measurement Sensor 0 - z",
         "H [pT]",
     )?;
@@ -395,7 +395,7 @@ fn run_simulation_mri_and_plot() -> anyhow::Result<()> {
         &simulation.system_states,
         sa_index,
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Current Density Sinoatrial Node",
     )?;
 
@@ -403,7 +403,7 @@ fn run_simulation_mri_and_plot() -> anyhow::Result<()> {
     standard_time_plot(
         &simulation.measurements.slice(s![0, .., 0]).to_owned(),
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Measurement Sensor 0 - x",
         "H [pT]",
     )?;
@@ -412,7 +412,7 @@ fn run_simulation_mri_and_plot() -> anyhow::Result<()> {
     standard_time_plot(
         &simulation.measurements.slice(s![0, .., 1]).to_owned(),
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Measurement Sensor 0 - y",
         "H [pT]",
     )?;
@@ -421,7 +421,7 @@ fn run_simulation_mri_and_plot() -> anyhow::Result<()> {
     standard_time_plot(
         &simulation.measurements.slice(s![0, .., 2]).to_owned(),
         config.sample_rate_hz,
-        path.as_path(),
+        Some(path.as_path()),
         "Simulated Measurement Sensor 0 - z",
         "H [pT]",
     )?;

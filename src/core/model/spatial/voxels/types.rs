@@ -6,13 +6,13 @@ use std::{
 
 use anyhow::{Context, Result};
 use ndarray::{s, Array3};
+#[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
 use serde::{Deserialize, Serialize};
 
-use super::{
-    super::nifti::{determine_voxel_type, MriData},
-    VoxelPositions, VoxelType,
-};
+use super::{VoxelPositions, VoxelType};
+#[cfg(feature = "native")]
+use super::super::nifti::{determine_voxel_type, MriData};
 use crate::core::config::model::Model;
 
 #[allow(clippy::unsafe_derive_deserialize)]
@@ -121,6 +121,7 @@ impl VoxelTypes {
         Ok(voxel_types)
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         tracing::trace!("Saving voxel types to npy files");
@@ -140,6 +141,7 @@ impl VoxelTypes {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "debug", skip_all)]
     pub fn from_mri_model_config(
         config: &Model,

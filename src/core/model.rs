@@ -9,9 +9,11 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
 use self::{
-    functional::{FunctionalDescription, FunctionalDescriptionGPU},
+    functional::FunctionalDescription,
     spatial::SpatialDescription,
 };
+#[cfg(feature = "native")]
+use self::functional::FunctionalDescriptionGPU;
 use super::{
     config::{model::Model as ModelConfig, simulation::Simulation},
     data::Data,
@@ -24,6 +26,7 @@ pub struct Model {
     pub spatial_description: SpatialDescription,
 }
 
+#[cfg(feature = "native")]
 pub struct ModelGPU {
     pub functional_description: FunctionalDescriptionGPU,
 }
@@ -122,6 +125,7 @@ impl Model {
 
     /// Saves the functional and spatial descriptions of the model
     /// to .npy files at the given path.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving model to npy");
@@ -148,6 +152,7 @@ impl Model {
         }
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn to_gpu(&self, queue: &ocl::Queue) -> Result<ModelGPU> {
         Ok(ModelGPU {
@@ -155,6 +160,7 @@ impl Model {
         })
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn from_gpu(&mut self, model_gpu: &ModelGPU) -> Result<()> {
         self.functional_description

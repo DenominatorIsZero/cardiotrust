@@ -1,7 +1,4 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use image::ImageEncoder;
@@ -28,13 +25,18 @@ use crate::{
             states::states_spherical_plot,
             voxel_type::voxel_type_plot,
         },
-        PlotSlice, StateSphericalPlotMode,
+        GifBundle, PngBundle, PlotSlice, StateSphericalPlotMode,
     },
 };
 
 // ── Image generation ──────────────────────────────────────────────────────────
 
-/// Generates the image for the given scenario and image type.
+/// Generates an image for the given scenario and image type.
+///
+/// Always renders to an in-memory RGBA buffer via `BitMapBackend`.
+/// On native (`"native"` feature), the returned PNG is also written to `path`
+/// on disk for inter-session caching. The caller receives the in-memory
+/// `PngBundle` on all targets so generation → GPU upload can happen in one hop.
 #[allow(
     clippy::needless_pass_by_value,
     clippy::too_many_lines,
@@ -50,16 +52,14 @@ pub(super) fn generate_image(
     payload: ScenarioPayload,
     path: PathBuf,
     image_type: ImageType,
-) -> Result<PathBuf> {
+) -> Result<PngBundle> {
     debug!("Generating image");
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("Failed to create image directory: {}", parent.display()))?;
-    }
-    if path.is_file() {
-        return Ok(path);
-    }
-    let _file_name = path.with_extension("");
+
+    #[cfg(feature = "native")]
+    let path_arg: Option<&Path> = Some(&path);
+    #[cfg(not(feature = "native"))]
+    let path_arg: Option<&Path> = None;
+
     let estimations = &payload.results.estimations;
     let Some(model) = payload.results.model.as_ref() else {
         return Err(anyhow::anyhow!(
@@ -68,15 +68,15 @@ pub(super) fn generate_image(
     };
     let data = &payload.data;
     let metrics = &payload.results.metrics;
-    match image_type {
-        // might want to return this at some later point
+
+    let bundle = match image_type {
         ImageType::StatesMaxAlgorithm => states_spherical_plot(
             &estimations.system_states_spherical,
             &estimations.system_states_spherical_max,
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
             &model.spatial_description.voxels.numbers,
-            Some(&path),
+            path_arg,
             None,
             Some(StateSphericalPlotMode::ABS),
             None,
@@ -93,7 +93,7 @@ pub(super) fn generate_image(
                 .positions_mm,
             data.simulation.model.spatial_description.voxels.size_mm,
             &data.simulation.model.spatial_description.voxels.numbers,
-            Some(&path),
+            path_arg,
             None,
             Some(StateSphericalPlotMode::ABS),
             None,
@@ -106,7 +106,7 @@ pub(super) fn generate_image(
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
             &model.spatial_description.voxels.numbers,
-            Some(&path),
+            path_arg,
             None,
             Some(StateSphericalPlotMode::ABS),
             None,
@@ -116,7 +116,7 @@ pub(super) fn generate_image(
             &model.functional_description.ap_params.activation_time_ms,
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
-            &path,
+            path_arg,
             Some(PlotSlice::Z(0)),
         ),
         ImageType::ActivationTimeSimulation => activation_time_plot(
@@ -128,7 +128,7 @@ pub(super) fn generate_image(
                 .activation_time_ms,
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
-            &path,
+            path_arg,
             Some(PlotSlice::Z(0)),
         ),
         ImageType::ActivationTimeDelta => {
@@ -154,7 +154,7 @@ pub(super) fn generate_image(
                 &delta,
                 &model.spatial_description.voxels.positions_mm,
                 model.spatial_description.voxels.size_mm,
-                &path,
+                path_arg,
                 Some(PlotSlice::Z(0)),
             )
         }
@@ -162,7 +162,7 @@ pub(super) fn generate_image(
             &model.spatial_description.voxels.types,
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
-            Some(&path),
+            path_arg,
             None,
         ),
         ImageType::VoxelTypesSimulation => voxel_type_plot(
@@ -174,7 +174,7 @@ pub(super) fn generate_image(
                 .voxels
                 .positions_mm,
             data.simulation.model.spatial_description.voxels.size_mm,
-            Some(&path),
+            path_arg,
             None,
         ),
         ImageType::VoxelTypesPrediction => voxel_type_plot(
@@ -191,10 +191,10 @@ pub(super) fn generate_image(
             ),
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
-            Some(&path),
+            path_arg,
             None,
         ),
-        ImageType::AverageDelaySimulation => Ok(average_delay_plot(
+        ImageType::AverageDelaySimulation => average_delay_plot(
             &data.simulation.average_delays,
             &data.simulation.model.spatial_description.voxels.numbers,
             &data
@@ -204,11 +204,11 @@ pub(super) fn generate_image(
                 .voxels
                 .positions_mm,
             data.simulation.model.spatial_description.voxels.size_mm,
-            &path,
+            path_arg,
             None,
             None,
-        )?),
-        ImageType::AveragePropagationSpeedSimulation => Ok(average_propagation_speed_plot(
+        ),
+        ImageType::AveragePropagationSpeedSimulation => average_propagation_speed_plot(
             &data.simulation.average_delays,
             &data.simulation.model.spatial_description.voxels.numbers,
             &data
@@ -219,96 +219,102 @@ pub(super) fn generate_image(
                 .positions_mm,
             data.simulation.model.spatial_description.voxels.size_mm,
             data.simulation.sample_rate_hz,
-            &path,
+            path_arg,
             None,
-        )?),
-        ImageType::AverageDelayAlgorithm => Ok(average_delay_plot(
+        ),
+        ImageType::AverageDelayAlgorithm => average_delay_plot(
             &estimations.average_delays,
             &model.spatial_description.voxels.numbers,
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
-            &path,
+            path_arg,
             None,
             None,
-        )?),
-        ImageType::AveragePropagationSpeedAlgorithm => Ok(average_propagation_speed_plot(
+        ),
+        ImageType::AveragePropagationSpeedAlgorithm => average_propagation_speed_plot(
             &estimations.average_delays,
             &model.spatial_description.voxels.numbers,
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
             data.simulation.sample_rate_hz,
-            &path,
+            path_arg,
             None,
-        )?),
-        ImageType::AverageDelayDelta => Ok(average_delay_plot(
+        ),
+        ImageType::AverageDelayDelta => average_delay_plot(
             &(&data.simulation.average_delays - &estimations.average_delays),
             &model.spatial_description.voxels.numbers,
             &model.spatial_description.voxels.positions_mm,
             model.spatial_description.voxels.size_mm,
-            &path,
+            path_arg,
             None,
             None,
-        )?),
+        ),
         ImageType::LossEpoch => standard_log_y_plot(
             &metrics.loss_batch,
-            &path,
+            path_arg,
             "Sum Loss Per Epoch",
             "Loss",
             "Epoch",
         ),
-        ImageType::Loss => standard_y_plot(&metrics.loss, &path, "Loss Per Step", "Loss", "Step"),
+        ImageType::Loss => standard_y_plot(
+            &metrics.loss,
+            path_arg,
+            "Loss Per Step",
+            "Loss",
+            "Step",
+        ),
         ImageType::LossMseEpoch => standard_log_y_plot(
             &metrics.loss_mse_batch,
-            &path,
+            path_arg,
             "Sum MSE Loss Per Epoch",
             "Loss",
             "Epoch",
         ),
         ImageType::LossMse => standard_y_plot(
             &metrics.loss_mse,
-            &path,
+            path_arg,
             "MSE Loss Per Step",
             "Loss",
             "Step",
         ),
         ImageType::LossMaximumRegularizationEpoch => standard_log_y_plot(
             &metrics.loss_maximum_regularization_batch,
-            &path,
+            path_arg,
             "Sum Max. Reg. Loss Per Epoch",
             "Loss",
             "Epoch",
         ),
         ImageType::LossMaximumRegularization => standard_y_plot(
             &metrics.loss_maximum_regularization,
-            &path,
+            path_arg,
             "Max. Reg. Loss Per Step",
             "Loss",
             "Step",
         ),
         ImageType::Dice => standard_y_plot(
             &metrics.dice_score_over_threshold,
-            &path,
+            path_arg,
             "Dice Score over Threshold",
             "Dice Score",
             "Threshold * 100",
         ),
         ImageType::IoU => standard_y_plot(
             &metrics.iou_over_threshold,
-            &path,
+            path_arg,
             "IoU over Threshold",
             "IoU",
             "Threshold * 100",
         ),
         ImageType::Recall => standard_y_plot(
             &metrics.recall_over_threshold,
-            &path,
+            path_arg,
             "Recall over Threshold",
             "Recall",
             "Threshold * 100",
         ),
         ImageType::Precision => standard_y_plot(
             &metrics.precision_over_threshold,
-            &path,
+            path_arg,
             "Precision over Threshold",
             "Precision",
             "Threshold * 100",
@@ -316,7 +322,7 @@ pub(super) fn generate_image(
         ImageType::ControlFunctionAlgorithm => standard_time_plot(
             &model.functional_description.control_function_values,
             scenario.config.simulation.sample_rate_hz,
-            &path,
+            path_arg,
             "Control Function Algorithm",
             "u [A/mm^2]",
         ),
@@ -327,7 +333,7 @@ pub(super) fn generate_image(
                 .functional_description
                 .control_function_values,
             scenario.config.simulation.sample_rate_hz,
-            &path,
+            path_arg,
             "Control Function Simulation",
             "u [A/mm^2]",
         ),
@@ -339,21 +345,21 @@ pub(super) fn generate_image(
                     .functional_description
                     .control_function_values),
             scenario.config.simulation.sample_rate_hz,
-            &path,
+            path_arg,
             "Control Function Delta",
             "u [A/mm^2]",
         ),
         ImageType::StateAlgorithm => standard_time_plot(
             &estimations.system_states.slice(s![.., 0]).to_owned(),
             scenario.config.simulation.sample_rate_hz,
-            &path,
+            path_arg,
             "System State 0 Algorithm",
             "j [A/mm^2]",
         ),
         ImageType::StateSimulation => standard_time_plot(
             &data.simulation.system_states.slice(s![.., 0]).to_owned(),
             scenario.config.simulation.sample_rate_hz,
-            &path,
+            path_arg,
             "System State 0 Simulation",
             "j [A/mm^2]",
         ),
@@ -361,21 +367,21 @@ pub(super) fn generate_image(
             &(&estimations.system_states.slice(s![.., 0]).to_owned()
                 - &data.simulation.system_states.slice(s![.., 0]).to_owned()),
             scenario.config.simulation.sample_rate_hz,
-            &path,
+            path_arg,
             "System State 0 Delta",
             "j [A/mm^2]",
         ),
         ImageType::MeasurementAlgorithm => standard_time_plot(
             &estimations.measurements.slice(s![0, .., 0]).to_owned(),
             scenario.config.simulation.sample_rate_hz,
-            &path,
+            path_arg,
             "Measurement 0 Algorithm",
             "z [pT]",
         ),
         ImageType::MeasurementSimulation => standard_time_plot(
             &data.simulation.measurements.slice(s![0, .., 0]).to_owned(),
             scenario.config.simulation.sample_rate_hz,
-            &path,
+            path_arg,
             "Measurement 0 Simulation",
             "z [pT]",
         ),
@@ -383,24 +389,23 @@ pub(super) fn generate_image(
             &(&estimations.measurements.slice(s![0, .., 0]).to_owned()
                 - &data.simulation.measurements.slice(s![0, .., 0]).to_owned()),
             scenario.config.simulation.sample_rate_hz,
-            &path,
+            path_arg,
             "Measurement 0 Delta",
             "z [pT]",
         ),
     }
     .with_context(|| format!("Failed to generate plot for image type: {image_type:?}"))?;
-    Ok(path)
+
+    Ok(bundle)
 }
 
 // ── Animation (PNG-sequence) generation ───────────────────────────────────────
 
 /// Generates a PNG frame sequence for the given animation type.
 ///
-/// Frames are written to `results/{id}/img/anim/{anim_type}/frame_{n:04}.png`.
-/// The returned `PathBuf` is the frame directory.
-///
-/// This function is dispatched from a background thread; callers use the
-/// [`Arc<Mutex<Option<Result<PathBuf>>>>`] channel pattern.
+/// Frames are generated in-memory. On native the frames are also written to
+/// `anim_dir/frame_NNNN.png` for inter-session caching. The caller receives a
+/// `GifBundle` with all frame data so upload to GPU can happen in one hop.
 #[allow(clippy::needless_pass_by_value, clippy::too_many_lines)]
 #[tracing::instrument(level = "debug", skip(payload))]
 pub(super) fn generate_animation(
@@ -408,22 +413,8 @@ pub(super) fn generate_animation(
     payload: ScenarioPayload,
     anim_dir: PathBuf,
     anim_type: AnimType,
-) -> Result<PathBuf> {
+) -> Result<GifBundle> {
     debug!("Generating animation frames for {:?}", anim_type);
-
-    fs::create_dir_all(&anim_dir).with_context(|| {
-        format!(
-            "Failed to create animation directory: {}",
-            anim_dir.display()
-        )
-    })?;
-
-    // Return early if frames already exist.
-    if let Some(frames) = detect_existing_frames(&anim_dir) {
-        if !frames.is_empty() {
-            return Ok(anim_dir);
-        }
-    }
 
     let estimations = &payload.results.estimations;
     let Some(model) = payload.results.model.as_ref() else {
@@ -468,15 +459,12 @@ pub(super) fn generate_animation(
         )
         .context("Failed to generate StatesSimulation animation frames")?,
         AnimType::MatrixOverSlices => {
-            // Map max state magnitudes onto a 3-D spatial grid via VoxelNumbers.
             let numbers = &model.spatial_description.voxels.numbers;
             let shape = numbers.shape();
             let max_mag = &estimations.system_states_spherical_max.magnitude;
             let mut arr = ndarray::Array3::<f32>::zeros((shape[0], shape[1], shape[2]));
             for ((x, y, z), num) in numbers.indexed_iter() {
                 if let Some(n) = num {
-                    // VoxelNumbers stores the state index (multiples of 3);
-                    // dividing by 3 gives the voxel index into magnitude.
                     let voxel_idx = n / 3;
                     if let Some(&val) = max_mag.get(voxel_idx) {
                         arr[(x, y, z)] = val;
@@ -511,19 +499,28 @@ pub(super) fn generate_animation(
         .context("Failed to generate VoxelTypesOverSlices animation frames")?,
     };
 
-    // Write each frame as a PNG file.
-    for (index, rgb_bytes) in gif_bundle.data.iter().enumerate() {
-        let frame_path = anim_dir.join(format!("frame_{index:04}.png"));
-        write_rgb_as_png(rgb_bytes, gif_bundle.width, gif_bundle.height, &frame_path)
-            .with_context(|| {
-                format!(
-                    "Failed to write animation frame {index} to {}",
-                    frame_path.display()
-                )
-            })?;
+    #[cfg(feature = "native")]
+    {
+        std::fs::create_dir_all(&anim_dir).with_context(|| {
+            format!(
+                "Failed to create animation directory: {}",
+                anim_dir.display()
+            )
+        })?;
+
+        for (index, rgb_bytes) in gif_bundle.data.iter().enumerate() {
+            let frame_path = anim_dir.join(format!("frame_{index:04}.png"));
+            write_rgb_as_png(rgb_bytes, gif_bundle.width, gif_bundle.height, &frame_path)
+                .with_context(|| {
+                    format!(
+                        "Failed to write animation frame {index} to {}",
+                        frame_path.display()
+                    )
+                })?;
+        }
     }
 
-    Ok(anim_dir)
+    Ok(gif_bundle)
 }
 
 /// Writes raw RGB bytes (row-major, 3 bytes per pixel) as a PNG file.
@@ -539,10 +536,8 @@ fn write_rgb_as_png(rgb_bytes: &[u8], width: u32, height: u32, path: &Path) -> R
     Ok(())
 }
 
-/// Detects existing PNG frames in the animation directory for the given type.
-///
-/// Returns `Some(paths)` if the directory exists and contains at least one
-/// `frame_NNNN.png` file, otherwise `None`.
+/// Detects an existing PNG file at the standard results path for the given
+/// scenario and image type. Used for preloading cached images on native.
 #[tracing::instrument(level = "trace")]
 pub(super) fn detect_existing_image(scenario_id: &str, image_type: ImageType) -> Option<PathBuf> {
     let path = Path::new("results")
@@ -553,13 +548,14 @@ pub(super) fn detect_existing_image(scenario_id: &str, image_type: ImageType) ->
     path.is_file().then_some(path)
 }
 
+/// Discovers existing `frame_NNNN.png` files in a directory.
 #[tracing::instrument(level = "debug")]
 pub(super) fn detect_existing_frames(dir: &Path) -> Option<Vec<PathBuf>> {
     if !dir.is_dir() {
         return None;
     }
 
-    let entries = fs::read_dir(dir).ok()?;
+    let entries = std::fs::read_dir(dir).ok()?;
     let mut frames: Vec<PathBuf> = entries
         .filter_map(|e| {
             let e = e.ok()?;

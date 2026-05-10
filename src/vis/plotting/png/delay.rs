@@ -21,7 +21,7 @@ pub(crate) fn average_delay_plot(
     voxel_numbers: &VoxelNumbers,
     voxel_positions_mm: &VoxelPositions,
     voxel_size_mm: f32,
-    path: &Path,
+    path: Option<&Path>,
     max_delay_displayed_samples: Option<f32>,
     slice: Option<PlotSlice>,
 ) -> anyhow::Result<PngBundle> {
@@ -94,7 +94,7 @@ pub(crate) fn average_delay_plot(
         None,
         step,
         offset,
-        Some(path),
+        path,
         Some(title.as_str()),
         y_label,
         x_label,
@@ -147,7 +147,7 @@ mod test {
                 .voxels
                 .positions_mm,
             data.simulation.model.spatial_description.voxels.size_mm,
-            files[0].as_path(),
+            Some(files[0].as_path()),
             Some(10.0),
             Some(PlotSlice::Z(0)),
         )

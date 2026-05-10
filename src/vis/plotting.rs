@@ -1,6 +1,9 @@
 pub mod gif;
 pub mod png;
 
+pub use gif::GifBundle;
+pub use png::PngBundle;
+
 use plotters::style::RGBColor;
 use tracing::trace;
 

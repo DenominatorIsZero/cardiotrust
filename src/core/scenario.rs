@@ -427,8 +427,9 @@ impl Scenario {
 #[tracing::instrument(level = "info", skip_all, fields(id = %scenario.id))]
 pub fn run_test_scenario(
     scenario: Scenario,
-    epoch_tx: &std::sync::mpsc::Sender<usize>,
-    summary_tx: &std::sync::mpsc::Sender<Summary>,
+    epoch_tx: &crossbeam_channel::Sender<usize>,
+    summary_tx: &crossbeam_channel::Sender<Summary>,
+    done_tx: crossbeam_channel::Sender<()>,
 ) -> Result<()> {
     let storage_root = scenario
         .storage_root
@@ -439,5 +440,6 @@ pub fn run_test_scenario(
         ScenarioStorage::new(storage_root),
         epoch_tx,
         summary_tx,
+        done_tx,
     )
 }

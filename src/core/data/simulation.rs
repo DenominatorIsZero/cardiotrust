@@ -193,6 +193,7 @@ impl Simulation {
     /// # Errors
     ///
     /// Returns an error if any file I/O operation fails.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving simulation data to npy");

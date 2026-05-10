@@ -9,7 +9,10 @@ use super::{
     gallery::{BatchProgressLabel, GenerateAllButton, GenerateAllInTabButton},
     generate, AnimState, ResultAnimCache, ResultImageCache, ResultImageState,
 };
-use crate::ActiveLoadedScenario;
+use crate::{
+    vis::plotting::{GifBundle, PngBundle},
+    ActiveLoadedScenario,
+};
 
 // ── Generate All in Tab ────────────────────────────────────────────────────────
 
@@ -52,7 +55,7 @@ pub fn handle_generate_all_in_tab(
             let output_path = active
                 .storage
                 .image_path(scenario.get_id(), &image_type.to_string());
-            let channel = super::new_channel::<std::path::PathBuf>();
+            let channel = super::new_channel::<PngBundle>();
             let writer = channel.clone();
             std::thread::spawn(move || {
                 let result = generate::generate_image(scenario, payload, output_path, image_type);
@@ -76,7 +79,7 @@ pub fn handle_generate_all_in_tab(
             let anim_dir = active
                 .storage
                 .animation_dir(scenario.get_id(), anim_type.dir_name());
-            let channel = super::new_channel::<std::path::PathBuf>();
+            let channel = super::new_channel::<GifBundle>();
             let writer = channel.clone();
             std::thread::spawn(move || {
                 let result = generate::generate_animation(scenario, payload, anim_dir, anim_type);
@@ -139,7 +142,7 @@ pub fn handle_generate_all(
                 let output_path = active
                     .storage
                     .image_path(scenario.get_id(), &image_type.to_string());
-                let channel = super::new_channel::<std::path::PathBuf>();
+                let channel = super::new_channel::<PngBundle>();
                 let writer = channel.clone();
                 std::thread::spawn(move || {
                     let result =
@@ -164,7 +167,7 @@ pub fn handle_generate_all(
                 let anim_dir = active
                     .storage
                     .animation_dir(scenario.get_id(), anim_type.dir_name());
-                let channel = super::new_channel::<std::path::PathBuf>();
+                let channel = super::new_channel::<GifBundle>();
                 let writer = channel.clone();
                 std::thread::spawn(move || {
                     let result =

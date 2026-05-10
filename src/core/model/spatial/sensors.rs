@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::Context;
 use ndarray::{arr1, s, Array1, Array2};
+#[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
@@ -246,6 +247,7 @@ impl Sensors {
 
     /// Saves the sensor positions and orientations to .npy files in the given path.
     /// Creates the directory if it does not exist.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub(crate) fn save_npy(&self, path: &std::path::Path) -> anyhow::Result<()> {
         trace!("Saving sensors to npy files");

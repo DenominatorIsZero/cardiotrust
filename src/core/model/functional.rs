@@ -4,15 +4,19 @@ pub mod measurement;
 
 use anyhow::Result;
 use ndarray::Dim;
-use ocl::{Buffer, Queue};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, trace};
 
+#[cfg(feature = "native")]
+use ocl::{Buffer, Queue};
+
 use self::{
-    allpass::{APParameters, APParametersGPU},
+    allpass::APParameters,
     control::{ControlFunction, ControlMatrix},
     measurement::{MeasurementCovariance, MeasurementMatrix},
 };
+#[cfg(feature = "native")]
+use self::allpass::APParametersGPU;
 use super::spatial::SpatialDescription;
 use crate::core::config::model::Model;
 
@@ -26,6 +30,7 @@ pub struct FunctionalDescription {
     pub control_function_values: ControlFunction,
 }
 
+#[cfg(feature = "native")]
 pub struct FunctionalDescriptionGPU {
     pub ap_params: APParametersGPU,
     pub measurement_matrix: Buffer<f32>,
@@ -88,8 +93,12 @@ impl FunctionalDescription {
         let control_matrix = ControlMatrix::from_model_config(config, spatial_description)?;
         let measurement_covariance =
             MeasurementCovariance::from_model_config(config, spatial_description)?;
+        #[cfg(feature = "native")]
         let control_function_values =
             ControlFunction::from_model_config(config, sample_rate_hz, duration_s)?;
+        #[cfg(not(feature = "native"))]
+        let control_function_values =
+            ControlFunction::empty((duration_s * sample_rate_hz) as usize);
 
         Ok(Self {
             ap_params,
@@ -109,6 +118,7 @@ impl FunctionalDescription {
     /// # Errors
     ///
     /// Returns an error if any of the component save operations fail.
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace")]
     pub fn save_npy(&self, path: &std::path::Path) -> Result<()> {
         trace!("Saving functional description to npy");
@@ -121,6 +131,7 @@ impl FunctionalDescription {
         Ok(())
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub fn to_gpu(&self, queue: &Queue) -> Result<FunctionalDescriptionGPU> {
         Ok(FunctionalDescriptionGPU {
@@ -132,6 +143,7 @@ impl FunctionalDescription {
         })
     }
 
+    #[cfg(feature = "native")]
     #[tracing::instrument(level = "trace", skip_all)]
     pub(crate) fn update_from_gpu(
         &mut self,
