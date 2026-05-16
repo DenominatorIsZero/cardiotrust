@@ -1,11 +1,8 @@
-//! Model tab content for the scenario editor.
+//! Ground Truth and Initial Model tab content for the scenario editor.
 //!
-//! Spawns five collapsible sections:
-//! - Heart Geometry (voxel size, heart offset, heart size)
-//! - Functional Settings (control function, pathological, current factor)
-//! - Propagation Velocity (per-tissue sliders)
-//! - Handcrafted Model (conditional on model type)
-//! - MRI Model (conditional on model type)
+//! Renders five collapsible sections for a heart model, parameterized by
+//! [`ModelSectionIds`] so both the ground truth (`config.simulation.model`)
+//! and the initial model (`config.algorithm.model`) can reuse the same rendering.
 
 #![allow(clippy::cast_precision_loss)]
 
@@ -34,25 +31,77 @@ pub struct HandcraftedSectionContainer;
 #[derive(Component, Debug)]
 pub struct MriSectionContainer;
 
-// ── Spawn ─────────────────────────────────────────────────────────────────────
+// ── Section ID Mapping ────────────────────────────────────────────────────────
 
-/// Spawns all Model tab sections into `parent`.
+/// Holds the [`SectionId`] variants to use when rendering a model tab.
+///
+/// Ground truth and initial model tabs render the same fields but use separate
+/// section IDs so their collapse state is independent.
+pub struct ModelSectionIds {
+    pub heart_geometry: SectionId,
+    pub functional_settings: SectionId,
+    pub propagation_velocity: SectionId,
+    pub handcrafted_model: SectionId,
+    pub mri_model: SectionId,
+}
+
+// ── Public spawn functions ────────────────────────────────────────────────────
+
+/// Spawns the Ground Truth Model tab — editing `config.simulation.model`.
 #[tracing::instrument(skip_all)]
-pub fn spawn_model_tab(
+pub fn spawn_ground_truth_model_tab(
     commands: &mut Commands,
     parent: Entity,
     scenario: &Scenario,
     view_state: &ScenarioViewState,
 ) {
-    let sim_model = &scenario.config.simulation.model;
-    let common = &sim_model.common;
-    let is_handcrafted = sim_model.handcrafted.is_some();
+    let ids = ModelSectionIds {
+        heart_geometry: SectionId::GroundTruthHeartGeometry,
+        functional_settings: SectionId::GroundTruthFunctionalSettings,
+        propagation_velocity: SectionId::GroundTruthPropagationVelocity,
+        handcrafted_model: SectionId::GroundTruthHandcraftedModel,
+        mri_model: SectionId::GroundTruthMriModel,
+    };
+    spawn_model_tab_inner(commands, parent, &scenario.config.simulation.model, &ids, view_state);
+}
+
+/// Spawns the Initial Model tab — editing `config.algorithm.model`.
+#[tracing::instrument(skip_all)]
+pub fn spawn_initial_model_tab(
+    commands: &mut Commands,
+    parent: Entity,
+    scenario: &Scenario,
+    view_state: &ScenarioViewState,
+) {
+    let ids = ModelSectionIds {
+        heart_geometry: SectionId::InitialHeartGeometry,
+        functional_settings: SectionId::InitialFunctionalSettings,
+        propagation_velocity: SectionId::InitialPropagationVelocity,
+        handcrafted_model: SectionId::InitialHandcraftedModel,
+        mri_model: SectionId::InitialMriModel,
+    };
+    spawn_model_tab_inner(commands, parent, &scenario.config.algorithm.model, &ids, view_state);
+}
+
+// ── Inner spawn ───────────────────────────────────────────────────────────────
+
+/// Spawns all model tab sections into `parent`.
+#[tracing::instrument(skip_all)]
+fn spawn_model_tab_inner(
+    commands: &mut Commands,
+    parent: Entity,
+    model: &crate::core::config::model::Model,
+    ids: &ModelSectionIds,
+    view_state: &ScenarioViewState,
+) {
+    let common = &model.common;
+    let is_handcrafted = model.handcrafted.is_some();
 
     // ── Heart Geometry ────────────────────────────────────────────────────────
     let body = spawn_section(
         commands,
         parent,
-        SectionId::HeartGeometry,
+        ids.heart_geometry,
         "Heart Geometry",
         view_state,
     );
@@ -89,7 +138,7 @@ pub fn spawn_model_tab(
     });
 
     // Heart Size XYZ (Handcrafted only)
-    if let Some(handcrafted) = sim_model.handcrafted.as_ref() {
+    if let Some(handcrafted) = model.handcrafted.as_ref() {
         let size = handcrafted.heart_size_mm;
         let (slot, _) = spawn_param_row_into(
             commands,
@@ -109,7 +158,7 @@ pub fn spawn_model_tab(
     let body = spawn_section(
         commands,
         parent,
-        SectionId::FunctionalSettings,
+        ids.functional_settings,
         "Functional Settings",
         view_state,
     );
@@ -172,7 +221,7 @@ pub fn spawn_model_tab(
     let body = spawn_section(
         commands,
         parent,
-        SectionId::PropagationVelocity,
+        ids.propagation_velocity,
         "Propagation Velocity",
         view_state,
     );
@@ -261,12 +310,12 @@ pub fn spawn_model_tab(
     let body = spawn_section(
         commands,
         hc_container,
-        SectionId::HandcraftedModel,
+        ids.handcrafted_model,
         "Handcrafted Model",
         view_state,
     );
 
-    if let Some(hc) = sim_model.handcrafted.as_ref() {
+    if let Some(hc) = model.handcrafted.as_ref() {
         // SA center
         let (slot, _) = spawn_param_row_into(
             commands,
@@ -482,12 +531,12 @@ pub fn spawn_model_tab(
     let body = spawn_section(
         commands,
         mri_container,
-        SectionId::MriModel,
+        ids.mri_model,
         "MRI Model",
         view_state,
     );
 
-    let mri_path = sim_model.mri.as_ref().map_or_else(
+    let mri_path = model.mri.as_ref().map_or_else(
         || "assets/segmentation.nii".to_string(),
         |m| m.path.to_string_lossy().to_string(),
     );

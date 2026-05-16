@@ -1,6 +1,6 @@
 //! Tab bar for the scenario editor.
 //!
-//! Spawns a horizontal row of tabs (Simulation / Algorithm / Model).
+//! Spawns a horizontal row of tabs (Simulation / Algorithm / Ground Truth / Initial Model).
 //! Clicking a tab updates `ScenarioViewState.active_tab` and shows/hides
 //! the corresponding body node via `Display::Flex / None`.
 
@@ -39,16 +39,16 @@ pub struct TabAccent {
 
 // ── Spawn ─────────────────────────────────────────────────────────────────────
 
-/// Spawns the tab bar and three body containers as children of `parent`.
+/// Spawns the tab bar and four body containers as children of `parent`.
 ///
-/// Returns `(tab_bar_entity, sim_body, algo_body, model_body)` so the caller
+/// Returns `(tab_bar_entity, sim_body, algo_body, gt_body, init_body)` so the caller
 /// can populate each body.
 #[tracing::instrument(skip_all)]
 pub fn spawn_tab_bar(
     commands: &mut Commands,
     parent: Entity,
     view_state: &ScenarioViewState,
-) -> (Entity, Entity, Entity, Entity) {
+) -> (Entity, Entity, Entity, Entity, Entity) {
     // Tab bar row
     let tab_bar = commands
         .spawn((
@@ -69,7 +69,8 @@ pub fn spawn_tab_bar(
     let tabs = [
         (ScenarioTab::Simulation, "SIMULATION"),
         (ScenarioTab::Algorithm, "ALGORITHM"),
-        (ScenarioTab::Model, "MODEL"),
+        (ScenarioTab::GroundTruth, "GROUND TRUTH"),
+        (ScenarioTab::InitialModel, "INITIAL MODEL"),
     ];
 
     commands.entity(tab_bar).with_children(|bar| {
@@ -81,9 +82,10 @@ pub fn spawn_tab_bar(
     // Tab body scroll containers
     let sim_body = spawn_tab_body(commands, parent, ScenarioTab::Simulation, view_state);
     let algo_body = spawn_tab_body(commands, parent, ScenarioTab::Algorithm, view_state);
-    let model_body = spawn_tab_body(commands, parent, ScenarioTab::Model, view_state);
+    let gt_body = spawn_tab_body(commands, parent, ScenarioTab::GroundTruth, view_state);
+    let init_body = spawn_tab_body(commands, parent, ScenarioTab::InitialModel, view_state);
 
-    (tab_bar, sim_body, algo_body, model_body)
+    (tab_bar, sim_body, algo_body, gt_body, init_body)
 }
 
 #[tracing::instrument(skip_all)]

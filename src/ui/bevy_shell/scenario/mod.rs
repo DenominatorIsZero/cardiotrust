@@ -9,12 +9,12 @@
 //! scenario/
 //!   mod.rs       — ScenarioViewPlugin, state types, spawn/despawn
 //!   header.rs    — Scenario header bar (ID, status, buttons, comment)
-//!   tabs.rs      — Tab bar (Simulation / Algorithm / Model)
+//!   tabs.rs      — Tab bar (Simulation / Algorithm / Ground Truth / Initial Model)
 //!   sections.rs  — Collapsible section widget
 //!   widgets.rs   — Slider, ComboBox, Checkbox, NumberInput, XYZ, TextInput, Tooltip
 //!   simulation.rs — Simulation tab content
 //!   algorithm.rs — Algorithm tab content
-//!   model.rs     — Model tab content
+//!   model.rs     — Ground Truth and Initial Model tab content
 //! ```
 
 pub mod algorithm;
@@ -35,7 +35,7 @@ use self::{
         handle_comment_input, handle_copy_button, handle_delete_confirm, handle_delete_dismiss,
         handle_save_button, handle_schedule_button, spawn_header_bar, update_header_bar,
     },
-    model::spawn_model_tab,
+    model::{spawn_ground_truth_model_tab, spawn_initial_model_tab},
     sections::handle_section_header_click,
     simulation::spawn_simulation_tab,
     tabs::{handle_tab_click, spawn_tab_bar, update_tab_visuals},
@@ -62,7 +62,8 @@ use crate::{
 pub enum ScenarioTab {
     Simulation,
     Algorithm,
-    Model,
+    GroundTruth,
+    InitialModel,
 }
 
 impl Default for ScenarioTab {
@@ -84,12 +85,18 @@ pub enum SectionId {
     OptimizerSettings,
     RegularizationSettings,
     MetricsSettings,
-    // Model tab
-    HeartGeometry,
-    FunctionalSettings,
-    PropagationVelocity,
-    HandcraftedModel,
-    MriModel,
+    // Ground Truth Model tab
+    GroundTruthHeartGeometry,
+    GroundTruthFunctionalSettings,
+    GroundTruthPropagationVelocity,
+    GroundTruthHandcraftedModel,
+    GroundTruthMriModel,
+    // Initial Model tab
+    InitialHeartGeometry,
+    InitialFunctionalSettings,
+    InitialPropagationVelocity,
+    InitialHandcraftedModel,
+    InitialMriModel,
 }
 
 /// Resource that persists the UI state of the scenario editor within a session.
@@ -113,11 +120,18 @@ impl Default for ScenarioViewState {
         section_collapsed.insert(SectionId::OptimizerSettings, true);
         section_collapsed.insert(SectionId::RegularizationSettings, true);
         section_collapsed.insert(SectionId::MetricsSettings, true);
-        section_collapsed.insert(SectionId::HeartGeometry, false);
-        section_collapsed.insert(SectionId::FunctionalSettings, true);
-        section_collapsed.insert(SectionId::PropagationVelocity, true);
-        section_collapsed.insert(SectionId::HandcraftedModel, true);
-        section_collapsed.insert(SectionId::MriModel, true);
+        // Ground truth model
+        section_collapsed.insert(SectionId::GroundTruthHeartGeometry, false);
+        section_collapsed.insert(SectionId::GroundTruthFunctionalSettings, true);
+        section_collapsed.insert(SectionId::GroundTruthPropagationVelocity, true);
+        section_collapsed.insert(SectionId::GroundTruthHandcraftedModel, true);
+        section_collapsed.insert(SectionId::GroundTruthMriModel, true);
+        // Initial model
+        section_collapsed.insert(SectionId::InitialHeartGeometry, false);
+        section_collapsed.insert(SectionId::InitialFunctionalSettings, true);
+        section_collapsed.insert(SectionId::InitialPropagationVelocity, true);
+        section_collapsed.insert(SectionId::InitialHandcraftedModel, true);
+        section_collapsed.insert(SectionId::InitialMriModel, true);
         Self {
             active_tab: ScenarioTab::default(),
             section_collapsed,
@@ -241,7 +255,7 @@ fn spawn_scenario_view(
     spawn_header_bar(&mut commands, root, scenario);
 
     // Spawn tab bar
-    let (tab_bar, sim_body, algo_body, model_body) =
+    let (tab_bar, sim_body, algo_body, gt_body, init_body) =
         spawn_tab_bar(&mut commands, root, &view_state);
 
     // Spawn Simulation tab content
@@ -250,8 +264,11 @@ fn spawn_scenario_view(
     // Spawn Algorithm tab content
     spawn_algorithm_tab(&mut commands, algo_body, scenario, &view_state);
 
-    // Spawn Model tab content
-    spawn_model_tab(&mut commands, model_body, scenario, &view_state);
+    // Spawn Ground Truth Model tab content
+    spawn_ground_truth_model_tab(&mut commands, gt_body, scenario, &view_state);
+
+    // Spawn Initial Model tab content
+    spawn_initial_model_tab(&mut commands, init_body, scenario, &view_state);
 
     // Spawn shared tooltip overlay (on top of everything)
     spawn_tooltip_overlay(&mut commands, root);
