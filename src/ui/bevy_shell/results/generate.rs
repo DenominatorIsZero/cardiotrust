@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result};
 use image::ImageEncoder;
@@ -59,6 +62,12 @@ pub(super) fn generate_image(
     let path_arg: Option<&Path> = Some(&path);
     #[cfg(not(feature = "native"))]
     let path_arg: Option<&Path> = None;
+
+    #[cfg(feature = "native")]
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("Failed to create image directory: {}", parent.display()))?;
+    }
 
     let estimations = &payload.results.estimations;
     let Some(model) = payload.results.model.as_ref() else {
