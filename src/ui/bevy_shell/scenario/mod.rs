@@ -18,6 +18,7 @@
 //! ```
 
 pub mod algorithm;
+pub mod commit;
 pub mod header;
 pub mod model;
 pub mod sections;
@@ -31,6 +32,7 @@ use bevy::prelude::*;
 
 use self::{
     algorithm::spawn_algorithm_tab,
+    commit::commit_widget_changes,
     header::{
         handle_comment_input, handle_copy_button, handle_delete_confirm, handle_delete_dismiss,
         handle_save_button, handle_schedule_button, spawn_header_bar, update_header_bar,
@@ -193,6 +195,7 @@ impl Plugin for ScenarioViewPlugin {
                 handle_number_input,
                 handle_slider_value_input,
                 handle_text_input,
+                commit_widget_changes,
                 handle_tooltip_hover,
                 handle_tooltip_click,
                 hide_tooltip_on_other_click,
