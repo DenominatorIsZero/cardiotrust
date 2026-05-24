@@ -120,13 +120,13 @@ pub fn sync_static_card_state(
     }
 
     for (btn, mut node) in &mut save_btns {
-        let CardKind::Static(image_type) = btn.kind else {
+        let CardKind::Static(_image_type) = btn.kind else {
             continue;
         };
         #[cfg(feature = "native")]
         {
             let show_save = matches!(
-                image_cache.0.get(&image_type),
+                image_cache.0.get(&_image_type),
                 Some(ResultImageState::Ready(_))
             );
             node.display = if show_save {
@@ -263,12 +263,12 @@ pub fn sync_anim_card_state(
     }
 
     for (btn, mut node) in &mut save_btns {
-        let CardKind::Anim(anim_type) = btn.kind else {
+        let CardKind::Anim(_anim_type) = btn.kind else {
             continue;
         };
         #[cfg(feature = "native")]
         {
-            let show_save = matches!(anim_cache.0.get(&anim_type), Some(AnimState::Ready(_)));
+            let show_save = matches!(anim_cache.0.get(&_anim_type), Some(AnimState::Ready(_)));
             node.display = if show_save {
                 Display::Flex
             } else {

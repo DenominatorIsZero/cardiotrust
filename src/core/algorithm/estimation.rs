@@ -1,5 +1,6 @@
 pub mod prediction;
 
+#[cfg(feature = "native")]
 use anyhow::{Context, Result};
 #[cfg(feature = "native")]
 use ocl::Buffer;

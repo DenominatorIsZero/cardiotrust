@@ -1,6 +1,9 @@
+#[cfg(feature = "native")]
 use std::{
     fs::{self, File},
     io::BufWriter,
+};
+use std::{
     ops::{Deref, DerefMut},
 };
 

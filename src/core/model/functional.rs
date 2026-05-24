@@ -5,7 +5,9 @@ pub mod measurement;
 use anyhow::Result;
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, trace};
+use tracing::debug;
+#[cfg(feature = "native")]
+use tracing::trace;
 
 #[cfg(feature = "native")]
 use ocl::{Buffer, Queue};

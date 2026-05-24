@@ -4,12 +4,14 @@ mod positions;
 mod tests;
 mod types;
 
+#[cfg(feature = "native")]
 use std::{
     fs::{self, File},
     io::BufWriter,
 };
 
 use anyhow::{Context, Result};
+#[cfg(feature = "native")]
 use ndarray::arr1;
 #[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;

@@ -18,20 +18,26 @@ use crate::{ActiveLoadedScenario, ScenarioList, SelectedSenario};
 pub fn handle_save_button(
     buttons: Query<(&CardSaveButton, &Interaction), (Changed<Interaction>, With<Button>)>,
     image_cache: Res<super::ResultImageCache>,
-    scenario_list: Res<ScenarioList>,
-    selected: Res<SelectedSenario>,
+    _scenario_list: Res<ScenarioList>,
+    _selected: Res<SelectedSenario>,
 ) {
+    #[cfg(not(feature = "native"))]
+    {
+        let _ = (&_scenario_list, &_selected);
+    }
     for (btn, interaction) in &buttons {
         if *interaction != Interaction::Pressed {
             continue;
         }
         let CardKind::Static(image_type) = btn.kind else {
             // Animation save: open the frame directory.
-            let CardKind::Anim(anim_type) = btn.kind else {
+            let CardKind::Anim(_anim_type) = btn.kind else {
                 continue;
             };
             #[cfg(feature = "native")]
             {
+                let scenario_list = _scenario_list;
+                let selected = _selected;
                 let Some(index) = selected.index else {
                     continue;
                 };
@@ -40,7 +46,7 @@ pub fn handle_save_button(
                 };
                 let dir = entry
                     .storage
-                    .animation_dir(entry.scenario.get_id(), anim_type.dir_name());
+                    .animation_dir(entry.scenario.get_id(), _anim_type.dir_name());
                 open_in_file_manager(&dir);
             }
             continue;
@@ -53,6 +59,8 @@ pub fn handle_save_button(
         }
         #[cfg(feature = "native")]
         {
+            let scenario_list = _scenario_list;
+            let selected = _selected;
             let Some(index) = selected.index else {
                 continue;
             };
@@ -71,26 +79,26 @@ pub fn handle_save_button(
 #[tracing::instrument(level = "debug", skip_all)]
 fn open_in_file_manager(path: &std::path::Path) {
     // Resolve to an absolute path so the OS command works regardless of cwd.
-    let abs = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let _abs = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
     #[cfg(target_os = "macos")]
     {
         // `open -R <file>` reveals the file in Finder.
         let _ = std::process::Command::new("open")
             .arg("-R")
-            .arg(&abs)
+            .arg(&_abs)
             .spawn();
     }
     #[cfg(target_os = "linux")]
     {
         // `xdg-open` opens the parent directory.
-        let dir = abs.parent().unwrap_or(&abs);
+        let dir = _abs.parent().unwrap_or(&_abs);
         let _ = std::process::Command::new("xdg-open").arg(dir).spawn();
     }
     #[cfg(target_os = "windows")]
     {
         let _ = std::process::Command::new("explorer")
             .arg("/select,")
-            .arg(&abs)
+            .arg(&_abs)
             .spawn();
     }
 }
@@ -102,20 +110,25 @@ fn open_in_file_manager(path: &std::path::Path) {
 pub fn handle_export_npy(
     buttons: Query<(&ExportNpyButton, &Interaction), (Changed<Interaction>, With<Button>)>,
     active_loaded_scenario: Res<ActiveLoadedScenario>,
-    mut view_state: ResMut<ResultsViewState>,
+    _view_state: ResMut<ResultsViewState>,
 ) {
-    for (_, interaction) in &buttons {
-        if *interaction != Interaction::Pressed {
-            continue;
-        }
-        let Some(active) = active_loaded_scenario.0.as_ref() else {
-            continue;
-        };
-        let scenario = active.scenario.clone();
-        let payload = active.payload.clone();
-        let storage = active.storage.clone();
-        #[cfg(feature = "native")]
-        {
+    #[cfg(not(feature = "native"))]
+    {
+        let _ = (&buttons, &active_loaded_scenario, &_view_state);
+    }
+    #[cfg(feature = "native")]
+    {
+        for (_, interaction) in &buttons {
+            if *interaction != Interaction::Pressed {
+                continue;
+            }
+            let Some(active) = active_loaded_scenario.0.as_ref() else {
+                continue;
+            };
+            let mut view_state = _view_state;
+            let scenario = active.scenario.clone();
+            let payload = active.payload.clone();
+            let storage = active.storage.clone();
             let out_dir = storage.npy_dir(scenario.get_id());
             let channel = super::new_channel::<std::path::PathBuf>();
             let writer = channel.clone();
@@ -139,10 +152,14 @@ pub fn handle_export_npy(
 pub fn handle_export_apng(
     buttons: Query<(&ExportApngButton, &Interaction), (Changed<Interaction>, With<Button>)>,
     anim_cache: Res<super::ResultAnimCache>,
-    mut view_state: ResMut<ResultsViewState>,
+    _view_state: ResMut<ResultsViewState>,
     scenario_list: Res<ScenarioList>,
     selected: Res<SelectedSenario>,
 ) {
+    #[cfg(not(feature = "native"))]
+    {
+        let _ = (&buttons, &anim_cache, &_view_state, &scenario_list, &selected);
+    }
     #[cfg(feature = "native")]
     {
         for (_, interaction) in &buttons {
@@ -176,6 +193,7 @@ pub fn handle_export_apng(
             });
 
             let Some(frames_dir) = first_ready_dir else {
+                let mut view_state = _view_state;
                 view_state.export_state = Some(ExportState::Failed(
                     "No animation ready to export".to_string(),
                 ));
@@ -194,12 +212,9 @@ pub fn handle_export_apng(
                     *guard = Some(result);
                 }
             });
+            let mut view_state = _view_state;
             view_state.export_state = Some(ExportState::InProgress(channel));
         }
-    }
-    #[cfg(not(feature = "native"))]
-    {
-        let _ = (buttons, _anim_cache, view_state, _scenario_list, _selected);
     }
 }
 

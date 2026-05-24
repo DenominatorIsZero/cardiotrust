@@ -4,7 +4,9 @@ pub mod simulation;
 use anyhow::{Context, Result};
 use ndarray::Dim;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, trace};
+use tracing::debug;
+#[cfg(feature = "native")]
+use tracing::trace;
 
 use self::simulation::Simulation;
 use crate::core::{config::simulation::Simulation as SimulationConfig, data::shapes::Measurements};

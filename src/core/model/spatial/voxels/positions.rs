@@ -1,18 +1,22 @@
+#[cfg(feature = "native")]
 use std::{
     fs::File,
     io::BufWriter,
+};
+use std::{
     ops::{Deref, DerefMut},
 };
 
+#[cfg(feature = "native")]
 use anyhow::Context;
 use ndarray::{arr1, s, Array4, Dim};
 #[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
 use serde::{Deserialize, Serialize};
-
-use super::VoxelType;
 #[cfg(feature = "native")]
 use super::super::nifti::MriData;
+#[cfg(feature = "native")]
+use super::VoxelType;
 use crate::core::config::model::Model;
 
 #[allow(clippy::unsafe_derive_deserialize)]

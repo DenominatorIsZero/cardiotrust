@@ -116,7 +116,7 @@ pub fn queue_thumbnail_generation(
     for id in needs_pending {
         cache.states.insert(id, ThumbnailState::Pending);
     }
-    let Some((id, storage)) = needs_generation else { return };
+    let Some((id, _storage)) = needs_generation else { return };
 
     cache.states.insert(id.clone(), ThumbnailState::Generating);
 

@@ -7,9 +7,11 @@ use bevy::{
 };
 use bevy_editor_cam::controller::component::{EditorCam, EnabledMotion};
 
+#[cfg(feature = "native")]
+use super::helpers::default_screenshot_file_name;
 use super::{
     helpers::{
-        color_mode_label, control_value_text, cycle_color_mode, default_screenshot_file_name,
+        color_mode_label, control_value_text, cycle_color_mode,
         step_f32, step_playback_speed, step_usize, step_vec3_axis,
     },
     plot::{build_signal_plot_image, cursor_left_px, image_from_plot, PlotImageRequest},
@@ -349,7 +351,7 @@ pub(super) fn collapse_overlay_on_outside_click(
 #[allow(clippy::type_complexity)]
 pub(super) fn handle_toolbar_buttons(
     mut state: ResMut<VolumetricViewState>,
-    mut screenshot_dialog_rx: ResMut<ScreenshotDialogReceiver>,
+    _screenshot_dialog_rx: ResMut<ScreenshotDialogReceiver>,
     reset_buttons: Query<&Interaction, (Changed<Interaction>, With<ToolbarResetCameraButton>)>,
     fullscreen_buttons: Query<
         &Interaction,
@@ -397,6 +399,7 @@ pub(super) fn handle_toolbar_buttons(
 
         #[cfg(feature = "native")]
         {
+            let mut screenshot_dialog_rx = _screenshot_dialog_rx;
             if screenshot_dialog_rx.0.is_some() {
                 continue;
             }

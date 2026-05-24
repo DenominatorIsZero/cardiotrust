@@ -382,12 +382,13 @@ pub fn handle_open_project_button(
         (&Interaction, Option<&HomeProjectSwitchDisabled>),
         (With<OpenProjectButton>, Changed<Interaction>),
     >,
-    mut dialog_rx: ResMut<FolderDialogReceiver>,
+    dialog_rx: ResMut<FolderDialogReceiver>,
 ) {
     for (interaction, disabled) in &buttons {
         if disabled.is_none() && *interaction == Interaction::Pressed && dialog_rx.0.is_none() {
             #[cfg(feature = "native")]
             {
+                let mut dialog_rx = dialog_rx;
                 let (tx, rx) = mpsc::channel();
                 std::thread::spawn(move || {
                     if let Some(path) = rfd::FileDialog::new().pick_folder() {

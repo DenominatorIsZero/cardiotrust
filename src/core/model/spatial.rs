@@ -4,7 +4,9 @@ pub mod voxels;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, trace};
+use tracing::debug;
+#[cfg(feature = "native")]
+use tracing::trace;
 
 use self::{sensors::Sensors, voxels::Voxels};
 use crate::core::config::model::Model;

@@ -11,7 +11,7 @@ use bevy::prelude::*;
 use super::{
     sections::spawn_section,
     widgets::{
-        spawn_checkbox, spawn_combobox, spawn_param_row, spawn_slider, spawn_text_input,
+        spawn_checkbox, spawn_combobox, spawn_param_row, spawn_slider,
         spawn_xyz_group, ParamId, SliderValueInput,
     },
     ScenarioViewState, SectionId,

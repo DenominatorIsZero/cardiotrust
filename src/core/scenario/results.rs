@@ -1,5 +1,6 @@
 use std::ops::Deref;
 
+#[cfg(feature = "native")]
 use anyhow::{Context, Result};
 use ndarray::{s, Array3, Array4};
 #[cfg(feature = "native")]

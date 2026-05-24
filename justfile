@@ -4,68 +4,68 @@ help:
 
 # Development
 run:
-  cargo run --bin main
+  rtk cargo run --bin main
 
 release:
-  cargo run --release --bin main
+  rtk cargo run --release --bin main
 
 planner:
-  cargo run --bin planner
+  rtk cargo run --bin planner
 
 # Testing
 test:
-  cargo nextest run --no-fail-fast
+  rtk cargo nextest run --no-fail-fast
 
 test-all:
-  cargo nextest run -- --ignored
+  rtk cargo nextest run -- --ignored
 
 # Code Quality
 lint:
-    cargo clippy --all-targets
+    rtk cargo clippy --all-targets
 
 fmt:
-  cargo +nightly fmt
+  rtk cargo +nightly fmt
 
 fmt-check:
-  cargo +nightly fmt --check
+  rtk cargo +nightly fmt --check
 
 # Build
 build:
-  cargo build
+  rtk cargo build
 
 build-release:
-  cargo build --release
+  rtk cargo build --release
 
 # WASM
 wasm-build:
-  cargo build --target wasm32-unknown-unknown --no-default-features
+  rtk cargo build --target wasm32-unknown-unknown --no-default-features
 
 wasm-run:
-  cargo build --target wasm32-unknown-unknown --no-default-features
-  npx wasm-server-runner target/wasm32-unknown-unknown/debug/cardiotrust.wasm
+  rtk cargo build --target wasm32-unknown-unknown --no-default-features
+  rtk wasm-server-runner target/wasm32-unknown-unknown/debug/main.wasm
 
 # Benchmarking (Research-specific)
 bench:
-  cargo bench --bench in_epoch_benches
+  rtk cargo bench --bench in_epoch_benches
 
 bench-all:
-  cargo bench
+  rtk cargo bench
 
 flamegraph:
-  CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph --bin main --release --root
+  rtk CARGO_PROFILE_RELEASE_DEBUG=true cargo flamegraph --bin main --release --root
 
 # Documentation
 doc:
-  cargo doc --no-deps --open
+  rtk cargo doc --no-deps --open
 
 doc-all:
-  cargo doc --open
+  rtk cargo doc --open
 
 # Maintenance
 clean:
-  cargo clean
-  rm -rf results/*
-  rm -rf logs/*
+  rtk cargo clean
+  rtk rm -rf results/*
+  rtk rm -rf logs/*
 
 # Comprehensive check - everything including tests, benches, examples
 check:

@@ -1,16 +1,23 @@
+#[cfg(feature = "native")]
 use std::{
     fs::File,
     io::BufWriter,
+};
+use std::{
     ops::{Deref, DerefMut},
 };
 
 use anyhow::{Context, Result};
+#[cfg(feature = "native")]
 use ndarray::{s, Array3};
+#[cfg(not(feature = "native"))]
+use ndarray::Array3;
 #[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
 use serde::{Deserialize, Serialize};
-
-use super::{VoxelPositions, VoxelType};
+use super::VoxelType;
+#[cfg(feature = "native")]
+use super::VoxelPositions;
 #[cfg(feature = "native")]
 use super::super::nifti::{determine_voxel_type, MriData};
 use crate::core::config::model::Model;

@@ -7,7 +7,9 @@ use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, info, trace};
+use tracing::{debug, info};
+#[cfg(feature = "native")]
+use tracing::trace;
 
 use super::shapes::{
     ActivationTimePerStateMs, SystemStates, SystemStatesSpherical, SystemStatesSphericalMax,

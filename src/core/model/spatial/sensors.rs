@@ -1,10 +1,12 @@
+#[cfg(feature = "native")]
 use std::{
     fs::{self, File},
     io::BufWriter,
 };
 
-use anyhow::Context;
 use ndarray::{arr1, s, Array1, Array2};
+#[cfg(feature = "native")]
+use anyhow::Context;
 #[cfg(feature = "native")]
 use ndarray_npy::WriteNpyExt;
 use rand::seq::SliceRandom;

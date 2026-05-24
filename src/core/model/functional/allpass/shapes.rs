@@ -1,9 +1,13 @@
+#[cfg(feature = "native")]
 use std::{
     fs::{self, File},
     io::BufWriter,
+};
+use std::{
     ops::{Deref, DerefMut},
 };
 
+#[cfg(feature = "native")]
 use anyhow::{Context, Result};
 use approx::assert_relative_eq;
 use ndarray::{Array2, Array3, Dim};

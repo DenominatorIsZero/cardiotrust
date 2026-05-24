@@ -1,9 +1,13 @@
+#[cfg(feature = "native")]
 use std::{
     fs::File,
     io::BufWriter,
+};
+use std::{
     ops::{Deref, DerefMut},
 };
 
+#[cfg(feature = "native")]
 use anyhow::Context;
 use ndarray::Array3;
 #[cfg(feature = "native")]

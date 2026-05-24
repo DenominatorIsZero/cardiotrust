@@ -1,7 +1,10 @@
+#[cfg(feature = "native")]
 use std::{
-    f32::consts::PI,
     fs::{self, File},
     io::BufWriter,
+};
+use std::{
+    f32::consts::PI,
     ops::{Deref, DerefMut},
 };
 
@@ -13,7 +16,9 @@ use ndarray_npy::WriteNpyExt;
 use physical_constants::VACUUM_MAG_PERMEABILITY;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, trace};
+use tracing::debug;
+#[cfg(feature = "native")]
+use tracing::trace;
 
 #[cfg(feature = "native")]
 use ocl::{Buffer, Queue};

@@ -12,8 +12,6 @@ use super::{GalleryTab, ResultsViewRoot, ResultsViewState};
 pub struct GalleryGridNode {
     pub tab: GalleryTab,
 }
-use std::path::PathBuf;
-
 use super::card::spawn_gallery_cards;
 use crate::{
     ui::{bevy_shell::content_area::ContentSlot, colors},

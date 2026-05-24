@@ -1,13 +1,16 @@
 #[cfg(feature = "native")]
 use std::process::Command;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
+#[cfg(not(target_arch = "wasm32"))]
+use anyhow::Context;
 use bevy::{log::LogPlugin, prelude::*};
 use cardiotrust::{
     scheduler::SchedulerPlugin, ui::UiPlugin, vis::VisPlugin, ActiveLoadedScenario,
     PendingProjectLoad, ProjectState, ScenarioList, SelectedSenario,
 };
 use tracing::{info, warn};
+#[cfg(not(target_arch = "wasm32"))]
 use tracing_subscriber::{fmt, layer::SubscriberExt};
 
 #[tracing::instrument(level = "info")]
@@ -132,6 +135,7 @@ fn setup_logging() -> Result<()> {
     Ok(())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[tracing::instrument(level = "debug")]
 fn setup_stdout_logging() -> Result<()> {
     let subscriber = tracing_subscriber::registry().with(

@@ -1,24 +1,33 @@
+#[cfg(feature = "native")]
 use std::{
     fs::{self, File},
     io::BufWriter,
+};
+use std::{
     ops::{Deref, DerefMut},
 };
 
 use anyhow::{Context, Result};
+#[cfg(feature = "native")]
 use approx::RelativeEq;
 use ndarray::Array1;
 #[cfg(feature = "native")]
 use ndarray_npy::{read_npy, WriteNpyExt};
 #[cfg(feature = "native")]
 use ocl::Buffer;
+#[cfg(feature = "native")]
 use rubato::{audioadapter_buffers::owned::InterleavedOwned, Async, FixedAsync, Resampler, SincInterpolationParameters};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, trace};
+use tracing::debug;
+#[cfg(feature = "native")]
+use tracing::trace;
 
 use crate::core::{
-    config::{self, model::Model},
+    config::model::Model,
     model::spatial::{voxels::VoxelType, SpatialDescription},
 };
+#[cfg(feature = "native")]
+use crate::core::config;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[allow(clippy::module_name_repetitions)]
