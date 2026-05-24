@@ -21,7 +21,6 @@ test-all:
 
 # Code Quality
 lint:
-    clippy-tracing --action check --exclude target --exclude benches
     cargo clippy --all-targets
 
 fmt:
@@ -71,9 +70,9 @@ clean:
 # Comprehensive check - everything including tests, benches, examples
 check:
   @echo "🔍 Running comprehensive cargo check..."
-  cargo check --workspace --all-targets --all-features
+  rtk cargo check --workspace --all-targets --all-features
   @echo "🔍 Running comprehensive clippy..."
-  cargo clippy --workspace --all-targets --all-features -- -D warnings
+  rtk cargo clippy --workspace --all-targets --all-features -- -D warnings
 
 # Combined workflows
 work: check test bench

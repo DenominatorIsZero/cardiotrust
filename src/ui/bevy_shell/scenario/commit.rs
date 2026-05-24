@@ -71,7 +71,7 @@ pub fn commit_widget_changes(
 
 // ── Route by ParamId ──────────────────────────────────────────────────────────
 
-fn apply_checkbox(scenario: &mut Scenario, id: ParamId, checked: bool, state: &ScenarioViewState) {
+const fn apply_checkbox(scenario: &mut Scenario, id: ParamId, checked: bool, state: &ScenarioViewState) {
     let model = model_mut(scenario, id, state);
     match id {
         ParamId::Pathological => model.common.pathological = checked,
@@ -97,17 +97,17 @@ fn apply_checkbox(scenario: &mut Scenario, id: ParamId, checked: bool, state: &S
     }
 }
 
-fn apply_slider(scenario: &mut Scenario, id: ParamId, value: f32, state: &ScenarioViewState) {
+const fn apply_slider(scenario: &mut Scenario, id: ParamId, value: f32, state: &ScenarioViewState) {
     match id {
         // Simulation
         ParamId::SampleRate => scenario.config.simulation.sample_rate_hz = value,
         ParamId::Duration => scenario.config.simulation.duration_s = value,
         // Algorithm
-        ParamId::Epochs => scenario.config.algorithm.epochs = value as usize,
-        ParamId::BatchSize => scenario.config.algorithm.batch_size = value as usize,
+        ParamId::Epochs => scenario.config.algorithm.epochs = f32_to_usize(value),
+        ParamId::BatchSize => scenario.config.algorithm.batch_size = f32_to_usize(value),
         ParamId::LearningRate => scenario.config.algorithm.learning_rate = value,
         ParamId::LrReductionInterval => {
-            scenario.config.algorithm.learning_rate_reduction_interval = value as usize;
+            scenario.config.algorithm.learning_rate_reduction_interval = f32_to_usize(value);
         }
         ParamId::LrReductionFactor => {
             scenario.config.algorithm.learning_rate_reduction_factor = value;
@@ -119,7 +119,7 @@ fn apply_slider(scenario: &mut Scenario, id: ParamId, value: f32, state: &Scenar
             scenario.config.algorithm.maximum_regularization_strength = value;
         }
         ParamId::SnapshotInterval => {
-            scenario.config.algorithm.snapshots_interval = value as usize;
+            scenario.config.algorithm.snapshots_interval = f32_to_usize(value);
         }
         // Model — shared between Ground Truth and Initial Model
         ParamId::VoxelSize => model_mut(scenario, id, state).common.voxel_size_mm = value,
@@ -235,7 +235,7 @@ fn apply_slider(scenario: &mut Scenario, id: ParamId, value: f32, state: &Scenar
     }
 }
 
-fn apply_combobox(
+const fn apply_combobox(
     scenario: &mut Scenario,
     id: ParamId,
     index: usize,
@@ -307,11 +307,11 @@ fn apply_number_input(
             scenario.config.simulation.model.common.sensor_array_radius_mm = value;
         }
         ParamId::NumberOfSensors => {
-            scenario.config.simulation.model.common.number_of_sensors = value as usize;
+            scenario.config.simulation.model.common.number_of_sensors = f32_to_usize(value);
         }
         // XYZ groups → array fields
         ParamId::SensorsPerAxis => {
-            scenario.config.simulation.model.common.sensors_per_axis[idx] = value as usize;
+            scenario.config.simulation.model.common.sensors_per_axis[idx] = f32_to_usize(value);
         }
         ParamId::ArrayOriginX => {
             scenario.config.simulation.model.common.sensor_array_origin_mm[idx] = value;
@@ -333,7 +333,7 @@ fn apply_number_input(
                 .simulation
                 .model
                 .common
-                .sensor_array_motion_steps[idx] = value as usize;
+                .sensor_array_motion_steps[idx] = f32_to_usize(value);
         }
         // Model XYZ groups
         ParamId::HeartOffsetX => {
@@ -360,14 +360,17 @@ fn apply_number_input(
 }
 
 fn apply_text_input(scenario: &mut Scenario, id: ParamId, content: &str, _state: &ScenarioViewState) {
-    match id {
-        ParamId::MriPath => {
-            scenario.config.simulation.model.mri = Some(Mri {
-                path: content.into(),
-            });
-        }
-        _ => {}
+    if id == ParamId::MriPath {
+        scenario.config.simulation.model.mri = Some(Mri {
+            path: content.into(),
+        });
     }
+}
+
+/// Convert `f32` to `usize`, rounding to nearest and clamping below zero.
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+const fn f32_to_usize(v: f32) -> usize {
+    v.round().max(0.0) as usize
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -378,7 +381,7 @@ fn apply_text_input(scenario: &mut Scenario, id: ParamId, content: &str, _state:
 /// Initial Model tab → `config.algorithm.model`
 /// Simulation / Algorithm tabs → `config.simulation.model` (fallback; model
 /// params shouldn't appear there, but we pick a safe default).
-fn model_mut<'a>(scenario: &'a mut Scenario, _id: ParamId, state: &ScenarioViewState) -> &'a mut Model {
+const fn model_mut<'a>(scenario: &'a mut Scenario, _id: ParamId, state: &ScenarioViewState) -> &'a mut Model {
     match state.active_tab {
         ScenarioTab::GroundTruth => &mut scenario.config.simulation.model,
         ScenarioTab::InitialModel => &mut scenario.config.algorithm.model,

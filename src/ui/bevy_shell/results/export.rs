@@ -138,10 +138,10 @@ pub fn handle_export_npy(
 #[tracing::instrument(skip_all)]
 pub fn handle_export_apng(
     buttons: Query<(&ExportApngButton, &Interaction), (Changed<Interaction>, With<Button>)>,
-    _anim_cache: Res<super::ResultAnimCache>,
+    anim_cache: Res<super::ResultAnimCache>,
     mut view_state: ResMut<ResultsViewState>,
-    _scenario_list: Res<ScenarioList>,
-    _selected: Res<SelectedSenario>,
+    scenario_list: Res<ScenarioList>,
+    selected: Res<SelectedSenario>,
 ) {
     #[cfg(feature = "native")]
     {
@@ -150,10 +150,10 @@ pub fn handle_export_apng(
                 continue;
             }
 
-            let Some(index) = _selected.index else {
+            let Some(index) = selected.index else {
                 continue;
             };
-            let Some(entry) = _scenario_list.entries.get(index) else {
+            let Some(entry) = scenario_list.entries.get(index) else {
                 continue;
             };
             let first_ready_dir = [
@@ -165,7 +165,7 @@ pub fn handle_export_apng(
             .iter()
             .find(|&&anim_type| {
                 matches!(
-                    _anim_cache.0.get(&anim_type),
+                    anim_cache.0.get(&anim_type),
                     Some(super::AnimState::Ready(_))
                 )
             })

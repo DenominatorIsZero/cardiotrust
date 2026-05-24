@@ -456,6 +456,7 @@ pub fn update_thumbnail_cycle_images(
 /// Runs after UI layout and resizes every [`ThumbnailAspect`] image node so it
 /// fits inside its parent [`CardThumbnailArea`] without stretching.
 #[tracing::instrument(skip_all)]
+#[allow(clippy::cast_precision_loss)]
 pub fn fit_thumbnail_images(
     mut query: Query<(&ThumbnailAspect, &mut Node, &ChildOf)>,
     computed_nodes: Query<&ComputedNode>,
