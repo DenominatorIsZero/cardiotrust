@@ -50,7 +50,7 @@ use crate::{
     unreachable_code
 )]
 #[tracing::instrument(level = "debug", skip(payload))]
-pub(super) fn generate_image(
+pub(crate) fn generate_image(
     scenario: Scenario,
     payload: ScenarioPayload,
     path: PathBuf,

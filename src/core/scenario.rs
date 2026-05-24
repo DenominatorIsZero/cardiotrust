@@ -267,6 +267,13 @@ impl Scenario {
         }
     }
 
+    /// Sets the scenario status to Aborted.
+    #[tracing::instrument(level = "debug")]
+    pub fn set_aborted(&mut self) {
+        debug!("Setting scenario status to aborted");
+        self.status = Status::Aborted;
+    }
+
     /// Returns an immutable reference to the scenario status.
     #[must_use]
     pub const fn get_status(&self) -> &Status {
@@ -429,7 +436,7 @@ pub fn run_test_scenario(
     scenario: Scenario,
     epoch_tx: &crossbeam_channel::Sender<usize>,
     summary_tx: &crossbeam_channel::Sender<Summary>,
-    done_tx: crossbeam_channel::Sender<()>,
+    done_tx: crossbeam_channel::Sender<bool>,
 ) -> Result<()> {
     let storage_root = scenario
         .storage_root

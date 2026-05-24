@@ -132,19 +132,26 @@ When the active project contains no scenarios regardless of filter or search, th
 - **WHEN** the project contains at least one scenario but the active search query matches none of them
 - **THEN** the Explorer displays a search-specific message referencing the query, not the generic "No scenarios yet" message
 
-### Requirement: Done scenario cards display on-demand thumbnails
+### Requirement: Done scenario cards display cycling result thumbnails
 
-The Explorer view SHALL generate a chart-style thumbnail image for each Done scenario the first time that scenario's card is displayed. Thumbnail generation SHALL not mark the ThumbnailCache resource as changed when there is no work to do. Generated thumbnails SHALL be cached in memory and reused on subsequent renders without regeneration.
+The Explorer view SHALL display up to three result images for each Done scenario: `StatesMaxDelta`, `ActivationTimeDelta`, and `Loss`. When all three are present on disk, they are displayed as a slideshow cycling every 5 seconds. All cards SHALL show the same image type simultaneously, driven by a global `ThumbnailCycleState`. If the pre-generated images are missing (e.g. for legacy scenarios), a synthetic chart-style fallback image is generated instead.
+
+Thumbnail loading/generation SHALL not mark the `ThumbnailCache` resource as changed when there is no work to do. Loaded thumbnails SHALL be cached in memory and reused on subsequent renders without reloading.
 
 #### Scenario: Thumbnail loads on first display
 
-- **WHEN** a Done scenario card is shown for the first time
-- **THEN** a thumbnail image is generated and displayed in the card's thumbnail area
+- **WHEN** a Done scenario card is shown for the first time and its three result images exist on disk
+- **THEN** the images are loaded asynchronously and displayed in the card's thumbnail area, cycling every 5 seconds
 
 #### Scenario: Cached thumbnail appears without regeneration
 
-- **WHEN** a Done scenario card is shown after its thumbnail has been generated
-- **THEN** the thumbnail image is displayed immediately without triggering a new generation task
+- **WHEN** a Done scenario card is shown after its thumbnail has been loaded
+- **THEN** the cached images are displayed immediately without triggering a new load task
+
+#### Scenario: Missing result images fall back to synthetic chart
+
+- **WHEN** a Done scenario card is shown but one or more of the three result images are missing from disk
+- **THEN** a synthetic chart-style thumbnail is generated in-place and displayed as a static fallback
 
 ### Requirement: Each scenario card provides a context menu with per-scenario actions
 

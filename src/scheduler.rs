@@ -98,7 +98,7 @@ pub fn start_scenarios(
             let send_storage = entry.storage.clone();
             let (epoch_tx, epoch_rx) = unbounded();
             let (summary_tx, summary_rx) = unbounded();
-            let (done_tx, done_rx) = unbounded();
+            let (done_tx, done_rx) = unbounded::<bool>();
             rayon::spawn(move || {
                 if let Err(e) = run(send_scenario, send_storage, &epoch_tx, &summary_tx, done_tx) {
                     tracing::error!("Scenario failed: {:?}", e);
@@ -215,8 +215,12 @@ pub fn check_scenarios(
 
             // Handle done receiver
             if let Some(done_rx) = &entry.done_rx {
-                if done_rx.try_recv().is_ok() {
-                    entry.scenario.set_done();
+                if let Ok(success) = done_rx.try_recv() {
+                    if success {
+                        entry.scenario.set_done();
+                    } else {
+                        entry.scenario.set_aborted();
+                    }
                     entry.done_rx = None;
                     entry.epoch_rx = None;
                     entry.summary_rx = None;
@@ -234,7 +238,7 @@ pub fn check_scenarios(
 
             // Clean up corrupted or missing resources
             if cleanup_needed || epoch_poisoned || summary_poisoned {
-                entry.scenario.set_done();
+                entry.scenario.set_aborted();
                 entry.done_rx = None;
                 entry.epoch_rx = None;
                 entry.summary_rx = None;

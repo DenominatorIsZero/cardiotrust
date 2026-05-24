@@ -7,7 +7,9 @@ use super::{
     spawn::{spawn_card, spawn_new_scenario_action_card},
 };
 use crate::{
-    core::scenario::Status, ui::bevy_shell::explorer::thumbnail::ThumbnailCache, ScenarioList,
+    core::scenario::Status,
+    ui::bevy_shell::explorer::thumbnail::ThumbnailCache,
+    ScenarioList,
 };
 
 /// Rebuilds all scenario cards whenever `ScenarioList` or `ThumbnailCache` changes.
@@ -97,6 +99,7 @@ pub fn sync_cards_to_scenarios(
             progress,
             etc,
             thumbnail,
+            0,
         );
         commands.entity(grid).add_child(card_entity);
     }

@@ -3,6 +3,11 @@
 //! `ThumbnailCache` maps scenario ID → `ThumbnailState`. Generation is
 //! dispatched asynchronously (one task per frame max); results are polled
 //! back into the cache each frame.
+//!
+//! For Done scenarios the Explorer tries to load three pre-generated result
+//! images from disk (`StatesMaxDelta`, `ActivationTimeDelta`, `Loss`). When all
+//! three are present they are shown as a 5-second cycling slideshow. If any
+//! are missing, a synthetic chart-style fallback image is generated instead.
 
 use std::{
     collections::HashMap,
@@ -15,6 +20,14 @@ use crate::{core::scenario::Status, ScenarioList};
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
+/// A loaded thumbnail image with its original pixel dimensions.
+#[derive(Debug, Clone)]
+pub struct ThumbnailImage {
+    pub handle: Handle<Image>,
+    pub width: u32,
+    pub height: u32,
+}
+
 /// State of a thumbnail for one scenario.
 #[derive(Debug, Clone)]
 pub enum ThumbnailState {
@@ -22,19 +35,19 @@ pub enum ThumbnailState {
     Pending,
     /// Generation task is in flight.
     Generating,
-    /// Thumbnail image is ready.
-    Ready(Handle<Image>),
+    /// Thumbnail images are ready (one or more handles).
+    Ready(Vec<ThumbnailImage>),
     /// Generation failed (error message).
     Failed(String),
 }
 
 /// Shared channel value written by the async generation task.
-type ThumbnailResult = Result<Handle<Image>, String>;
+type ThumbnailTaskResult = Result<Vec<(Vec<u8>, u32, u32)>, String>;
 
 /// In-flight generation task for one scenario.
 struct InFlight {
     id: String,
-    result: Arc<Mutex<Option<ThumbnailResult>>>,
+    result: Arc<Mutex<Option<ThumbnailTaskResult>>>,
 }
 
 /// Bevy resource that holds per-scenario thumbnail state and in-flight tasks.
@@ -70,7 +83,7 @@ pub fn queue_thumbnail_generation(
     let cache_read = cache.bypass_change_detection();
 
     let mut needs_pending: Vec<String> = Vec::new();
-    let mut needs_generation: Option<String> = None;
+    let mut needs_generation: Option<(String, crate::core::scenario::ScenarioStorage)> = None;
 
     for entry in &scenario_list.entries {
         let scenario = &entry.scenario;
@@ -89,7 +102,7 @@ pub fn queue_thumbnail_generation(
         if needs_generation.is_some() {
             needs_pending.push(id);
         } else {
-            needs_generation = Some(id);
+            needs_generation = Some((id, entry.storage.clone()));
         }
     }
 
@@ -103,11 +116,48 @@ pub fn queue_thumbnail_generation(
     for id in needs_pending {
         cache.states.insert(id, ThumbnailState::Pending);
     }
-    let Some(id) = needs_generation else { return };
+    let Some((id, storage)) = needs_generation else { return };
 
     cache.states.insert(id.clone(), ThumbnailState::Generating);
 
-    // Generate a simple chart-like placeholder image (280×160).
+    #[cfg(feature = "native")]
+    {
+        let path_states = storage.image_path(&id, "StatesMaxDelta");
+        let path_act = storage.image_path(&id, "ActivationTimeDelta");
+        let path_loss = storage.image_path(&id, "Loss");
+
+        let all_exist = path_states.is_file() && path_act.is_file() && path_loss.is_file();
+
+        if all_exist {
+            let paths = vec![path_states, path_act, path_loss];
+            let result = Arc::new(Mutex::new(None));
+            let writer = result.clone();
+            std::thread::spawn(move || {
+                let mut bundles = Vec::with_capacity(paths.len());
+                let mut err = None;
+                for path in &paths {
+                    match load_png_bytes(path) {
+                        Ok(b) => bundles.push(b),
+                        Err(e) => {
+                            err = Some(format!("{}: {}", path.display(), e));
+                            break;
+                        }
+                    }
+                }
+                if let Some(msg) = err {
+                    if let Ok(mut guard) = writer.lock() {
+                        *guard = Some(Err(msg));
+                    }
+                } else if let Ok(mut guard) = writer.lock() {
+                    *guard = Some(Ok(bundles));
+                }
+            });
+            cache.in_flight.push(InFlight { id, result });
+            return;
+        }
+    }
+
+    // Fallback: generate a simple chart-style placeholder image (280×160).
     let width = 280_u32;
     let height = 160_u32;
     {
@@ -229,13 +279,23 @@ pub fn queue_thumbnail_generation(
             bevy::asset::RenderAssetUsages::RENDER_WORLD,
         );
         let handle = images.add(image);
-        cache.states.insert(id, ThumbnailState::Ready(handle));
+        cache.states.insert(
+            id,
+            ThumbnailState::Ready(vec![ThumbnailImage {
+                handle,
+                width,
+                height,
+            }]),
+        );
     }
 }
 
 /// Polls completed async tasks and transitions their state to `Ready` or `Failed`.
 #[tracing::instrument(skip_all)]
-pub fn poll_thumbnail_tasks(mut cache: ResMut<ThumbnailCache>) {
+pub fn poll_thumbnail_tasks(
+    mut cache: ResMut<ThumbnailCache>,
+    mut images: ResMut<Assets<Image>>,
+) {
     // Read phase without marking changed.
     let cache_read = cache.bypass_change_detection();
     if cache_read.in_flight.is_empty() {
@@ -259,10 +319,167 @@ pub fn poll_thumbnail_tasks(mut cache: ResMut<ThumbnailCache>) {
     for (i, id, result) in completed.into_iter().rev() {
         cache.in_flight.swap_remove(i);
         let state = match result {
-            Ok(handle) => ThumbnailState::Ready(handle),
+            Ok(bundles) => {
+                let mut handles = Vec::with_capacity(bundles.len());
+                for (rgba, w, h) in bundles {
+                    let thumb = upload_image(&mut images, &rgba, w, h);
+                    handles.push(thumb);
+                }
+                ThumbnailState::Ready(handles)
+            }
             Err(msg) => ThumbnailState::Failed(msg),
         };
         cache.states.insert(id, state);
+    }
+}
+
+// ── Slideshow cycle ────────────────────────────────────────────────────────────
+
+/// Global cycle state that drives the thumbnail slideshow in the Explorer.
+/// Every 5 seconds `index` advances by 1 (mod 3) so that all cards show the
+/// same image type simultaneously.
+#[derive(Resource, Debug)]
+pub struct ThumbnailCycleState {
+    pub index: usize,
+    pub elapsed: std::time::Duration,
+}
+
+impl Default for ThumbnailCycleState {
+    fn default() -> Self {
+        Self {
+            index: 0,
+            elapsed: std::time::Duration::ZERO,
+        }
+    }
+}
+
+/// Advances the global thumbnail cycle every 5 seconds.
+#[tracing::instrument(skip_all)]
+pub fn tick_thumbnail_cycle(
+    mut local_timer: Local<std::time::Duration>,
+    time: Res<Time>,
+    mut cycle_state: ResMut<ThumbnailCycleState>,
+) {
+    *local_timer += time.delta();
+    if *local_timer >= std::time::Duration::from_secs(5) {
+        *local_timer -= std::time::Duration::from_secs(5);
+        cycle_state.index = (cycle_state.index + 1) % 3;
+    }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+#[cfg(feature = "native")]
+#[tracing::instrument(level = "trace", skip_all)]
+fn load_png_bytes(path: &std::path::Path) -> anyhow::Result<(Vec<u8>, u32, u32)> {
+    let img = image::open(path)
+        .map_err(|e| anyhow::anyhow!("Failed to open image {}: {}", path.display(), e))?;
+    let rgba = img.to_rgba8();
+    let (w, h) = rgba.dimensions();
+    Ok((rgba.into_raw(), w, h))
+}
+
+/// Creates a Bevy `Image` from raw RGBA bytes, uploads to the GPU, and returns
+/// the handle together with its pixel dimensions.
+#[tracing::instrument(level = "trace", skip_all)]
+fn upload_image(
+    images: &mut Assets<Image>,
+    rgba: &[u8],
+    width: u32,
+    height: u32,
+) -> ThumbnailImage {
+    let bevy_image = Image::new(
+        bevy::render::render_resource::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
+        bevy::render::render_resource::TextureDimension::D2,
+        rgba.to_vec(),
+        bevy::render::render_resource::TextureFormat::Rgba8UnormSrgb,
+        bevy::asset::RenderAssetUsages::RENDER_WORLD,
+    );
+    ThumbnailImage {
+        handle: images.add(bevy_image),
+        width,
+        height,
+    }
+}
+
+// ── Aspect-ratio fitting ───────────────────────────────────────────────────────
+
+/// Component attached to thumbnail image nodes so a post-layout system can size
+/// them to fit the [`CardThumbnailArea`] while preserving aspect ratio.
+///
+/// Also carries the scenario ID so the cycle update system can swap the image
+/// handle without rebuilding the card.
+#[derive(Component, Debug)]
+pub struct ThumbnailAspect {
+    pub scenario_id: String,
+    pub width: u32,
+    pub height: u32,
+}
+
+/// Swaps the `ImageNode` handle on every thumbnail image node when the global
+/// cycle advances. This avoids a full card-grid rebuild (which causes flicker).
+#[tracing::instrument(skip_all)]
+pub fn update_thumbnail_cycle_images(
+    mut query: Query<(&mut ImageNode, &mut ThumbnailAspect)>,
+    thumbnail_cache: Res<ThumbnailCache>,
+    cycle_state: Res<ThumbnailCycleState>,
+) {
+    if !cycle_state.is_changed() {
+        return;
+    }
+    for (mut image_node, mut aspect) in &mut query {
+        let Some(state) = thumbnail_cache.states.get(&aspect.scenario_id) else {
+            continue;
+        };
+        let ThumbnailState::Ready(images) = state else {
+            continue;
+        };
+        let idx = cycle_state.index % images.len().max(1);
+        let Some(ThumbnailImage {
+            handle,
+            width,
+            height,
+        }) = images.get(idx)
+        else {
+            continue;
+        };
+        image_node.image = handle.clone();
+        aspect.width = *width;
+        aspect.height = *height;
+    }
+}
+
+/// Runs after UI layout and resizes every [`ThumbnailAspect`] image node so it
+/// fits inside its parent [`CardThumbnailArea`] without stretching.
+#[tracing::instrument(skip_all)]
+pub fn fit_thumbnail_images(
+    mut query: Query<(&ThumbnailAspect, &mut Node, &ChildOf)>,
+    computed_nodes: Query<&ComputedNode>,
+) {
+    for (aspect, mut node, child_of) in &mut query {
+        let Ok(parent_computed) = computed_nodes.get(child_of.parent()) else {
+            continue;
+        };
+        let parent_size = parent_computed.size;
+        if parent_size.x <= 0.0 || parent_size.y <= 0.0 {
+            continue;
+        }
+
+        let img_ar = aspect.width as f32 / aspect.height.max(1) as f32;
+        let container_ar = parent_size.x / parent_size.y;
+
+        let (w, h) = if img_ar > container_ar {
+            (parent_size.x, parent_size.x / img_ar)
+        } else {
+            (parent_size.y * img_ar, parent_size.y)
+        };
+
+        node.width = Val::Px(w);
+        node.height = Val::Px(h);
     }
 }
 

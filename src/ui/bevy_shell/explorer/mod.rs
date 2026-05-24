@@ -35,7 +35,11 @@ use self::{
         handle_empty_clear_search_click, handle_empty_new_scenario_click, spawn_empty_state,
         toggle_empty_state,
     },
-    thumbnail::{poll_thumbnail_tasks, queue_thumbnail_generation, ThumbnailCache},
+    thumbnail::{
+        fit_thumbnail_images, poll_thumbnail_tasks, queue_thumbnail_generation,
+        tick_thumbnail_cycle, update_thumbnail_cycle_images, ThumbnailCache,
+        ThumbnailCycleState,
+    },
     toolbar::{
         apply_filter_and_sort, handle_new_scenario_toolbar_button, handle_search_clear_click,
         handle_search_field_click, handle_search_outside_click, handle_sort_click,
@@ -72,6 +76,7 @@ impl Plugin for ExplorerViewPlugin {
     fn build(&self, app: &mut App) {
         // Resources
         app.init_resource::<ThumbnailCache>();
+        app.init_resource::<ThumbnailCycleState>();
         app.init_resource::<CardEditMode>();
         app.init_resource::<LastCardClick>();
         app.init_resource::<SearchFocused>();
@@ -105,6 +110,8 @@ impl Plugin for ExplorerViewPlugin {
                     apply_filter_and_sort.after(handle_text_search_input),
                     queue_thumbnail_generation,
                     poll_thumbnail_tasks,
+                    tick_thumbnail_cycle,
+                    update_thumbnail_cycle_images,
                     handle_card_click,
                     handle_card_inline_edit,
                 ),
@@ -133,6 +140,15 @@ impl Plugin for ExplorerViewPlugin {
                     handle_empty_clear_search_click,
                 ),
             )
+                .run_if(explorer_condition.clone()),
+        );
+
+        // Resize thumbnail images after layout so they fit their container
+        // while preserving aspect ratio.
+        app.add_systems(
+            PostUpdate,
+            fit_thumbnail_images
+                .after(bevy::ui::UiSystems::PostLayout)
                 .run_if(explorer_condition),
         );
     }

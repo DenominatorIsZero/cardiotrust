@@ -64,7 +64,7 @@ impl LoadedScenario {
 pub struct ScenarioBundle {
     pub scenario: Scenario,
     pub storage: ScenarioStorage,
-    pub done_rx: Option<crossbeam_channel::Receiver<()>>,
+    pub done_rx: Option<crossbeam_channel::Receiver<bool>>,
     pub epoch_rx: Option<Mutex<Receiver<usize>>>,
     pub summary_rx: Option<Mutex<Receiver<Summary>>>,
 }

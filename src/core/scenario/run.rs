@@ -15,6 +15,7 @@ use crate::core::{
 };
 #[cfg(feature = "native")]
 use crate::core::algorithm::gpu::{epoch::EpochKernel, GPU};
+use crate::ui::bevy_shell::results::{generate::generate_image, ImageType};
 
 /// Runs the simulation for the given scenario, model, and data.
 ///
@@ -31,123 +32,144 @@ pub fn run(
     storage: ScenarioStorage,
     epoch_tx: &Sender<usize>,
     summary_tx: &Sender<Summary>,
-    done_tx: Sender<()>,
+    done_tx: Sender<bool>,
 ) -> Result<()> {
     let result = (|| -> Result<()> {
-    debug!("Running scenario with id {}", scenario.id);
+        debug!("Running scenario with id {}", scenario.id);
 
-    let simulation = &scenario.config.simulation;
+        let simulation = &scenario.config.simulation;
 
-    let data = Data::from_simulation_config(simulation)
-        .context("Failed to create simulation data from config - invalid model parameters")?;
-    let mut model = Model::from_model_config(
-        &scenario.config.algorithm.model,
-        simulation.sample_rate_hz,
-        simulation.duration_s,
-    )
-    .context("Failed to create model from config - invalid model parameters")?;
+        let data = Data::from_simulation_config(simulation)
+            .context("Failed to create simulation data from config - invalid model parameters")?;
+        let mut model = Model::from_model_config(
+            &scenario.config.algorithm.model,
+            simulation.sample_rate_hz,
+            simulation.duration_s,
+        )
+        .context("Failed to create model from config - invalid model parameters")?;
 
-    // synchronice model and simulation sensor parameters
-    model.synchronize_parameters(&data);
+        // synchronice model and simulation sensor parameters
+        model.synchronize_parameters(&data);
 
-    let _ = epoch_tx.send(0);
+        let _ = epoch_tx.send(0);
 
-    let number_of_snapshots = if scenario.config.algorithm.snapshots_interval == 0 {
-        0
-    } else {
-        scenario.config.algorithm.epochs / scenario.config.algorithm.snapshots_interval + 1
-    };
+        let number_of_snapshots = if scenario.config.algorithm.snapshots_interval == 0 {
+            0
+        } else {
+            scenario.config.algorithm.epochs / scenario.config.algorithm.snapshots_interval + 1
+        };
 
-    let mut results = Results::new(
-        scenario.config.algorithm.epochs,
-        model.functional_description.control_function_values.shape()[0],
-        model.spatial_description.sensors.count(),
-        model.spatial_description.voxels.count_states(),
-        model.spatial_description.sensors.count_beats(),
-        number_of_snapshots,
-        scenario.config.algorithm.batch_size,
-        scenario.config.algorithm.optimizer,
-    );
+        let mut results = Results::new(
+            scenario.config.algorithm.epochs,
+            model.functional_description.control_function_values.shape()[0],
+            model.spatial_description.sensors.count(),
+            model.spatial_description.voxels.count_states(),
+            model.spatial_description.sensors.count_beats(),
+            number_of_snapshots,
+            scenario.config.algorithm.batch_size,
+            scenario.config.algorithm.optimizer,
+        );
 
-    let mut summary = Summary::default();
+        let mut summary = Summary::default();
 
-    match scenario.config.algorithm.algorithm_type {
-        AlgorithmType::ModelBased => {
-            results.model = Some(model);
-            run_model_based(
-                &mut scenario,
-                &mut results,
-                &data,
-                &mut summary,
-                epoch_tx,
-                summary_tx,
-            )
-            .context("Failed to execute model-based algorithm")?;
+        match scenario.config.algorithm.algorithm_type {
+            AlgorithmType::ModelBased => {
+                results.model = Some(model);
+                run_model_based(
+                    &mut scenario,
+                    &mut results,
+                    &data,
+                    &mut summary,
+                    epoch_tx,
+                    summary_tx,
+                )
+                .context("Failed to execute model-based algorithm")?;
+            }
+            #[cfg(feature = "native")]
+            AlgorithmType::ModelBasedGPU => {
+                results.model = Some(model);
+                run_model_based_gpu(
+                    &mut scenario,
+                    &mut results,
+                    &data,
+                    &mut summary,
+                    epoch_tx,
+                    summary_tx,
+                )
+                .context("Failed to execute model-based GPU algorithm")?;
+            }
+            AlgorithmType::PseudoInverse => {
+                run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary)
+                    .context("Failed to execute pseudo inverse algorithm")?;
+                results.model = Some(model);
+            }
         }
-        #[cfg(feature = "native")]
-        AlgorithmType::ModelBasedGPU => {
-            results.model = Some(model);
-            run_model_based_gpu(
-                &mut scenario,
-                &mut results,
-                &data,
-                &mut summary,
-                epoch_tx,
-                summary_tx,
-            )
-            .context("Failed to execute model-based GPU algorithm")?;
+
+        super::calculate_plotting_arrays(&mut results, &data)?;
+
+        metrics::calculate_final(
+            &mut results.metrics,
+            &results.estimations,
+            &data.simulation.model.spatial_description.voxels.types,
+            &results
+                .model
+                .as_ref()
+                .context("Model should be set after algorithm execution")?
+                .spatial_description
+                .voxels
+                .numbers,
+        );
+
+        let optimal_threshold = results
+            .metrics
+            .dice_score_over_threshold
+            .argmax_skipnan()
+            .unwrap_or_default();
+
+        #[allow(clippy::cast_precision_loss)]
+        {
+            summary.threshold = optimal_threshold as f32 / 100.0;
         }
-        AlgorithmType::PseudoInverse => {
-            run_pseudo_inverse(&scenario, &model, &mut results, &data, &mut summary)
-                .context("Failed to execute pseudo inverse algorithm")?;
-            results.model = Some(model);
+        summary.dice = results.metrics.dice_score_over_threshold[optimal_threshold];
+        summary.iou = results.metrics.iou_over_threshold[optimal_threshold];
+        summary.recall = results.metrics.recall_over_threshold[optimal_threshold];
+        summary.precision = results.metrics.precision_over_threshold[optimal_threshold];
+
+        let payload = ScenarioPayload { data, results };
+        scenario.summary = Some(summary.clone());
+
+        storage
+            .save_payload(scenario.get_id(), &payload)
+            .context("Failed to save completed scenario payload")?;
+
+        let thumbnail_types = [
+            ImageType::StatesMaxDelta,
+            ImageType::ActivationTimeDelta,
+            ImageType::Loss,
+        ];
+        for image_type in &thumbnail_types {
+            let path = storage.image_path(scenario.get_id(), &image_type.to_string());
+            if let Err(_e) = generate_image(scenario.clone(), payload.clone(), path, *image_type) {
+                scenario.status = Status::Aborted;
+                storage
+                    .save_metadata(&scenario)
+                    .context("Failed to save failed scenario metadata")?;
+                let _ = epoch_tx.send(scenario.config.algorithm.epochs - 1);
+                let _ = summary_tx.send(summary.clone());
+                return Ok(());
+            }
         }
-    }
 
-    super::calculate_plotting_arrays(&mut results, &data)?;
-
-    metrics::calculate_final(
-        &mut results.metrics,
-        &results.estimations,
-        &data.simulation.model.spatial_description.voxels.types,
-        &results
-            .model
-            .as_ref()
-            .context("Model should be set after algorithm execution")?
-            .spatial_description
-            .voxels
-            .numbers,
-    );
-
-    let optimal_threshold = results
-        .metrics
-        .dice_score_over_threshold
-        .argmax_skipnan()
-        .unwrap_or_default();
-
-    #[allow(clippy::cast_precision_loss)]
-    {
-        summary.threshold = optimal_threshold as f32 / 100.0;
-    }
-    summary.dice = results.metrics.dice_score_over_threshold[optimal_threshold];
-    summary.iou = results.metrics.iou_over_threshold[optimal_threshold];
-    summary.recall = results.metrics.recall_over_threshold[optimal_threshold];
-    summary.precision = results.metrics.precision_over_threshold[optimal_threshold];
-
-    let payload = ScenarioPayload { data, results };
-    scenario.summary = Some(summary.clone());
-    scenario.status = Status::Done;
-    storage
-        .save_metadata(&scenario)
-        .context("Failed to save completed scenario metadata")?;
-    storage
-        .save_payload(scenario.get_id(), &payload)
-        .context("Failed to save completed scenario payload")?;
-    let _ = epoch_tx.send(scenario.config.algorithm.epochs - 1);
-    let _ = summary_tx.send(summary);
-    Ok(())
+        scenario.status = Status::Done;
+        storage
+            .save_metadata(&scenario)
+            .context("Failed to save completed scenario metadata")?;
+        let _ = epoch_tx.send(scenario.config.algorithm.epochs - 1);
+        let _ = summary_tx.send(summary);
+        Ok(())
     })();
-    let _ = done_tx.send(());
+    let success = result.is_ok() && scenario.status != Status::Aborted;
+    let _ = done_tx.send(success);
     result
 }
 

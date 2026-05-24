@@ -9,7 +9,10 @@ use super::components::{
 };
 use crate::{
     core::scenario::Status,
-    ui::{bevy_shell::explorer::thumbnail::ThumbnailState, colors},
+    ui::{
+        bevy_shell::explorer::thumbnail::{ThumbnailAspect, ThumbnailImage, ThumbnailState},
+        colors,
+    },
 };
 
 // ── Public spawn helpers ──────────────────────────────────────────────────────
@@ -36,6 +39,7 @@ pub fn spawn_card(
     progress: Option<f32>,
     etc: Option<&str>,
     thumbnail: Option<&ThumbnailState>,
+    cycle_index: usize,
 ) -> Entity {
     let badge_color = status_badge_color(status);
     let badge_label = status_label(status);
@@ -84,7 +88,7 @@ pub fn spawn_card(
             });
 
             // ── Thumbnail area ────────────────────────────────────────────────
-            spawn_thumbnail_area(card, scenario_id, status, progress, etc, thumbnail);
+            spawn_thumbnail_area(card, scenario_id, status, progress, etc, thumbnail, cycle_index);
 
             // ── Metrics row (Done only) ───────────────────────────────────────
             if let Some((dice, loss)) = metrics {
@@ -279,6 +283,7 @@ fn spawn_thumbnail_area(
     progress: Option<f32>,
     etc: Option<&str>,
     thumbnail: Option<&ThumbnailState>,
+    cycle_index: usize,
 ) {
     parent
         .spawn((
@@ -297,15 +302,28 @@ fn spawn_thumbnail_area(
             BackgroundColor(colors::BG3),
         ))
         .with_children(|area| match (status, thumbnail) {
-            (Status::Done, Some(ThumbnailState::Ready(handle))) => {
-                area.spawn((
-                    ImageNode::new(handle.clone()),
-                    Node {
-                        width: Val::Percent(100.0),
-                        height: Val::Percent(100.0),
-                        ..default()
-                    },
-                ));
+            (Status::Done, Some(ThumbnailState::Ready(images))) => {
+                let idx = cycle_index % images.len().max(1);
+                if let Some(ThumbnailImage {
+                    handle,
+                    width,
+                    height,
+                }) = images.get(idx)
+                {
+                    area.spawn((
+                        ImageNode::new(handle.clone()),
+                        ThumbnailAspect {
+                            scenario_id: scenario_id.to_string(),
+                            width: *width,
+                            height: *height,
+                        },
+                        Node {
+                            width: Val::Auto,
+                            height: Val::Auto,
+                            ..default()
+                        },
+                    ));
+                }
             }
             (Status::Done, None | Some(ThumbnailState::Generating | ThumbnailState::Pending)) => {
                 area.spawn((
