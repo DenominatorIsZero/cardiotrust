@@ -228,13 +228,13 @@ pub fn handle_setup_heart_and_sensors(
 
 // ── Asset path helper ──────────────────────────────────────────────────────
 
-/// Prefixes asset paths with `embedded://` on WASM so Bevy's
-/// `EmbeddedAssetRegistry` resolves assets from compile-time bytes.
+/// On WASM the `Default` asset source is backed by a `MemoryAssetReader`
+/// populated at startup in `src/bin/main.rs`, so paths are returned unchanged.
 /// On native, returns the path unchanged for filesystem loading.
 #[cfg(not(feature = "native"))]
 #[tracing::instrument(level = "trace")]
-fn asset_path(path: &str) -> String {
-    format!("embedded://{path}")
+fn asset_path(path: &str) -> &str {
+    path
 }
 
 #[cfg(feature = "native")]
